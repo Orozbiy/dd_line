@@ -418,13 +418,32 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             ],
             flexibleSpace: FlexibleSpaceBar(
               background: _product.imageUrl.isNotEmpty
-                  ? Image.network(
-                      _product.imageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
-                        color: AppColors.grey100,
-                        child: const Icon(Icons.image_not_supported,
-                            size: 80, color: AppColors.grey300),
+                  ? GestureDetector(
+                      onTap: () => Navigator.push(
+                        context,
+                        PageRouteBuilder(
+                          opaque: false,
+                          barrierColor: Colors.black,
+                          transitionDuration:
+                              const Duration(milliseconds: 250),
+                          pageBuilder: (_, __, ___) =>
+                              _FullscreenImageScreen(
+                            imageUrl: _product.imageUrl,
+                            heroTag: 'product_image_${_product.id}',
+                          ),
+                        ),
+                      ),
+                      child: Hero(
+                        tag: 'product_image_${_product.id}',
+                        child: Image.network(
+                          _product.imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            color: AppColors.grey100,
+                            child: const Icon(Icons.image_not_supported,
+                                size: 80, color: AppColors.grey300),
+                          ),
+                        ),
                       ),
                     )
                   : Container(
@@ -1081,6 +1100,73 @@ class _NavigationGuideSheetState extends State<_NavigationGuideSheet> {
           child: Text(text, style: AppTextStyles.bodyMedium),
         ),
       ],
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// СҮРӨТТҮ ТОЛУК ЭКРАНДА КӨРСӨТҮҮ (zoom/pan + Hero animation)
+// ══════════════════════════════════════════════════════
+class _FullscreenImageScreen extends StatelessWidget {
+  final String imageUrl;
+  final String heroTag;
+
+  const _FullscreenImageScreen({
+    required this.imageUrl,
+    required this.heroTag,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          Center(
+            child: Hero(
+              tag: heroTag,
+              child: InteractiveViewer(
+                minScale: 1,
+                maxScale: 4,
+                child: Image.network(
+                  imageUrl,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => const Icon(
+                    Icons.image_not_supported,
+                    size: 80,
+                    color: Colors.white54,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Align(
+                  alignment: Alignment.topLeft,
+                  child: GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.4),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.close,
+                          color: Colors.white, size: 26),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
