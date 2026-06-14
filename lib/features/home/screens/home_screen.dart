@@ -137,7 +137,6 @@ class _HomeScreenState extends State<HomeScreen> {
         categoryId: _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
       );
 
-      // Scroll менен жүктөлгөн товарлар да аралаштырылат
       newProducts.shuffle();
 
       _hasMore = newProducts.length == _pageSize;
@@ -268,14 +267,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
     List<ProductModel> result = List.from(allProducts);
 
-    // Баа фильтри
     result = result
         .where((p) =>
             p.price >= _filter.priceRange.start &&
             p.price <= _filter.priceRange.end)
         .toList();
 
-    // Сорттоо
     switch (_filter.sortBy) {
       case 'price_asc':
         result.sort((a, b) => a.price.compareTo(b.price));
@@ -288,13 +285,11 @@ class _HomeScreenState extends State<HomeScreen> {
         break;
       case 'default':
       default:
-        // "Мага жакын" режиминде аралык боюнча сорттоо
         if (_isNearbyMode) {
           result.sort((a, b) =>
               (a.distanceKm ?? double.infinity)
                   .compareTo(b.distanceKm ?? double.infinity));
         }
-        // Башка учурда shuffle тартибин сактайт (кайра сорттобойт)
         break;
     }
 
@@ -649,27 +644,33 @@ class _HomeScreenState extends State<HomeScreen> {
 
                     const SliverToBoxAdapter(child: SizedBox(height: 8)),
 
-                    // ── ТОВАРЛАР САНЫ + ЖАҢЫЛОО + ТАЗАЛОО ──
+                    // ── ЖАҢЫЛОО БАСКЫЧЫ ГАНА (жазуу жок) ──
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
                         child: Row(
                           children: [
-                            Text(
-                              _isLoading
-                                  ? 'Жүктөлүп жатат...'
-                                  : _isSearchMode
-                                      ? '${displayedProducts.length} натыйжа табылды'
-                                      : _isNearbyMode
-                                          ? '${displayedProducts.length} жакын товар'
-                                          : '${displayedProducts.length} товар табылды',
-                              style: AppTextStyles.headingSmall,
-                            ),
+                            // ── Поиск режиминде натыйжа саны ──
+                            if (_isSearchMode && !_isLoading)
+                              Text(
+                                '${displayedProducts.length} натыйжа',
+                                style: AppTextStyles.bodyMedium
+                                    .copyWith(color: AppColors.grey500),
+                              ),
+
+                            // ── Жакын режиминде жазуу ──
+                            if (_isNearbyMode && !_isLoading)
+                              Text(
+                                '📍 ${displayedProducts.length} жакын товар',
+                                style: AppTextStyles.bodyMedium
+                                    .copyWith(color: AppColors.grey500),
+                              ),
+
                             const Spacer(),
-                            // Поиск режиминде "Жаңылоо" жашырылат
+
+                            // ── ЖАҢЫЛОО баскычы (поиск режиминде жашырылат) ──
                             if (!_isSearchMode)
                               GestureDetector(
-                                // ← refresh: true → жаңы shuffle seed алат
                                 onTap: _isNearbyMode
                                     ? _loadNearbyProducts
                                     : () => _loadProducts(refresh: true),
@@ -697,6 +698,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                 ),
                               ),
+
+                            // ── ТАЗАЛОО баскычы (фильтр болгондо) ──
                             if (_filterCount > 0) ...[
                               const SizedBox(width: 8),
                               GestureDetector(

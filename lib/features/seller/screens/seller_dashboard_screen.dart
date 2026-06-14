@@ -312,6 +312,7 @@ void _goBack() {
   Future<void> _saveCard(String cardNumber, BuildContext ctx) async {
     Navigator.pop(ctx);
     final digits = cardNumber.replaceAll(' ', '');
+    if (digits.length < 16) return;                      // ← КОШ
     final masked = '•••• ${digits.substring(12)}';
     await _subService.saveCard(
       uid: _seller!.uid,

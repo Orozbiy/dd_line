@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../../core/supabase_client.dart';
@@ -57,12 +58,10 @@ class ProductRepository {
   // КӨРҮҮ ТАРЫХЫН ЖАЗУУ
   // ══════════════════════════════════════════════════════════════════
 
-  /// Колдонуучу товарды ачканда чакырылат.
-  /// Анонимдүү колдонуучу болсо — жазбайт.
   Future<void> recordProductView(ProductModel product) async {
     try {
       final userId = supabase.auth.currentUser?.id;
-      if (userId == null) return; // анонимдүү — жазбайт
+      if (userId == null) return;
 
       await supabase.from('product_views').upsert({
         'user_id': userId,
@@ -73,24 +72,14 @@ class ProductRepository {
 
       debugPrint('👁️ view жазылды: ${product.name}');
     } catch (e) {
-      // Тыныч иштейт — view жазылбаса критикалык эмес
       debugPrint('⚠️ recordProductView: $e');
     }
   }
 
   // ══════════════════════════════════════════════════════════════════
-  // ПЕРСОНАЛИЗАЦИЯЛАНГАН ЛЕНТА (YouTube алгоритми сыяктуу)
+  // ПЕРСОНАЛИЗАЦИЯЛАНГАН ЛЕНТА
   // ══════════════════════════════════════════════════════════════════
 
-  /// Колдонуучуга ылайыкташтырылган товарлар.
-  ///
-  /// Кирген колдонуучу болсо → get_personalized_feed RPC
-  ///   - Эң көп карган категорияларынан товарлар алдыга чыгат
-  ///   - Мурун көрүлгөн товарлар кайта чыкпайт
-  ///   - Андан кийин рейтинг, андан кийин random
-  ///
-  /// Кирбеген колдонуучу болсо → get_random_feed RPC
-  ///   - Seed менен туруктуу random тартип
   Future<List<ProductModel>> fetchProducts({
     int offset = 0,
     String? categoryId,
@@ -98,12 +87,10 @@ class ProductRepository {
   }) async {
     final userId = supabase.auth.currentUser?.id;
 
-    // Кирген колдонуучу — персонализацияланган лента
     if (userId != null && categoryId == null && region == null) {
       return await _fetchPersonalized(userId: userId, offset: offset);
     }
 
-    // Анонимдүү же категория/регион фильтри бар — random лента
     return await _fetchRandom(
       offset: offset,
       categoryId: categoryId,
@@ -111,7 +98,6 @@ class ProductRepository {
     );
   }
 
-  /// Персонализацияланган лента — кирген колдонуучу үчүн.
   Future<List<ProductModel>> _fetchPersonalized({
     required String userId,
     int offset = 0,
@@ -127,7 +113,6 @@ class ProductRepository {
       );
       final results = _mapAndFilter(data as List);
 
-      // Персонализация натыйжасы аз болсо — random менен толуктайт
       if (results.length < pageSize) {
         final extra = await _fetchRandom(
           offset: offset,
@@ -145,7 +130,6 @@ class ProductRepository {
     }
   }
 
-  /// Random лента — анонимдүү же фильтр бар болгондо.
   Future<List<ProductModel>> _fetchRandom({
     int offset = 0,
     String? categoryId,
@@ -176,6 +160,7 @@ class ProductRepository {
   }
 
   /// Fallback: RPC жок болсо жөнөкөй Supabase query.
+  /// Жаңылоо басканда башка товарлар чыгышы үчүн — shuffle колдонулат.
   Future<List<ProductModel>> _fetchFallback({
     int offset = 0,
     String? categoryId,
@@ -194,19 +179,27 @@ class ProductRepository {
       query = query.eq('region', region);
     }
 
+    // Жаңылоо баскычы басылганда башка товарлар чыгышы үчүн:
+    // Суpabase'тен 50 товар алып, Random shuffle менен 10 тандайбыз.
+    // Ошентип ар бир жаңылоодо башка 10 товар көрүнөт.
+    final bigLimit = limit * 5; // 10 * 5 = 50 товар алат
+    final rng = Random((_randomSeed * 1000000).toInt());
+
     final data = await query
         .order('created_at', ascending: false)
-        .range(offset, offset + limit - 1);
+        .range(0, bigLimit - 1);
 
-    return _mapAndFilter(data);
+    final all = _mapAndFilter(data);
+
+    // Shuffle колдонуп, алгачкы [limit] товарды кайтарат
+    all.shuffle(rng);
+    return all.take(limit).toList();
   }
 
   // ══════════════════════════════════════════════════════════════════
   // НОРМАЛИЗАЦИЯ
   // ══════════════════════════════════════════════════════════════════
 
-  /// Кириллица тамгаларды нормализациялоо.
-  /// "гул" → "гүл" табат, "уй" → "үй" табат.
   static String _normalize(String input) {
     const Map<String, String> table = {
       'ү': 'у', 'Ү': 'у',
@@ -225,7 +218,7 @@ class ProductRepository {
   }
 
   // ══════════════════════════════════════════════════════════════════
-  // ПОИСК — нормализацияланган, RPC + fallback
+  // ПОИСК
   // ══════════════════════════════════════════════════════════════════
 
   Future<List<ProductModel>> searchProducts({

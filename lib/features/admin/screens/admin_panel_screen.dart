@@ -822,6 +822,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
   Future<void> _saveAdminCard(String cardNumber, BuildContext ctx) async {
     Navigator.pop(ctx);
     final digits = cardNumber.replaceAll(' ', '');
+    if (digits.length < 16) return;  
     final masked = '•••• ${digits.substring(12)}';
     await supabase.from('admin_settings').upsert({
       'key': 'payment',

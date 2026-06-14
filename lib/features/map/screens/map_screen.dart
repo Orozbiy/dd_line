@@ -70,9 +70,10 @@ class _MapScreenState extends State<MapScreen> {
   Future<void> _loadSellers() async {
     try {
       final data = await supabase
-          .from('stores')
-          .select('*, profiles(full_name)')
-          .eq('is_active', true);
+    .from('stores')
+    .select('*, profiles!inner(full_name, seller_status)')
+    .eq('is_active', true)
+    .eq('profiles.seller_status', 'approved');
 
       final all = (data as List)
           .cast<Map<String, dynamic>>()
