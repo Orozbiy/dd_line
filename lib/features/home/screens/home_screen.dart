@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
@@ -48,19 +49,23 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isNearbyMode = false;
   bool _isLocating = false;
 
-FilterOptions _filter = FilterOptions(
-  priceRange: const RangeValues(0, 1000000),
-  selectedSizes: [],
-  sortBy: 'rating',
-);
+  // ── Поиск режими ──
+  bool _isSearchMode = false;
+  Timer? _debounce;
+
+  FilterOptions _filter = FilterOptions(
+    priceRange: const RangeValues(0, 1000000),
+    selectedSizes: [],
+    sortBy: 'default',
+  );
 
   int get _filterCount {
-  int c = 0;
-  if (_filter.priceRange.start > 0 || _filter.priceRange.end < 1000000) c++;
-  if (_filter.selectedSizes.isNotEmpty) c++;
-  if (_filter.sortBy != 'rating') c++;
-  return c;
-}
+    int c = 0;
+    if (_filter.priceRange.start > 0 || _filter.priceRange.end < 1000000) c++;
+    if (_filter.selectedSizes.isNotEmpty) c++;
+    if (_filter.sortBy != 'default') c++;
+    return c;
+  }
 
   @override
   void initState() {
@@ -68,47 +73,72 @@ FilterOptions _filter = FilterOptions(
     _loadProducts();
   }
 
-  /// Биринчи баракты жүктөө (региондук фильтрсиз, жөнөкөй пагинация).
-  Future<void> _loadProducts() async {
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // ЖҮКТӨӨ
+  // ══════════════════════════════════════════════════════════════════
+
+  Future<void> _loadProducts({bool refresh = false}) async {
+    if (refresh) {
+      ProductRepository.instance.refreshSeed();
+    }
+
     setState(() {
       _isLoading = true;
       _isNearbyMode = false;
+      _isSearchMode = false;
       _offset = 0;
       _hasMore = true;
     });
+
     try {
       final products = await ProductRepository.instance.fetchProducts(
         offset: 0,
         categoryId: _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
       );
 
+      // Shuffle — ар бир жаңылоодо башкача тартип
+      products.shuffle();
+
       _hasMore = products.length == _pageSize;
       _offset = products.length;
 
-      setState(() {
-        allProducts = products;
-        displayedProducts = List.from(products);
-        _isLoading = false;
-      });
-      _applyFilters();
+      if (mounted) {
+        setState(() {
+          allProducts = List.from(products);
+          displayedProducts = List.from(products);
+          _isLoading = false;
+        });
+        _applyFilters();
+      }
     } catch (e) {
       debugPrint('❌ loadProducts: $e');
-      setState(() {
-        allProducts = [];
-        displayedProducts = [];
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          allProducts = [];
+          displayedProducts = [];
+          _isLoading = false;
+        });
+      }
     }
   }
 
   Future<void> _loadMoreProducts() async {
-    if (_isLoadingMore || !_hasMore || _isLoading || _isNearbyMode) return;
+    if (_isLoadingMore || !_hasMore || _isLoading || _isNearbyMode || _isSearchMode) return;
     _isLoadingMore = true;
     try {
       final newProducts = await ProductRepository.instance.fetchProducts(
         offset: _offset,
         categoryId: _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
       );
+
+      // Scroll менен жүктөлгөн товарлар да аралаштырылат
+      newProducts.shuffle();
 
       _hasMore = newProducts.length == _pageSize;
       _offset += newProducts.length;
@@ -124,8 +154,6 @@ FilterOptions _filter = FilterOptions(
     }
   }
 
-  /// "Мага жакын" — GPS координатты алып, PostGIS аркылуу
-  /// аралык боюнча сорттолгон товарларды жүктөйт.
   Future<void> _loadNearbyProducts() async {
     setState(() => _isLocating = true);
 
@@ -151,6 +179,7 @@ FilterOptions _filter = FilterOptions(
     setState(() {
       _isLoading = true;
       _isNearbyMode = true;
+      _isSearchMode = false;
       _hasMore = false;
     });
 
@@ -177,6 +206,127 @@ FilterOptions _filter = FilterOptions(
     }
   }
 
+  // ══════════════════════════════════════════════════════════════════
+  // ПОИСК
+  // ══════════════════════════════════════════════════════════════════
+
+  void _onSearchChanged(String q) {
+    _searchQuery = q;
+    _debounce?.cancel();
+
+    if (q.trim().isEmpty) {
+      setState(() => _isSearchMode = false);
+      _loadProducts();
+      return;
+    }
+
+    _debounce = Timer(const Duration(milliseconds: 400), () async {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = true;
+        _isSearchMode = true;
+        _isNearbyMode = false;
+        _hasMore = false;
+      });
+
+      try {
+        final results = await ProductRepository.instance.searchProducts(
+          query: q,
+          categoryId: _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
+        );
+
+        if (!mounted) return;
+        setState(() {
+          displayedProducts = results;
+          _isLoading = false;
+        });
+      } catch (e) {
+        debugPrint('❌ searchProducts: $e');
+        if (!mounted) return;
+        setState(() {
+          displayedProducts = [];
+          _isLoading = false;
+        });
+      }
+    });
+  }
+
+  void _onSearchClear() {
+    _searchQuery = '';
+    _debounce?.cancel();
+    setState(() => _isSearchMode = false);
+    _loadProducts();
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // ФИЛЬТР
+  // ══════════════════════════════════════════════════════════════════
+
+  void _applyFilters() {
+    if (_isSearchMode) return;
+
+    List<ProductModel> result = List.from(allProducts);
+
+    // Баа фильтри
+    result = result
+        .where((p) =>
+            p.price >= _filter.priceRange.start &&
+            p.price <= _filter.priceRange.end)
+        .toList();
+
+    // Сорттоо
+    switch (_filter.sortBy) {
+      case 'price_asc':
+        result.sort((a, b) => a.price.compareTo(b.price));
+        break;
+      case 'price_desc':
+        result.sort((a, b) => b.price.compareTo(a.price));
+        break;
+      case 'rating':
+        result.sort((a, b) => (b.rating ?? 0).compareTo(a.rating ?? 0));
+        break;
+      case 'default':
+      default:
+        // "Мага жакын" режиминде аралык боюнча сорттоо
+        if (_isNearbyMode) {
+          result.sort((a, b) =>
+              (a.distanceKm ?? double.infinity)
+                  .compareTo(b.distanceKm ?? double.infinity));
+        }
+        // Башка учурда shuffle тартибин сактайт (кайра сорттобойт)
+        break;
+    }
+
+    setState(() => displayedProducts = result);
+  }
+
+  void _resetFilters() {
+    setState(() {
+      _filter = FilterOptions(
+        priceRange: const RangeValues(0, 1000000),
+        selectedSizes: [],
+        sortBy: 'default',
+      );
+    });
+    _applyFilters();
+  }
+
+  void _openFilter() {
+    FilterBottomSheet.show(
+      context,
+      initialOptions: _filter,
+      onApply: (opts) {
+        _filter = opts;
+        _applyFilters();
+      },
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // ADMIN
+  // ══════════════════════════════════════════════════════════════════
+
   void _onTitleTap() {
     final now = DateTime.now();
     if (_lastTapTime == null ||
@@ -195,63 +345,9 @@ FilterOptions _filter = FilterOptions(
     }
   }
 
-  void _applyFilters() {
-    List<ProductModel> result = List.from(allProducts);
-
-    if (_searchQuery.isNotEmpty) {
-      result = result
-          .where((p) =>
-              p.name.toLowerCase().contains(_searchQuery.toLowerCase()))
-          .toList();
-    }
-    result = result
-        .where((p) =>
-            p.price >= _filter.priceRange.start &&
-            p.price <= _filter.priceRange.end)
-        .toList();
-
-    switch (_filter.sortBy) {
-      case 'price_asc':
-        result.sort((a, b) => a.price.compareTo(b.price));
-        break;
-      case 'price_desc':
-        result.sort((a, b) => b.price.compareTo(a.price));
-        break;
-      case 'rating':
-        result.sort((a, b) => (b.rating ?? 0).compareTo(a.rating ?? 0));
-        break;
-      default:
-        // "Мага жакын" режиминде аралык боюнча тартип сакталат,
-        // башкача учурда сервердин тартиби (created_at desc) калат.
-        if (_isNearbyMode) {
-          result.sort((a, b) =>
-              (a.distanceKm ?? double.infinity)
-                  .compareTo(b.distanceKm ?? double.infinity));
-        }
-    }
-    setState(() => displayedProducts = result);
-  }
-
- void _resetFilters() {
-  setState(() {
-    _filter = FilterOptions(
-      priceRange: const RangeValues(0, 1000000),
-      selectedSizes: [],
-      sortBy: 'rating',
-    );
-  });
-  _applyFilters();
-}
-  void _openFilter() {
-    FilterBottomSheet.show(
-      context,
-      initialOptions: _filter,
-      onApply: (opts) {
-        _filter = opts;
-        _applyFilters();
-      },
-    );
-  }
+  // ══════════════════════════════════════════════════════════════════
+  // BUILD
+  // ══════════════════════════════════════════════════════════════════
 
   @override
   Widget build(BuildContext context) {
@@ -278,18 +374,18 @@ FilterOptions _filter = FilterOptions(
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentTab,
         onTap: (i) {
-  if (i == 2) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const SettingsScreen()),
-    );
-    return;
-  }
-  setState(() {
-    _currentTab = i;
-    if (i == 1) _mapLoaded = true;
-  });
-},
+          if (i == 2) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SettingsScreen()),
+            );
+            return;
+          }
+          setState(() {
+            _currentTab = i;
+            if (i == 1) _mapLoaded = true;
+          });
+        },
         selectedItemColor: AppColors.primary,
         unselectedItemColor: AppColors.grey400,
         backgroundColor: Colors.white,
@@ -297,23 +393,23 @@ FilterOptions _filter = FilterOptions(
         type: BottomNavigationBarType.fixed,
         showSelectedLabels: false,
         showUnselectedLabels: false,
-      items: const [
-  BottomNavigationBarItem(
-    icon: Icon(Icons.home_outlined),
-    activeIcon: Icon(Icons.home_rounded),
-    label: '',
-  ),
-  BottomNavigationBarItem(
-    icon: Icon(Icons.storefront_outlined),
-    activeIcon: Icon(Icons.storefront_rounded),
-    label: '',
-  ),
-  BottomNavigationBarItem(
-    icon: Icon(Icons.settings_outlined),
-    activeIcon: Icon(Icons.settings_rounded),
-    label: '',
-  ),
-],
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_outlined),
+            activeIcon: Icon(Icons.home_rounded),
+            label: '',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.storefront_outlined),
+            activeIcon: Icon(Icons.storefront_rounded),
+            label: '',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings_outlined),
+            activeIcon: Icon(Icons.settings_rounded),
+            label: '',
+          ),
+        ],
       ),
       body: Stack(
         children: [
@@ -330,6 +426,7 @@ FilterOptions _filter = FilterOptions(
                 },
                 child: CustomScrollView(
                   slivers: [
+                    // ── APP BAR ──
                     SliverAppBar(
                       pinned: true,
                       backgroundColor: Colors.white,
@@ -393,7 +490,6 @@ FilterOptions _filter = FilterOptions(
                         ),
                       ),
                       actions: [
-                     
                         GestureDetector(
                           onTap: () => Navigator.push(
                             context,
@@ -424,7 +520,7 @@ FilterOptions _filter = FilterOptions(
                       ],
                     ),
 
-                    // ИЗДӨӨ + "МАГА ЖАКЫН" + ФИЛЬТР
+                    // ── ИЗДӨӨ + "МАГА ЖАКЫН" + ФИЛЬТР ──
                     SliverToBoxAdapter(
                       child: Container(
                         color: Colors.white,
@@ -433,23 +529,18 @@ FilterOptions _filter = FilterOptions(
                           children: [
                             Expanded(
                               child: SearchBarWidget(
-                                onChanged: (q) {
-                                  _searchQuery = q;
-                                  _applyFilters();
-                                },
-                                onClear: () {
-                                  _searchQuery = '';
-                                  _applyFilters();
-                                },
+                                onChanged: _onSearchChanged,
+                                onClear: _onSearchClear,
                               ),
                             ),
                             const SizedBox(width: 8),
+
                             // ── "МАГА ЖАКЫН" БАСКЫЧЫ ──
                             GestureDetector(
                               onTap: _isLocating
                                   ? null
                                   : (_isNearbyMode
-                                      ? _loadProducts
+                                      ? () => _loadProducts(refresh: true)
                                       : _loadNearbyProducts),
                               child: AnimatedContainer(
                                 duration: const Duration(milliseconds: 200),
@@ -479,6 +570,8 @@ FilterOptions _filter = FilterOptions(
                               ),
                             ),
                             const SizedBox(width: 8),
+
+                            // ── ФИЛЬТР БАСКЫЧЫ ──
                             GestureDetector(
                               onTap: _openFilter,
                               child: AnimatedContainer(
@@ -528,7 +621,7 @@ FilterOptions _filter = FilterOptions(
                       ),
                     ),
 
-                    // КАТЕГОРИЯЛАР
+                    // ── КАТЕГОРИЯЛАР ──
                     SliverToBoxAdapter(
                       child: Container(
                         color: Colors.white,
@@ -539,10 +632,12 @@ FilterOptions _filter = FilterOptions(
                             CategoryList(
                               onCategorySelected: (id) {
                                 _selectedCategoryId = id;
-                                if (_isNearbyMode) {
+                                if (_isSearchMode && _searchQuery.isNotEmpty) {
+                                  _onSearchChanged(_searchQuery);
+                                } else if (_isNearbyMode) {
                                   _loadNearbyProducts();
                                 } else {
-                                  _loadProducts();
+                                  _loadProducts(refresh: true);
                                 }
                               },
                             ),
@@ -554,7 +649,7 @@ FilterOptions _filter = FilterOptions(
 
                     const SliverToBoxAdapter(child: SizedBox(height: 8)),
 
-                    // ТОВАРЛАР САНЫ + ЖАҢЫЛОО + ТАЗАЛОО
+                    // ── ТОВАРЛАР САНЫ + ЖАҢЫЛОО + ТАЗАЛОО ──
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
@@ -563,40 +658,45 @@ FilterOptions _filter = FilterOptions(
                             Text(
                               _isLoading
                                   ? 'Жүктөлүп жатат...'
-                                  : _isNearbyMode
-                                      ? '${displayedProducts.length} жакын товар'
-                                      : '${displayedProducts.length} товар табылды',
+                                  : _isSearchMode
+                                      ? '${displayedProducts.length} натыйжа табылды'
+                                      : _isNearbyMode
+                                          ? '${displayedProducts.length} жакын товар'
+                                          : '${displayedProducts.length} товар табылды',
                               style: AppTextStyles.headingSmall,
                             ),
                             const Spacer(),
-                            GestureDetector(
-                              onTap: _isNearbyMode
-                                  ? _loadNearbyProducts
-                                  : _loadProducts,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFEEF2FF),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                      color: AppColors.primary
-                                          .withValues(alpha: 0.3)),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(Icons.refresh,
-                                        color: AppColors.primary, size: 14),
-                                    const SizedBox(width: 4),
-                                    Text('Жаңылоо',
-                                        style: AppTextStyles.labelMedium
-                                            .copyWith(
-                                                color: AppColors.primary)),
-                                  ],
+                            // Поиск режиминде "Жаңылоо" жашырылат
+                            if (!_isSearchMode)
+                              GestureDetector(
+                                // ← refresh: true → жаңы shuffle seed алат
+                                onTap: _isNearbyMode
+                                    ? _loadNearbyProducts
+                                    : () => _loadProducts(refresh: true),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFEEF2FF),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                        color: AppColors.primary
+                                            .withValues(alpha: 0.3)),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.refresh,
+                                          color: AppColors.primary, size: 14),
+                                      const SizedBox(width: 4),
+                                      Text('Жаңылоо',
+                                          style: AppTextStyles.labelMedium
+                                              .copyWith(
+                                                  color: AppColors.primary)),
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
                             if (_filterCount > 0) ...[
                               const SizedBox(width: 8),
                               GestureDetector(
@@ -631,7 +731,7 @@ FilterOptions _filter = FilterOptions(
                       ),
                     ),
 
-                    // ТОВАРЛАР
+                    // ── ТОВАРЛАР ──
                     if (_isLoading)
                       const SliverFillRemaining(
                         child: Center(
@@ -650,6 +750,35 @@ FilterOptions _filter = FilterOptions(
                                   fontSize: 14,
                                 ),
                               ),
+                            ],
+                          ),
+                        ),
+                      )
+                    else if (displayedProducts.isEmpty)
+                      SliverFillRemaining(
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Text('🔍',
+                                  style: TextStyle(fontSize: 48)),
+                              const SizedBox(height: 12),
+                              Text(
+                                _isSearchMode
+                                    ? '"$_searchQuery" — табылган жок'
+                                    : 'Товар табылган жок',
+                                style: AppTextStyles.bodyMedium
+                                    .copyWith(color: AppColors.grey500),
+                                textAlign: TextAlign.center,
+                              ),
+                              if (_isSearchMode) ...[
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Башка сөз менен издеп көрүңүз',
+                                  style: AppTextStyles.bodySmall
+                                      .copyWith(color: AppColors.grey400),
+                                ),
+                              ],
                             ],
                           ),
                         ),
@@ -678,7 +807,7 @@ FilterOptions _filter = FilterOptions(
             ),
           ),
 
-          // ── TAB 1: Дүкөндөр картасы — гана басканда жүктөлөт ──
+          // ── TAB 1: Дүкөндөр картасы ──
           Offstage(
             offstage: _currentTab != 1,
             child: _mapLoaded ? const MapScreen() : const SizedBox.shrink(),

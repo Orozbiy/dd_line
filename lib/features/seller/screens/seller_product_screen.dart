@@ -39,51 +39,141 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
   }
 
   final List<Map<String, String>> _categories = [
-    {'id': '1', 'name': 'Кийим-кече', 'icon': '👕'},
-    {'id': '2', 'name': 'Эркектер кийими', 'icon': '👔'},
-    {'id': '3', 'name': 'Аялдар кийими', 'icon': '👗'},
-    {'id': '4', 'name': 'Балдар кийими', 'icon': '🧒'},
-    {'id': '5', 'name': 'Мектеп формасы', 'icon': '🏫'},
-    {'id': '6', 'name': 'Кышкы кийим', 'icon': '🧥'},
-    {'id': '7', 'name': 'Жайкы кийим', 'icon': '☀️'},
-    {'id': '8', 'name': 'Күзгү / Жазгы кийим', 'icon': '🍂'},
-    {'id': '9', 'name': 'Спорт кийими', 'icon': '🏋️'},
-    {'id': '10', 'name': 'Бут кийим', 'icon': '👟'},
-    {'id': '11', 'name': 'Аксессуарлар', 'icon': '👜'},
-    {'id': '12', 'name': 'Сумкалар', 'icon': '🎒'},
-    {'id': '13', 'name': 'Кол / Баш кийим', 'icon': '🧤'},
-    {'id': '14', 'name': 'Зергерчилик', 'icon': '💍'},
-    {'id': '15', 'name': 'Кездеме / Мата', 'icon': '🧵'},
-    {'id': '16', 'name': 'Электроника', 'icon': '📱'},
-    {'id': '17', 'name': 'Муздаткыч / Техника', 'icon': '❄️'},
-    {'id': '18', 'name': 'Кир жуучу машина', 'icon': '🫧'},
+    {'id': '1',  'name': 'Кийим-кече',           'icon': '👕'},
+    {'id': '2',  'name': 'Эркектер кийими',       'icon': '👔'},
+    {'id': '3',  'name': 'Аялдар кийими',         'icon': '👗'},
+    {'id': '4',  'name': 'Балдар кийими',         'icon': '🧒'},
+    {'id': '5',  'name': 'Мектеп формасы',        'icon': '🏫'},
+    {'id': '6',  'name': 'Кышкы кийим',           'icon': '🧥'},
+    {'id': '7',  'name': 'Жайкы кийим',           'icon': '☀️'},
+    {'id': '8',  'name': 'Күзгү / Жазгы кийим',  'icon': '🍂'},
+    {'id': '9',  'name': 'Спорт кийими',          'icon': '🏋️'},
+    {'id': '10', 'name': 'Бут кийим',             'icon': '👟'},
+    {'id': '11', 'name': 'Аксессуарлар',          'icon': '👜'},
+    {'id': '12', 'name': 'Сумкалар',              'icon': '🎒'},
+    {'id': '13', 'name': 'Кол / Баш кийим',       'icon': '🧤'},
+    {'id': '14', 'name': 'Зергерчилик',           'icon': '💍'},
+    {'id': '15', 'name': 'Кездеме / Мата',        'icon': '🧵'},
+    {'id': '16', 'name': 'Электроника',           'icon': '📱'},
+    {'id': '17', 'name': 'Муздаткыч / Техника',   'icon': '❄️'},
+    {'id': '18', 'name': 'Кир жуучу машина',      'icon': '🫧'},
     {'id': '19', 'name': 'Куралдар / Инструмент', 'icon': '🔧'},
-    {'id': '20', 'name': 'Үй буюмдар', 'icon': '🏠'},
-    {'id': '21', 'name': 'Үй өсүмдүктөрү', 'icon': '🪴'},
-    {'id': '22', 'name': 'Дүкөн буюмдары', 'icon': '🏪'},
-    {'id': '23', 'name': 'Спорт', 'icon': '⚽'},
-    {'id': '24', 'name': 'Балдар оюнчуктары', 'icon': '🧸'},
-    {'id': '25', 'name': 'Сулуулук / Косметика', 'icon': '💄'},
-    {'id': '26', 'name': 'Жеке гигиена', 'icon': '🧴'},
-    {'id': '27', 'name': 'Азык-түлүк', 'icon': '🛒'},
-    {'id': '28', 'name': 'Автотовар', 'icon': '🚗'},
-    {'id': '29', 'name': 'Китептер / Канцтовар', 'icon': '📚'},
-    {'id': '30', 'name': 'Оюнчуктар', 'icon': '🎮'},
+    {'id': '20', 'name': 'Үй буюмдар',            'icon': '🏠'},
+    {'id': '21', 'name': 'Үй өсүмдүктөрү',       'icon': '🪴'},
+    {'id': '22', 'name': 'Дүкөн буюмдары',        'icon': '🏪'},
+    {'id': '23', 'name': 'Спорт',                 'icon': '⚽'},
+    {'id': '24', 'name': 'Балдар оюнчуктары',     'icon': '🧸'},
+    {'id': '25', 'name': 'Сулуулук / Косметика',  'icon': '💄'},
+    {'id': '26', 'name': 'Жеке гигиена',          'icon': '🧴'},
+    {'id': '27', 'name': 'Азык-түлүк',            'icon': '🛒'},
+    {'id': '28', 'name': 'Автотовар',             'icon': '🚗'},
+    {'id': '29', 'name': 'Китептер / Канцтовар',  'icon': '📚'},
+    {'id': '30', 'name': 'Оюнчуктар',             'icon': '🎮'},
   ];
 
+  // ══════════════════════════════════════════════
+  // РАЗМЕРЛЕР — категория боюнча
+  // ══════════════════════════════════════════════
+
+  // id:1 — Жалпы кийим (балдар + чоңдор аралаш)
+  static const _allClothSizes = [
+    '86 см', '92 см', '98 см', '104 см', '110 см', '116 см',
+    '122 см', '128 см', '134 см', '140 см', '146 см', '152 см',
+    '158 см', '164 см',
+    'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL', '5XL',
+  ];
+
+  // id:2 — Эркектер кийими
+  static const _menClothSizes = [
+    'S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL', '5XL',
+    '44', '46', '48', '50', '52', '54', '56', '58', '60',
+  ];
+
+  // id:3 — Аялдар кийими
+  static const _womenClothSizes = [
+    'XS (36)', 'S (38)', 'M (40)', 'L (42)', 'XL (44)',
+    'XXL (46)', '3XL (48)', '4XL (50)', '5XL (52)',
+  ];
+
+  // id:4 — Балдар кийими (жаш + бой)
+  static const _kidsClothSizes = [
+    '0-1 жаш (56-62 см)',
+    '1-2 жаш (80-86 см)',
+    '2-3 жаш (92-98 см)',
+    '3-4 жаш (98-104 см)',
+    '4-5 жаш (104-110 см)',
+    '5-6 жаш (110-116 см)',
+    '6-7 жаш (116-122 см)',
+    '7-8 жаш (122-128 см)',
+    '8-9 жаш (128-134 см)',
+    '9-10 жаш (134-140 см)',
+    '10-11 жаш (140-146 см)',
+    '11-12 жаш (146-152 см)',
+    '12-13 жаш (152-158 см)',
+    '13-14 жаш (158-164 см)',
+  ];
+
+  // id:5 — Мектеп формасы (бой боюнча)
+  static const _schoolSizes = [
+    '110 см (4-5 жаш)',
+    '116 см (5-6 жаш)',
+    '122 см (6-7 жаш)',
+    '128 см (7-8 жаш)',
+    '134 см (8-9 жаш)',
+    '140 см (9-10 жаш)',
+    '146 см (10-11 жаш)',
+    '152 см (11-12 жаш)',
+    '158 см (12-13 жаш)',
+    '164 см (13-14 жаш)',
+    '170 см (14-15 жаш)',
+    '176 см (15-16 жаш)',
+  ];
+
+  // id:6,7,8,9 — Мезгил / Спорт кийими (балдар + чоңдор)
+  static const _seasonClothSizes = [
+    '86 см', '92 см', '98 см', '104 см', '110 см', '116 см',
+    '122 см', '128 см', '134 см', '140 см', '146 см', '152 см',
+    '158 см', '164 см',
+    'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL', '5XL',
+  ];
+
+  // id:10 — Бут кийим (балдардан чоңдорго чейин)
+  static const _allShoesSizes = [
+    '16', '17', '18', '19', '20', '21', '22', '23', '24', '25',
+    '26', '27', '28', '29', '30', '31', '32', '33', '34', '35',
+    '36', '37', '38', '39', '40', '41', '42', '43', '44', '45',
+    '46', '47',
+  ];
+
+  // id:15 — Кездеме / Мата (метраж)
+  static const _fabricSizes = [
+    '0.5 м', '1 м', '1.5 м', '2 м', '2.5 м',
+    '3 м', '4 м', '5 м', '10 м', '20 м', '50 м',
+  ];
+
+  // ══════════════════════════════════════════════
+  // ТҮСТӨР
+  // ══════════════════════════════════════════════
   final List<Map<String, dynamic>> _allColors = [
-    {'name': 'Кара', 'hex': 0xFF000000},
-    {'name': 'Ак', 'hex': 0xFFFFFFFF},
-    {'name': 'Кызыл', 'hex': 0xFFEF4444},
-    {'name': 'Көк', 'hex': 0xFF3B82F6},
-    {'name': 'Жашыл', 'hex': 0xFF22C55E},
-    {'name': 'Сары', 'hex': 0xFFEAB308},
-    {'name': 'Кызгылт', 'hex': 0xFFEC4899},
-    {'name': 'Күрөң', 'hex': 0xFF92400E},
-    {'name': 'Боз', 'hex': 0xFF6B7280},
-    {'name': 'Күлгүн', 'hex': 0xFF8B5CF6},
+    {'name': 'Кара',         'hex': 0xFF000000},
+    {'name': 'Ак',           'hex': 0xFFFFFFFF},
+    {'name': 'Кызыл',        'hex': 0xFFEF4444},
+    {'name': 'Көк',          'hex': 0xFF3B82F6},
+    {'name': 'Жашыл',        'hex': 0xFF22C55E},
+    {'name': 'Сары',         'hex': 0xFFEAB308},
+    {'name': 'Кызгылт',      'hex': 0xFFEC4899},
+    {'name': 'Күрөң',        'hex': 0xFF92400E},
+    {'name': 'Боз',          'hex': 0xFF6B7280},
+    {'name': 'Күлгүн',       'hex': 0xFF8B5CF6},
     {'name': 'Кызгылт сары', 'hex': 0xFFF97316},
-    {'name': 'Ачык көк', 'hex': 0xFF06B6D4},
+    {'name': 'Ачык көк',     'hex': 0xFF06B6D4},
+    {'name': 'Бежевый',      'hex': 0xFFF5F0DC},
+    {'name': 'Кремовый',     'hex': 0xFFFFFDD0},
+    {'name': 'Жыгач',        'hex': 0xFF8B4513},
+    {'name': 'Алтын',        'hex': 0xFFFFD700},
+    {'name': 'Күмүш',        'hex': 0xFFC0C0C0},
+    {'name': 'Кара жашыл',   'hex': 0xFF006400},
+    {'name': 'Темно-көк',    'hex': 0xFF00008B},
   ];
 
   @override
@@ -97,29 +187,21 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
   // ══════════════════════════════════════════════
   Future<String> _getOrCreateStoreId() async {
     if (_storeId != null) return _storeId!;
-
     final uid = widget.sellerUid;
-
     final existing = await supabase
         .from('stores')
         .select('id')
         .eq('owner_id', uid)
         .maybeSingle();
-
     if (existing != null) {
       _storeId = existing['id'] as String;
       return _storeId!;
     }
-
     final inserted = await supabase
         .from('stores')
-        .insert({
-          'owner_id': uid,
-          'store_name': widget.shopName,
-        })
+        .insert({'owner_id': uid, 'store_name': widget.shopName})
         .select('id')
         .single();
-
     _storeId = inserted['id'] as String;
     return _storeId!;
   }
@@ -136,7 +218,6 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
           .select()
           .eq('store_id', storeId)
           .order('created_at', ascending: false);
-
       setState(() {
         _products = (rows as List)
             .map((r) => Map<String, dynamic>.from(r as Map))
@@ -178,9 +259,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
         return null;
       }
     } catch (e) {
-      if (mounted) {
-        _showSnack('Интернет байланышын текшериңиз: $e', isError: true);
-      }
+      if (mounted) _showSnack('Интернет байланышын текшериңиз: $e', isError: true);
       return null;
     }
   }
@@ -206,8 +285,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Товарды өчүрүү', style: AppTextStyles.headingSmall),
-        content: Text('"$name" товарын өчүрөсүзбү?',
-            style: AppTextStyles.bodyMedium),
+        content: Text('"$name" товарын өчүрөсүзбү?', style: AppTextStyles.bodyMedium),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -215,8 +293,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child:
-                const Text('Ооба, өчүр', style: TextStyle(color: Colors.red)),
+            child: const Text('Ооба, өчүр', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -268,8 +345,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
               children: [
                 Center(
                   child: Container(
-                    width: 40,
-                    height: 4,
+                    width: 40, height: 4,
                     decoration: BoxDecoration(
                       color: AppColors.grey300,
                       borderRadius: BorderRadius.circular(2),
@@ -280,11 +356,8 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                 const Text('🏷️ Арзандатуу белгилөө',
                     style: AppTextStyles.headingSmall),
                 const SizedBox(height: 4),
-                Text(
-                  'Баштапкы баа: ${price.toStringAsFixed(0)} сом',
-                  style: AppTextStyles.bodyMedium
-                      .copyWith(color: AppColors.grey500),
-                ),
+                Text('Баштапкы баа: ${price.toStringAsFixed(0)} сом',
+                    style: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey500)),
                 const SizedBox(height: 20),
                 TextField(
                   controller: ctrl,
@@ -293,13 +366,10 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                   decoration: InputDecoration(
                     labelText: 'Арзандатуу пайызы (0–100)',
                     suffixText: '%',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide:
-                          const BorderSide(color: AppColors.primary, width: 2),
+                      borderSide: const BorderSide(color: AppColors.primary, width: 2),
                     ),
                   ),
                 ),
@@ -322,11 +392,9 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                             Text('$percent% арзандатуу',
                                 style: AppTextStyles.labelMedium
                                     .copyWith(color: AppColors.primary)),
-                            Text(
-                              '${discountedPrice!.toStringAsFixed(0)} сом',
-                              style: AppTextStyles.headingSmall
-                                  .copyWith(color: AppColors.error),
-                            ),
+                            Text('${discountedPrice!.toStringAsFixed(0)} сом',
+                                style: AppTextStyles.headingSmall
+                                    .copyWith(color: AppColors.error)),
                             Text(
                               '${(price - discountedPrice!).toStringAsFixed(0)} сомго арзандады',
                               style: AppTextStyles.labelSmall
@@ -356,8 +424,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                           },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
-                      disabledBackgroundColor:
-                          AppColors.primary.withValues(alpha: 0.4),
+                      disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.4),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14)),
                       elevation: 0,
@@ -443,8 +510,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
           children: [
             const Text('Менин товарларым', style: AppTextStyles.headingSmall),
             Text(widget.shopName,
-                style: AppTextStyles.labelSmall
-                    .copyWith(color: AppColors.grey500)),
+                style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey500)),
           ],
         ),
         actions: [
@@ -466,11 +532,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Row(
                 children: [
-                  _categoryChip(
-                      id: null,
-                      icon: '📦',
-                      name: 'Баары',
-                      count: _products.length),
+                  _categoryChip(id: null, icon: '📦', name: 'Баары', count: _products.length),
                   const SizedBox(width: 8),
                   ..._categories.where((cat) {
                     return _products.any((p) => p['category_id'] == cat['id']);
@@ -532,14 +594,10 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                           itemCount: filtered.length,
                           itemBuilder: (context, index) {
                             final p = filtered[index];
-                            final colors =
-                                List<String>.from(p['colors'] as List? ?? []);
-                            final sizes =
-                                List<String>.from(p['sizes'] as List? ?? []);
-                            final images =
-                                List<String>.from(p['images'] as List? ?? []);
-                            final imageUrl =
-                                images.isNotEmpty ? images.first : '';
+                            final colors = List<String>.from(p['colors'] as List? ?? []);
+                            final sizes  = List<String>.from(p['sizes']  as List? ?? []);
+                            final images = List<String>.from(p['images'] as List? ?? []);
+                            final imageUrl = images.isNotEmpty ? images.first : '';
 
                             return Container(
                               margin: const EdgeInsets.only(bottom: 12),
@@ -558,40 +616,31 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // ── Сүрөт (басканда арзандатуу sheet) ──
+                                  // ── Сүрөт ──
                                   GestureDetector(
                                     onTap: () => _showDiscountSheet(p),
                                     child: Stack(
                                       children: [
                                         SizedBox(
-                                          width: 80,
-                                          height: 80,
+                                          width: 80, height: 80,
                                           child: ClipRRect(
-                                            borderRadius:
-                                                BorderRadius.circular(10),
+                                            borderRadius: BorderRadius.circular(10),
                                             child: Image.network(
                                               imageUrl,
                                               fit: BoxFit.cover,
-                                              errorBuilder: (_, __, ___) =>
-                                                  _noImage(),
+                                              errorBuilder: (_, __, ___) => _noImage(),
                                             ),
                                           ),
                                         ),
-                                        if ((p['discount_percent'] as num? ??
-                                                0) >
-                                            0)
+                                        if ((p['discount_percent'] as num? ?? 0) > 0)
                                           Positioned(
-                                            top: 2,
-                                            left: 2,
+                                            top: 2, left: 2,
                                             child: Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                      horizontal: 5,
-                                                      vertical: 2),
+                                              padding: const EdgeInsets.symmetric(
+                                                  horizontal: 5, vertical: 2),
                                               decoration: BoxDecoration(
                                                 color: AppColors.error,
-                                                borderRadius:
-                                                    BorderRadius.circular(6),
+                                                borderRadius: BorderRadius.circular(6),
                                               ),
                                               child: Text(
                                                 '-${p['discount_percent']}%',
@@ -611,8 +660,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                                   // ── Маалымат ──
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           p['title'] as String? ?? '',
@@ -624,50 +672,39 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                                         Text(
                                           '${(p['price'] as num?)?.toStringAsFixed(0) ?? 0} сом',
                                           style: AppTextStyles.labelMedium
-                                              .copyWith(
-                                                  color: AppColors.primary),
+                                              .copyWith(color: AppColors.primary),
                                         ),
                                         const SizedBox(height: 2),
                                         Text(
-                                          _getCategoryName(
-                                              p['category_id'] as String? ??
-                                                  '1'),
+                                          _getCategoryName(p['category_id'] as String? ?? '1'),
                                           style: AppTextStyles.labelSmall
-                                              .copyWith(
-                                                  color: AppColors.grey500),
+                                              .copyWith(color: AppColors.grey500),
                                         ),
                                         const SizedBox(height: 2),
                                         Text(
                                           'Складда: ${p['in_stock'] ?? 0} дана',
-                                          style:
-                                              AppTextStyles.labelSmall.copyWith(
-                                            color:
-                                                (p['in_stock'] as int? ?? 0) > 0
-                                                    ? AppColors.success
-                                                    : AppColors.error,
+                                          style: AppTextStyles.labelSmall.copyWith(
+                                            color: (p['in_stock'] as int? ?? 0) > 0
+                                                ? AppColors.success
+                                                : AppColors.error,
                                           ),
                                         ),
                                         if (colors.isNotEmpty) ...[
                                           const SizedBox(height: 4),
                                           Row(
-                                            children:
-                                                colors.take(5).map((name) {
+                                            children: colors.take(5).map((name) {
                                               final c = _allColors.firstWhere(
                                                 (x) => x['name'] == name,
-                                                orElse: () =>
-                                                    {'hex': 0xFF888888},
+                                                orElse: () => {'hex': 0xFF888888},
                                               );
                                               return Container(
-                                                width: 14,
-                                                height: 14,
-                                                margin: const EdgeInsets.only(
-                                                    right: 4),
+                                                width: 14, height: 14,
+                                                margin: const EdgeInsets.only(right: 4),
                                                 decoration: BoxDecoration(
                                                   color: Color(c['hex'] as int),
                                                   shape: BoxShape.circle,
                                                   border: Border.all(
-                                                    color: Colors.grey
-                                                        .withValues(alpha: 0.3),
+                                                    color: Colors.grey.withValues(alpha: 0.3),
                                                   ),
                                                 ),
                                               );
@@ -677,10 +714,11 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                                         if (sizes.isNotEmpty) ...[
                                           const SizedBox(height: 4),
                                           Text(
-                                            'Размер: ${sizes.join(', ')}',
+                                            'Размер: ${sizes.take(3).join(', ')}${sizes.length > 3 ? ' +${sizes.length - 3}' : ''}',
                                             style: AppTextStyles.labelSmall
-                                                .copyWith(
-                                                    color: AppColors.grey500),
+                                                .copyWith(color: AppColors.grey500),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
                                           ),
                                         ],
                                       ],
@@ -691,18 +729,15 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                                   Column(
                                     children: [
                                       GestureDetector(
-                                        onTap: () =>
-                                            _showProductDialog(existing: p),
+                                        onTap: () => _showProductDialog(existing: p),
                                         child: Container(
                                           padding: const EdgeInsets.all(8),
                                           decoration: BoxDecoration(
                                             color: const Color(0xFFE0F2FE),
-                                            borderRadius:
-                                                BorderRadius.circular(8),
+                                            borderRadius: BorderRadius.circular(8),
                                           ),
                                           child: const Icon(Icons.edit,
-                                              size: 18,
-                                              color: Color(0xFF0369A1)),
+                                              size: 18, color: Color(0xFF0369A1)),
                                         ),
                                       ),
                                       const SizedBox(height: 8),
@@ -715,8 +750,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                                           padding: const EdgeInsets.all(8),
                                           decoration: BoxDecoration(
                                             color: const Color(0xFFFFEEEE),
-                                            borderRadius:
-                                                BorderRadius.circular(8),
+                                            borderRadius: BorderRadius.circular(8),
                                           ),
                                           child: const Icon(Icons.delete,
                                               size: 18, color: AppColors.error),
@@ -804,44 +838,68 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
   // ТОВАР ДИАЛОГУ
   // ══════════════════════════════════════════════
   Future<void> _showProductDialog({Map<String, dynamic>? existing}) async {
-    final nameCtrl = TextEditingController(text: existing?['title'] ?? '');
-    final priceCtrl =
-        TextEditingController(text: existing?['price']?.toString() ?? '');
-    final descCtrl =
-        TextEditingController(text: existing?['description'] ?? '');
-    final stockCtrl =
-        TextEditingController(text: existing?['in_stock']?.toString() ?? '');
+    final nameCtrl   = TextEditingController(text: existing?['title'] ?? '');
+    final priceCtrl  = TextEditingController(text: existing?['price']?.toString() ?? '');
+    final descCtrl   = TextEditingController(text: existing?['description'] ?? '');
+    final stockCtrl  = TextEditingController(text: existing?['in_stock']?.toString() ?? '');
     final extra1Ctrl = TextEditingController(text: existing?['extra1'] ?? '');
     final extra2Ctrl = TextEditingController(text: existing?['extra2'] ?? '');
     final extra3Ctrl = TextEditingController(text: existing?['extra3'] ?? '');
 
     String selectedCategory = existing?['category_id'] ?? '1';
     List<String> selectedColors = List<String>.from(existing?['colors'] ?? []);
-    List<String> selectedSizes = List<String>.from(existing?['sizes'] ?? []);
+    List<String> selectedSizes  = List<String>.from(existing?['sizes']  ?? []);
 
     Uint8List? imageBytes;
-    final existingImages =
-        List<String>.from(existing?['images'] as List? ?? []);
-    String existingImageUrl =
-        existingImages.isNotEmpty ? existingImages.first : '';
+    final existingImages    = List<String>.from(existing?['images'] as List? ?? []);
+    String existingImageUrl = existingImages.isNotEmpty ? existingImages.first : '';
     bool isUploading = false;
-    bool isLoading = false;
+    bool isLoading   = false;
     String uploadStatus = '';
 
-    const clothSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL'];
-    const shoeSizes = [
-      '36',
-      '37',
-      '38',
-      '39',
-      '40',
-      '41',
-      '42',
-      '43',
-      '44',
-      '45',
-      '46'
-    ];
+    // ── Категорияга жараша размер тизмеси ──
+    List<String> sizesForCategory(String catId) {
+      switch (catId) {
+        case '1':  return _allClothSizes;    // Жалпы кийим
+        case '2':  return _menClothSizes;    // Эркектер
+        case '3':  return _womenClothSizes;  // Аялдар
+        case '4':  return _kidsClothSizes;   // Балдар
+        case '5':  return _schoolSizes;      // Мектеп формасы
+        case '6':  return _seasonClothSizes; // Кышкы
+        case '7':  return _seasonClothSizes; // Жайкы
+        case '8':  return _seasonClothSizes; // Күзгү / Жазгы
+        case '9':  return _seasonClothSizes; // Спорт кийими
+        case '10': return _allShoesSizes;    // Бут кийим
+        case '15': return _fabricSizes;      // Кездеме
+        default:   return [];
+      }
+    }
+
+    String sizeLabelForCategory(String catId) {
+      switch (catId) {
+        case '4':  return '👶 Жаш / Размер тандаңыз';
+        case '5':  return '📏 Бой боюнча размер тандаңыз (см)';
+        case '10': return '👟 Бут кийим размери (балдар 16-35, чоңдор 36-47)';
+        case '15': return '🧵 Метраж тандаңыз';
+        case '2':  return '👔 Эркектер размери';
+        case '3':  return '👗 Аялдар размери';
+        default:   return '📏 Размерлер тандаңыз';
+      }
+    }
+
+    bool hasSizes(String catId) =>
+        ['1','2','3','4','5','6','7','8','9','10','15'].contains(catId);
+
+    bool hasColors(String catId) =>
+        ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15'].contains(catId);
+
+    bool hasTechFields(String catId) =>
+        ['16','17','18','19'].contains(catId);
+
+    bool hasBeautyFields(String catId) =>
+        ['25','26'].contains(catId);
+
+    bool hasAutoFields(String catId) => catId == '28';
 
     Future<void> pickImage(StateSetter setD) async {
       try {
@@ -866,17 +924,16 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
       barrierDismissible: false,
       builder: (_) => StatefulBuilder(
         builder: (ctx, setD) => Dialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           child: Container(
             constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.9,
+              maxHeight: MediaQuery.of(context).size.height * 0.92,
               maxWidth: 520,
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Башлык
+                // ── Башлык ──
                 Container(
                   padding: const EdgeInsets.all(18),
                   decoration: const BoxDecoration(
@@ -885,8 +942,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
-                    borderRadius:
-                        BorderRadius.vertical(top: Radius.circular(20)),
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                   ),
                   child: Row(
                     children: [
@@ -894,27 +950,25 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                       const SizedBox(width: 10),
                       Text(
                         existing == null ? 'Товар кошуу' : 'Товар өзгөртүү',
-                        style: AppTextStyles.headingSmall
-                            .copyWith(color: Colors.white),
+                        style: AppTextStyles.headingSmall.copyWith(color: Colors.white),
                       ),
                       const Spacer(),
                       GestureDetector(
-                        onTap: () {
-                          if (!isLoading) Navigator.pop(ctx);
-                        },
+                        onTap: () { if (!isLoading) Navigator.pop(ctx); },
                         child: const Icon(Icons.close, color: Colors.white),
                       ),
                     ],
                   ),
                 ),
 
-                // Форма
+                // ── Форма ──
                 Flexible(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(18),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+
                         // 1. СҮРӨТ
                         _label('🖼️ Товардын сүрөтү *'),
                         GestureDetector(
@@ -926,8 +980,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                               color: const Color(0xFFF7F7F7),
                               borderRadius: BorderRadius.circular(14),
                               border: Border.all(
-                                color: imageBytes != null ||
-                                        existingImageUrl.isNotEmpty
+                                color: imageBytes != null || existingImageUrl.isNotEmpty
                                     ? AppColors.primary
                                     : AppColors.grey300,
                                 width: 1.5,
@@ -936,8 +989,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                             child: imageBytes != null
                                 ? ClipRRect(
                                     borderRadius: BorderRadius.circular(13),
-                                    child: Image.memory(imageBytes!,
-                                        fit: BoxFit.cover),
+                                    child: Image.memory(imageBytes!, fit: BoxFit.cover),
                                   )
                                 : existingImageUrl.isNotEmpty
                                     ? ClipRRect(
@@ -945,8 +997,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                                         child: Image.network(
                                           existingImageUrl,
                                           fit: BoxFit.cover,
-                                          errorBuilder: (_, __, ___) =>
-                                              _uploadPlaceholder(),
+                                          errorBuilder: (_, __, ___) => _uploadPlaceholder(),
                                         ),
                                       )
                                     : _uploadPlaceholder(),
@@ -954,8 +1005,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                         ),
                         if (isUploading) ...[
                           const SizedBox(height: 8),
-                          const LinearProgressIndicator(
-                              color: AppColors.primary),
+                          const LinearProgressIndicator(color: AppColors.primary),
                           const SizedBox(height: 4),
                           Text(uploadStatus,
                               style: AppTextStyles.labelSmall
@@ -965,12 +1015,12 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
 
                         // 2. АТЫ
                         _label('📝 Товардын аты *'),
-                        _field(nameCtrl, 'Мисалы: Кара футболка'),
+                        _field(nameCtrl, 'Мисалы: Кара жибек көйнөк'),
                         const SizedBox(height: 14),
 
                         // 3. БААСЫ
                         _label('💰 Баасы (сом) *'),
-                        _field(priceCtrl, 'Мисалы: 500',
+                        _field(priceCtrl, 'Мисалы: 1200',
                             type: TextInputType.number),
                         const SizedBox(height: 14),
 
@@ -1001,7 +1051,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                                   setD(() {
                                     selectedCategory = val;
                                     selectedColors = [];
-                                    selectedSizes = [];
+                                    selectedSizes  = [];
                                   });
                                 }
                               },
@@ -1010,34 +1060,63 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                         ),
                         const SizedBox(height: 14),
 
-                        if (selectedCategory == '1') ...[
+                        // ── ТҮСТӨР (кийим / аксессуар категориялары) ──
+                        if (hasColors(selectedCategory)) ...[
                           _label('🎨 Түстөр (каалоо боюнча)'),
                           _colorPicker(selectedColors, setD),
                           const SizedBox(height: 14),
-                          _label('📏 Размерлер (каалоо боюнча)'),
-                          _sizePicker(clothSizes, selectedSizes, setD),
-                        ],
-                        if (selectedCategory == '2') ...[
-                          _label('🎨 Түстөр (каалоо боюнча)'),
-                          _colorPicker(selectedColors, setD),
-                          const SizedBox(height: 14),
-                          _label('📏 Размерлер (каалоо боюнча)'),
-                          _sizePicker(shoeSizes, selectedSizes, setD),
-                        ],
-                        if (selectedCategory == '4') ...[
-                          _label('🏷️ Бренд (каалоо боюнча)'),
-                          _field(extra1Ctrl, 'Мисалы: Samsung, Apple'),
-                          const SizedBox(height: 14),
-                          _label('📋 Модель (каалоо боюнча)'),
-                          _field(extra2Ctrl, 'Мисалы: Galaxy S24'),
                         ],
 
-                        const SizedBox(height: 14),
+                        // ── РАЗМЕРЛЕР (кийим / бут кийим / мата) ──
+                        if (hasSizes(selectedCategory)) ...[
+                          _label(sizeLabelForCategory(selectedCategory)),
+                          _sizePicker(
+                              sizesForCategory(selectedCategory),
+                              selectedSizes,
+                              setD),
+                          const SizedBox(height: 14),
+                        ],
+
+                        // ── ЭЛЕКТРОНИКА / ТЕХНИКА: бренд + модель + кошумча ──
+                        if (hasTechFields(selectedCategory)) ...[
+                          _label('🏷️ Бренд'),
+                          _field(extra1Ctrl, 'Мисалы: Samsung, Apple, LG'),
+                          const SizedBox(height: 14),
+                          _label('📋 Модель'),
+                          _field(extra2Ctrl, 'Мисалы: Galaxy S24, iPhone 15'),
+                          const SizedBox(height: 14),
+                          _label('🔌 Техникалык мүнөздөмө'),
+                          _field(extra3Ctrl, 'Мисалы: 256GB, 4K, 2000Вт'),
+                          const SizedBox(height: 14),
+                        ],
+
+                        // ── СУЛУУЛУК / ГИГИЕНА: бренд + көлөм ──
+                        if (hasBeautyFields(selectedCategory)) ...[
+                          _label('🏷️ Бренд'),
+                          _field(extra1Ctrl, 'Мисалы: Nivea, L\'Oreal'),
+                          const SizedBox(height: 14),
+                          _label('🧴 Көлөмү / Салмагы'),
+                          _field(extra2Ctrl, 'Мисалы: 200мл, 50г'),
+                          const SizedBox(height: 14),
+                        ],
+
+                        // ── АВТОТОВАР: бренд + модель машина ──
+                        if (hasAutoFields(selectedCategory)) ...[
+                          _label('🏷️ Бренд'),
+                          _field(extra1Ctrl, 'Мисалы: Bosch, Michelin'),
+                          const SizedBox(height: 14),
+                          _label('🚗 Кайсы машинага туура келет'),
+                          _field(extra2Ctrl, 'Мисалы: Toyota Camry, Kia Cerato'),
+                          const SizedBox(height: 14),
+                        ],
+
+                        // 5. СКЛАДДАГЫ САНЫ
                         _label('📦 Складдагы саны'),
-                        _field(stockCtrl, 'Мисалы: 10',
+                        _field(stockCtrl, 'Мисалы: 50',
                             type: TextInputType.number),
                         const SizedBox(height: 14),
 
+                        // 6. СҮРӨТТӨМӨ
                         _label('📄 Сүрөттөмө'),
                         TextField(
                           controller: descCtrl,
@@ -1070,7 +1149,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                         ),
                         const SizedBox(height: 18),
 
-                        // САКТОО БАСКЫЧЫ
+                        // ── САКТОО БАСКЫЧЫ ──
                         SizedBox(
                           width: double.infinity,
                           height: 52,
@@ -1078,28 +1157,23 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                             onPressed: isLoading
                                 ? null
                                 : () async {
-                                    final name = nameCtrl.text.trim();
-                                    final price =
-                                        double.tryParse(priceCtrl.text.trim());
+                                    final name  = nameCtrl.text.trim();
+                                    final price = double.tryParse(priceCtrl.text.trim());
                                     if (name.isEmpty) {
-                                      _showSnack('Товардын атын жазыңыз!',
-                                          isError: true);
+                                      _showSnack('Товардын атын жазыңыз!', isError: true);
                                       return;
                                     }
                                     if (price == null || price <= 0) {
-                                      _showSnack('Туура баа жазыңыз!',
-                                          isError: true);
+                                      _showSnack('Туура баа жазыңыз!', isError: true);
                                       return;
                                     }
-                                    if (imageBytes == null &&
-                                        existingImageUrl.isEmpty) {
-                                      _showSnack('Сүрөт тандаңыз!',
-                                          isError: true);
+                                    if (imageBytes == null && existingImageUrl.isEmpty) {
+                                      _showSnack('Сүрөт тандаңыз!', isError: true);
                                       return;
                                     }
 
                                     setD(() {
-                                      isLoading = true;
+                                      isLoading   = true;
                                       uploadStatus = '';
                                     });
 
@@ -1108,20 +1182,16 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
 
                                       if (imageBytes != null) {
                                         setD(() {
-                                          isUploading = true;
-                                          uploadStatus =
-                                              'Сүрөт жүктөлүп жатат...';
+                                          isUploading  = true;
+                                          uploadStatus = 'Сүрөт жүктөлүп жатат...';
                                         });
-
                                         final compressed =
                                             await compressImage(imageBytes!);
                                         final uploaded =
-                                            await _uploadToCloudinary(
-                                                compressed);
-
+                                            await _uploadToCloudinary(compressed);
                                         if (uploaded == null) {
                                           setD(() {
-                                            isLoading = false;
+                                            isLoading   = false;
                                             isUploading = false;
                                             uploadStatus = '';
                                           });
@@ -1129,33 +1199,29 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                                         }
                                         imageUrl = uploaded;
                                         setD(() {
-                                          isUploading = false;
+                                          isUploading  = false;
                                           uploadStatus = '✅ Сүрөт жүктөлдү';
                                         });
                                       }
 
-                                      setD(() => uploadStatus =
-                                          'Товар сакталып жатат...');
+                                      setD(() => uploadStatus = 'Товар сакталып жатат...');
 
-                                      final storeId =
-                                          await _getOrCreateStoreId();
+                                      final storeId = await _getOrCreateStoreId();
 
                                       final data = {
-                                        'title': name,
-                                        'price': price,
+                                        'title':       name,
+                                        'price':       price,
                                         'category_id': selectedCategory,
-                                        'store_id': storeId,
-                                        'images': [imageUrl],
-                                        'in_stock': int.tryParse(
-                                                stockCtrl.text.trim()) ??
-                                            0,
+                                        'store_id':    storeId,
+                                        'images':      [imageUrl],
+                                        'in_stock':    int.tryParse(stockCtrl.text.trim()) ?? 0,
                                         'description': descCtrl.text.trim(),
-                                        'colors': selectedColors,
-                                        'sizes': selectedSizes,
-                                        'extra1': extra1Ctrl.text.trim(),
-                                        'extra2': extra2Ctrl.text.trim(),
-                                        'extra3': extra3Ctrl.text.trim(),
-                                        'rating': existing?['rating'] ?? 0.0,
+                                        'colors':      selectedColors,
+                                        'sizes':       selectedSizes,
+                                        'extra1':      extra1Ctrl.text.trim(),
+                                        'extra2':      extra2Ctrl.text.trim(),
+                                        'extra3':      extra3Ctrl.text.trim(),
+                                        'rating':      existing?['rating'] ?? 0.0,
                                       };
 
                                       if (existing != null) {
@@ -1164,9 +1230,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                                             .update(data)
                                             .eq('id', existing['id'] as String);
                                       } else {
-                                        await supabase
-                                            .from('products')
-                                            .insert(data);
+                                        await supabase.from('products').insert(data);
                                       }
 
                                       if (ctx.mounted) Navigator.pop(ctx);
@@ -1176,12 +1240,11 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                                       _loadProducts();
                                     } catch (e) {
                                       setD(() {
-                                        isLoading = false;
+                                        isLoading   = false;
                                         isUploading = false;
                                         uploadStatus = '';
                                       });
-                                      _showSnack('Ката чыкты: $e',
-                                          isError: true);
+                                      _showSnack('Ката чыкты: $e', isError: true);
                                     }
                                   },
                             style: ElevatedButton.styleFrom(
@@ -1194,8 +1257,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                             ),
                             child: isLoading
                                 ? const SizedBox(
-                                    width: 24,
-                                    height: 24,
+                                    width: 24, height: 24,
                                     child: CircularProgressIndicator(
                                         color: Colors.white, strokeWidth: 2),
                                   )
@@ -1226,8 +1288,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
   Widget _label(String text) => Padding(
         padding: const EdgeInsets.only(bottom: 6),
         child: Text(text,
-            style:
-                AppTextStyles.labelMedium.copyWith(color: AppColors.grey600)),
+            style: AppTextStyles.labelMedium.copyWith(color: AppColors.grey600)),
       );
 
   Widget _field(TextEditingController ctrl, String hint,
@@ -1257,8 +1318,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
       );
 
   Widget _noImage() => Container(
-        width: 80,
-        height: 80,
+        width: 80, height: 80,
         decoration: BoxDecoration(
           color: const Color(0xFFF7F7F7),
           borderRadius: BorderRadius.circular(10),
@@ -1273,12 +1333,10 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
               size: 40, color: AppColors.grey400),
           const SizedBox(height: 8),
           Text('Сүрөт тандоо үчүн басыңыз',
-              style:
-                  AppTextStyles.labelSmall.copyWith(color: AppColors.grey400)),
+              style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey400)),
           const SizedBox(height: 4),
           Text('Галереядан тандалат',
-              style:
-                  AppTextStyles.labelSmall.copyWith(color: AppColors.grey300)),
+              style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey300)),
         ],
       );
 
@@ -1313,13 +1371,12 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: 14,
-                  height: 14,
+                  width: 14, height: 14,
                   decoration: BoxDecoration(
                     color: Color(c['hex'] as int),
                     shape: BoxShape.circle,
-                    border:
-                        Border.all(color: Colors.grey.withValues(alpha: 0.3)),
+                    border: Border.all(
+                        color: Colors.grey.withValues(alpha: 0.3)),
                   ),
                 ),
                 const SizedBox(width: 6),
@@ -1327,8 +1384,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                   c['name'] as String,
                   style: AppTextStyles.labelSmall.copyWith(
                     color: isSelected ? AppColors.primary : AppColors.grey600,
-                    fontWeight:
-                        isSelected ? FontWeight.w600 : FontWeight.normal,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                   ),
                 ),
                 if (isSelected) ...[
@@ -1361,10 +1417,13 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
             });
           },
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               color: isSelected ? AppColors.primary : const Color(0xFFF7F7F7),
               borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: isSelected ? AppColors.primary : Colors.transparent,
+              ),
             ),
             child: Text(
               s,
