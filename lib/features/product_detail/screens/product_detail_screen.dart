@@ -1193,6 +1193,7 @@ class _NavigationGuideSheetState extends State<_NavigationGuideSheet> {
 }
 
 // ══════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 // СҮРӨТТҮ ТОЛУК ЭКРАНДА КӨРСӨТҮҮ (zoom/pan + Hero animation)
 // ══════════════════════════════════════════════════════
 class _FullscreenImageScreen extends StatelessWidget {
@@ -1206,53 +1207,54 @@ class _FullscreenImageScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          Center(
-            child: Hero(
-              tag: heroTag,
-              child: InteractiveViewer(
-                minScale: 1,
-                maxScale: 4,
+          // ── Сүрөт — экранды толук жабат ──
+          SizedBox(
+            width: screenSize.width,
+            height: screenSize.height,
+            child: InteractiveViewer(
+              minScale: 0.8,
+              maxScale: 5.0,
+              child: Hero(
+                tag: heroTag,
                 child: CachedNetworkImage(
                   imageUrl: imageUrl,
+                  width: screenSize.width,
+                  height: screenSize.height,
                   fit: BoxFit.contain,
-                  fadeInDuration: const Duration(milliseconds: 150),
                   placeholder: (_, __) => const Center(
-                    child: CircularProgressIndicator(color: Colors.white54),
+                    child: CircularProgressIndicator(color: Colors.white),
                   ),
-                  errorWidget: (_, __, ___) => const Icon(
-                    Icons.image_not_supported,
-                    size: 80,
-                    color: Colors.white54,
+                  errorWidget: (_, __, ___) => const Center(
+                    child: Icon(
+                      Icons.image_not_supported_outlined,
+                      color: Colors.white54,
+                      size: 64,
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(8),
-                child: Align(
-                  alignment: Alignment.topLeft,
-                  child: GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.4),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.close,
-                          color: Colors.white, size: 26),
-                    ),
+
+          // ── Жабуу баскычы ──
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.circular(20),
                   ),
+                  child: const Icon(Icons.close, color: Colors.white, size: 24),
                 ),
               ),
             ),

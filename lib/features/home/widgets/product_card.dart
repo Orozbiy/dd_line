@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../core/utils/favorites_manager.dart';
 import '../../../data/models/product_model.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class ProductCard extends StatefulWidget {
   final ProductModel product;
@@ -233,8 +234,8 @@ class _ProductCardState extends State<ProductCard>
                             widget.product.name,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 13,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 16,
                               fontWeight: FontWeight.w600,
                               color: Colors.black87,
                               height: 1.3,
@@ -245,8 +246,8 @@ class _ProductCardState extends State<ProductCard>
                           if (hasDiscount) ...[
                             Text(
                               '${widget.product.discountedPrice!.toStringAsFixed(0)} сом',
-                              style: const TextStyle(
-                                fontSize: 15,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 16,
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.error,
                               ),
@@ -255,8 +256,8 @@ class _ProductCardState extends State<ProductCard>
                             ),
                             Text(
                               '${widget.product.price.toStringAsFixed(0)} сом',
-                              style: const TextStyle(
-                                fontSize: 11,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 12,
                                 fontWeight: FontWeight.w400,
                                 color: AppColors.grey400,
                                 decoration: TextDecoration.lineThrough,
@@ -267,8 +268,8 @@ class _ProductCardState extends State<ProductCard>
                           ] else
                             Text(
                               '${widget.product.price.toStringAsFixed(0)} сом',
-                              style: const TextStyle(
-                                fontSize: 15,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 16,
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.primary,
                               ),
