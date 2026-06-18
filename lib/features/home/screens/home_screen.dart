@@ -44,7 +44,6 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _mapLoaded = false;
   DateTime? _lastTapTime;
 
-  // ── ✅ ЖАҢЫ: Избранный санагычы ──
   int _favCount = 0;
 
   // ── Пагинация ──
@@ -81,20 +80,16 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadProducts();
-
-    // ── ✅ ЖАҢЫ: favorites listener ──
     _favCount = fav.count;
     fav.addListener(_onFavChanged);
   }
 
-  // ── ✅ ЖАҢЫ: badge жаңыртуу callback ──
   void _onFavChanged() {
     if (mounted) setState(() => _favCount = fav.count);
   }
 
   @override
   void dispose() {
-    // ── ✅ ЖАҢЫ: listener алып салуу (memory leak жок) ──
     fav.removeListener(_onFavChanged);
     _debounce?.cancel();
     super.dispose();
@@ -450,6 +445,157 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ══════════════════════════════════════════════════════════════════
+  // BOTTOM NAV — build()тен ТЫШКАРЫ
+  // ══════════════════════════════════════════════════════════════════
+
+  Widget _buildBottomNav() {
+    return Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.topCenter,
+      children: [
+        BottomNavigationBar(
+          currentIndex: _currentTab,
+          onTap: (i) {
+            if (i == 2) return; // камера орну — баспайт
+            if (i == 3) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const FavoritesScreen()),
+              ).then((_) => setState(() => _favCount = fav.count));
+              return;
+            }
+            if (i == 4) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SettingsScreen()),
+              );
+              return;
+            }
+            setState(() {
+              _currentTab = i;
+              if (i == 1) _mapLoaded = true;
+            });
+          },
+          selectedItemColor: AppColors.primary,
+          unselectedItemColor: AppColors.grey400,
+          backgroundColor: Colors.white,
+          elevation: 12,
+          type: BottomNavigationBarType.fixed,
+          showSelectedLabels: false,
+          showUnselectedLabels: false,
+          items: [
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.home_outlined),
+              activeIcon: Icon(Icons.home_rounded),
+              label: '',
+            ),
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.storefront_outlined),
+              activeIcon: Icon(Icons.storefront_rounded),
+              label: '',
+            ),
+            // ── Камера үчүн бош орун ──
+            const BottomNavigationBarItem(
+              icon: SizedBox(width: 56),
+              label: '',
+            ),
+            BottomNavigationBarItem(
+              label: '',
+              icon: FavBadge(count: _favCount, active: false),
+              activeIcon: FavBadge(count: _favCount, active: true),
+            ),
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.settings_outlined),
+              activeIcon: Icon(Icons.settings_rounded),
+              label: '',
+            ),
+          ],
+        ),
+
+        // ── Чоң камера кнопкасы ──
+        Positioned(
+          top: -24,
+          child: GestureDetector(
+            onTap: () {
+              showDialog(
+                context: context,
+                builder: (_) => AlertDialog(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 64,
+                        height: 64,
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [Color(0xFFD97706), Color(0xFFEF4444)],
+                          ),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.camera_alt_rounded,
+                            color: Colors.white, size: 30),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Издөө камерасы',
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Жакында кошулат! 🚀\nТовардын сүрөтүн тартып издей аласыз.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey, height: 1.5),
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    Center(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Жарайт',
+                            style: TextStyle(
+                                color: Color(0xFFD97706),
+                                fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+            child: Container(
+              width: 62,
+              height: 62,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFD97706), Color(0xFFEF4444)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 3),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFD97706).withValues(alpha: 0.45),
+                    blurRadius: 14,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: const Icon(Icons.camera_alt_rounded,
+                  color: Colors.white, size: 28),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════
   // BUILD
   // ══════════════════════════════════════════════════════════════════
 
@@ -475,63 +621,7 @@ class _HomeScreenState extends State<HomeScreen> {
             )
           : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-
-      // ══════════════════════════════════════════════
-      // ✅ ЖАҢЫ: BottomNavigationBar — Избранный badge
-      // ══════════════════════════════════════════════
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentTab,
-        onTap: (i) {
-          if (i == 2) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const FavoritesScreen()),
-            ).then((_) => setState(() => _favCount = fav.count));
-            return;
-          }
-          if (i == 3) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const SettingsScreen()),
-            );
-            return;
-          }
-          setState(() {
-            _currentTab = i;
-            if (i == 1) _mapLoaded = true;
-          });
-        },
-        selectedItemColor: AppColors.primary,
-        unselectedItemColor: AppColors.grey400,
-        backgroundColor: Colors.white,
-        elevation: 12,
-        type: BottomNavigationBarType.fixed,
-        showSelectedLabels: false,
-        showUnselectedLabels: false,
-        items: [
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home_rounded),
-            label: '',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.storefront_outlined),
-            activeIcon: Icon(Icons.storefront_rounded),
-            label: '',
-          ),
-          BottomNavigationBarItem(
-            label: '',
-            icon: FavBadge(count: _favCount, active: false),
-            activeIcon: FavBadge(count: _favCount, active: true),
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.settings_outlined),
-            activeIcon: Icon(Icons.settings_rounded),
-            label: '',
-          ),
-        ],
-      ),
-
+      bottomNavigationBar: _buildBottomNav(),
       body: Stack(
         children: [
           // ── TAB 0: Башкы ──
