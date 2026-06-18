@@ -2,14 +2,11 @@ import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
 
-/// WhatsApp сымал: басып кармап жаздыруу, өйдө сүйрөп жокко чыгаруу.
-///
-/// `onRecorded(path, durationSeconds)` — жаздыруу ийгиликтүү бүтсө чакырылат.
-/// `onCancel()` — колдонуучу swipe-to-cancel кылса чакырылат.
 class VoiceRecordButton extends StatefulWidget {
   final void Function(String path, int durationSeconds) onRecorded;
   final VoidCallback? onCancel;
@@ -33,10 +30,10 @@ class _VoiceRecordButtonState extends State<VoiceRecordButton> {
 
   bool _isRecording = false;
   bool _isCancelling = false;
+  bool _permissionDenied = false; // ← жаңы: permission жок болсо UI кармабайт
   Duration _elapsed = Duration.zero;
   Timer? _timer;
 
-  // Swipe-to-cancel: горизонталдык жылдыруу аралыгы
   double _dragX = 0;
   static const double _cancelThreshold = -80;
 
@@ -47,25 +44,77 @@ class _VoiceRecordButtonState extends State<VoiceRecordButton> {
     super.dispose();
   }
 
-  Future<void> _startRecording() async {
-    final hasPermission = await _recorder.hasPermission();
-    if (!hasPermission) {
+  // ── УРУКСАТ ТЕКШЕРҮҮ — permission_handler аркылуу ──
+  Future<bool> _checkAndRequestPermission() async {
+    var status = await Permission.microphone.status;
+
+    if (status.isGranted) return true;
+
+    if (status.isPermanentlyDenied) {
+      // Системалык диалог чыкпайт — Жөндөөлөргө жиберебиз
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-                'Микрофонго уруксат бериңиз (Жөндөөлөр → Тиркемелер).'),
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        _showPermissionDialog();
       }
-      return;
+      return false;
     }
 
-    final dir = await _getTempDir();
-    final path =
-        '$dir/voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
+    // Биринчи жолу же denied — суранабыз
+    status = await Permission.microphone.request();
+
+    if (status.isGranted) return true;
+
+    if (status.isPermanentlyDenied && mounted) {
+      _showPermissionDialog();
+    } else if (!status.isGranted && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Үн жаздыруу үчүн микрофонго уруксат бериңиз'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+    return false;
+  }
+
+  void _showPermissionDialog() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Микрофон уруксаты'),
+        content: const Text(
+          'Үн жаздыруу үчүн микрофонго уруксат керек.\n'
+          'Жөндөөлөр → Тиркемелер → DD Online → Уруксаттар',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Жок'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              openAppSettings(); // permission_handler
+            },
+            child: const Text('Жөндөөлөргө өтүү'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _startRecording() async {
+    // ── МАСЕЛЕ 1 ЖЕТИШТИРилди: уруксат жок болсо _permissionDenied = true ──
+    // Ошондо onLongPressEnd _stopRecording чакырбайт
+    final granted = await _checkAndRequestPermission();
+    if (!granted) {
+      setState(() => _permissionDenied = true);
+      return;
+    }
+    setState(() => _permissionDenied = false);
+
+    final dir = await getTemporaryDirectory();
+    final path = '${dir.path}/voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
 
     await _recorder.start(
       const RecordConfig(
@@ -86,16 +135,18 @@ class _VoiceRecordButtonState extends State<VoiceRecordButton> {
     widget.onRecordingStart?.call();
 
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      setState(() => _elapsed += const Duration(seconds: 1));
+      if (mounted) setState(() => _elapsed += const Duration(seconds: 1));
     });
   }
 
-  Future<String> _getTempDir() async {
-    final dir = await getTemporaryDirectory();
-    return dir.path;
-  }
-
   Future<void> _stopRecording({required bool cancelled}) async {
+    // ── МАСЕЛЕ 2 ЖЕТИШТИРилди: уруксат жок болсо токто ──
+    if (_permissionDenied) {
+      setState(() => _permissionDenied = false);
+      return;
+    }
+    if (!_isRecording) return;
+
     _timer?.cancel();
     _timer = null;
 
@@ -128,13 +179,23 @@ class _VoiceRecordButtonState extends State<VoiceRecordButton> {
   Widget build(BuildContext context) {
     if (!_isRecording) {
       return GestureDetector(
-        onLongPressStart: (_) => _startRecording(),
-        onLongPressEnd: (_) => _stopRecording(cancelled: _isCancelling),
+        onLongPressStart: (_) {
+          setState(() => _permissionDenied = false);
+          _startRecording();
+        },
+        onLongPressEnd: (_) {
+          if (!_permissionDenied) {
+            _stopRecording(cancelled: _isCancelling);
+          }
+          setState(() => _permissionDenied = false);
+        },
         onLongPressMoveUpdate: (details) {
-          setState(() {
-            _dragX = details.offsetFromOrigin.dx;
-            _isCancelling = _dragX < _cancelThreshold;
-          });
+          if (_isRecording) {
+            setState(() {
+              _dragX = details.offsetFromOrigin.dx;
+              _isCancelling = _dragX < _cancelThreshold;
+            });
+          }
         },
         child: Container(
           width: 44,
@@ -148,7 +209,6 @@ class _VoiceRecordButtonState extends State<VoiceRecordButton> {
       );
     }
 
-    // ── Жаздыруу учурундагы UI: таймер + "сүйрөп жокко чыгаруу" көрсөтмөсү ──
     return GestureDetector(
       onLongPressEnd: (_) => _stopRecording(cancelled: _isCancelling),
       onLongPressMoveUpdate: (details) {
@@ -169,7 +229,6 @@ class _VoiceRecordButtonState extends State<VoiceRecordButton> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // ── Жаздыруу индикатору (кызыл чекит) ──
             _BlinkingDot(active: !_isCancelling),
             const SizedBox(width: 8),
             Text(
@@ -199,7 +258,6 @@ class _VoiceRecordButtonState extends State<VoiceRecordButton> {
   }
 }
 
-// ── Жаздыруу учурунда кызыл чекит жанып-өчүп туруу ──
 class _BlinkingDot extends StatefulWidget {
   final bool active;
   const _BlinkingDot({required this.active});

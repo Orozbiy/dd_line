@@ -11,6 +11,8 @@ import '../../chat/services/chat_service.dart';
 import '../widgets/review_section.dart';
 import '../widgets/share_widget.dart';
 import '../../cart/screens/cart_screen.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../../../core/utils/image_utils.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final ProductModel product;
@@ -29,28 +31,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   String selectedSize = '';
 
   late ProductModel _product;
-  String? _sellerUid; // stores.owner_id
-  String? _storeId; // stores.id
+  String? _sellerUid;
+  String? _storeId;
   String _sellerName = '';
   String _shopName = '';
   String _containerNumber = '';
+  String _workStart = '';
+  String _workEnd = '';
+  String _workDays = '';
   List<ProductModel> _similarProducts = [];
-
-  // Категориялар статикалык бойдон калат (CategoryModel'ден алынса да болот)
-  static const _categoryNames = {
-    '1': 'Кийим-кече',
-    '2': 'Бут кийим',
-    '3': 'Аксессуарлар',
-    '4': 'Электроника',
-    '5': 'Үй буюмдар',
-    '6': 'Спорт',
-    '7': 'Балдар',
-    '8': 'Сулуулук',
-    '9': 'Азык-түлүк',
-    '10': 'Автотовар',
-    '11': 'Китептер',
-    '12': 'Оюнчуктар',
-  };
 
   @override
   void initState() {
@@ -59,7 +48,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     _loadFullProductData();
   }
 
-  /// Товар + дүкөн (stores) маалыматын Supabase'тен жаңыртуу.
   Future<void> _loadFullProductData() async {
     try {
       final data = await supabase
@@ -77,14 +65,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             _storeId = storeData['id'] as String?;
             _sellerUid = storeData['owner_id'] as String?;
             _shopName = storeData['store_name'] as String? ?? '';
-            // "Контейнер номери" катары дүкөндүн районун көрсөтөбүз
             _containerNumber = [
               storeData['market'] as String? ?? '',
               storeData['district'] as String? ?? '',
             ].where((s) => s.isNotEmpty).join(', ');
+            _workStart = storeData['work_start'] as String? ?? '';
+            _workEnd = storeData['work_end'] as String? ?? '';
+            _workDays = storeData['work_days'] as String? ?? '';
           });
 
-          // Сатуучунун (profiles) атын алуу
           if (_sellerUid != null) {
             try {
               final profile = await supabase
@@ -108,7 +97,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     }
   }
 
-  /// Окшош товарларды category_id боюнча жүктөө.
   Future<void> _loadSimilarProducts() async {
     if (_product.category == null || _product.category!.isEmpty) return;
     try {
@@ -131,11 +119,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     }
   }
 
-  // ══════════════════════════════════════════════════════
-  // КАРТА НАВИГАЦИЯ — 2ГИС bottom sheet
-  // ══════════════════════════════════════════════════════
   Future<void> _openMapNavigation() async {
-    // Уруксат + GPS
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
@@ -154,8 +138,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       await Geolocator.openLocationSettings();
       return;
     }
-
-    // Алгач _product'тогу координатты колдонобуз (эгер бар болсо)
 
     double? sellerLat = _product.latitude;
     double? sellerLng = _product.longitude;
@@ -251,12 +233,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         productId: _product.id,
       );
       if (!mounted) return;
+
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => ChatScreen(
             chatId: chatId,
             sellerName: _shopName.isNotEmpty ? _shopName : _sellerName,
+            productId: _product.id,
             productName: _product.name,
             productImage: _product.imageUrl,
             isSeller: false,
@@ -275,8 +259,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     }
   }
 
-  
-
   void _showSnack(String msg) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -287,6 +269,21 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
+  }
+
+  bool _isOpenNow() {
+    if (_workStart.isEmpty || _workEnd.isEmpty) return false;
+    final now = TimeOfDay.now();
+    TimeOfDay parse(String t) {
+      final p = t.split(':');
+      return TimeOfDay(
+          hour: int.tryParse(p[0]) ?? 0, minute: int.tryParse(p[1]) ?? 0);
+    }
+
+    final s = parse(_workStart);
+    final e = parse(_workEnd);
+    final nowMin = now.hour * 60 + now.minute;
+    return nowMin >= s.hour * 60 + s.minute && nowMin < e.hour * 60 + e.minute;
   }
 
   Widget _buildPriceSection() {
@@ -424,10 +421,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         PageRouteBuilder(
                           opaque: false,
                           barrierColor: Colors.black,
-                          transitionDuration:
-                              const Duration(milliseconds: 250),
-                          pageBuilder: (_, __, ___) =>
-                              _FullscreenImageScreen(
+                          transitionDuration: const Duration(milliseconds: 250),
+                          pageBuilder: (_, __, ___) => _FullscreenImageScreen(
                             imageUrl: _product.imageUrl,
                             heroTag: 'product_image_${_product.id}',
                           ),
@@ -435,10 +430,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                       child: Hero(
                         tag: 'product_image_${_product.id}',
-                        child: Image.network(
-                          _product.imageUrl,
+                        child: CachedNetworkImage(
+                          imageUrl:
+                              toCloudinaryThumb(_product.imageUrl, width: 800),
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
+                          fadeInDuration: const Duration(milliseconds: 150),
+                          placeholder: (_, __) =>
+                              Container(color: AppColors.grey100),
+                          errorWidget: (_, __, ___) => Container(
                             color: AppColors.grey100,
                             child: const Icon(Icons.image_not_supported,
                                 size: 80, color: AppColors.grey300),
@@ -477,22 +476,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             const SizedBox(height: 8),
                             Row(
                               children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 10, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primary
-                                        .withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Text(
-                                    _categoryNames[_product.category] ??
-                                        'Башка',
-                                    style: AppTextStyles.labelSmall
-                                        .copyWith(color: AppColors.primary),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
                                 if ((_product.rating ?? 0) > 0) ...[
                                   const Icon(Icons.star_rounded,
                                       color: Colors.amber, size: 16),
@@ -630,13 +613,49 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   Icons.person_outline, 'Сатуучу', _sellerName),
                               const SizedBox(height: 8),
                             ],
-                            if (_containerNumber.isNotEmpty)
+                            if (_containerNumber.isNotEmpty) ...[
                               _infoRow(
                                 Icons.location_on_outlined,
                                 'Жайгашкан жери',
                                 _containerNumber,
                                 valueColor: AppColors.primary,
                               ),
+                            ],
+                            if (_workStart.isNotEmpty &&
+                                _workEnd.isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Container(
+                                    width: 8,
+                                    height: 8,
+                                    decoration: BoxDecoration(
+                                      color: _isOpenNow()
+                                          ? const Color(0xFF10B981)
+                                          : const Color(0xFFF87171),
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    _isOpenNow() ? 'Ачык' : 'Жабык',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: _isOpenNow()
+                                          ? const Color(0xFF10B981)
+                                          : const Color(0xFFF87171),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '·  ${_workDays.isNotEmpty ? "$_workDays  " : ""}$_workStart — $_workEnd',
+                                    style: const TextStyle(
+                                        fontSize: 12, color: Color(0xFF6B7280)),
+                                  ),
+                                ],
+                              ),
+                            ],
                             if (_shopName.isEmpty && _sellerName.isEmpty)
                               Text('Маалымат жок',
                                   style: AppTextStyles.bodyMedium
@@ -715,12 +734,22 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                             ClipRRect(
                                               borderRadius:
                                                   BorderRadius.circular(10),
-                                              child: Image.network(
-                                                p.imageUrl,
+                                              child: CachedNetworkImage(
+                                                imageUrl: toCloudinaryThumb(
+                                                    p.imageUrl,
+                                                    width: 300),
                                                 height: 140,
                                                 width: 140,
                                                 fit: BoxFit.cover,
-                                                errorBuilder: (_, __, ___) =>
+                                                fadeInDuration: const Duration(
+                                                    milliseconds: 150),
+                                                placeholder: (_, __) =>
+                                                    Container(
+                                                  height: 140,
+                                                  width: 140,
+                                                  color: AppColors.grey100,
+                                                ),
+                                                errorWidget: (_, __, ___) =>
                                                     Container(
                                                   height: 140,
                                                   color: AppColors.grey100,
@@ -799,7 +828,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         ),
         child: Row(
           children: [
-            // ── Себет экранына өтүү (кичине квадрат) ──
             Container(
               width: 52,
               height: 52,
@@ -822,7 +850,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               ),
             ),
             const SizedBox(width: 12),
-            // ── Навигация (чоң, мурунку себетке кошуу ордунда) ──
             Expanded(
               child: SizedBox(
                 height: 52,
@@ -852,7 +879,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   Widget _buildCharacteristics() {
     final hasColors = _product.colors.isNotEmpty;
-    if (!hasColors) {
+    final hasSizes = _product.sizes.isNotEmpty;
+    final hasStock = _product.inStock != null;
+
+    if (!hasColors && !hasSizes && !hasStock) {
       return const SizedBox.shrink();
     }
 
@@ -864,26 +894,84 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         children: [
           const Text('Характеристикалар', style: AppTextStyles.headingSmall),
           const SizedBox(height: 12),
-          Text('🎨 Жеткиликтүү түстөр',
-              style:
-                  AppTextStyles.labelMedium.copyWith(color: AppColors.grey500)),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _product.colors.map((colorName) {
-              return Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: AppColors.grey50,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.grey200),
+
+          // ── Запас ──
+          if (hasStock) ...[
+            Row(
+              children: [
+                Icon(
+                  (_product.inStock ?? 0) > 0
+                      ? Icons.check_circle_outline
+                      : Icons.cancel_outlined,
+                  size: 16,
+                  color: (_product.inStock ?? 0) > 0
+                      ? AppColors.success
+                      : AppColors.error,
                 ),
-                child: Text(colorName, style: AppTextStyles.labelSmall),
-              );
-            }).toList(),
-          ),
+                const SizedBox(width: 6),
+                Text(
+                  (_product.inStock ?? 0) > 0
+                      ? 'Запаста бар: ${_product.inStock} дана'
+                      : 'Запаста жок',
+                  style: AppTextStyles.labelMedium.copyWith(
+                    color: (_product.inStock ?? 0) > 0
+                        ? AppColors.success
+                        : AppColors.error,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+          ],
+
+          // ── Түстөр ──
+          if (hasColors) ...[
+            Text('🎨 Жеткиликтүү түстөр',
+                style: AppTextStyles.labelMedium
+                    .copyWith(color: AppColors.grey500)),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _product.colors.map((colorName) {
+                return Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.grey50,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: AppColors.grey200),
+                  ),
+                  child: Text(colorName, style: AppTextStyles.labelSmall),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 10),
+          ],
+
+          // ── Размерлер ──
+          if (hasSizes) ...[
+            Text('📐 Жеткиликтүү размерлер',
+                style: AppTextStyles.labelMedium
+                    .copyWith(color: AppColors.grey500)),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _product.sizes.map((size) {
+                return Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.grey50,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: AppColors.grey200),
+                  ),
+                  child: Text(size, style: AppTextStyles.labelSmall),
+                );
+              }).toList(),
+            ),
+          ],
         ],
       ),
     );
@@ -1128,10 +1216,14 @@ class _FullscreenImageScreen extends StatelessWidget {
               child: InteractiveViewer(
                 minScale: 1,
                 maxScale: 4,
-                child: Image.network(
-                  imageUrl,
+                child: CachedNetworkImage(
+                  imageUrl: imageUrl,
                   fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) => const Icon(
+                  fadeInDuration: const Duration(milliseconds: 150),
+                  placeholder: (_, __) => const Center(
+                    child: CircularProgressIndicator(color: Colors.white54),
+                  ),
+                  errorWidget: (_, __, ___) => const Icon(
                     Icons.image_not_supported,
                     size: 80,
                     color: Colors.white54,

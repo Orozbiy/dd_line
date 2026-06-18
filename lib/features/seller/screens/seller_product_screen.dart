@@ -7,6 +7,7 @@ import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../core/utils/image_utils.dart';
 import '../../../core/supabase_client.dart';
+import '../../home/models/category_model.dart';
 
 class SellerProductScreen extends StatefulWidget {
   final String sellerUid;
@@ -31,14 +32,21 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
   String? _selectedCategoryId;
   String? _storeId;
 
+  // ── Жаңы CategoryModel тизмеси ──
+  late final List<CategoryModel> _allCategories;
+
+  // ── Категория фильтр үчүн: category_id негизги id боюнча иштейт ──
   List<Map<String, dynamic>> get _filteredProducts {
     if (_selectedCategoryId == null) return _products;
     return _products
-        .where((p) => p['category_id'] == _selectedCategoryId)
+        .where((p) =>
+            (p['category_id'] as String? ?? '').startsWith(_selectedCategoryId!))
         .toList();
   }
 
-  final List<Map<String, String>> _categories = [
+  // ── Эски _categories тизмеси — getCategoryName үчүн эле калтырылат ──
+  // (Supabase'те эски id'лер болушу мүмкүн болгондуктан)
+  final List<Map<String, String>> _legacyCategories = [
     {'id': '1',  'name': 'Кийим-кече',           'icon': '👕'},
     {'id': '2',  'name': 'Эркектер кийими',       'icon': '👔'},
     {'id': '3',  'name': 'Аялдар кийими',         'icon': '👗'},
@@ -75,77 +83,45 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
   // РАЗМЕРЛЕР — категория боюнча
   // ══════════════════════════════════════════════
 
-  // id:1 — Жалпы кийим (балдар + чоңдор аралаш)
   static const _allClothSizes = [
     '86 см', '92 см', '98 см', '104 см', '110 см', '116 см',
     '122 см', '128 см', '134 см', '140 см', '146 см', '152 см',
     '158 см', '164 см',
     'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL', '5XL',
   ];
-
-  // id:2 — Эркектер кийими
   static const _menClothSizes = [
     'S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL', '5XL',
     '44', '46', '48', '50', '52', '54', '56', '58', '60',
   ];
-
-  // id:3 — Аялдар кийими
   static const _womenClothSizes = [
     'XS (36)', 'S (38)', 'M (40)', 'L (42)', 'XL (44)',
     'XXL (46)', '3XL (48)', '4XL (50)', '5XL (52)',
   ];
-
-  // id:4 — Балдар кийими (жаш + бой)
   static const _kidsClothSizes = [
-    '0-1 жаш (56-62 см)',
-    '1-2 жаш (80-86 см)',
-    '2-3 жаш (92-98 см)',
-    '3-4 жаш (98-104 см)',
-    '4-5 жаш (104-110 см)',
-    '5-6 жаш (110-116 см)',
-    '6-7 жаш (116-122 см)',
-    '7-8 жаш (122-128 см)',
-    '8-9 жаш (128-134 см)',
-    '9-10 жаш (134-140 см)',
-    '10-11 жаш (140-146 см)',
-    '11-12 жаш (146-152 см)',
-    '12-13 жаш (152-158 см)',
-    '13-14 жаш (158-164 см)',
+    '0-1 жаш (56-62 см)', '1-2 жаш (80-86 см)', '2-3 жаш (92-98 см)',
+    '3-4 жаш (98-104 см)', '4-5 жаш (104-110 см)', '5-6 жаш (110-116 см)',
+    '6-7 жаш (116-122 см)', '7-8 жаш (122-128 см)', '8-9 жаш (128-134 см)',
+    '9-10 жаш (134-140 см)', '10-11 жаш (140-146 см)', '11-12 жаш (146-152 см)',
+    '12-13 жаш (152-158 см)', '13-14 жаш (158-164 см)',
   ];
-
-  // id:5 — Мектеп формасы (бой боюнча)
   static const _schoolSizes = [
-    '110 см (4-5 жаш)',
-    '116 см (5-6 жаш)',
-    '122 см (6-7 жаш)',
-    '128 см (7-8 жаш)',
-    '134 см (8-9 жаш)',
-    '140 см (9-10 жаш)',
-    '146 см (10-11 жаш)',
-    '152 см (11-12 жаш)',
-    '158 см (12-13 жаш)',
-    '164 см (13-14 жаш)',
-    '170 см (14-15 жаш)',
-    '176 см (15-16 жаш)',
+    '110 см (4-5 жаш)', '116 см (5-6 жаш)', '122 см (6-7 жаш)',
+    '128 см (7-8 жаш)', '134 см (8-9 жаш)', '140 см (9-10 жаш)',
+    '146 см (10-11 жаш)', '152 см (11-12 жаш)', '158 см (12-13 жаш)',
+    '164 см (13-14 жаш)', '170 см (14-15 жаш)', '176 см (15-16 жаш)',
   ];
-
-  // id:6,7,8,9 — Мезгил / Спорт кийими (балдар + чоңдор)
   static const _seasonClothSizes = [
     '86 см', '92 см', '98 см', '104 см', '110 см', '116 см',
     '122 см', '128 см', '134 см', '140 см', '146 см', '152 см',
     '158 см', '164 см',
     'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL', '5XL',
   ];
-
-  // id:10 — Бут кийим (балдардан чоңдорго чейин)
   static const _allShoesSizes = [
     '16', '17', '18', '19', '20', '21', '22', '23', '24', '25',
     '26', '27', '28', '29', '30', '31', '32', '33', '34', '35',
     '36', '37', '38', '39', '40', '41', '42', '43', '44', '45',
     '46', '47',
   ];
-
-  // id:15 — Кездеме / Мата (метраж)
   static const _fabricSizes = [
     '0.5 м', '1 м', '1.5 м', '2 м', '2.5 м',
     '3 м', '4 м', '5 м', '10 м', '20 м', '50 м',
@@ -179,6 +155,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
   @override
   void initState() {
     super.initState();
+    _allCategories = CategoryModel.getCategories();
     _loadProducts();
   }
 
@@ -485,12 +462,33 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
     _loadProducts();
   }
 
+  // ══════════════════════════════════════════════
+  // КАТЕГОРИЯ АТЫ — эски жана жаңы id'лерди колдойт
+  // ══════════════════════════════════════════════
   String _getCategoryName(String id) {
-    final cat = _categories.firstWhere(
+    if (id.isEmpty) return '📦 Башка';
+
+    final parts = id.split('_');
+    final mainId = parts[0];
+
+    // Жаңы CategoryModel'ден издейбиз
+    try {
+      final cat = _allCategories.firstWhere((c) => c.id == mainId);
+      if (parts.length > 1) {
+        try {
+          final sub = cat.subcategories.firstWhere((s) => s.id == id);
+          return '${cat.icon} ${cat.name} › ${sub.icon} ${sub.name}';
+        } catch (_) {}
+      }
+      return '${cat.icon} ${cat.name}';
+    } catch (_) {}
+
+    // Эски legacy тизмеден издейбиз
+    final legacy = _legacyCategories.firstWhere(
       (c) => c['id'] == id,
       orElse: () => {'name': 'Башка', 'icon': '📦'},
     );
-    return '${cat['icon']} ${cat['name']}';
+    return '${legacy['icon']} ${legacy['name']}';
   }
 
   // ══════════════════════════════════════════════
@@ -499,6 +497,11 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
   @override
   Widget build(BuildContext context) {
     final filtered = _filteredProducts;
+
+    // Фильтрде: product'тун негизги категория id'си боюнча CategoryModel'ден табабыз
+    final usedMainCatIds = _products
+        .map((p) => (p['category_id'] as String? ?? '').split('_')[0])
+        .toSet();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F5F7),
@@ -534,8 +537,29 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                 children: [
                   _categoryChip(id: null, icon: '📦', name: 'Баары', count: _products.length),
                   const SizedBox(width: 8),
-                  ..._categories.where((cat) {
-                    return _products.any((p) => p['category_id'] == cat['id']);
+                  ..._allCategories.where((cat) => usedMainCatIds.contains(cat.id)).map((cat) {
+                    final count = _products
+                        .where((p) =>
+                            (p['category_id'] as String? ?? '').startsWith(cat.id))
+                        .length;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: _categoryChip(
+                        id: cat.id,
+                        icon: cat.icon,
+                        name: cat.name,
+                        count: count,
+                      ),
+                    );
+                  }),
+                  // Эски legacy категориялар (жаңы CategoryModel'де жок болсо)
+                  ..._legacyCategories.where((cat) {
+                    final id = cat['id']!;
+                    if (usedMainCatIds.contains(id)) return false;
+                    // Жаңы CategoryModel'де бар болсо — өткөрүп жиберебиз
+                    try { _allCategories.firstWhere((c) => c.id == id); return false; }
+                    catch (_) {}
+                    return _products.any((p) => p['category_id'] == id);
                   }).map((cat) {
                     final count = _products
                         .where((p) => p['category_id'] == cat['id'])
@@ -625,11 +649,13 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                                           width: 80, height: 80,
                                           child: ClipRRect(
                                             borderRadius: BorderRadius.circular(10),
-                                            child: Image.network(
-                                              imageUrl,
-                                              fit: BoxFit.cover,
-                                              errorBuilder: (_, __, ___) => _noImage(),
-                                            ),
+                                            child: imageUrl.isNotEmpty
+                                                ? Image.network(
+                                                    imageUrl,
+                                                    fit: BoxFit.cover,
+                                                    errorBuilder: (_, __, ___) => _noImage(),
+                                                  )
+                                                : _noImage(),
                                           ),
                                         ),
                                         if ((p['discount_percent'] as num? ?? 0) > 0)
@@ -676,7 +702,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                                         ),
                                         const SizedBox(height: 2),
                                         Text(
-                                          _getCategoryName(p['category_id'] as String? ?? '1'),
+                                          _getCategoryName(p['category_id'] as String? ?? ''),
                                           style: AppTextStyles.labelSmall
                                               .copyWith(color: AppColors.grey500),
                                         ),
@@ -846,7 +872,20 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
     final extra2Ctrl = TextEditingController(text: existing?['extra2'] ?? '');
     final extra3Ctrl = TextEditingController(text: existing?['extra3'] ?? '');
 
-    String selectedCategory = existing?['category_id'] ?? '1';
+    // ── Категория state ──
+    // Эгер эски товар болсо — category_id'ни негизги жана кичи бөлөбүз
+    final existingCatId = existing?['category_id'] as String? ?? '1';
+    final existingParts = existingCatId.split('_');
+    String selectedMainCatId = existingParts[0];
+    String? selectedSubCatId = existingParts.length > 1 ? existingCatId : null;
+
+    // Эски legacy id болсо — '1' деп коюп, sub'ду null калтырабыз
+    // (жаңы CategoryModel'де ошол id жок болушу мүмкүн)
+    bool mainCatExists = false;
+    try { _allCategories.firstWhere((c) => c.id == selectedMainCatId); mainCatExists = true; }
+    catch (_) {}
+    if (!mainCatExists) { selectedMainCatId = '1'; selectedSubCatId = null; }
+
     List<String> selectedColors = List<String>.from(existing?['colors'] ?? []);
     List<String> selectedSizes  = List<String>.from(existing?['sizes']  ?? []);
 
@@ -858,58 +897,97 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
     String uploadStatus = '';
 
     // ── Категорияга жараша размер тизмеси ──
-    List<String> sizesForCategory(String catId) {
-      switch (catId) {
-        case '1':  return _allClothSizes;    // Жалпы кийим
-        case '2':  return _menClothSizes;    // Эркектер
-        case '3':  return _womenClothSizes;  // Аялдар
-        case '4':  return _kidsClothSizes;   // Балдар
-        case '5':  return _schoolSizes;      // Мектеп формасы
-        case '6':  return _seasonClothSizes; // Кышкы
-        case '7':  return _seasonClothSizes; // Жайкы
-        case '8':  return _seasonClothSizes; // Күзгү / Жазгы
-        case '9':  return _seasonClothSizes; // Спорт кийими
-        case '10': return _allShoesSizes;    // Бут кийим
-        case '15': return _fabricSizes;      // Кездеме
+    // subId болсо — кичи категорияга жараша, болбосо негизги id боюнча
+    List<String> sizesForCategory(String mainId, [String? subId]) {
+      // Кичи категория боюнча так тандоо
+      if (subId != null) {
+        switch (subId) {
+          case '1_2': return _menClothSizes;    // Кийим › Эркектер
+          case '1_3': return _womenClothSizes;  // Кийим › Аялдар
+          case '1_4': return _kidsClothSizes;   // Кийим › Балдар
+          case '1_5': return _schoolSizes;      // Кийим › Мектеп формасы
+          case '1_6':
+          case '1_7':
+          case '1_8': return _seasonClothSizes; // Кышкы / Жайкы / Спорт
+        }
+      }
+      // Негизги категория боюнча жалпы тандоо
+      switch (mainId) {
+        case '1':  return _allClothSizes;
+        case '2':  return _allShoesSizes;
+        case '14': return _fabricSizes;
         default:   return [];
       }
     }
 
-    String sizeLabelForCategory(String catId) {
-      switch (catId) {
-        case '4':  return '👶 Жаш / Размер тандаңыз';
-        case '5':  return '📏 Бой боюнча размер тандаңыз (см)';
-        case '10': return '👟 Бут кийим размери (балдар 16-35, чоңдор 36-47)';
-        case '15': return '🧵 Метраж тандаңыз';
-        case '2':  return '👔 Эркектер размери';
-        case '3':  return '👗 Аялдар размери';
+    String sizeLabelForCategory(String mainId, [String? subId]) {
+      if (subId != null) {
+        switch (subId) {
+          case '1_2': return '👔 Эркектер кийим размери';
+          case '1_3': return '👗 Аялдар кийим размери';
+          case '1_4': return '👶 Балдар жашы / размери';
+          case '1_5': return '📏 Мектеп формасы размери (бой боюнча)';
+        }
+      }
+      switch (mainId) {
+        case '2':  return '👟 Бут кийим размери (балдар 16-35, чоңдор 36-47)';
+        case '14': return '🧵 Метраж тандаңыз';
         default:   return '📏 Размерлер тандаңыз';
       }
     }
 
-    bool hasSizes(String catId) =>
-        ['1','2','3','4','5','6','7','8','9','10','15'].contains(catId);
+    bool hasSizes(String mainId) => ['1', '2', '14'].contains(mainId);
 
-    bool hasColors(String catId) =>
-        ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15'].contains(catId);
+    bool hasColors(String mainId) =>
+        ['1', '2', '3', '7', '8', '9', '14'].contains(mainId);
 
-    bool hasTechFields(String catId) =>
-        ['16','17','18','19'].contains(catId);
+    bool hasTechFields(String mainId) => ['4', '6'].contains(mainId);
 
-    bool hasBeautyFields(String catId) =>
-        ['25','26'].contains(catId);
+    bool hasBeautyFields(String mainId) => ['9', '10'].contains(mainId);
 
-    bool hasAutoFields(String catId) => catId == '28';
+    bool hasAutoFields(String mainId) => mainId == '12';
 
     Future<void> pickImage(StateSetter setD) async {
+      final source = await showModalBottomSheet<ImageSource>(
+        context: context,
+        backgroundColor: Colors.white,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (ctx) => SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 8),
+              Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.grey300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 12),
+              ListTile(
+                leading: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
+                title: const Text('📷  Камера менен тартуу', style: AppTextStyles.labelLarge),
+                onTap: () => Navigator.pop(ctx, ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined, color: AppColors.primary),
+                title: const Text('🖼️  Галереядан тандоо', style: AppTextStyles.labelLarge),
+                onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      );
+
+      if (source == null) return;
+
       try {
         final picker = ImagePicker();
-        final picked = await picker.pickImage(
-          source: ImageSource.gallery,
-          maxWidth: 1024,
-          maxHeight: 1024,
-          imageQuality: 80,
-        );
+        final picked = await picker.pickImage(source: source);
         if (picked != null) {
           final bytes = await picked.readAsBytes();
           setD(() => imageBytes = bytes);
@@ -923,361 +1001,444 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
       context: context,
       barrierDismissible: false,
       builder: (_) => StatefulBuilder(
-        builder: (ctx, setD) => Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          child: Container(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.92,
-              maxWidth: 520,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // ── Башлык ──
-                Container(
-                  padding: const EdgeInsets.all(18),
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Color(0xFFD97706), Color(0xFFEF4444)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                  ),
-                  child: Row(
-                    children: [
-                      const Text('📦', style: TextStyle(fontSize: 22)),
-                      const SizedBox(width: 10),
-                      Text(
-                        existing == null ? 'Товар кошуу' : 'Товар өзгөртүү',
-                        style: AppTextStyles.headingSmall.copyWith(color: Colors.white),
-                      ),
-                      const Spacer(),
-                      GestureDetector(
-                        onTap: () { if (!isLoading) Navigator.pop(ctx); },
-                        child: const Icon(Icons.close, color: Colors.white),
-                      ),
-                    ],
-                  ),
-                ),
+        builder: (ctx, setD) {
+          // Учурдагы негизги категория
+          CategoryModel mainCat = _allCategories.firstWhere(
+            (c) => c.id == selectedMainCatId,
+            orElse: () => _allCategories.first,
+          );
+          // Натыйжалуу category_id — кичи тандалса ошол, болбосо негизги
+          final effectiveCatId = selectedSubCatId ?? selectedMainCatId;
 
-                // ── Форма ──
-                Flexible(
-                  child: SingleChildScrollView(
+          return Dialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            child: Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.92,
+                maxWidth: 520,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // ── Башлык ──
+                  Container(
                     padding: const EdgeInsets.all(18),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Color(0xFFD97706), Color(0xFFEF4444)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                    ),
+                    child: Row(
                       children: [
-
-                        // 1. СҮРӨТ
-                        _label('🖼️ Товардын сүрөтү *'),
+                        const Text('📦', style: TextStyle(fontSize: 22)),
+                        const SizedBox(width: 10),
+                        Text(
+                          existing == null ? 'Товар кошуу' : 'Товар өзгөртүү',
+                          style: AppTextStyles.headingSmall.copyWith(color: Colors.white),
+                        ),
+                        const Spacer(),
                         GestureDetector(
-                          onTap: () => pickImage(setD),
-                          child: Container(
-                            width: double.infinity,
-                            height: 160,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF7F7F7),
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(
-                                color: imageBytes != null || existingImageUrl.isNotEmpty
-                                    ? AppColors.primary
-                                    : AppColors.grey300,
-                                width: 1.5,
-                              ),
-                            ),
-                            child: imageBytes != null
-                                ? ClipRRect(
-                                    borderRadius: BorderRadius.circular(13),
-                                    child: Image.memory(imageBytes!, fit: BoxFit.cover),
-                                  )
-                                : existingImageUrl.isNotEmpty
-                                    ? ClipRRect(
-                                        borderRadius: BorderRadius.circular(13),
-                                        child: Image.network(
-                                          existingImageUrl,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (_, __, ___) => _uploadPlaceholder(),
-                                        ),
-                                      )
-                                    : _uploadPlaceholder(),
-                          ),
-                        ),
-                        if (isUploading) ...[
-                          const SizedBox(height: 8),
-                          const LinearProgressIndicator(color: AppColors.primary),
-                          const SizedBox(height: 4),
-                          Text(uploadStatus,
-                              style: AppTextStyles.labelSmall
-                                  .copyWith(color: AppColors.grey500)),
-                        ],
-                        const SizedBox(height: 14),
-
-                        // 2. АТЫ
-                        _label('📝 Товардын аты *'),
-                        _field(nameCtrl, 'Мисалы: Кара жибек көйнөк'),
-                        const SizedBox(height: 14),
-
-                        // 3. БААСЫ
-                        _label('💰 Баасы (сом) *'),
-                        _field(priceCtrl, 'Мисалы: 1200',
-                            type: TextInputType.number),
-                        const SizedBox(height: 14),
-
-                        // 4. КАТЕГОРИЯ
-                        _label('🗂️ Категория *'),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF7F7F7),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              value: selectedCategory,
-                              isExpanded: true,
-                              items: _categories
-                                  .map((c) => DropdownMenuItem(
-                                        value: c['id'],
-                                        child: Text(
-                                          '${c['icon']}  ${c['name']}',
-                                          style: AppTextStyles.bodyMedium,
-                                        ),
-                                      ))
-                                  .toList(),
-                              onChanged: (val) {
-                                if (val != null) {
-                                  setD(() {
-                                    selectedCategory = val;
-                                    selectedColors = [];
-                                    selectedSizes  = [];
-                                  });
-                                }
-                              },
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-
-                        // ── ТҮСТӨР (кийим / аксессуар категориялары) ──
-                        if (hasColors(selectedCategory)) ...[
-                          _label('🎨 Түстөр (каалоо боюнча)'),
-                          _colorPicker(selectedColors, setD),
-                          const SizedBox(height: 14),
-                        ],
-
-                        // ── РАЗМЕРЛЕР (кийим / бут кийим / мата) ──
-                        if (hasSizes(selectedCategory)) ...[
-                          _label(sizeLabelForCategory(selectedCategory)),
-                          _sizePicker(
-                              sizesForCategory(selectedCategory),
-                              selectedSizes,
-                              setD),
-                          const SizedBox(height: 14),
-                        ],
-
-                        // ── ЭЛЕКТРОНИКА / ТЕХНИКА: бренд + модель + кошумча ──
-                        if (hasTechFields(selectedCategory)) ...[
-                          _label('🏷️ Бренд'),
-                          _field(extra1Ctrl, 'Мисалы: Samsung, Apple, LG'),
-                          const SizedBox(height: 14),
-                          _label('📋 Модель'),
-                          _field(extra2Ctrl, 'Мисалы: Galaxy S24, iPhone 15'),
-                          const SizedBox(height: 14),
-                          _label('🔌 Техникалык мүнөздөмө'),
-                          _field(extra3Ctrl, 'Мисалы: 256GB, 4K, 2000Вт'),
-                          const SizedBox(height: 14),
-                        ],
-
-                        // ── СУЛУУЛУК / ГИГИЕНА: бренд + көлөм ──
-                        if (hasBeautyFields(selectedCategory)) ...[
-                          _label('🏷️ Бренд'),
-                          _field(extra1Ctrl, 'Мисалы: Nivea, L\'Oreal'),
-                          const SizedBox(height: 14),
-                          _label('🧴 Көлөмү / Салмагы'),
-                          _field(extra2Ctrl, 'Мисалы: 200мл, 50г'),
-                          const SizedBox(height: 14),
-                        ],
-
-                        // ── АВТОТОВАР: бренд + модель машина ──
-                        if (hasAutoFields(selectedCategory)) ...[
-                          _label('🏷️ Бренд'),
-                          _field(extra1Ctrl, 'Мисалы: Bosch, Michelin'),
-                          const SizedBox(height: 14),
-                          _label('🚗 Кайсы машинага туура келет'),
-                          _field(extra2Ctrl, 'Мисалы: Toyota Camry, Kia Cerato'),
-                          const SizedBox(height: 14),
-                        ],
-
-                        // 5. СКЛАДДАГЫ САНЫ
-                        _label('📦 Складдагы саны'),
-                        _field(stockCtrl, 'Мисалы: 50',
-                            type: TextInputType.number),
-                        const SizedBox(height: 14),
-
-                        // 6. СҮРӨТТӨМӨ
-                        _label('📄 Сүрөттөмө'),
-                        TextField(
-                          controller: descCtrl,
-                          maxLines: 3,
-                          style: AppTextStyles.bodyMedium,
-                          decoration:
-                              _deco('Товар жөнүндө кыскача маалымат...'),
-                        ),
-
-                        const SizedBox(height: 10),
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFF8F0),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            children: [
-                              const Text('ℹ️', style: TextStyle(fontSize: 16)),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  '* белгиленген талаалар милдеттүү.',
-                                  style: AppTextStyles.labelSmall
-                                      .copyWith(color: AppColors.grey500),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-
-                        // ── САКТОО БАСКЫЧЫ ──
-                        SizedBox(
-                          width: double.infinity,
-                          height: 52,
-                          child: ElevatedButton(
-                            onPressed: isLoading
-                                ? null
-                                : () async {
-                                    final name  = nameCtrl.text.trim();
-                                    final price = double.tryParse(priceCtrl.text.trim());
-                                    if (name.isEmpty) {
-                                      _showSnack('Товардын атын жазыңыз!', isError: true);
-                                      return;
-                                    }
-                                    if (price == null || price <= 0) {
-                                      _showSnack('Туура баа жазыңыз!', isError: true);
-                                      return;
-                                    }
-                                    if (imageBytes == null && existingImageUrl.isEmpty) {
-                                      _showSnack('Сүрөт тандаңыз!', isError: true);
-                                      return;
-                                    }
-
-                                    setD(() {
-                                      isLoading   = true;
-                                      uploadStatus = '';
-                                    });
-
-                                    try {
-                                      String imageUrl = existingImageUrl;
-
-                                      if (imageBytes != null) {
-                                        setD(() {
-                                          isUploading  = true;
-                                          uploadStatus = 'Сүрөт жүктөлүп жатат...';
-                                        });
-                                        final compressed =
-                                            await compressImage(imageBytes!);
-                                        final uploaded =
-                                            await _uploadToCloudinary(compressed);
-                                        if (uploaded == null) {
-                                          setD(() {
-                                            isLoading   = false;
-                                            isUploading = false;
-                                            uploadStatus = '';
-                                          });
-                                          return;
-                                        }
-                                        imageUrl = uploaded;
-                                        setD(() {
-                                          isUploading  = false;
-                                          uploadStatus = '✅ Сүрөт жүктөлдү';
-                                        });
-                                      }
-
-                                      setD(() => uploadStatus = 'Товар сакталып жатат...');
-
-                                      final storeId = await _getOrCreateStoreId();
-
-                                      final data = {
-                                        'title':       name,
-                                        'price':       price,
-                                        'category_id': selectedCategory,
-                                        'store_id':    storeId,
-                                        'images':      [imageUrl],
-                                        'in_stock':    int.tryParse(stockCtrl.text.trim()) ?? 0,
-                                        'description': descCtrl.text.trim(),
-                                        'colors':      selectedColors,
-                                        'sizes':       selectedSizes,
-                                        'extra1':      extra1Ctrl.text.trim(),
-                                        'extra2':      extra2Ctrl.text.trim(),
-                                        'extra3':      extra3Ctrl.text.trim(),
-                                        'rating':      existing?['rating'] ?? 0.0,
-                                      };
-
-                                      if (existing != null) {
-                                        await supabase
-                                            .from('products')
-                                            .update(data)
-                                            .eq('id', existing['id'] as String);
-                                      } else {
-                                        await supabase.from('products').insert(data);
-                                      }
-
-                                      if (ctx.mounted) Navigator.pop(ctx);
-                                      _showSnack(existing == null
-                                          ? '✅ Товар ийгиликтүү кошулду!'
-                                          : '✅ Товар жаңыртылды!');
-                                      _loadProducts();
-                                    } catch (e) {
-                                      setD(() {
-                                        isLoading   = false;
-                                        isUploading = false;
-                                        uploadStatus = '';
-                                      });
-                                      _showSnack('Ката чыкты: $e', isError: true);
-                                    }
-                                  },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              disabledBackgroundColor:
-                                  AppColors.primary.withValues(alpha: 0.6),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14)),
-                              elevation: 0,
-                            ),
-                            child: isLoading
-                                ? const SizedBox(
-                                    width: 24, height: 24,
-                                    child: CircularProgressIndicator(
-                                        color: Colors.white, strokeWidth: 2),
-                                  )
-                                : Text(
-                                    existing == null
-                                        ? 'Товарды сактоо'
-                                        : 'Өзгөртүүлөрдү сактоо',
-                                    style: AppTextStyles.labelLarge
-                                        .copyWith(color: Colors.white),
-                                  ),
-                          ),
+                          onTap: () { if (!isLoading) Navigator.pop(ctx); },
+                          child: const Icon(Icons.close, color: Colors.white),
                         ),
                       ],
                     ),
                   ),
-                ),
-              ],
+
+                  // ── Форма ──
+                  Flexible(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(18),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+
+                          // 1. СҮРӨТ
+                          _label('🖼️ Товардын сүрөтү *'),
+                          GestureDetector(
+                            onTap: () => pickImage(setD),
+                            child: Container(
+                              width: double.infinity,
+                              height: 160,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF7F7F7),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: imageBytes != null || existingImageUrl.isNotEmpty
+                                      ? AppColors.primary
+                                      : AppColors.grey300,
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: imageBytes != null
+                                  ? ClipRRect(
+                                      borderRadius: BorderRadius.circular(13),
+                                      child: Image.memory(imageBytes!, fit: BoxFit.cover),
+                                    )
+                                  : existingImageUrl.isNotEmpty
+                                      ? ClipRRect(
+                                          borderRadius: BorderRadius.circular(13),
+                                          child: Image.network(
+                                            existingImageUrl,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (_, __, ___) => _uploadPlaceholder(),
+                                          ),
+                                        )
+                                      : _uploadPlaceholder(),
+                            ),
+                          ),
+                          if (isUploading) ...[
+                            const SizedBox(height: 8),
+                            const LinearProgressIndicator(color: AppColors.primary),
+                            const SizedBox(height: 4),
+                            Text(uploadStatus,
+                                style: AppTextStyles.labelSmall
+                                    .copyWith(color: AppColors.grey500)),
+                          ],
+                          const SizedBox(height: 14),
+
+                          // 2. АТЫ
+                          _label('📝 Товардын аты *'),
+                          _field(nameCtrl, 'Мисалы: Кара жибек көйнөк'),
+                          const SizedBox(height: 14),
+
+                          // 3. БААСЫ
+                          _label('💰 Баасы (сом) *'),
+                          _field(priceCtrl, 'Мисалы: 1200',
+                              type: TextInputType.number),
+                          const SizedBox(height: 14),
+
+                          // ════════════════════════════════════
+                          // 4. НЕГИЗГИ КАТЕГОРИЯ
+                          // ════════════════════════════════════
+                          _label('🗂️ Негизги категория *'),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF7F7F7),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                value: selectedMainCatId,
+                                isExpanded: true,
+                                items: _allCategories
+                                    .map((c) => DropdownMenuItem(
+                                          value: c.id,
+                                          child: Text(
+                                            '${c.icon}  ${c.name}',
+                                            style: AppTextStyles.bodyMedium,
+                                          ),
+                                        ))
+                                    .toList(),
+                                onChanged: (val) {
+                                  if (val != null) {
+                                    setD(() {
+                                      selectedMainCatId = val;
+                                      selectedSubCatId  = null; // кичи категорияны reset
+                                      selectedColors    = [];
+                                      selectedSizes     = [];
+                                    });
+                                  }
+                                },
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+
+                          // ════════════════════════════════════
+                          // 5. КИЧИ КАТЕГОРИЯ
+                          // ════════════════════════════════════
+                          _label('📁 Кичи категория'),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF7F7F7),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String?>(
+                                value: selectedSubCatId,
+                                isExpanded: true,
+                                hint: Text(
+                                  '— Жалпы (${mainCat.name}) —',
+                                  style: AppTextStyles.bodyMedium
+                                      .copyWith(color: AppColors.grey400),
+                                ),
+                                items: [
+                                  DropdownMenuItem<String?>(
+                                    value: null,
+                                    child: Text(
+                                      '— Жалпы (${mainCat.name}) —',
+                                      style: AppTextStyles.bodyMedium
+                                          .copyWith(color: AppColors.grey500),
+                                    ),
+                                  ),
+                                  ...mainCat.subcategories.map((sub) =>
+                                      DropdownMenuItem<String?>(
+                                        value: sub.id,
+                                        child: Text(
+                                          '${sub.icon}  ${sub.name}',
+                                          style: AppTextStyles.bodyMedium,
+                                        ),
+                                      )),
+                                ],
+                                onChanged: (val) {
+                                  setD(() => selectedSubCatId = val);
+                                },
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          // ── Тандалган категория preview ──
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.06),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.label_outline,
+                                    size: 16, color: AppColors.primary),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    _getCategoryName(effectiveCatId),
+                                    style: AppTextStyles.labelSmall
+                                        .copyWith(color: AppColors.primary),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+
+                          // ── ТҮСТӨР ──
+                          if (hasColors(selectedMainCatId)) ...[
+                            _label('🎨 Түстөр (каалоо боюнча)'),
+                            _colorPicker(selectedColors, setD),
+                            const SizedBox(height: 14),
+                          ],
+
+                          // ── РАЗМЕРЛЕР ──
+                          if (hasSizes(selectedMainCatId)) ...[
+                            _label(sizeLabelForCategory(selectedMainCatId, selectedSubCatId)),
+                            _sizePicker(
+                                sizesForCategory(selectedMainCatId, selectedSubCatId),
+                                selectedSizes,
+                                setD),
+                            const SizedBox(height: 14),
+                          ],
+
+                          // ── ЭЛЕКТРОНИКА / ТЕХНИКА ──
+                          if (hasTechFields(selectedMainCatId)) ...[
+                            _label('🏷️ Бренд'),
+                            _field(extra1Ctrl, 'Мисалы: Samsung, Apple, LG'),
+                            const SizedBox(height: 14),
+                            _label('📋 Модель'),
+                            _field(extra2Ctrl, 'Мисалы: Galaxy S24, iPhone 15'),
+                            const SizedBox(height: 14),
+                            _label('🔌 Техникалык мүнөздөмө'),
+                            _field(extra3Ctrl, 'Мисалы: 256GB, 4K, 2000Вт'),
+                            const SizedBox(height: 14),
+                          ],
+
+                          // ── СУЛУУЛУК / ГИГИЕНА ──
+                          if (hasBeautyFields(selectedMainCatId)) ...[
+                            _label('🏷️ Бренд'),
+                            _field(extra1Ctrl, "Мисалы: Nivea, L'Oreal"),
+                            const SizedBox(height: 14),
+                            _label('🧴 Көлөмү / Салмагы'),
+                            _field(extra2Ctrl, 'Мисалы: 200мл, 50г'),
+                            const SizedBox(height: 14),
+                          ],
+
+                          // ── АВТОТОВАР ──
+                          if (hasAutoFields(selectedMainCatId)) ...[
+                            _label('🏷️ Бренд'),
+                            _field(extra1Ctrl, 'Мисалы: Bosch, Michelin'),
+                            const SizedBox(height: 14),
+                            _label('🚗 Кайсы машинага туура келет'),
+                            _field(extra2Ctrl, 'Мисалы: Toyota Camry, Kia Cerato'),
+                            const SizedBox(height: 14),
+                          ],
+
+                          // 6. СКЛАДДАГЫ САНЫ
+                          _label('📦 Складдагы саны'),
+                          _field(stockCtrl, 'Мисалы: 50',
+                              type: TextInputType.number),
+                          const SizedBox(height: 14),
+
+                          // 7. СҮРӨТТӨМӨ
+                          _label('📄 Сүрөттөмө'),
+                          TextField(
+                            controller: descCtrl,
+                            maxLines: 3,
+                            style: AppTextStyles.bodyMedium,
+                            decoration: _deco('Товар жөнүндө кыскача маалымат...'),
+                          ),
+
+                          const SizedBox(height: 10),
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFF8F0),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              children: [
+                                const Text('ℹ️', style: TextStyle(fontSize: 16)),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    '* белгиленген талаалар милдеттүү.',
+                                    style: AppTextStyles.labelSmall
+                                        .copyWith(color: AppColors.grey500),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+
+                          // ── САКТОО БАСКЫЧЫ ──
+                          SizedBox(
+                            width: double.infinity,
+                            height: 52,
+                            child: ElevatedButton(
+                              onPressed: isLoading
+                                  ? null
+                                  : () async {
+                                      final name  = nameCtrl.text.trim();
+                                      final price = double.tryParse(priceCtrl.text.trim());
+                                      if (name.isEmpty) {
+                                        _showSnack('Товардын атын жазыңыз!', isError: true);
+                                        return;
+                                      }
+                                      if (price == null || price <= 0) {
+                                        _showSnack('Туура баа жазыңыз!', isError: true);
+                                        return;
+                                      }
+                                      if (imageBytes == null && existingImageUrl.isEmpty) {
+                                        _showSnack('Сүрөт тандаңыз!', isError: true);
+                                        return;
+                                      }
+
+                                      setD(() {
+                                        isLoading    = true;
+                                        uploadStatus = '';
+                                      });
+
+                                      try {
+                                        String imageUrl = existingImageUrl;
+
+                                        if (imageBytes != null) {
+                                          setD(() {
+                                            isUploading  = true;
+                                            uploadStatus = 'Сүрөт жүктөлүп жатат...';
+                                          });
+                                          final compressed = await compressImage(imageBytes!);
+                                          final uploaded = await _uploadToCloudinary(compressed);
+                                          if (uploaded == null) {
+                                            setD(() {
+                                              isLoading   = false;
+                                              isUploading = false;
+                                              uploadStatus = '';
+                                            });
+                                            return;
+                                          }
+                                          imageUrl = uploaded;
+                                          setD(() {
+                                            isUploading  = false;
+                                            uploadStatus = '✅ Сүрөт жүктөлдү';
+                                          });
+                                        }
+
+                                        setD(() => uploadStatus = 'Товар сакталып жатат...');
+
+                                        final storeId = await _getOrCreateStoreId();
+
+                                        // Натыйжалуу category_id: кичи тандалса ошол, болбосо негизги
+                                        final finalCatId = selectedSubCatId ?? selectedMainCatId;
+
+                                        final data = {
+                                          'title':       name,
+                                          'price':       price,
+                                          'category_id': finalCatId,
+                                          'store_id':    storeId,
+                                          'images':      [imageUrl],
+                                          'in_stock':    int.tryParse(stockCtrl.text.trim()) ?? 0,
+                                          'description': descCtrl.text.trim(),
+                                          'colors':      selectedColors,
+                                          'sizes':       selectedSizes,
+                                          'extra1':      extra1Ctrl.text.trim(),
+                                          'extra2':      extra2Ctrl.text.trim(),
+                                          'extra3':      extra3Ctrl.text.trim(),
+                                          'rating':      existing?['rating'] ?? 0.0,
+                                        };
+
+                                        if (existing != null) {
+                                          await supabase
+                                              .from('products')
+                                              .update(data)
+                                              .eq('id', existing['id'] as String);
+                                        } else {
+                                          await supabase.from('products').insert(data);
+                                        }
+
+                                        if (ctx.mounted) Navigator.pop(ctx);
+                                        _showSnack(existing == null
+                                            ? '✅ Товар ийгиликтүү кошулду!'
+                                            : '✅ Товар жаңыртылды!');
+                                        _loadProducts();
+                                      } catch (e) {
+                                        setD(() {
+                                          isLoading   = false;
+                                          isUploading = false;
+                                          uploadStatus = '';
+                                        });
+                                        _showSnack('Ката чыкты: $e', isError: true);
+                                      }
+                                    },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                disabledBackgroundColor:
+                                    AppColors.primary.withValues(alpha: 0.6),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14)),
+                                elevation: 0,
+                              ),
+                              child: isLoading
+                                  ? const SizedBox(
+                                      width: 24, height: 24,
+                                      child: CircularProgressIndicator(
+                                          color: Colors.white, strokeWidth: 2),
+                                    )
+                                  : Text(
+                                      existing == null
+                                          ? 'Товарды сактоо'
+                                          : 'Өзгөртүүлөрдү сактоо',
+                                      style: AppTextStyles.labelLarge
+                                          .copyWith(color: Colors.white),
+                                    ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
@@ -1332,11 +1493,25 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
           const Icon(Icons.add_photo_alternate_outlined,
               size: 40, color: AppColors.grey400),
           const SizedBox(height: 8),
-          Text('Сүрөт тандоо үчүн басыңыз',
+          Text('Сүрөт кошуу үчүн басыңыз',
               style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey400)),
           const SizedBox(height: 4),
-          Text('Галереядан тандалат',
-              style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey300)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.camera_alt_outlined,
+                  size: 14, color: AppColors.grey300),
+              const SizedBox(width: 4),
+              Text('Камера',
+                  style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey300)),
+              const SizedBox(width: 10),
+              const Icon(Icons.photo_library_outlined,
+                  size: 14, color: AppColors.grey300),
+              const SizedBox(width: 4),
+              Text('Галерея',
+                  style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey300)),
+            ],
+          ),
         ],
       );
 
@@ -1375,8 +1550,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                   decoration: BoxDecoration(
                     color: Color(c['hex'] as int),
                     shape: BoxShape.circle,
-                    border: Border.all(
-                        color: Colors.grey.withValues(alpha: 0.3)),
+                    border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
                   ),
                 ),
                 const SizedBox(width: 6),

@@ -1,3 +1,4 @@
+
 class ProductModel {
   final String id;
   final String name;
@@ -20,6 +21,8 @@ class ProductModel {
   final String? region;
   final String? district;
   final double? distanceKm;
+  // ✅ ЖАҢЫ: товар кошулган дата — "Жаңы" badge үчүн
+  final DateTime? createdAt;
 
   ProductModel({
     required this.id,
@@ -43,7 +46,14 @@ class ProductModel {
     this.region,
     this.district,
     this.distanceKm,
+    this.createdAt, // ✅ ЖАҢЫ
   });
+
+  /// Товар 10 күндөн жаш болсо — "Жаңы" badge көрсөтүлөт
+  bool get isNew {
+    if (createdAt == null) return false;
+    return DateTime.now().difference(createdAt!).inDays < 10;
+  }
 
   /// Supabase 'products' row'дон (мүмкүн stores JOIN менен бирге)
   factory ProductModel.fromMap(Map<String, dynamic> data) {
@@ -71,11 +81,13 @@ class ProductModel {
       longitude: (data['longitude'] as num?)?.toDouble(),
       region: data['region'] as String?,
       district: data['district'] as String?,
+      // ✅ ЖАҢЫ: created_at Supabase'тен окулат
+      createdAt: data['created_at'] != null
+          ? DateTime.tryParse(data['created_at'] as String)
+          : null,
     );
   }
 
-  /// Локалдык кэш (SharedPreferences) үчүн — toJson() менен симметриялуу.
-  /// fromMap()дин alias'ы катары иштейт (Supabase row'до да колдонсо болот).
   factory ProductModel.fromJson(Map<String, dynamic> json) =>
       ProductModel.fromMap(json);
 
@@ -99,6 +111,7 @@ class ProductModel {
       if (longitude != null) 'longitude': longitude,
       if (region != null) 'region': region,
       if (district != null) 'district': district,
+      if (createdAt != null) 'created_at': createdAt!.toIso8601String(), // ✅
     };
   }
 
@@ -132,6 +145,7 @@ class ProductModel {
     String? region,
     String? district,
     double? distanceKm,
+    DateTime? createdAt, // ✅ ЖАҢЫ
   }) {
     return ProductModel(
       id: id ?? this.id,
@@ -155,6 +169,7 @@ class ProductModel {
       region: region ?? this.region,
       district: district ?? this.district,
       distanceKm: distanceKm ?? this.distanceKm,
+      createdAt: createdAt ?? this.createdAt, // ✅
     );
   }
 }

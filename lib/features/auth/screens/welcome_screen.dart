@@ -1,11 +1,12 @@
 import 'dart:async';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../core/auth_service.dart';
 import '../../home/screens/home_screen.dart';
+import '../../seller/screens/seller_login_screen.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -193,52 +194,93 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   }
 
   Widget _buildGoogleButton() {
+  if (defaultTargetPlatform == TargetPlatform.windows) {
+    // Windows'то Сатуучу катары кирүү баскычын көрсөтөбүз
     return GestureDetector(
-      onTap: _isLoading ? null : _handleGoogleSignIn,
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const SellerLoginScreen(),
+          ),
+        );
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.primary,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.grey200, width: 1.5),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
+              color: AppColors.primary.withValues(alpha: 0.35),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
           ],
         ),
-        child: _isLoading
-            ? const Center(
-                child: SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(
-                    color: AppColors.primary,
-                    strokeWidth: 2.5,
-                  ),
-                ),
-              )
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Google "G" логотиби (текст катары — тышкы пакет жок)
-                  const _GoogleLogo(),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Google менен кирүү',
-                    style: AppTextStyles.headingSmall.copyWith(
-                      color: AppColors.black,
-                    ),
-                  ),
-                ],
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.storefront_rounded, color: Colors.white, size: 22),
+            const SizedBox(width: 12),
+            Text(
+              'Сатуучу катары кирүү',
+              style: AppTextStyles.headingSmall.copyWith(
+                color: Colors.white,
               ),
+            ),
+          ],
+        ),
       ),
     );
   }
+  return GestureDetector(
+    onTap: _isLoading ? null : _handleGoogleSignIn,
+    child: AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.grey200, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: _isLoading
+          ? const Center(
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  color: AppColors.primary,
+                  strokeWidth: 2.5,
+                ),
+              ),
+            )
+          : Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const _GoogleLogo(),
+                const SizedBox(width: 12),
+                Text(
+                  'Google менен кирүү',
+                  style: AppTextStyles.headingSmall.copyWith(
+                    color: AppColors.black,
+                  ),
+                ),
+              ],
+            ),
+    ),
+  );
+}
 }
 
 /// Жөнөкөй Google "G" логотиби (4 түстүү тегерек), сүрөт пакети жок.

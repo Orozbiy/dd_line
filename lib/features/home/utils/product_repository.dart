@@ -160,7 +160,6 @@ class ProductRepository {
   }
 
   /// Fallback: RPC жок болсо жөнөкөй Supabase query.
-  /// Жаңылоо басканда башка товарлар чыгышы үчүн — shuffle колдонулат.
   Future<List<ProductModel>> _fetchFallback({
     int offset = 0,
     String? categoryId,
@@ -179,10 +178,7 @@ class ProductRepository {
       query = query.eq('region', region);
     }
 
-    // Жаңылоо баскычы басылганда башка товарлар чыгышы үчүн:
-    // Суpabase'тен 50 товар алып, Random shuffle менен 10 тандайбыз.
-    // Ошентип ар бир жаңылоодо башка 10 товар көрүнөт.
-    final bigLimit = limit * 5; // 10 * 5 = 50 товар алат
+    final bigLimit = limit * 5;
     final rng = Random((_randomSeed * 1000000).toInt());
 
     final data = await query
@@ -190,10 +186,68 @@ class ProductRepository {
         .range(0, bigLimit - 1);
 
     final all = _mapAndFilter(data);
-
-    // Shuffle колдонуп, алгачкы [limit] товарды кайтарат
     all.shuffle(rng);
     return all.take(limit).toList();
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // ✅ ЖАҢЫ ТОВАРЛАР — created_at боюнча сорттолот
+  // ══════════════════════════════════════════════════════════════════
+
+  Future<List<ProductModel>> fetchNewest({
+    String? categoryId,
+    int limit = 40,
+  }) async {
+    try {
+      var query = supabase
+          .from('products')
+          .select('*, stores(store_name, owner_id)')
+          .eq('is_active', true);
+
+      if (categoryId != null && categoryId.isNotEmpty) {
+        query = query.eq('category_id', categoryId);
+      }
+
+      final data = await query
+          .order('created_at', ascending: false)
+          .limit(limit);
+
+      return _mapAndFilter(data as List);
+    } catch (e) {
+      debugPrint('⚠️ fetchNewest ката: $e');
+      return [];
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // ✅ ТААНЫМАЛ ТОВАРЛАР — rating боюнча сорттолот
+  // ══════════════════════════════════════════════════════════════════
+
+  Future<List<ProductModel>> fetchPopular({
+    String? categoryId,
+    int limit = 40,
+  }) async {
+    try {
+      var query = supabase
+          .from('products')
+          .select('*, stores(store_name, owner_id)')
+          .eq('is_active', true)
+          .not('rating', 'is', null);
+
+      if (categoryId != null && categoryId.isNotEmpty) {
+        query = query.eq('category_id', categoryId);
+      }
+
+      final data = await query
+          .order('rating', ascending: false)
+          .order('rating_count', ascending: false)
+          .limit(limit);
+
+      return _mapAndFilter(data as List);
+    } catch (e) {
+      debugPrint('⚠️ fetchPopular ката: $e');
+      return [];
+    }
   }
 
   // ══════════════════════════════════════════════════════════════════

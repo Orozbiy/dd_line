@@ -12,6 +12,7 @@ import '../../../core/supabase_client.dart';
 import 'seller_login_screen.dart';
 import '../../home/screens/home_screen.dart';
 import 'seller_close_account_screen.dart';
+import '../widgets/working_hours_sheet.dart';
 
 class SellerDashboardScreen extends StatefulWidget {
   final String uid;
@@ -28,6 +29,9 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
   final _chatService = ChatService();
   SellerModel? _seller;
   bool _isLoading = true;
+  String _workStart = '09:00';
+  String _workEnd = '18:00';
+  String _workDays = 'Дш-Жм';
 
   @override
   void initState() {
@@ -37,6 +41,24 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
 
   Future<void> _loadSeller() async {
     final seller = await _service.getSellerByUid(widget.uid);
+
+    if (seller != null) {
+      try {
+        final store = await supabase
+            .from('stores')
+            .select('work_start, work_end, work_days')
+            .eq('owner_id', widget.uid)
+            .maybeSingle();
+        if (store != null && mounted) {
+          setState(() {
+            _workStart = store['work_start'] as String? ?? '09:00';
+            _workEnd = store['work_end'] as String? ?? '18:00';
+            _workDays = store['work_days'] as String? ?? 'Дш-Жм';
+          });
+        }
+      } catch (_) {}
+    }
+
     if (mounted) {
       setState(() {
         _seller = seller;
@@ -51,57 +73,59 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
     );
   }
 
+  void _logout() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Чыгуу', style: AppTextStyles.headingSmall),
+        content:
+            const Text('Дүкөндөн чыгасызбы?', style: AppTextStyles.bodyMedium),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child:
+                const Text('Жок', style: TextStyle(color: AppColors.grey500)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context); // диалог жабуу
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      SellerCloseAccountScreen(sellerUid: _seller!.uid),
+                ),
+              );
+            },
+            child: const Text('Дүкөндөн баш тартуу',
+                style: TextStyle(color: AppColors.error)),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await supabase.auth.signOut();
+              if (!mounted) return;
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => const SellerLoginScreen()),
+                (route) => false,
+              );
+            },
+            child: const Text('Ооба', style: TextStyle(color: AppColors.error)),
+          ),
+        ],
+      ),
+    );
+  }
 
-void _logout() {
-  showDialog(
-    context: context,
-    builder: (_) => AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: const Text('Чыгуу', style: AppTextStyles.headingSmall),
-      content: const Text('Дүкөндөн чыгасызбы?', style: AppTextStyles.bodyMedium),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Жок', style: TextStyle(color: AppColors.grey500)),
-        ),
-        TextButton(
-          onPressed: () {
-            Navigator.pop(context); // диалог жабуу
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => SellerCloseAccountScreen(sellerUid: _seller!.uid),
-              ),
-            );
-          },
-          child: const Text('Дүкөндөн баш тартуу',
-              style: TextStyle(color: AppColors.error)),
-        ),
-        TextButton(
-          onPressed: () async {
-            Navigator.pop(context);
-            await supabase.auth.signOut();
-            if (!mounted) return;
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (_) => const SellerLoginScreen()),
-              (route) => false,
-            );
-          },
-          child: const Text('Ооба', style: TextStyle(color: AppColors.error)),
-        ),
-      ],
-    ),
-  );
-}
-
-void _goBack() {
-  Navigator.pushAndRemoveUntil(
-    context,
-    MaterialPageRoute(builder: (_) => const HomeScreen()),
-    (route) => false,
-  );
-}
+  void _goBack() {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const HomeScreen()),
+      (route) => false,
+    );
+  }
 
   void _showSubscriptionSheet() {
     final cardCtrl = TextEditingController();
@@ -136,10 +160,12 @@ void _goBack() {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Айлык жазылуу', style: AppTextStyles.headingSmall),
+                        const Text('Айлык жазылуу',
+                            style: AppTextStyles.headingSmall),
                         Text(
                           'Ар айдын 1-күнүндө 2 000 сом алынат',
-                          style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey500),
+                          style: AppTextStyles.bodySmall
+                              .copyWith(color: AppColors.grey500),
                         ),
                       ],
                     ),
@@ -153,11 +179,13 @@ void _goBack() {
                   decoration: BoxDecoration(
                     color: const Color(0xFFEEFFF5),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
+                    border: Border.all(
+                        color: AppColors.success.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.credit_card, color: AppColors.success, size: 20),
+                      const Icon(Icons.credit_card,
+                          color: AppColors.success, size: 20),
                       const SizedBox(width: 8),
                       Text(
                         _seller!.cardMasked ?? '',
@@ -169,7 +197,8 @@ void _goBack() {
                       const SizedBox(width: 4),
                       Text(
                         'байланган',
-                        style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey500),
+                        style: AppTextStyles.bodySmall
+                            .copyWith(color: AppColors.grey500),
                       ),
                     ],
                   ),
@@ -189,11 +218,13 @@ void _goBack() {
                 onChanged: (v) {
                   final digits = v.replaceAll(' ', '');
                   final formatted = digits
-                      .replaceAllMapped(RegExp(r'.{1,4}'), (m) => '${m.group(0)} ')
+                      .replaceAllMapped(
+                          RegExp(r'.{1,4}'), (m) => '${m.group(0)} ')
                       .trim();
                   cardCtrl.value = TextEditingValue(
                     text: formatted,
-                    selection: TextSelection.collapsed(offset: formatted.length),
+                    selection:
+                        TextSelection.collapsed(offset: formatted.length),
                   );
                 },
               ),
@@ -236,7 +267,8 @@ void _goBack() {
                         padding: EdgeInsets.only(top: 12),
                         child: Text(
                           'Ар айдын 1-күнүндө картамдан 2 000 сом алынышына макулмун. Каалаган убакта токтотсо болот.',
-                          style: TextStyle(fontSize: 13, color: Color(0xFF374151)),
+                          style:
+                              TextStyle(fontSize: 13, color: Color(0xFF374151)),
                         ),
                       ),
                     ),
@@ -248,19 +280,22 @@ void _goBack() {
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: agreed && cardCtrl.text.replaceAll(' ', '').length == 16
-                      ? () => _saveCard(cardCtrl.text, ctx)
-                      : null,
+                  onPressed:
+                      agreed && cardCtrl.text.replaceAll(' ', '').length == 16
+                          ? () => _saveCard(cardCtrl.text, ctx)
+                          : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     disabledBackgroundColor: AppColors.grey200,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                   ),
                   child: Text(
                     _seller?.hasCard == true
                         ? '🔄  Картаны алмаштыруу'
                         : '✅  Картаны байлоо',
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                    style: const TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
@@ -273,11 +308,13 @@ void _goBack() {
                     onPressed: () => _cancelSub(ctx),
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: AppColors.error),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                     ),
                     child: const Text(
                       '⛔  Авто төлөмдү токтотуу',
-                      style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                          color: AppColors.error, fontWeight: FontWeight.w600),
                     ),
                   ),
                 ),
@@ -306,13 +343,14 @@ void _goBack() {
         hintText: hint,
         counterText: '',
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       );
 
   Future<void> _saveCard(String cardNumber, BuildContext ctx) async {
     Navigator.pop(ctx);
     final digits = cardNumber.replaceAll(' ', '');
-    if (digits.length < 16) return;                      // ← КОШ
+    if (digits.length < 16) return; // ← КОШ
     final masked = '•••• ${digits.substring(12)}';
     await _subService.saveCard(
       uid: _seller!.uid,
@@ -320,7 +358,8 @@ void _goBack() {
       cardMasked: masked,
     );
     await _loadSeller();
-    if (mounted) _showSnack('✅ Карта байланды! Авто төлөм иштейт.', AppColors.success);
+    if (mounted)
+      _showSnack('✅ Карта байланды! Авто төлөм иштейт.', AppColors.success);
   }
 
   Future<void> _cancelSub(BuildContext ctx) async {
@@ -357,7 +396,8 @@ void _goBack() {
         },
         child: const Scaffold(
           body: Center(
-            child: Text('Маалымат табылган жок', style: AppTextStyles.bodyMedium),
+            child:
+                Text('Маалымат табылган жок', style: AppTextStyles.bodyMedium),
           ),
         ),
       );
@@ -371,20 +411,20 @@ void _goBack() {
       child: Scaffold(
         backgroundColor: const Color(0xFFF4F5F7),
         appBar: AppBar(
-  backgroundColor: Colors.white,
-  elevation: 0,
-  leading: GestureDetector(
-    onTap: _goBack,
-    child: const Icon(Icons.arrow_back, color: AppColors.black),
-  ),
-  title: const Row(
-    children: [
-      Text('🏪', style: TextStyle(fontSize: 22)),
-      SizedBox(width: 8),
-      Text('Дүкөнүм', style: AppTextStyles.headingMedium),
-    ],
-  ),
-),
+          backgroundColor: Colors.white,
+          elevation: 0,
+          leading: GestureDetector(
+            onTap: _goBack,
+            child: const Icon(Icons.arrow_back, color: AppColors.black),
+          ),
+          title: const Row(
+            children: [
+              Text('🏪', style: TextStyle(fontSize: 22)),
+              SizedBox(width: 8),
+              Text('Дүкөнүм', style: AppTextStyles.headingMedium),
+            ],
+          ),
+        ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -440,12 +480,14 @@ void _goBack() {
                             children: [
                               Text(
                                 _seller!.shopName,
-                                style: AppTextStyles.headingSmall.copyWith(color: Colors.white),
+                                style: AppTextStyles.headingSmall
+                                    .copyWith(color: Colors.white),
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 _seller!.name,
-                                style: AppTextStyles.labelMedium.copyWith(color: Colors.white70),
+                                style: AppTextStyles.labelMedium
+                                    .copyWith(color: Colors.white70),
                               ),
                             ],
                           ),
@@ -457,11 +499,13 @@ void _goBack() {
                     const SizedBox(height: 12),
                     Row(
                       children: [
-                        const Icon(Icons.phone, color: Colors.white70, size: 16),
+                        const Icon(Icons.phone,
+                            color: Colors.white70, size: 16),
                         const SizedBox(width: 6),
                         Text(
                           _seller!.phone,
-                          style: AppTextStyles.labelMedium.copyWith(color: Colors.white),
+                          style: AppTextStyles.labelMedium
+                              .copyWith(color: Colors.white),
                         ),
                       ],
                     ),
@@ -513,6 +557,26 @@ void _goBack() {
                 },
               ),
               const SizedBox(height: 10),
+              _buildMenuItem(
+                icon: '🕐',
+                title: 'Иштөө убактысы',
+                subtitle: '$_workDays  $_workStart — $_workEnd',
+                onTap: () async {
+                  final saved = await showModalBottomSheet<bool>(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (_) => WorkingHoursSheet(
+                      sellerUid: widget.uid,
+                      initialStart: _workStart,
+                      initialEnd: _workEnd,
+                      initialDays: _workDays,
+                    ),
+                  );
+                  if (saved == true) _loadSeller();
+                },
+              ),
+              const SizedBox(height: 10),
               _buildChatMenuItem(),
               const SizedBox(height: 10),
               _buildMenuItem(
@@ -530,7 +594,8 @@ void _goBack() {
                 decoration: BoxDecoration(
                   color: const Color(0xFFF0FFF4),
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFF22C55E).withValues(alpha: 0.3)),
+                  border: Border.all(
+                      color: const Color(0xFF22C55E).withValues(alpha: 0.3)),
                 ),
                 child: const Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -552,7 +617,8 @@ void _goBack() {
                           SizedBox(height: 4),
                           Text(
                             'Активдүү сатуучулар проблемаларын WhatsApp аркылуу жиберсин:',
-                            style: TextStyle(fontSize: 13, color: Color(0xFF374151)),
+                            style: TextStyle(
+                                fontSize: 13, color: Color(0xFF374151)),
                           ),
                           SizedBox(height: 6),
                           Text(
@@ -575,12 +641,14 @@ void _goBack() {
                 child: OutlinedButton(
                   onPressed: _logout,
                   style: OutlinedButton.styleFrom(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
                     side: const BorderSide(color: AppColors.error, width: 1.5),
                   ),
                   child: Text(
                     '🚪  Чыгуу',
-                    style: AppTextStyles.labelLarge.copyWith(color: AppColors.error),
+                    style: AppTextStyles.labelLarge
+                        .copyWith(color: AppColors.error),
                   ),
                 ),
               ),
@@ -652,7 +720,8 @@ void _goBack() {
                   const SizedBox(height: 2),
                   Text(
                     subtitleText,
-                    style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey500),
+                    style: AppTextStyles.bodySmall
+                        .copyWith(color: AppColors.grey500),
                   ),
                 ],
               ),
@@ -712,7 +781,8 @@ void _goBack() {
                         top: -6,
                         right: -8,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
                             color: AppColors.error,
                             borderRadius: BorderRadius.circular(10),
@@ -737,11 +807,13 @@ void _goBack() {
                     children: [
                       Row(
                         children: [
-                          const Text('Билдирүүлөр', style: AppTextStyles.labelLarge),
+                          const Text('Билдирүүлөр',
+                              style: AppTextStyles.labelLarge),
                           if (totalUnread > 0) ...[
                             const SizedBox(width: 8),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 7, vertical: 2),
                               decoration: BoxDecoration(
                                 color: AppColors.error,
                                 borderRadius: BorderRadius.circular(10),
@@ -764,14 +836,19 @@ void _goBack() {
                             ? '$totalUnread окулбаган билдирүү бар'
                             : 'Кардарлар менен чат',
                         style: AppTextStyles.labelSmall.copyWith(
-                          color: totalUnread > 0 ? AppColors.error : AppColors.grey500,
-                          fontWeight: totalUnread > 0 ? FontWeight.w600 : FontWeight.normal,
+                          color: totalUnread > 0
+                              ? AppColors.error
+                              : AppColors.grey500,
+                          fontWeight: totalUnread > 0
+                              ? FontWeight.w600
+                              : FontWeight.normal,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const Icon(Icons.arrow_forward_ios, color: AppColors.grey400, size: 16),
+                const Icon(Icons.arrow_forward_ios,
+                    color: AppColors.grey400, size: 16),
               ],
             ),
           ),
@@ -813,12 +890,14 @@ void _goBack() {
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey500),
+                    style: AppTextStyles.labelSmall
+                        .copyWith(color: AppColors.grey500, fontSize: 12),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios, color: AppColors.grey400, size: 16),
+            const Icon(Icons.arrow_forward_ios,
+                color: AppColors.grey400, size: 16),
           ],
         ),
       ),

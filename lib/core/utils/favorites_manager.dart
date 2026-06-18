@@ -1,9 +1,11 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/models/product_model.dart';
 
 /// Избранный товарларды башкаруу
-class FavoritesManager {
+/// ChangeNotifier кошулду — badge реалдуу убакытта жаңырат
+class FavoritesManager extends ChangeNotifier {
   static final FavoritesManager _instance = FavoritesManager._internal();
   factory FavoritesManager() => _instance;
   FavoritesManager._internal();
@@ -23,6 +25,7 @@ class FavoritesManager {
       final List decoded = jsonDecode(raw);
       _favorites.clear();
       _favorites.addAll(decoded.map((e) => ProductModel.fromJson(e)));
+      notifyListeners(); // ✅ жүктөлгөндөн кийин UI жаңырат
     } catch (_) {}
   }
 
@@ -44,6 +47,7 @@ class FavoritesManager {
       _favorites.add(product);
     }
     _saveToPrefs();
+    notifyListeners(); // ✅ toggle болгондо badge дароо жаңырат
   }
 
   int get count => _favorites.length;

@@ -75,9 +75,9 @@ class AppTextStyles {
     color: AppColors.grey600,
   );
 
-  static const TextStyle labelSmall = TextStyle(
-    fontSize: 10,
-    fontWeight: FontWeight.w600,
-    color: AppColors.grey500,
-  );
+ static const TextStyle labelSmall = TextStyle(
+  fontSize: 12,    // 10 → 12
+  fontWeight: FontWeight.w600,
+  color: AppColors.grey500,
+);
 }

@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'config/theme/app_theme.dart';
 import 'core/supabase_client.dart';
 import 'core/utils/favorites_manager.dart';
@@ -10,40 +11,78 @@ import 'features/home/screens/home_screen.dart';
 import 'firebase_options.dart';
 import 'services/notification_service.dart';
 import 'core/active_status_tracker.dart';
+import 'package:flutter/foundation.dart'; // defaultTargetPlatform үчүн
 
+// ══════════════════════════════════════════════════════
+// ФОНДО HANDLER — @pragma милдеттүү, эң жогорку деңгээлде
+// ══════════════════════════════════════════════════════
 @pragma('vm:entry-point')
-Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {}
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  if (defaultTargetPlatform == TargetPlatform.windows) return; // Windows'то өткөрүп жиберебиз
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  debugPrint('🔔 Фондо билдирүү: ${message.notification?.title} — ${message.notification?.body}');
+}
 
+// ══════════════════════════════════════════════════════
+// MAIN
+// ══════════════════════════════════════════════════════
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  debugPrint('🚀 MAIN БАШТАЛДЫ');
 
-  // Supabase (Auth + Database + Storage)
+  if (defaultTargetPlatform != TargetPlatform.windows) {
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  }
+
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+
+  debugPrint('🚀 Supabase init...');
   await SupabaseInit.init();
-
-  // Firebase бул жерде болгону FCM (push notifications) үчүн калат
-  try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-  } catch (e) {
-    if (!e.toString().contains('duplicate-app')) rethrow;
-  }
-
-  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-
-  try {
-    await NotificationService().init();
-    await NotificationService().saveMyToken();
-  } catch (e) {
-    debugPrint('❌ NotificationService ката: $e');
-  }
-
+  
+  debugPrint('🚀 Firebase init...');
+  await _initFirebase();
+  
+  debugPrint('🚀 Cart & Favorites...');
   await CartManager.instance.loadFromPrefs();
   await FavoritesManager().loadFromPrefs();
 
+  debugPrint('🚀 saveMyToken...');
+  unawaited(NotificationService().saveMyToken());
+
+  debugPrint('🚀 runApp...');
   runApp(const ActiveStatusTracker(child: DDOnlineApp()));
 }
 
+
+Future<void> _initFirebase() async {
+  try {
+    debugPrint('🚀 _initFirebase башталды');
+    
+    try {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    } catch (e) {
+      // duplicate-app катасын өткөрүп жиберебиз
+      debugPrint('🔥 Firebase мурда init болгон, улантабыз');
+    }
+    
+    debugPrint('🚀 Firebase init болду');
+    await NotificationService().init();
+    debugPrint('🚀 NotificationService init болду');
+
+    unawaited(NotificationService().handleInitialMessage());
+  } catch (e) {
+    debugPrint('⚠️ Firebase init ката: $e');
+  }
+}
+void unawaited(Future<void> future) {
+  future.catchError((e) => debugPrint('⚠️ Untracked error: $e'));
+}
+
+// ══════════════════════════════════════════════════════
+// APP — navigatorKey кошулду
+// ══════════════════════════════════════════════════════
 class DDOnlineApp extends StatelessWidget {
   const DDOnlineApp({super.key});
 
@@ -53,11 +92,16 @@ class DDOnlineApp extends StatelessWidget {
       title: 'DD Online',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
+      // ✅ navigatorKey — notification'дон ChatScreen'ге navigate үчүн
+      navigatorKey: navigatorKey,
       home: const SplashRouter(),
     );
   }
 }
 
+// ══════════════════════════════════════════════════════
+// SPLASH ROUTER
+// ══════════════════════════════════════════════════════
 class SplashRouter extends StatefulWidget {
   const SplashRouter({super.key});
 
@@ -76,37 +120,36 @@ class _SplashRouterState extends State<SplashRouter> {
   }
 
   Future<void> _determineScreen() async {
-    // Минимум 2.5 секунд splash көрсөтүү
-    final results = await Future.wait([
-      _getTargetScreen(),
-      Future.delayed(const Duration(milliseconds: 4000)),
-    ]);
-    _targetScreen = results[0] as Widget;
-
+    _targetScreen = await _getTargetScreen();
     if (mounted) {
       setState(() => _checking = false);
     }
   }
 
   Future<Widget> _getTargetScreen() async {
-    // Supabase Auth: учурдагы сессияны текшерүү
     final user = supabase.auth.currentSession?.user;
     if (user != null) return const HomeScreen();
-
     return const WelcomeScreen();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_checking) {
-      return const _SplashScreen();
-    }
-    return _targetScreen!;
+    if (_checking) return const _SplashScreen();
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      switchInCurve: Curves.easeOut,
+      transitionBuilder: (child, animation) => FadeTransition(
+        opacity: animation,
+        child: child,
+      ),
+      child: _targetScreen!,
+    );
   }
 }
 
 // ══════════════════════════════════════════════════════
-// SPLASH SCREEN
+// SPLASH SCREEN (өзгөргөн жок — толук сакталды)
 // ══════════════════════════════════════════════════════
 class _SplashScreen extends StatefulWidget {
   const _SplashScreen();
@@ -126,10 +169,10 @@ class _SplashScreenState extends State<_SplashScreen>
     super.initState();
     _ctrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 900),
+      duration: const Duration(milliseconds: 600),
     );
-    _scaleAnim = Tween<double>(begin: 0.75, end: 1.0).animate(
-      CurvedAnimation(parent: _ctrl, curve: Curves.elasticOut),
+    _scaleAnim = Tween<double>(begin: 0.85, end: 1.0).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeOutBack),
     );
     _fadeAnim = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
     _ctrl.forward();
@@ -153,7 +196,6 @@ class _SplashScreenState extends State<_SplashScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // ── Логотип + навигация badge ──
                 Stack(
                   clipBehavior: Clip.none,
                   children: [
@@ -197,9 +239,7 @@ class _SplashScreenState extends State<_SplashScreen>
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 32),
-
                 const Text(
                   'DD Online',
                   style: TextStyle(
@@ -209,9 +249,7 @@ class _SplashScreenState extends State<_SplashScreen>
                     letterSpacing: 0.5,
                   ),
                 ),
-
                 const SizedBox(height: 6),
-
                 const Text(
                   'Дордой базары',
                   style: TextStyle(
@@ -221,9 +259,7 @@ class _SplashScreenState extends State<_SplashScreen>
                     fontWeight: FontWeight.w400,
                   ),
                 ),
-
                 const SizedBox(height: 40),
-
                 const _DotsIndicator(),
               ],
             ),
@@ -234,7 +270,6 @@ class _SplashScreenState extends State<_SplashScreen>
   }
 }
 
-// ── Анимацияланган чекиттер ──
 class _DotsIndicator extends StatefulWidget {
   const _DotsIndicator();
 

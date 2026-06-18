@@ -101,12 +101,15 @@ class SellerService {
   // ═══════════════════════════════════════
 
   Future<List<SellerModel>> getAllSellers() async {
-    try {
-      final rows = await supabase
-          .from(_table)
-          .select()
-          .neq('seller_status', '')
-          .order('created_at', ascending: false);
+  try {
+    final rows = await supabase
+        .from(_table)
+        .select()
+        .not('seller_status', 'is', null)   // NULL эмес болсун
+        .neq('seller_status', '')            // бош эмес болсун
+        .order('created_at', ascending: false);
+
+
       return (rows as List)
           .map((r) => SellerModel.fromJson(r as Map<String, dynamic>))
           .toList();

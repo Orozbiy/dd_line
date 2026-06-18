@@ -1,4 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../../../core/utils/image_utils.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../core/supabase_client.dart';
@@ -6,9 +10,13 @@ import '../models/chat_model.dart';
 import '../services/chat_service.dart';
 import 'chat_screen.dart';
 
+// ══════════════════════════════════════════════
+// CHAT LIST SCREEN — Shimmer + LocalCache версия
+// ══════════════════════════════════════════════
+
 class ChatListScreen extends StatefulWidget {
   final bool isSeller;
-  final String? sellerId;
+  final String? sellerId; // сатуучу экранынан ачканда берилет
 
   const ChatListScreen({
     super.key,
@@ -23,19 +31,51 @@ class ChatListScreen extends StatefulWidget {
 class _ChatListScreenState extends State<ChatListScreen> {
   final _service = ChatService();
 
-  // ── Select режими (бир нече чатты тандап өчүрүү) ──
+  // ── Кэш ──
+  List<ChatModel> _cachedChats = [];
+  bool _cacheLoaded = false;
+
+  // ── Тандоо режими ──
   bool _isSelectionMode = false;
   final Set<String> _selectedIds = {};
 
-  void _toggleSelection(String chatId) {
-    setState(() {
-      if (_selectedIds.contains(chatId)) {
-        _selectedIds.remove(chatId);
-        if (_selectedIds.isEmpty) _isSelectionMode = false;
-      } else {
-        _selectedIds.add(chatId);
+  // ── Кэш ачкычы ──
+  String get _cacheKey {
+    final myId = supabase.auth.currentUser?.id ?? '';
+    return widget.isSeller ? 'chats_seller_$myId' : 'chats_buyer_$myId';
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCache();
+  }
+
+  // ── SharedPreferences'тан кэш окуу ──
+  Future<void> _loadCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_cacheKey);
+      if (raw == null) return;
+      final list = (jsonDecode(raw) as List)
+          .map((e) => ChatModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+      if (mounted) {
+        setState(() {
+          _cachedChats = list;
+          _cacheLoaded = true;
+        });
       }
-    });
+    } catch (_) {}
+  }
+
+  // ── Жаңы маалыматтарды кэшке сактоо ──
+  Future<void> _saveCache(List<ChatModel> chats) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = jsonEncode(chats.map((c) => c.toJson()).toList());
+      await prefs.setString(_cacheKey, raw);
+    } catch (_) {}
   }
 
   void _exitSelectionMode() {
@@ -45,52 +85,49 @@ class _ChatListScreenState extends State<ChatListScreen> {
     });
   }
 
+  void _toggleSelection(String id) {
+    setState(() {
+      if (_selectedIds.contains(id)) {
+        _selectedIds.remove(id);
+        if (_selectedIds.isEmpty) _isSelectionMode = false;
+      } else {
+        _selectedIds.add(id);
+      }
+    });
+  }
+
   void _selectAll(List<ChatModel> chats) {
     setState(() {
-      _selectedIds
-        ..clear()
-        ..addAll(chats.map((c) => c.id));
+      _selectedIds.addAll(chats.map((c) => c.id));
     });
   }
 
   Future<void> _deleteSelected() async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Чаттарды өчүрүү'),
-        content:
-            Text('${_selectedIds.length} чат өчүрүлөт. Улантасызбы?'),
+      builder: (_) => AlertDialog(
+        title: const Text('Чатты өчүрүү'),
+        content: Text('${_selectedIds.length} чатты өчүрөсүзбү?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Жок'),
-          ),
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Жок')),
           TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Ооба, өчүрүү',
-                style: TextStyle(color: AppColors.error)),
-          ),
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Ооба', style: TextStyle(color: Colors.red))),
         ],
       ),
     );
-    if (confirm == true) {
-      for (final chatId in _selectedIds) {
-        await _service.deleteChat(chatId);
-      }
-      _exitSelectionMode();
+    if (confirm != true) return;
+    for (final id in _selectedIds) {
+      await _service.deleteChat(id);
     }
+    _exitSelectionMode();
   }
 
   @override
   Widget build(BuildContext context) {
-    final myId = supabase.auth.currentUser?.id;
-
-    if (myId == null) {
-      return const Scaffold(
-        body: Center(child: Text('Кирүү керек')),
-      );
-    }
-
+    final myId = supabase.auth.currentUser?.id ?? '';
     final stream = widget.isSeller
         ? _service.sellerChatsStream(widget.sellerId ?? myId)
         : _service.buyerChatsStream(myId);
@@ -109,8 +146,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
                   style: AppTextStyles.headingSmall),
               actions: [
                 IconButton(
-                  icon: const Icon(Icons.delete_outline,
-                      color: AppColors.error),
+                  icon:
+                      const Icon(Icons.delete_outline, color: AppColors.error),
                   onPressed: _selectedIds.isEmpty ? null : _deleteSelected,
                 ),
               ],
@@ -124,12 +161,36 @@ class _ChatListScreenState extends State<ChatListScreen> {
       body: StreamBuilder<List<ChatModel>>(
         stream: stream,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-                child: CircularProgressIndicator(color: AppColors.primary));
+          // ── Жаңы маалымат келди → кэшке сактоо ──
+          if (snapshot.hasData) {
+            final fresh = snapshot.data!;
+            if (fresh != _cachedChats) {
+              // frame'ден тышкары сактоо
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _saveCache(fresh);
+                if (mounted) {
+                  setState(() {
+                    _cachedChats = fresh;
+                    _cacheLoaded = true;
+                  });
+                }
+              });
+            }
           }
-          final chats = snapshot.data ?? [];
-          if (chats.isEmpty) {
+
+          // ── Эмне көрсөтөбүз? ──
+          final isWaiting = snapshot.connectionState == ConnectionState.waiting;
+          final showSkeleton = isWaiting && !_cacheLoaded;
+          final chats = snapshot.hasData
+              ? snapshot.data!
+              : (_cacheLoaded ? _cachedChats : <ChatModel>[]);
+
+          if (showSkeleton) {
+            // ── Shimmer Skeleton ──
+            return _ChatSkeletonList();
+          }
+
+          if (chats.isEmpty && !isWaiting) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -144,7 +205,6 @@ class _ChatListScreenState extends State<ChatListScreen> {
 
           return Column(
             children: [
-              // ── Select режиминде "Баарын тандоо" ──
               if (_isSelectionMode)
                 Container(
                   color: Colors.white,
@@ -154,7 +214,12 @@ class _ChatListScreenState extends State<ChatListScreen> {
                     alignment: Alignment.centerRight,
                     child: TextButton(
                       onPressed: () => _selectAll(chats),
-                      child: const Text('Баарын тандоо'),
+                      child: Text(
+                        _selectedIds.length == chats.length
+                            ? 'Баарын алып салуу'
+                            : 'Баарын тандоо',
+                        style: AppTextStyles.labelLarge,
+                      ),
                     ),
                   ),
                 ),
@@ -164,9 +229,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
                   itemCount: chats.length,
                   itemBuilder: (context, i) {
                     final chat = chats[i];
-                    final unread = widget.isSeller
-                        ? chat.sellerUnread
-                        : chat.buyerUnread;
+                    final unread =
+                        widget.isSeller ? chat.sellerUnread : chat.buyerUnread;
                     final hasProduct = !widget.isSeller &&
                         chat.productName != null &&
                         chat.productName!.isNotEmpty;
@@ -232,12 +296,17 @@ class _ChatListScreenState extends State<ChatListScreen> {
                                         chat.productImage!.isNotEmpty)
                                       ClipRRect(
                                         borderRadius: BorderRadius.circular(6),
-                                        child: Image.network(
-                                          chat.productImage!,
+                                        child: CachedNetworkImage(
+                                          // ← Image.network эмес
+                                          imageUrl: toCloudinaryThumb(
+                                            // ← оптимизация кошулду
+                                            chat.productImage!,
+                                            width: 80,
+                                          ),
                                           width: 24,
                                           height: 24,
                                           fit: BoxFit.cover,
-                                          errorBuilder: (_, __, ___) =>
+                                          errorWidget: (_, __, ___) =>
                                               Container(
                                             width: 24,
                                             height: 24,
@@ -251,8 +320,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
                                         chat.productName!,
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
-                                        style: AppTextStyles.labelSmall
-                                            .copyWith(
+                                        style:
+                                            AppTextStyles.labelSmall.copyWith(
                                           color: AppColors.grey500,
                                           fontWeight: FontWeight.w600,
                                         ),
@@ -305,8 +374,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                               : () => Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (_) => ChatScreen.fromChat(
-                                          chat,
+                                      builder: (_) => ChatScreen.fromChat(chat,
                                           isSeller: widget.isSeller),
                                     ),
                                   ),
@@ -324,6 +392,124 @@ class _ChatListScreenState extends State<ChatListScreen> {
   }
 }
 
+// ══════════════════════════════════════════════
+// SHIMMER SKELETON — жүктөлүп жатканда
+// ══════════════════════════════════════════════
+
+class _ChatSkeletonList extends StatefulWidget {
+  @override
+  State<_ChatSkeletonList> createState() => _ChatSkeletonListState();
+}
+
+class _ChatSkeletonListState extends State<_ChatSkeletonList>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+    _anim = CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (_, __) {
+        final shimmerColor = Color.lerp(
+          const Color(0xFFE8E8E8),
+          const Color(0xFFF5F5F5),
+          _anim.value,
+        )!;
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(12),
+          itemCount: 7,
+          itemBuilder: (_, i) => Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                // Аватар
+                Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    color: shimmerColor,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Текст
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        height: 14,
+                        width: double.infinity * 0.6,
+                        decoration: BoxDecoration(
+                          color: shimmerColor,
+                          borderRadius: BorderRadius.circular(7),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        height: 11,
+                        width: 180,
+                        decoration: BoxDecoration(
+                          color: shimmerColor,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                // Убакыт
+                Container(
+                  height: 10,
+                  width: 38,
+                  decoration: BoxDecoration(
+                    color: shimmerColor,
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ══════════════════════════════════════════════
+// CHAT AVATAR
+// ══════════════════════════════════════════════
+
 class _ChatAvatar extends StatelessWidget {
   final ChatModel chat;
   final bool isSeller;
@@ -332,61 +518,74 @@ class _ChatAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final otherUserId = isSeller ? chat.buyerId : chat.sellerId;
+    final url = isSeller ? chat.buyerAvatar : chat.sellerAvatar;
+    final initial = isSeller
+        ? (chat.buyerId.isNotEmpty ? chat.buyerId[0].toUpperCase() : '?')
+        : (chat.sellerName.isNotEmpty ? chat.sellerName[0].toUpperCase() : '?');
 
-    return FutureBuilder<Map<String, dynamic>?>(
-      future: supabase
-          .from('profiles')
-          .select('full_name, avatar_url')
-          .eq('id', otherUserId)
-          .maybeSingle(),
-      builder: (context, snapshot) {
-        final avatarUrl = snapshot.data?['avatar_url'] as String?;
-        final name = snapshot.data?['full_name'] as String? ?? '';
-
-        return CircleAvatar(
-          radius: 24,
-          backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-          backgroundImage: (avatarUrl != null && avatarUrl.isNotEmpty)
-              ? NetworkImage(avatarUrl)
-              : null,
-          child: (avatarUrl == null || avatarUrl.isEmpty)
-              ? Text(
-                  name.isNotEmpty ? name[0].toUpperCase() : '?',
-                  style: const TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.bold,
-                  ),
-                )
-              : null,
-        );
-      },
+    if (url.isNotEmpty) {
+      return CircleAvatar(
+        radius: 23,
+        backgroundImage: NetworkImage(url),
+        backgroundColor: AppColors.grey100,
+      );
+    }
+    return CircleAvatar(
+      radius: 23,
+      backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+      child: Text(
+        initial,
+        style: TextStyle(
+          color: AppColors.primary,
+          fontWeight: FontWeight.bold,
+          fontSize: 16,
+        ),
+      ),
     );
   }
 }
 
-class _BuyerName extends StatelessWidget {
-  final String buyerId;
+// ══════════════════════════════════════════════
+// BUYER NAME — алуучунун атын суpabase'тен алуу
+// ══════════════════════════════════════════════
 
+class _BuyerName extends StatefulWidget {
+  final String buyerId;
   const _BuyerName({required this.buyerId});
 
   @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<Map<String, dynamic>?>(
-      future: supabase
+  State<_BuyerName> createState() => _BuyerNameState();
+}
+
+class _BuyerNameState extends State<_BuyerName> {
+  String? _name;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final row = await supabase
           .from('profiles')
           .select('full_name')
-          .eq('id', buyerId)
-          .maybeSingle(),
-      builder: (context, snapshot) {
-        final name = snapshot.data?['full_name'] as String? ?? 'Колдонуучу';
-        return Text(
-          name,
-          style: AppTextStyles.labelLarge,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        );
-      },
+          .eq('id', widget.buyerId)
+          .maybeSingle();
+      if (mounted && row != null) {
+        setState(() => _name = row['full_name'] as String?);
+      }
+    } catch (_) {}
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      _name ?? 'Жүктөлүүдө...',
+      style: AppTextStyles.labelLarge,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
     );
   }
 }

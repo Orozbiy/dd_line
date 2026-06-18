@@ -928,11 +928,16 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
               ),
             ),
           ),
+
+
+          
           GestureDetector(
   onTap: () => Navigator.push(
     context,
     MaterialPageRoute(builder: (_) => const AdminStatsScreen()),
   ),
+
+
   child: const Padding(
     padding: EdgeInsets.only(right: 8),
     child: Icon(Icons.bar_chart_rounded, color: Colors.white, size: 24),

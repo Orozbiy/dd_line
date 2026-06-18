@@ -17,7 +17,8 @@ class ProductGrid extends StatelessWidget {
           children: [
             Icon(Icons.shopping_bag_outlined, size: 64, color: Colors.grey[300]),
             const SizedBox(height: 16),
-            Text('Товарлар табылган жок', style: Theme.of(context).textTheme.bodyLarge),
+            Text('Товарлар табылган жок',
+                style: Theme.of(context).textTheme.bodyLarge),
           ],
         ),
       );
@@ -27,24 +28,30 @@ class ProductGrid extends StatelessWidget {
     int crossAxisCount;
     if (width > 1200) {
       crossAxisCount = 5;
-    // ignore: curly_braces_in_flow_control_structures
-    } else if (width > 900) crossAxisCount = 4;
-    // ignore: curly_braces_in_flow_control_structures
-    else if (width > 600) crossAxisCount = 3;
-    // ignore: curly_braces_in_flow_control_structures
-    else crossAxisCount = 2;
+    } else if (width > 900) {
+      crossAxisCount = 4;
+    } else if (width > 600) {
+      crossAxisCount = 3;
+    } else {
+      crossAxisCount = 2;
+    }
 
     return GridView.builder(
       padding: const EdgeInsets.all(14),
+      cacheExtent: 1200,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: crossAxisCount,
-        childAspectRatio: 0.68,
+        // ✅ 0.65 — сыналган туруктуу маани
+        // Карточка бийиктиги = тuurasy / 0.65
+        // Сүрөт + маалымат бөлүмү ыңгайлуу сыят
+        childAspectRatio: 0.65,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
       ),
       itemCount: products.length,
       itemBuilder: (context, index) {
         return _AnimatedProductCard(
+          key: ValueKey(products[index].id),
           index: index,
           product: products[index],
           onTap: () => onProductTap(products[index]),
@@ -54,13 +61,13 @@ class ProductGrid extends StatelessWidget {
   }
 }
 
-/// 0.3 секундада пайда болгон анимациялык карточка
 class _AnimatedProductCard extends StatefulWidget {
   final int index;
   final ProductModel product;
   final VoidCallback onTap;
 
   const _AnimatedProductCard({
+    super.key,
     required this.index,
     required this.product,
     required this.onTap,
@@ -71,28 +78,31 @@ class _AnimatedProductCard extends StatefulWidget {
 }
 
 class _AnimatedProductCardState extends State<_AnimatedProductCard>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   late AnimationController _controller;
   late Animation<double> _opacity;
   late Animation<Offset> _slide;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 400),
+      duration: const Duration(milliseconds: 350),
     );
     _opacity = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeOut),
     );
     _slide = Tween<Offset>(
-      begin: const Offset(0, 0.12),
+      begin: const Offset(0, 0.08),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
-    // Кийинки карточкалар бир аз кечигип пайда болот
-    Future.delayed(Duration(milliseconds: widget.index * 50), () {
+    final delayMs = (widget.index * 30).clamp(0, 200);
+    Future.delayed(Duration(milliseconds: delayMs), () {
       if (mounted) _controller.forward();
     });
   }
@@ -105,6 +115,7 @@ class _AnimatedProductCardState extends State<_AnimatedProductCard>
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return FadeTransition(
       opacity: _opacity,
       child: SlideTransition(

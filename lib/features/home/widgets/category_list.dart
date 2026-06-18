@@ -1,37 +1,77 @@
 import 'package:flutter/material.dart';
-
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
-import '../../cart/screens/cart_screen.dart';
-import '../../chat/screens/assistant_chat_screen.dart';
-import '../../map/screens/map_screen.dart';
 import '../models/category_model.dart';
-import '../screens/favorites_screen.dart';
+
+enum ProductFilterMode { all, newest, popular }
 
 class CategoryList extends StatefulWidget {
   final Function(String) onCategorySelected;
+  final Function(ProductFilterMode)? onFilterModeChanged;
 
-  const CategoryList({super.key, required this.onCategorySelected});
+  const CategoryList({
+    super.key,
+    required this.onCategorySelected,
+    this.onFilterModeChanged,
+  });
 
   @override
   State<CategoryList> createState() => _CategoryListState();
 }
 
 class _CategoryListState extends State<CategoryList> {
-  String? selectedCategoryId;
-  late List<CategoryModel> categories;
-  final _scrollController = ScrollController();
+  String? _selectedCategoryId;
+  String? _selectedSubId;
+  late List<CategoryModel> _categories;
+  ProductFilterMode _filterMode = ProductFilterMode.all;
 
   @override
   void initState() {
     super.initState();
-    categories = CategoryModel.getCategories();
+    _categories = CategoryModel.getCategories();
   }
 
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
+  CategoryModel? get _selectedCategory {
+    if (_selectedCategoryId == null) return null;
+    try {
+      return _categories.firstWhere((c) => c.id == _selectedCategoryId);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  void _onCategoryTap(CategoryModel cat) {
+    setState(() {
+      if (_selectedCategoryId == cat.id) {
+        // Эгер ошол эле категорияны кайра бассак — өчүр
+        _selectedCategoryId = null;
+        _selectedSubId = null;
+        widget.onCategorySelected('');
+      } else {
+        _selectedCategoryId = cat.id;
+        _selectedSubId = null;
+        // Негизги категорияны тандоо — баарын жүктөйт
+        widget.onCategorySelected(cat.id);
+      }
+    });
+  }
+
+  void _onSubCategoryTap(SubCategoryModel sub) {
+    setState(() {
+      if (_selectedSubId == sub.id) {
+        _selectedSubId = null;
+        // Кичи категория өчүрүлсө — негизги категория активдүү болот
+        widget.onCategorySelected(_selectedCategoryId ?? '');
+      } else {
+        _selectedSubId = sub.id;
+        // "Баары" болсо — негизги категориянын id жибер
+        if (sub.name == 'Баары') {
+          widget.onCategorySelected(_selectedCategoryId ?? '');
+        } else {
+          widget.onCategorySelected(sub.id);
+        }
+      }
+    });
   }
 
   void _openCategorySheet() {
@@ -40,140 +80,306 @@ class _CategoryListState extends State<CategoryList> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _CategoryBottomSheet(
-        categories: categories,
-        selectedId: selectedCategoryId,
-        onSelected: (id) {
-          setState(() {
-            if (selectedCategoryId == id) {
-              selectedCategoryId = null;
-              widget.onCategorySelected('');
-            } else {
-              selectedCategoryId = id;
-              widget.onCategorySelected(id);
-            }
-          });
+        categories: _categories,
+        selectedId: _selectedCategoryId,
+        onSelected: (cat) {
+          Navigator.pop(context);
+          _onCategoryTap(cat);
         },
       ),
     );
   }
 
+  void _setFilterMode(ProductFilterMode mode) {
+    if (_filterMode == mode) {
+      setState(() => _filterMode = ProductFilterMode.all);
+      widget.onFilterModeChanged?.call(ProductFilterMode.all);
+    } else {
+      setState(() => _filterMode = mode);
+      widget.onFilterModeChanged?.call(mode);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 58,
-      child: Row(
-        children: [
-          // ── СОЛ: Категория баскычы ──
-          GestureDetector(
-            onTap: _openCategorySheet,
-            child: Container(
-              margin: const EdgeInsets.only(left: 12, right: 6),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+    final cat = _selectedCategory;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // ── Негизги фильтр катары ──
+        SizedBox(
+          height: 52,
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Категория баскычы
+                GestureDetector(
+                  onTap: _openCategorySheet,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    margin: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 9),
+                    decoration: BoxDecoration(
+                      color: _selectedCategoryId != null
+                          ? AppColors.primary
+                          : AppColors.grey100,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: _selectedCategoryId != null
+                          ? [
+                              BoxShadow(
+                                color: AppColors.primary
+                                    .withValues(alpha: 0.35),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              )
+                            ]
+                          : [],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.grid_view_rounded,
+                            size: 17,
+                            color: _selectedCategoryId != null
+                                ? Colors.white
+                                : AppColors.grey600),
+                        const SizedBox(width: 6),
+                        Text(
+                          _selectedCategoryId != null
+                              ? (cat?.name ?? 'Категория')
+                              : 'Категория',
+                          style: AppTextStyles.labelLarge.copyWith(
+                            color: _selectedCategoryId != null
+                                ? Colors.white
+                                : AppColors.grey600,
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(width: 3),
+                        Icon(Icons.keyboard_arrow_down_rounded,
+                            size: 16,
+                            color: _selectedCategoryId != null
+                                ? Colors.white
+                                : AppColors.grey500),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Жаңы товарлар
+                GestureDetector(
+                  onTap: () => _setFilterMode(ProductFilterMode.newest),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    margin: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 9),
+                    decoration: BoxDecoration(
+                      color: _filterMode == ProductFilterMode.newest
+                          ? const Color(0xFF16A34A)
+                          : AppColors.grey100,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: _filterMode == ProductFilterMode.newest
+                          ? [
+                              BoxShadow(
+                                color: const Color(0xFF16A34A)
+                                    .withValues(alpha: 0.35),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              )
+                            ]
+                          : [],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.fiber_new_rounded,
+                            size: 16,
+                            color: _filterMode == ProductFilterMode.newest
+                                ? Colors.white
+                                : AppColors.grey600),
+                        const SizedBox(width: 5),
+                        Text(
+                          'Жаңы товарлар',
+                          style: AppTextStyles.labelLarge.copyWith(
+                            color: _filterMode == ProductFilterMode.newest
+                                ? Colors.white
+                                : AppColors.grey600,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Таанымал
+                GestureDetector(
+                  onTap: () => _setFilterMode(ProductFilterMode.popular),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 9),
+                    decoration: BoxDecoration(
+                      color: _filterMode == ProductFilterMode.popular
+                          ? const Color(0xFFD97706)
+                          : AppColors.grey100,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: _filterMode == ProductFilterMode.popular
+                          ? [
+                              BoxShadow(
+                                color: const Color(0xFFD97706)
+                                    .withValues(alpha: 0.35),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              )
+                            ]
+                          : [],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.trending_up_rounded,
+                            size: 16,
+                            color: _filterMode == ProductFilterMode.popular
+                                ? Colors.white
+                                : AppColors.grey600),
+                        const SizedBox(width: 5),
+                        Text(
+                          'Таанымал',
+                          style: AppTextStyles.labelLarge.copyWith(
+                            color: _filterMode == ProductFilterMode.popular
+                                ? Colors.white
+                                : AppColors.grey600,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // ── Кичи категориялар — категория тандалганда гана чыгат ──
+        AnimatedSize(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeInOut,
+          child: cat != null && cat.subcategories.isNotEmpty
+              ? _SubCategoryBar(
+                  category: cat,
+                  selectedSubId: _selectedSubId,
+                  onSubTap: _onSubCategoryTap,
+                )
+              : const SizedBox.shrink(),
+        ),
+      ],
+    );
+  }
+}
+
+// ════════════════════════════════════════════════════
+// КИЧИ КАТЕГОРИЯЛАР КАТАРЫ
+// ════════════════════════════════════════════════════
+class _SubCategoryBar extends StatelessWidget {
+  final CategoryModel category;
+  final String? selectedSubId;
+  final Function(SubCategoryModel) onSubTap;
+
+  const _SubCategoryBar({
+    required this.category,
+    required this.selectedSubId,
+    required this.onSubTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Color(int.parse('0xFF${category.color}'));
+
+    return Container(
+      height: 48,
+      margin: const EdgeInsets.only(top: 6),
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        itemCount: category.subcategories.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, i) {
+          final sub = category.subcategories[i];
+          final isSelected = selectedSubId == sub.id ||
+              (selectedSubId == null && sub.name == 'Баары');
+
+          return GestureDetector(
+            onTap: () => onSubTap(sub),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
-                color: selectedCategoryId != null
-                    ? AppColors.primary
-                    : AppColors.grey100,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: selectedCategoryId != null
+                color: isSelected
+                    ? color
+                    : color.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: isSelected
+                      ? color
+                      : color.withValues(alpha: 0.25),
+                  width: 1.5,
+                ),
+                boxShadow: isSelected
                     ? [
                         BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.35),
-                            blurRadius: 8,
-                            offset: const Offset(0, 3))
+                          color: color.withValues(alpha: 0.3),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        )
                       ]
                     : [],
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.grid_view_rounded,
-                      size: 18,
-                      color: selectedCategoryId != null
+                  Text(sub.icon,
+                      style: const TextStyle(fontSize: 14)),
+                  const SizedBox(width: 5),
+                  Text(
+                    sub.name,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: isSelected
+                          ? FontWeight.w700
+                          : FontWeight.w500,
+                      color: isSelected
                           ? Colors.white
-                          : AppColors.grey600),
-                  const SizedBox(width: 6),
-                  Text('Категория',
-                      style: AppTextStyles.labelLarge.copyWith(
-                        color: selectedCategoryId != null
-                            ? Colors.white
-                            : AppColors.grey600,
-                        fontSize: 13,
-                      )),
-                  const SizedBox(width: 4),
-                  Icon(Icons.keyboard_arrow_down_rounded,
-                      size: 16,
-                      color: selectedCategoryId != null
-                          ? Colors.white
-                          : AppColors.grey600),
+                          : color.withValues(alpha: 0.85),
+                    ),
+                  ),
                 ],
               ),
             ),
-          ),
-
-          // ── ОҢ: ⋮ Меню ──
-          const Spacer(),
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert, color: AppColors.grey600),
-            onSelected: (value) {
-              switch (value) {
-                case 'favorites':
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const FavoritesScreen()));
-                  break;
-                case 'cart':
-                  Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => const CartScreen()));
-                  break;
-                case 'map':
-                  Navigator.push(
-                      context, MaterialPageRoute(builder: (_) => const MapScreen()));
-                  break;
-                case 'assistant':
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const AssistantChatScreen()));
-                  break;
-              }
-            },
-            itemBuilder: (_) => const [
-              PopupMenuItem(
-                  value: 'favorites',
-                  child: ListTile(
-                      leading: Icon(Icons.favorite_border),
-                      title: Text('Избранный'))),
-              PopupMenuItem(
-                  value: 'cart',
-                  child: ListTile(
-                      leading: Icon(Icons.shopping_cart_outlined),
-                      title: Text('Корзина'))),
-              PopupMenuItem(
-                  value: 'map',
-                  child: ListTile(
-                      leading: Icon(Icons.map_outlined), title: Text('Карта'))),
-              PopupMenuItem(
-                  value: 'assistant',
-                  child: ListTile(
-                      leading: Icon(Icons.smart_toy_outlined),
-                      title: Text('Жардамчы'))),
-            ],
-          ),
-          const SizedBox(width: 4),
-        ],
+          );
+        },
       ),
     );
   }
 }
 
-// ════════════════════════════════════════════════════════
-// КАТЕГОРИЯЛАР BOTTOM SHEET
-// ════════════════════════════════════════════════════════
-class _CategoryBottomSheet extends StatefulWidget {
+// ════════════════════════════════════════════════════
+// CATEGORY BOTTOM SHEET
+// ════════════════════════════════════════════════════
+class _CategoryBottomSheet extends StatelessWidget {
   final List<CategoryModel> categories;
   final String? selectedId;
-  final Function(String) onSelected;
+  final Function(CategoryModel) onSelected;
 
   const _CategoryBottomSheet({
     required this.categories,
@@ -182,171 +388,121 @@ class _CategoryBottomSheet extends StatefulWidget {
   });
 
   @override
-  State<_CategoryBottomSheet> createState() => _CategoryBottomSheetState();
-}
-
-class _CategoryBottomSheetState extends State<_CategoryBottomSheet> {
-  final _searchController = TextEditingController();
-  late List<CategoryModel> _filtered;
-  String? _selectedId;
-
-  @override
-  void initState() {
-    super.initState();
-    _filtered = widget.categories;
-    _selectedId = widget.selectedId;
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  void _onSearch(String query) {
-    setState(() {
-      _filtered = widget.categories
-          .where((c) =>
-              c.name.toLowerCase().contains(query.toLowerCase()) ||
-              c.icon.contains(query))
-          .toList();
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.75,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: Column(
-        children: [
-          Container(
-            width: 40,
-            height: 4,
-            margin: const EdgeInsets.only(top: 12, bottom: 16),
-            decoration: BoxDecoration(
-                color: AppColors.grey200,
-                borderRadius: BorderRadius.circular(2)),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              children: [
-                const Text('Категориялар', style: AppTextStyles.headingMedium),
-                const Spacer(),
-                if (_selectedId != null)
-                  GestureDetector(
-                    onTap: () {
-                      widget.onSelected('');
-                      Navigator.pop(context);
-                    },
-                    child: Text('Тазалоо',
-                        style: AppTextStyles.bodySmall.copyWith(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w600)),
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: TextField(
-              controller: _searchController,
-              onChanged: _onSearch,
-              style: AppTextStyles.bodyMedium,
-              decoration: InputDecoration(
-                hintText: 'Категория издөө...',
-                hintStyle:
-                    AppTextStyles.bodyMedium.copyWith(color: AppColors.grey400),
-                prefixIcon: const Icon(Icons.search_rounded,
-                    color: AppColors.grey400, size: 20),
-                filled: true,
-                fillColor: AppColors.grey50,
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide.none),
-                focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide:
-                        const BorderSide(color: AppColors.primary, width: 1.5)),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    final maxH = MediaQuery.of(context).size.height * 0.85;
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: maxH),
+      child: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.grey300,
+                borderRadius: BorderRadius.circular(2),
               ),
             ),
-          ),
-          const SizedBox(height: 12),
-          const Divider(height: 1, color: Color(0xFFEEEEEE)),
-          Expanded(
-            child: _filtered.isEmpty
-                ? Center(
-                    child: Text('Категория табылган жок',
-                        style: AppTextStyles.bodyMedium
-                            .copyWith(color: AppColors.grey400)))
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    itemCount: _filtered.length,
-                    itemBuilder: (context, index) {
-                      final cat = _filtered[index];
-                      final color = Color(int.parse('0xFF${cat.color}'));
-                      final isSelected = _selectedId == cat.id;
-                      return GestureDetector(
-                        onTap: () {
-                          setState(() => _selectedId = cat.id);
-                          widget.onSelected(cat.id);
-                          Navigator.pop(context);
-                        },
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          margin: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 4),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 14),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? color.withValues(alpha: 0.12)
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                                color: isSelected ? color : AppColors.grey100,
-                                width: isSelected ? 1.5 : 1),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 42,
-                                height: 42,
-                                decoration: BoxDecoration(
-                                    color: color.withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(12)),
-                                child: Center(
-                                    child: Text(cat.icon,
-                                        style: const TextStyle(fontSize: 22))),
-                              ),
-                              const SizedBox(width: 14),
-                              Text(cat.name,
-                                  style: AppTextStyles.bodyMedium.copyWith(
-                                      fontWeight: isSelected
-                                          ? FontWeight.w700
-                                          : FontWeight.w500,
-                                      color: isSelected
-                                          ? color
-                                          : AppColors.grey600)),
-                              const Spacer(),
-                              if (isSelected)
-                                Icon(Icons.check_circle_rounded,
-                                    color: color, size: 22),
-                            ],
-                          ),
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text('Категория тандоо',
+                    style: AppTextStyles.headingSmall),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Flexible(
+              child: GridView.builder(
+                shrinkWrap: true,
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+                gridDelegate:
+                    const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 4,
+                  childAspectRatio: 0.82,
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
+                ),
+                itemCount: categories.length,
+                itemBuilder: (context, index) {
+                  final cat = categories[index];
+                  final isSelected = selectedId == cat.id;
+                  final color =
+                      Color(int.parse('0xFF${cat.color}'));
+                  return GestureDetector(
+                    onTap: () => onSelected(cat),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? color.withValues(alpha: 0.15)
+                            : const Color(0xFFF7F7F7),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isSelected
+                              ? color
+                              : Colors.transparent,
+                          width: 2,
                         ),
-                      );
-                    },
-                  ),
-          ),
-        ],
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 46,
+                            height: 46,
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? color.withValues(alpha: 0.2)
+                                  : color.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
+                              child: Text(
+                                cat.icon,
+                                style:
+                                    const TextStyle(fontSize: 22),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 4),
+                            child: Text(
+                              cat.name,
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: isSelected
+                                    ? FontWeight.w700
+                                    : FontWeight.w500,
+                                color: isSelected
+                                    ? color
+                                    : AppColors.grey600,
+                                height: 1.2,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

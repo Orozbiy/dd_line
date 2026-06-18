@@ -1,20 +1,22 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
+import '../../../core/utils/image_utils.dart';
 import '../models/message_model.dart';
-import 'voice_message_player.dart';
+import '../widgets/voice_message_player_mobile.dart';
 
 class MessageBubble extends StatelessWidget {
   final MessageModel message;
   final bool isMe;
 
-  // ── Select режими (1-этап) ──
+  // ── Select режими ──
   final bool isSelectionMode;
   final bool isSelected;
   final VoidCallback? onLongPress;
   final VoidCallback? onTap;
 
-  // ── Long-press menu / reply (2-этап) ──
+  // ── Long-press menu / reply ──
   final VoidCallback? onCopy;
   final VoidCallback? onDelete;
   final VoidCallback? onReply;
@@ -34,7 +36,6 @@ class MessageBubble extends StatelessWidget {
     this.onReplyTap,
   });
 
-  // ── Long-press: select режиминде эмес болсо action sheet чыгат ──
   void _handleLongPress(BuildContext context) {
     if (isSelectionMode) {
       onLongPress?.call();
@@ -62,8 +63,8 @@ class MessageBubble extends StatelessWidget {
             const SizedBox(height: 12),
             if (message.text.isNotEmpty)
               ListTile(
-                leading: const Icon(Icons.copy_outlined,
-                    color: AppColors.primary),
+                leading:
+                    const Icon(Icons.copy_outlined, color: AppColors.primary),
                 title:
                     const Text('Көчүрүү', style: AppTextStyles.labelLarge),
                 onTap: () {
@@ -72,17 +73,20 @@ class MessageBubble extends StatelessWidget {
                 },
               ),
             ListTile(
-              leading: const Icon(Icons.reply_outlined,
-                  color: AppColors.primary),
-              title: const Text('Жооп берүү', style: AppTextStyles.labelLarge),
+              leading:
+                  const Icon(Icons.reply_outlined, color: AppColors.primary),
+              title: const Text('Жооп берүү',
+                  style: AppTextStyles.labelLarge),
               onTap: () {
                 Navigator.pop(sheetContext);
                 onReply?.call();
               },
             ),
             ListTile(
-              leading: const Icon(Icons.delete_outline, color: AppColors.error),
-              title: const Text('Өчүрүү', style: AppTextStyles.labelLarge),
+              leading:
+                  const Icon(Icons.delete_outline, color: AppColors.error),
+              title:
+                  const Text('Өчүрүү', style: AppTextStyles.labelLarge),
               onTap: () {
                 Navigator.pop(sheetContext);
                 onDelete?.call();
@@ -90,6 +94,22 @@ class MessageBubble extends StatelessWidget {
             ),
             const SizedBox(height: 8),
           ],
+        ),
+      ),
+    );
+  }
+
+  // ── Сүрөттү толук экранда ачуу ──
+  void _openFullscreen(BuildContext context, String imageUrl) {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        opaque: false,
+        barrierColor: Colors.black,
+        transitionDuration: const Duration(milliseconds: 250),
+        pageBuilder: (_, __, ___) => _FullscreenImageScreen(
+          imageUrl: imageUrl,
+          heroTag: 'chat_image_${message.id}',
         ),
       ),
     );
@@ -108,57 +128,82 @@ class MessageBubble extends StatelessWidget {
           padding: EdgeInsets.only(
             left: isMe ? 60 : 12,
             right: isMe ? 12 : 60,
-            bottom: 6,
+            top: 4,
+            bottom: 4,
           ),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
             mainAxisAlignment:
                 isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              // ── Select режиминде checkbox ──
               if (isSelectionMode)
                 Padding(
-                  padding: const EdgeInsets.only(right: 6),
+                  padding: const EdgeInsets.only(right: 8),
                   child: Icon(
                     isSelected
                         ? Icons.check_circle_rounded
                         : Icons.radio_button_unchecked,
-                    color: isSelected
-                        ? AppColors.primary
-                        : AppColors.grey300,
+                    color:
+                        isSelected ? AppColors.primary : AppColors.grey300,
                     size: 22,
                   ),
                 ),
               Expanded(
                 child: Column(
-                  crossAxisAlignment:
-                      isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                  crossAxisAlignment: isMe
+                      ? CrossAxisAlignment.end
+                      : CrossAxisAlignment.start,
                   children: [
-                    // ── Сүрөт билдирүү (эгер бар болсо) ──
+                    // ── СҮРӨТ БИЛДИРҮҮ ──
                     if (message.imageUrl != null &&
                         message.imageUrl!.isNotEmpty)
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 6),
-                        constraints: const BoxConstraints(maxWidth: 200),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.network(
-                            message.imageUrl!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Container(
-                              width: 200,
-                              height: 150,
-                              color: AppColors.grey100,
-                              child: const Icon(
-                                Icons.image_not_supported_outlined,
-                                color: AppColors.grey300,
+                      GestureDetector(
+                        // select режиминде баспайт, анын ордуна тандалат
+                        onTap: isSelectionMode
+                            ? onTap
+                            : () => _openFullscreen(
+                                context, message.imageUrl!),
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 6),
+                          constraints:
+                              const BoxConstraints(maxWidth: 200),
+                          child: Hero(
+                            tag: 'chat_image_${message.id}',
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: CachedNetworkImage(
+                                imageUrl: toCloudinaryThumb(
+                                  message.imageUrl!,
+                                  width: 400,
+                                ),
+                                fit: BoxFit.cover,
+                                placeholder: (_, __) => Container(
+                                  width: 200,
+                                  height: 150,
+                                  color: AppColors.grey100,
+                                  child: const Center(
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                ),
+                                errorWidget: (_, __, ___) => Container(
+                                  width: 200,
+                                  height: 150,
+                                  color: AppColors.grey100,
+                                  child: const Icon(
+                                    Icons.image_not_supported_outlined,
+                                    color: AppColors.grey300,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
                         ),
                       ),
 
-                    // ── Үн билдирүү (эгер бар болсо) ──
+                    // ── ҮН БИЛДИРҮҮ ──
                     if (message.audioUrl != null &&
                         message.audioUrl!.isNotEmpty)
                       Container(
@@ -166,16 +211,14 @@ class MessageBubble extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 8),
                         decoration: BoxDecoration(
-                          color: isMe ? AppColors.primary : Colors.white,
-                          borderRadius: BorderRadius.only(
-                            topLeft: const Radius.circular(16),
-                            topRight: const Radius.circular(16),
-                            bottomLeft: Radius.circular(isMe ? 16 : 4),
-                            bottomRight: Radius.circular(isMe ? 4 : 16),
-                          ),
+                          color: isMe
+                              ? AppColors.primary
+                              : Colors.white,
+                          borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.06),
+                              color:
+                                  Colors.black.withValues(alpha: 0.06),
                               blurRadius: 6,
                               offset: const Offset(0, 2),
                             ),
@@ -188,44 +231,53 @@ class MessageBubble extends StatelessWidget {
                         ),
                       ),
 
-                    // ── Текст билдирүү + reply preview + убакыт + галочка ──
-                    if (message.text.isNotEmpty)
+                    // ── ТЕКСТ БИЛДИРҮҮ ──
+                    if (message.text.isNotEmpty ||
+                        (message.imageUrl == null &&
+                            message.audioUrl == null))
                       Container(
-                        padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
                         decoration: BoxDecoration(
-                          color: isMe ? AppColors.primary : Colors.white,
+                          color: isMe
+                              ? AppColors.primary
+                              : Colors.white,
                           borderRadius: BorderRadius.only(
                             topLeft: const Radius.circular(16),
                             topRight: const Radius.circular(16),
-                            bottomLeft: Radius.circular(isMe ? 16 : 4),
-                            bottomRight: Radius.circular(isMe ? 4 : 16),
+                            bottomLeft:
+                                Radius.circular(isMe ? 16 : 4),
+                            bottomRight:
+                                Radius.circular(isMe ? 4 : 16),
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.06),
+                              color:
+                                  Colors.black.withValues(alpha: 0.06),
                               blurRadius: 6,
                               offset: const Offset(0, 2),
                             ),
                           ],
                         ),
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // ── Жооп берилген билдирүүгө шилтеме ──
-                            if (message.replyToText != null &&
-                                message.replyToText!.isNotEmpty)
+                            // ── Жооп preview ──
+                            if (message.replyToId != null &&
+                                message.replyToText != null)
                               GestureDetector(
                                 onTap: onReplyTap,
                                 child: Container(
-                                  width: double.infinity,
-                                  margin: const EdgeInsets.only(bottom: 6),
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 6),
+                                  margin: const EdgeInsets.only(
+                                      bottom: 6),
+                                  padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
                                     color: isMe
-                                        ? Colors.white.withValues(alpha: 0.15)
+                                        ? Colors.white
+                                            .withValues(alpha: 0.15)
                                         : AppColors.grey100,
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius:
+                                        BorderRadius.circular(8),
                                     border: Border(
                                       left: BorderSide(
                                         color: isMe
@@ -239,71 +291,58 @@ class MessageBubble extends StatelessWidget {
                                     message.replyToText!,
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
-                                    style: AppTextStyles.labelSmall.copyWith(
+                                    style:
+                                        AppTextStyles.labelSmall.copyWith(
                                       color: isMe
-                                          ? Colors.white.withValues(alpha: 0.85)
+                                          ? Colors.white
+                                              .withValues(alpha: 0.85)
                                           : AppColors.grey600,
                                     ),
                                   ),
                                 ),
                               ),
-                            Align(
-                              alignment: isMe
-                                  ? Alignment.centerRight
-                                  : Alignment.centerLeft,
-                              child: Text(
+
+                            // ── Текст ──
+                            if (message.text.isNotEmpty)
+                              Text(
                                 message.text,
                                 style: AppTextStyles.bodyMedium.copyWith(
-                                  color: isMe ? Colors.white : AppColors.black,
+                                  color: isMe
+                                      ? Colors.white
+                                      : AppColors.black,
                                 ),
                               ),
-                            ),
+
+                            // ── Убакыт + окулду ──
                             const SizedBox(height: 4),
                             Row(
                               mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 Text(
                                   message.formattedTime,
-                                  style: AppTextStyles.labelSmall.copyWith(
-                                    fontSize: 11,
+                                  style:
+                                      AppTextStyles.labelSmall.copyWith(
                                     color: isMe
-                                        ? Colors.white.withValues(alpha: 0.75)
+                                        ? Colors.white
+                                            .withValues(alpha: 0.7)
                                         : AppColors.grey400,
                                   ),
                                 ),
                                 if (isMe) ...[
                                   const SizedBox(width: 4),
-                                  _ReadReceiptIcon(
-                                      isRead: message.isRead, isMe: isMe),
+                                  Icon(
+                                    message.isRead
+                                        ? Icons.done_all
+                                        : Icons.done,
+                                    size: 14,
+                                    color: message.isRead
+                                        ? Colors.white
+                                        : Colors.white
+                                            .withValues(alpha: 0.6),
+                                  ),
                                 ],
                               ],
                             ),
-                          ],
-                        ),
-                      ),
-
-                    // ── Аудио билдирүү учурунда (текст жок) убакыт+галочка ──
-                    if (message.text.isEmpty &&
-                        message.audioUrl != null &&
-                        message.audioUrl!.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 2, right: 4),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              message.formattedTime,
-                              style: AppTextStyles.labelSmall.copyWith(
-                                fontSize: 11,
-                                color: AppColors.grey400,
-                              ),
-                            ),
-                            if (isMe) ...[
-                              const SizedBox(width: 4),
-                              _ReadReceiptIcon(
-                                  isRead: message.isRead, isMe: isMe),
-                            ],
                           ],
                         ),
                       ),
@@ -318,28 +357,68 @@ class MessageBubble extends StatelessWidget {
   }
 }
 
-// ── Галочка виджети ──
-// isRead = false → Icons.done         (1 галочка, боз)
-// isRead = true  → Icons.done_all     (2 галочка, көк)
-class _ReadReceiptIcon extends StatelessWidget {
-  final bool isRead;
-  final bool isMe;
+// ══════════════════════════════════════════════════════
+// СҮРӨТТҮ ТОЛУК ЭКРАНДА КӨРСӨТҮҮ (zoom/pan + Hero)
+// ══════════════════════════════════════════════════════
+class _FullscreenImageScreen extends StatelessWidget {
+  final String imageUrl;
+  final String heroTag;
 
-  const _ReadReceiptIcon({required this.isRead, required this.isMe});
+  const _FullscreenImageScreen({
+    required this.imageUrl,
+    required this.heroTag,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 200),
-      child: Icon(
-        key: ValueKey(isRead),
-        isRead ? Icons.done_all_rounded : Icons.done_rounded,
-        size: 15,
-        color: isRead
-            ? const Color(0xFF4FC3F7)
-            : (isMe
-                ? Colors.white.withValues(alpha: 0.65)
-                : AppColors.grey400),
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          // ── Zoom + pan ──
+          Center(
+            child: Hero(
+              tag: heroTag,
+              child: 
+              
+              InteractiveViewer(
+                minScale: 1,
+                maxScale: 4,
+                child: CachedNetworkImage(
+                  imageUrl: imageUrl,
+                  fit: BoxFit.contain,
+                  placeholder: (_, __) => const Center(
+                    child: CircularProgressIndicator(color: Colors.white),
+                  ),
+                  errorWidget: (_, __, ___) => const Icon(
+                    Icons.image_not_supported_outlined,
+                    color: Colors.white54,
+                    size: 64,
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // ── Жабуу баскычы ──
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.black45,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Icon(Icons.close,
+                      color: Colors.white, size: 24),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -8,15 +8,20 @@ import '../../admin/screens/admin_login_screen.dart';
 import '../../auth/screens/profile_screen.dart';
 import '../../chat/screens/chat_list_screen.dart';
 import '../../seller/screens/seller_entrance_screen.dart';
-import '../../product_detail/screens/product_detail_screen.dart';
 import '../utils/product_repository.dart';
 import '../widgets/category_list.dart';
 import '../widgets/filter_bottom_sheet.dart';
-import '../widgets/product_grid.dart';
 import '../widgets/search_bar_widget.dart';
 import '../../home/widgets/app_end_drawer.dart';
 import '../../map/screens/map_screen.dart';
 import '../../settings/screens/settings_screen.dart';
+import '../../chat/services/chat_service.dart';
+import '../../chat/models/chat_model.dart';
+import '../../../core/supabase_client.dart';
+import '../widgets/product_grid.dart';
+import '../../product_detail/screens/product_detail_screen.dart';
+import '../widgets/fav_badge.dart';
+import '../screens/favorites_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -39,6 +44,9 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _mapLoaded = false;
   DateTime? _lastTapTime;
 
+  // ── ✅ ЖАҢЫ: Избранный санагычы ──
+  int _favCount = 0;
+
   // ── Пагинация ──
   int _offset = 0;
   bool _isLoadingMore = false;
@@ -52,6 +60,8 @@ class _HomeScreenState extends State<HomeScreen> {
   // ── Поиск режими ──
   bool _isSearchMode = false;
   Timer? _debounce;
+
+  ProductFilterMode _filterMode = ProductFilterMode.all;
 
   FilterOptions _filter = FilterOptions(
     priceRange: const RangeValues(0, 1000000),
@@ -71,10 +81,21 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadProducts();
+
+    // ── ✅ ЖАҢЫ: favorites listener ──
+    _favCount = fav.count;
+    fav.addListener(_onFavChanged);
+  }
+
+  // ── ✅ ЖАҢЫ: badge жаңыртуу callback ──
+  void _onFavChanged() {
+    if (mounted) setState(() => _favCount = fav.count);
   }
 
   @override
   void dispose() {
+    // ── ✅ ЖАҢЫ: listener алып салуу (memory leak жок) ──
+    fav.removeListener(_onFavChanged);
     _debounce?.cancel();
     super.dispose();
   }
@@ -102,7 +123,6 @@ class _HomeScreenState extends State<HomeScreen> {
         categoryId: _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
       );
 
-      // Shuffle — ар бир жаңылоодо башкача тартип
       products.shuffle();
 
       _hasMore = products.length == _pageSize;
@@ -128,8 +148,84 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _loadNewest() async {
+    setState(() {
+      _isLoading = true;
+      _isNearbyMode = false;
+      _isSearchMode = false;
+      _offset = 0;
+      _hasMore = false;
+    });
+
+    try {
+      final products = await ProductRepository.instance.fetchNewest(
+        categoryId: _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
+        limit: 40,
+      );
+
+      if (mounted) {
+        setState(() {
+          allProducts = products;
+          displayedProducts = List.from(products);
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('❌ loadNewest: $e');
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _loadPopular() async {
+    setState(() {
+      _isLoading = true;
+      _isNearbyMode = false;
+      _isSearchMode = false;
+      _offset = 0;
+      _hasMore = false;
+    });
+
+    try {
+      final products = await ProductRepository.instance.fetchPopular(
+        categoryId: _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
+        limit: 40,
+      );
+
+      if (mounted) {
+        setState(() {
+          allProducts = products;
+          displayedProducts = List.from(products);
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('❌ loadPopular: $e');
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _onFilterModeChanged(ProductFilterMode mode) {
+    setState(() => _filterMode = mode);
+    switch (mode) {
+      case ProductFilterMode.newest:
+        _loadNewest();
+        break;
+      case ProductFilterMode.popular:
+        _loadPopular();
+        break;
+      case ProductFilterMode.all:
+        _loadProducts(refresh: true);
+        break;
+    }
+  }
+
   Future<void> _loadMoreProducts() async {
-    if (_isLoadingMore || !_hasMore || _isLoading || _isNearbyMode || _isSearchMode) return;
+    if (_isLoadingMore ||
+        !_hasMore ||
+        _isLoading ||
+        _isNearbyMode ||
+        _isSearchMode ||
+        _filterMode != ProductFilterMode.all) return;
     _isLoadingMore = true;
     try {
       final newProducts = await ProductRepository.instance.fetchProducts(
@@ -180,6 +276,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _isNearbyMode = true;
       _isSearchMode = false;
       _hasMore = false;
+      _filterMode = ProductFilterMode.all;
     });
 
     try {
@@ -227,6 +324,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _isSearchMode = true;
         _isNearbyMode = false;
         _hasMore = false;
+        _filterMode = ProductFilterMode.all;
       });
 
       try {
@@ -340,6 +438,17 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  String get _filterModeLabel {
+    switch (_filterMode) {
+      case ProductFilterMode.newest:
+        return '🆕 Жаңы товарлар';
+      case ProductFilterMode.popular:
+        return '🔥 Таанымал';
+      case ProductFilterMode.all:
+        return '';
+    }
+  }
+
   // ══════════════════════════════════════════════════════════════════
   // BUILD
   // ══════════════════════════════════════════════════════════════════
@@ -366,10 +475,21 @@ class _HomeScreenState extends State<HomeScreen> {
             )
           : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+
+      // ══════════════════════════════════════════════
+      // ✅ ЖАҢЫ: BottomNavigationBar — Избранный badge
+      // ══════════════════════════════════════════════
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentTab,
         onTap: (i) {
           if (i == 2) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const FavoritesScreen()),
+            ).then((_) => setState(() => _favCount = fav.count));
+            return;
+          }
+          if (i == 3) {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const SettingsScreen()),
@@ -388,24 +508,30 @@ class _HomeScreenState extends State<HomeScreen> {
         type: BottomNavigationBarType.fixed,
         showSelectedLabels: false,
         showUnselectedLabels: false,
-        items: const [
-          BottomNavigationBarItem(
+        items: [
+          const BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
             activeIcon: Icon(Icons.home_rounded),
             label: '',
           ),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(Icons.storefront_outlined),
             activeIcon: Icon(Icons.storefront_rounded),
             label: '',
           ),
           BottomNavigationBarItem(
+            label: '',
+            icon: FavBadge(count: _favCount, active: false),
+            activeIcon: FavBadge(count: _favCount, active: true),
+          ),
+          const BottomNavigationBarItem(
             icon: Icon(Icons.settings_outlined),
             activeIcon: Icon(Icons.settings_rounded),
             label: '',
           ),
         ],
       ),
+
       body: Stack(
         children: [
           // ── TAB 0: Башкы ──
@@ -485,20 +611,64 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       actions: [
-                        GestureDetector(
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const ChatListScreen(
-                                isSeller: false,
+                        // ── Чат иконасы ──
+                        StreamBuilder<List<ChatModel>>(
+                          stream: supabase.auth.currentUser != null
+                              ? ChatService().buyerChatsStream(
+                                  supabase.auth.currentUser!.id)
+                              : const Stream.empty(),
+                          builder: (context, snapshot) {
+                            final chats = snapshot.data ?? [];
+                            final totalUnread = chats.fold<int>(
+                              0, (sum, chat) => sum + chat.buyerUnread,
+                            );
+                            return GestureDetector(
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      const ChatListScreen(isSeller: false),
+                                ),
+                              ).then((_) => setState(() {})),
+                              child: Padding(
+                                padding: const EdgeInsets.only(right: 4),
+                                child: Stack(
+                                  clipBehavior: Clip.none,
+                                  children: [
+                                    const Icon(Icons.chat_bubble_outline,
+                                        color: AppColors.grey600, size: 26),
+                                    if (totalUnread > 0)
+                                      Positioned(
+                                        top: -6,
+                                        right: -6,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 5, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.error,
+                                            borderRadius:
+                                                BorderRadius.circular(10),
+                                            border: Border.all(
+                                                color: Colors.white,
+                                                width: 1.5),
+                                          ),
+                                          child: Text(
+                                            totalUnread > 100
+                                                ? '100+'
+                                                : '$totalUnread',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          ).then((_) => setState(() {})),
-                          child: const Padding(
-                            padding: EdgeInsets.only(right: 4),
-                            child: Icon(Icons.chat_bubble_outline,
-                                color: AppColors.grey600, size: 26),
-                          ),
+                            );
+                          },
                         ),
                         GestureDetector(
                           onTap: () => Navigator.push(
@@ -529,8 +699,6 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                             const SizedBox(width: 8),
-
-                            // ── "МАГА ЖАКЫН" БАСКЫЧЫ ──
                             GestureDetector(
                               onTap: _isLocating
                                   ? null
@@ -565,8 +733,6 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                             const SizedBox(width: 8),
-
-                            // ── ФИЛЬТР БАСКЫЧЫ ──
                             GestureDetector(
                               onTap: _openFilter,
                               child: AnimatedContainer(
@@ -602,7 +768,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                               style: const TextStyle(
                                                   color: Colors.white,
                                                   fontSize: 9,
-                                                  fontWeight: FontWeight.bold),
+                                                  fontWeight:
+                                                      FontWeight.bold),
                                             ),
                                           ),
                                         ),
@@ -627,14 +794,16 @@ class _HomeScreenState extends State<HomeScreen> {
                             CategoryList(
                               onCategorySelected: (id) {
                                 _selectedCategoryId = id;
-                                if (_isSearchMode && _searchQuery.isNotEmpty) {
+                                if (_isSearchMode &&
+                                    _searchQuery.isNotEmpty) {
                                   _onSearchChanged(_searchQuery);
                                 } else if (_isNearbyMode) {
                                   _loadNearbyProducts();
                                 } else {
-                                  _loadProducts(refresh: true);
+                                  _onFilterModeChanged(_filterMode);
                                 }
                               },
+                              onFilterModeChanged: _onFilterModeChanged,
                             ),
                             const SizedBox(height: 12),
                           ],
@@ -644,36 +813,51 @@ class _HomeScreenState extends State<HomeScreen> {
 
                     const SliverToBoxAdapter(child: SizedBox(height: 8)),
 
-                    // ── ЖАҢЫЛОО БАСКЫЧЫ ГАНА (жазуу жок) ──
+                    // ── ЖАҢЫЛОО БАСКЫЧЫ ──
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
                         child: Row(
                           children: [
-                            // ── Поиск режиминде натыйжа саны ──
                             if (_isSearchMode && !_isLoading)
                               Text(
                                 '${displayedProducts.length} натыйжа',
                                 style: AppTextStyles.bodyMedium
                                     .copyWith(color: AppColors.grey500),
                               ),
-
-                            // ── Жакын режиминде жазуу ──
                             if (_isNearbyMode && !_isLoading)
                               Text(
                                 '📍 ${displayedProducts.length} жакын товар',
                                 style: AppTextStyles.bodyMedium
                                     .copyWith(color: AppColors.grey500),
                               ),
-
+                            if (_filterMode != ProductFilterMode.all &&
+                                !_isSearchMode &&
+                                !_isNearbyMode &&
+                                !_isLoading)
+                              Text(
+                                '$_filterModeLabel · ${displayedProducts.length}',
+                                style: AppTextStyles.bodyMedium
+                                    .copyWith(color: AppColors.grey500),
+                              ),
                             const Spacer(),
-
-                            // ── ЖАҢЫЛОО баскычы (поиск режиминде жашырылат) ──
                             if (!_isSearchMode)
                               GestureDetector(
                                 onTap: _isNearbyMode
                                     ? _loadNearbyProducts
-                                    : () => _loadProducts(refresh: true),
+                                    : () {
+                                        switch (_filterMode) {
+                                          case ProductFilterMode.newest:
+                                            _loadNewest();
+                                            break;
+                                          case ProductFilterMode.popular:
+                                            _loadPopular();
+                                            break;
+                                          case ProductFilterMode.all:
+                                            _loadProducts(refresh: true);
+                                            break;
+                                        }
+                                      },
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 10, vertical: 6),
@@ -698,8 +882,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                 ),
                               ),
-
-                            // ── ТАЗАЛОО баскычы (фильтр болгондо) ──
                             if (_filterCount > 0) ...[
                               const SizedBox(width: 8),
                               GestureDetector(
