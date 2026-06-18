@@ -23,10 +23,10 @@ class ProductRepository {
 
   /// Жаңылоо учурунда чакырылат — жаңы seed орнотот + тарых тазаланат.
   void refreshSeed() {
-    _randomSeed = DateTime.now().millisecondsSinceEpoch % 1000000 / 1000000;
-    _shownIds.clear();
-    debugPrint('🔄 Seed жаңырды, shownIds тазаланды');
-  }
+  _randomSeed = DateTime.now().millisecondsSinceEpoch % 1000000 / 1000000;
+  // ✅ _shownIds.clear() — ЖОК! Тарыхты сактайбыз
+  debugPrint('🔄 Seed жаңырды, shownIds=${_shownIds.length} сакталды');
+}
 
   static const List<String> bannedWords = [
     'төш', 'сутюк', 'ички кийим', 'бюстгальтер', 'трус', 'стринг',
@@ -104,98 +104,110 @@ class ProductRepository {
     );
   }
 
-  Future<List<ProductModel>> _fetchPersonalized({
-    required String userId,
-    int offset = 0,
-  }) async {
-    try {
-      final data = await supabase.rpc(
-        'get_personalized_feed',
+
+
+
+ Future<List<ProductModel>> _fetchPersonalized({
+  required String userId,
+  int offset = 0,
+}) async {
+  try {
+    final data = await supabase.rpc(
+      'get_personalized_feed',
+      params: {
+        'p_user_id': userId,
+        'p_offset': offset,
+        'p_limit': pageSize,
+      },
+    );
+    final results = _mapAndFilter(data as List);
+
+    // Мурда көрүлгөндөрдү чыгар
+    final fresh = results.where((p) => !_shownIds.contains(p.id)).toList();
+
+    List<ProductModel> result;
+
+    if (fresh.length >= pageSize) {
+      result = fresh.take(pageSize).toList();
+    } else {
+      // Random'дан толуктайбыз
+      final extra = await supabase.rpc(
+        'get_random_feed',
         params: {
-          'p_user_id': userId,
-          'p_offset': offset,
-          'p_limit': pageSize,
+          'p_seed':   _randomSeed,
+          'p_offset': 0,
+          'p_limit':  pageSize * 3,
+          if (_shownIds.isNotEmpty) 'p_exclude_ids': _shownIds.toList(),
         },
       );
-      final results = _mapAndFilter(data as List);
+      final extraMapped = _mapAndFilter(extra as List);
+      final seenInFresh = fresh.map((p) => p.id).toSet();
+      final extraFresh = extraMapped
+          .where((p) => !seenInFresh.contains(p.id))
+          .toList();
 
-      // ✅ Мурда көрсөтүлгөндөрдү чыгар
-      final fresh = results.where((p) => !_shownIds.contains(p.id)).toList();
-
-      if (fresh.length < pageSize) {
-        final extra = await _fetchRandom(
-          offset: offset,
-          extraLimit: pageSize - fresh.length,
-        );
-        final seen = fresh.map((p) => p.id).toSet();
-        final merged = [
-          ...fresh,
-          ...extra.where((p) => !seen.contains(p.id)),
-        ];
-        final result = merged.take(pageSize).toList();
-        for (final p in result) {
-          _shownIds.add(p.id);
-        }
-        debugPrint(
-            '📦 personalized+extra: ${result.length} товар, shownIds=${_shownIds.length}');
-        return result;
-      }
-
-      final result = fresh.take(pageSize).toList();
-      for (final p in result) {
-        _shownIds.add(p.id);
-      }
-      debugPrint(
-          '📦 personalized: ${result.length} товар, shownIds=${_shownIds.length}');
-      return result;
-    } catch (e) {
-      debugPrint('⚠️ _fetchPersonalized ката: $e → random жүктөлөт');
-      return await _fetchRandom(offset: offset);
+      result = [...fresh, ...extraFresh].take(pageSize).toList();
     }
+
+    // ✅ Товар чыкпаса — тарых тазалап кайра жүктө
+    if (result.isEmpty) {
+      debugPrint('🔁 Баардык товар көрүлдү — тарых тазаланат, кайра башталат');
+      _shownIds.clear();
+      return await _fetchPersonalized(userId: userId, offset: offset);
+    }
+
+    for (final p in result) {
+      _shownIds.add(p.id);
+    }
+
+    debugPrint('📦 personalized: ${result.length} товар, shownIds=${_shownIds.length}');
+    return result;
+  } catch (e) {
+    debugPrint('⚠️ _fetchPersonalized ката: $e → random жүктөлөт');
+    return await _fetchRandom(offset: offset);
   }
+}
+
+
+
+
 
   Future<List<ProductModel>> _fetchRandom({
-    int offset = 0,
-    String? categoryId,
-    String? region,
-    int? extraLimit,
-  }) async {
-    try {
-      final params = <String, dynamic>{
-        'p_seed': _randomSeed,
-        'p_offset': offset,
-        'p_limit': (extraLimit ?? pageSize) * 3, // көбүрөөк жүктөп, чыпкалайбыз
-      };
-      if (categoryId != null && categoryId.isNotEmpty) {
-        params['p_category_id'] = categoryId;
-      }
-
-      final data = await supabase.rpc('get_random_feed', params: params);
-      final all = _mapAndFilter(data as List);
-
-      // ✅ Мурда көрүлбөгөндөрдү тандо
-      final limit = extraLimit ?? pageSize;
-      final unseen = all.where((p) => !_shownIds.contains(p.id)).toList();
-      final source = unseen.length >= limit ? unseen : all;
-      final result = source.take(limit).toList();
-
-      for (final p in result) {
-        _shownIds.add(p.id);
-      }
-      debugPrint(
-          '📦 random RPC: берилди=${result.length}, unseen=${unseen.length}, shownIds=${_shownIds.length}');
-      return result;
-    } catch (e) {
-      debugPrint('⚠️ _fetchRandom RPC ката: $e → fallback');
-      return await _fetchFallback(
-        offset: offset,
-        categoryId: categoryId,
-        region: region,
-        limit: extraLimit ?? pageSize,
-      );
+  int offset = 0,
+  String? categoryId,
+  String? region,
+  int? extraLimit,
+}) async {
+  try {
+    final params = <String, dynamic>{
+      'p_seed':   _randomSeed,
+      'p_offset': offset,
+      'p_limit':  extraLimit ?? pageSize,
+      // ✅ мурда көрүлгөндөрдү SQL'ге өткөр
+      if (_shownIds.isNotEmpty)
+        'p_exclude_ids': _shownIds.toList(),
+    };
+    if (categoryId != null && categoryId.isNotEmpty) {
+      params['p_category_id'] = categoryId;
     }
-  }
 
+    final data = await supabase.rpc('get_random_feed', params: params);
+    final result = _mapAndFilter(data as List);
+
+    // ✅ Көрүлдү деп белгиле
+    for (final p in result) _shownIds.add(p.id);
+    debugPrint('📦 random: ${result.length} товар, shownIds=${_shownIds.length}');
+    return result;
+  } catch (e) {
+    debugPrint('⚠️ _fetchRandom RPC ката: $e → fallback');
+    return await _fetchFallback(
+      offset: offset,
+      categoryId: categoryId,
+      region: region,
+      limit: extraLimit ?? pageSize,
+    );
+  }
+}
   /// Fallback: RPC жок болсо жөнөкөй Supabase query.
   Future<List<ProductModel>> _fetchFallback({
     int offset = 0,
