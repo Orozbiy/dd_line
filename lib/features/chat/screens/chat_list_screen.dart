@@ -102,7 +102,11 @@ class _ChatListScreenState extends State<ChatListScreen> {
     });
   }
 
- Future<void> _deleteSelected() async {
+
+
+
+
+Future<void> _deleteSelected() async {
   final confirm = await showDialog<bool>(
     context: context,
     builder: (_) => AlertDialog(
@@ -120,14 +124,18 @@ class _ChatListScreenState extends State<ChatListScreen> {
   );
   if (confirm != true) return;
 
-  // ✅ Адегенде UI'дан алып салабыз (тез сезилет)
   final toDelete = Set<String>.from(_selectedIds);
+
+  // ✅ UI'дан дароо алып салабыз
   setState(() {
     _cachedChats.removeWhere((c) => toDelete.contains(c.id));
   });
   _exitSelectionMode();
 
-  // ✅ Фондо Supabase'тен өчүрөбүз
+  // ✅ Кэшти дароо жаңыртабыз (өчүрүлгөндөр жок)
+  await _saveCache(_cachedChats);
+
+  // ✅ Supabase'тен фондо өчүрөбүз
   for (final id in toDelete) {
     try {
       await _service.deleteChat(id);
@@ -135,10 +143,10 @@ class _ChatListScreenState extends State<ChatListScreen> {
       debugPrint('❌ deleteChat ката: $e');
     }
   }
-
-  // ✅ Кэшти жаңырт
-  await _saveCache(_cachedChats);
 }
+
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -176,22 +184,20 @@ class _ChatListScreenState extends State<ChatListScreen> {
       body: StreamBuilder<List<ChatModel>>(
         stream: stream,
         builder: (context, snapshot) {
+
+
+
           // ── Жаңы маалымат келди → кэшке сактоо ──
-          if (snapshot.hasData) {
-            final fresh = snapshot.data!;
-            if (fresh != _cachedChats) {
-              // frame'ден тышкары сактоо
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                _saveCache(fresh);
-                if (mounted) {
-                  setState(() {
-                    _cachedChats = fresh;
-                    _cacheLoaded = true;
-                  });
-                }
-              });
-            }
-          }
+      // ── Жаңы маалымат келди → кэшке сактоо ──
+if (snapshot.hasData) {
+  final fresh = snapshot.data!;
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (!mounted) return;
+    _saveCache(fresh);
+    _cachedChats = fresh;
+    _cacheLoaded = true;
+  });
+}
 
           // ── Эмне көрсөтөбүз? ──
           final isWaiting = snapshot.connectionState == ConnectionState.waiting;
