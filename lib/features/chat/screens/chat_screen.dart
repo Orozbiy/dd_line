@@ -19,7 +19,7 @@ import '../widgets/chat_product_banner.dart';
 class ChatScreen extends StatefulWidget {
   final String chatId;
   final String sellerName;
-   final String? productId;   
+  final String? productId;
   final String productName;
   final String productImage;
   final bool isSeller;
@@ -31,7 +31,7 @@ class ChatScreen extends StatefulWidget {
     super.key,
     required this.chatId,
     required this.sellerName,
-       this.productId,  
+    this.productId,
     required this.productName,
     required this.productImage,
     required this.isSeller,
@@ -66,10 +66,10 @@ class _ChatScreenState extends State<ChatScreen> {
   final _scrollCtrl = ScrollController();
 
   // ── Жүктөө абалдары ──
-  bool _isSendingImage = false; // Сүрөт / үн жүктөлүп жатканда
+  bool _isSendingImage = false;
   bool _hasText = false;
 
-  // ── Билдирүүлөр кэши — stream жаңыртканда setState менен жаңырат ──
+  // ── Билдирүүлөр кэши ──
   List<MessageModel> _cachedMessages = [];
   bool _initialLoadDone = false;
   late final Stream<List<MessageModel>> _messagesStream;
@@ -85,23 +85,20 @@ class _ChatScreenState extends State<ChatScreen> {
 
   String? get _myId => supabase.auth.currentUser?.id;
   String _myDisplayName = '';
+  String _receiverDisplayName = ''; // ✅ ЖАҢЫны кош
 
   @override
   void initState() {
     super.initState();
 
-    // ✅ Stream бир жолу түзүлөт — rebuild болсо жаңыдан create болбойт
     _messagesStream = _service.messagesStream(widget.chatId);
 
-    // Билдирүүлөрдү тикелей subscribe кылып кэшке сактайбыз
-    // StreamBuilder жок — loading экраны rebuild'да чыкпайт
     _msgSub = _messagesStream.listen((msgs) {
       if (!mounted) return;
       setState(() {
         _cachedMessages = msgs;
         _initialLoadDone = true;
       });
-      // Окулду деп белгиле
       final myId = _myId;
       if (myId != null && msgs.any((m) => m.senderId != myId && !m.isRead)) {
         _markRead();
@@ -125,21 +122,42 @@ class _ChatScreenState extends State<ChatScreen> {
     super.dispose();
   }
 
+  // ✅ ЖАҢЫРТЫЛГАН ФУНКЦИЯ
   Future<void> _loadMyName() async {
     try {
       final myId = _myId;
       if (myId == null) return;
+
+      // Өз атымды жүктө (SMS жөнөтүүдө senderName үчүн)
       final table = widget.isSeller ? 'sellers' : 'profiles';
       final row = await supabase
           .from(table)
           .select('store_name, full_name')
           .eq('id', myId)
           .maybeSingle();
-      if (row == null) return;
-      final name = widget.isSeller
-          ? (row['store_name'] as String? ?? row['full_name'] as String? ?? 'Сатуучу')
-          : (row['full_name'] as String? ?? 'Сатып алуучу');
-      if (mounted) setState(() => _myDisplayName = name);
+      if (row != null && mounted) {
+        final name = widget.isSeller
+            ? (row['store_name'] as String? ?? row['full_name'] as String? ?? 'Сатуучу')
+            : (row['full_name'] as String? ?? 'Сатып алуучу');
+        setState(() => _myDisplayName = name);
+      }
+
+      // Алуучунун атын жүктө (AppBar башы үчүн)
+      if (widget.isSeller) {
+        // Сатуучу экранда → алуучу = buyer (profiles таблицасынан)
+        final buyerRow = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', widget.buyerId)
+            .maybeSingle();
+        if (buyerRow != null && mounted) {
+          setState(() => _receiverDisplayName =
+              buyerRow['full_name'] as String? ?? 'Сатып алуучу');
+        }
+      } else {
+        // Buyer экранда → алуучу = seller (widget'тан эле белгилүү)
+        if (mounted) setState(() => _receiverDisplayName = widget.sellerName);
+      }
     } catch (e) {
       debugPrint('⚠️ _loadMyName ката: $e');
     }
@@ -170,13 +188,15 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   String get _receiverUid => widget.isSeller ? widget.buyerId : widget.sellerId;
+
+  // SMS үчүн — жиберүүчүнүн аты (өзгөртпөдүк)
   String get _senderDisplayName =>
       widget.isSeller
           ? (_myDisplayName.isNotEmpty ? _myDisplayName : 'Сатуучу')
           : widget.sellerName;
 
   // ══════════════════════════════════════════════
-  // ЖӨНӨТҮҮ — оптимистик (UI дароо жаңыртылат, await жок)
+  // ЖӨНӨТҮҮ
   // ══════════════════════════════════════════════
   void _send() {
     final text = _msgCtrl.text.trim();
@@ -187,7 +207,6 @@ class _ChatScreenState extends State<ChatScreen> {
     final replyTo = _replyingTo;
     if (replyTo != null) setState(() => _replyingTo = null);
 
-    // Фондо жөнөтүү (stream өзү жаңыртат)
     _service
         .sendMessage(
           chatId: widget.chatId,
@@ -506,7 +525,6 @@ class _ChatScreenState extends State<ChatScreen> {
     final myId = _myId;
 
     return Scaffold(
-      // ✅ МААНИЛҮҮ: true болсо клавиатура чыкканда layout жаңыртылат
       resizeToAvoidBottomInset: true,
       backgroundColor: const Color(0xFFF4F5F7),
       appBar: _isSelectionMode
@@ -550,9 +568,14 @@ class _ChatScreenState extends State<ChatScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(widget.sellerName,
-                            style: AppTextStyles.labelLarge,
-                            overflow: TextOverflow.ellipsis),
+                        // ✅ ОҢДОО: widget.sellerName эмес, _receiverDisplayName
+                        Text(
+                          _receiverDisplayName.isNotEmpty
+                              ? _receiverDisplayName
+                              : (widget.isSeller ? 'Сатып алуучу' : widget.sellerName),
+                          style: AppTextStyles.labelLarge,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                         if (widget.productName.isNotEmpty)
                           Text(widget.productName,
                               style: AppTextStyles.labelSmall
@@ -568,14 +591,13 @@ class _ChatScreenState extends State<ChatScreen> {
           ? const Center(child: Text('Кирүү керек'))
           : Column(
               children: [
-               ChatProductBanner(
-            productId: widget.productId,
-            productName: widget.productName,
-            productImage: widget.productImage,
-          ),
+                ChatProductBanner(
+                  productId: widget.productId,
+                  productName: widget.productName,
+                  productImage: widget.productImage,
+                ),
                 Expanded(
                   child: !_initialLoadDone
-                      // Биринчи жүктөлүү — бир жолу гана, rebuild'да чыкпайт
                       ? const Center(
                           child: CircularProgressIndicator(color: AppColors.primary),
                         )
@@ -726,7 +748,6 @@ class _ChatScreenState extends State<ChatScreen> {
                             controller: _msgCtrl,
                             minLines: 1,
                             maxLines: 4,
-                            // ✅ ОҢДОО: keyboardType жана textInputAction
                             textInputAction: TextInputAction.send,
                             onSubmitted: (_) => _send(),
                             decoration: InputDecoration(

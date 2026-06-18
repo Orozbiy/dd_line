@@ -7,15 +7,11 @@ import '../models/message_model.dart';
 /// иштеген чат сервиси (Realtime колдонот).
 class ChatService {
   /// Кардар-сатуучу-товар комбинациясы үчүн чатты табуу/түзүү.
-  /// Сатуучунун аты жана товар маалыматы _enrichChats() аркылуу
-  /// автоматтык түрдө стримде толтурулат, ошондуктан бул жерде
-  /// зарыл эмес.
   Future<String> getOrCreateChat({
     required String buyerId,
     required String sellerId,
     required String productId,
   }) async {
-    // Бар болсо табуу
     final existing = await supabase
         .from('chats')
         .select('id')
@@ -28,7 +24,6 @@ class ChatService {
       return existing['id'] as String;
     }
 
-    // Жок болсо түзүү
     final inserted = await supabase
         .from('chats')
         .insert({
@@ -43,8 +38,7 @@ class ChatService {
     return inserted['id'] as String;
   }
 
-  /// Билдирүү жөнөтүү. Натыйжада `chats.last_message` жана unread эсептегичтер
-  /// триггер аркылуу авто жаңырат.
+  /// Билдирүү жөнөтүү.
   Future<void> sendMessage({
     required String chatId,
     required String senderId,
@@ -68,8 +62,7 @@ class ChatService {
     });
   }
 
-  /// Чатты "окулду" деп белгилөө: unread эсептегичти нөлдөйт жана
-  /// башка колдонуучудан келген билдирүүлөрдү `is_read = true` кылат.
+  /// Чатты "окулду" деп белгилөө.
   Future<void> markAsRead({
     required String chatId,
     required String myUserId,
@@ -79,7 +72,6 @@ class ChatService {
         '👁️ markAsRead чакырылды → chatId=$chatId, myUserId=$myUserId, readerIsBuyer=$readerIsBuyer');
 
     try {
-      // 1) chats таблицасындагы unread эсептегичти нөлдөө
       final chatUpdateResult = await supabase
           .from('chats')
           .update({
@@ -90,7 +82,6 @@ class ChatService {
           .select();
       debugPrint('👁️ chats update натыйжасы: $chatUpdateResult');
 
-      // 2) Башка колдонуучудан келген окулбаган билдирүүлөрдү окулду кылуу
       final msgUpdateResult = await supabase
           .from('messages')
           .update({'is_read': true})
@@ -99,19 +90,34 @@ class ChatService {
           .neq('sender_id', myUserId)
           .select();
       debugPrint(
-          '👁️ messages update натыйжасы (жаныртылган катарлар): ${msgUpdateResult.length} — $msgUpdateResult');
+          '👁️ messages update натыйжасы: ${msgUpdateResult.length} — $msgUpdateResult');
     } catch (e) {
       debugPrint('❌ markAsRead катасы: $e');
     }
   }
 
-  /// Чатты толугу менен өчүрүү (билдирүүлөр + чат жазуусу).
+  /// Чатты толугу менен өчүрүү (билдирүүлөр → чат жазуусу).
   Future<void> deleteChat(String chatId) async {
-    await supabase.from('messages').delete().eq('chat_id', chatId);
-    await supabase.from('chats').delete().eq('id', chatId);
+    // ✅ Адегенде билдирүүлөрдү өчүр (cascade иштебесе да өчөт)
+    try {
+      await supabase.from('messages').delete().eq('chat_id', chatId);
+      debugPrint('🗑️ messages өчүрүлдү → chatId=$chatId');
+    } catch (e) {
+      debugPrint('⚠️ messages өчүрүүдө ката: $e');
+      // Каталанса да улантабыз — cascade болушу мүмкүн
+    }
+
+    // ✅ Анан чатты өчүр
+    try {
+      await supabase.from('chats').delete().eq('id', chatId);
+      debugPrint('🗑️ chat өчүрүлдү → chatId=$chatId');
+    } catch (e) {
+      debugPrint('❌ chat өчүрүүдө ката: $e');
+      rethrow; // Чат өчпөсө — калкып чыксын
+    }
   }
 
-  /// Тандалган билдирүүлөрдү гана өчүрүү (chats жазуусуна тийбейт).
+  /// Тандалган билдирүүлөрдү гана өчүрүү.
   Future<void> deleteMessages(List<String> messageIds) async {
     if (messageIds.isEmpty) return;
     await supabase.from('messages').delete().inFilter('id', messageIds);
@@ -127,7 +133,7 @@ class ChatService {
         .map((rows) => rows.map((row) => MessageModel.fromMap(row)).toList());
   }
 
-  /// Кардардын чаттарынын стриму (сатуучунун аты product JOIN аркылуу).
+  /// Кардардын чаттарынын стриму.
   Stream<List<ChatModel>> buyerChatsStream(String buyerId) {
     return supabase
         .from('chats')
@@ -147,12 +153,6 @@ class ChatService {
         .asyncMap((rows) => _enrichChats(rows, isSeller: true));
   }
 
-  /// Ар бир чатка тиешелүү товардын аталышы/сүрөтүн, сатуучунун
-  /// атын жана эки тараптын аватарларын кошуп, `ChatModel`
-  /// тизмесине айлантат.
-  ///
-  /// Realtime `stream()` JOIN колдобогондуктан, бул жерде
-  /// product/profile маалыматтары өзүнчө сурам менен толтурулат.
   Future<List<ChatModel>> _enrichChats(
     List<Map<String, dynamic>> rows, {
     required bool isSeller,
@@ -162,7 +162,6 @@ class ChatService {
     for (final row in rows) {
       final enriched = Map<String, dynamic>.from(row);
 
-      // Товар маалыматы
       final productId = row['product_id'] as String?;
       if (productId != null) {
         try {
@@ -175,7 +174,6 @@ class ChatService {
         } catch (_) {}
       }
 
-      // Сатуучунун аты (эгер сакталбаган болсо)
       if ((row['seller_name'] as String? ?? '').isEmpty) {
         try {
           final store = await supabase
@@ -189,7 +187,6 @@ class ChatService {
         } catch (_) {}
       }
 
-      // Эки тараптын аватарлары (profiles таблицасынан)
       try {
         final buyerProfile = await supabase
             .from('profiles')

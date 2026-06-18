@@ -102,28 +102,43 @@ class _ChatListScreenState extends State<ChatListScreen> {
     });
   }
 
-  Future<void> _deleteSelected() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Чатты өчүрүү'),
-        content: Text('${_selectedIds.length} чатты өчүрөсүзбү?'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Жок')),
-          TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Ооба', style: TextStyle(color: Colors.red))),
-        ],
-      ),
-    );
-    if (confirm != true) return;
-    for (final id in _selectedIds) {
+ Future<void> _deleteSelected() async {
+  final confirm = await showDialog<bool>(
+    context: context,
+    builder: (_) => AlertDialog(
+      title: const Text('Чатты өчүрүү'),
+      content: Text('${_selectedIds.length} чатты өчүрөсүзбү?'),
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Жок')),
+        TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Ооба', style: TextStyle(color: Colors.red))),
+      ],
+    ),
+  );
+  if (confirm != true) return;
+
+  // ✅ Адегенде UI'дан алып салабыз (тез сезилет)
+  final toDelete = Set<String>.from(_selectedIds);
+  setState(() {
+    _cachedChats.removeWhere((c) => toDelete.contains(c.id));
+  });
+  _exitSelectionMode();
+
+  // ✅ Фондо Supabase'тен өчүрөбүз
+  for (final id in toDelete) {
+    try {
       await _service.deleteChat(id);
+    } catch (e) {
+      debugPrint('❌ deleteChat ката: $e');
     }
-    _exitSelectionMode();
   }
+
+  // ✅ Кэшти жаңырт
+  await _saveCache(_cachedChats);
+}
 
   @override
   Widget build(BuildContext context) {
