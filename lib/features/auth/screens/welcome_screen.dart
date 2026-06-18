@@ -7,6 +7,7 @@ import '../../../config/theme/app_text_styles.dart';
 import '../../../core/auth_service.dart';
 import '../../home/screens/home_screen.dart';
 import '../../seller/screens/seller_login_screen.dart';
+import '../../../core/supabase_client.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -40,22 +41,56 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
     _controller.forward();
 
-    // OAuth (Google) кирүү браузерден кайтканда signedIn окуясы
-    // ушул listener аркылуу келет.
-    _authSub = AuthService.instance.authStateChanges.listen((data) async {
-      if (data.event == AuthChangeEvent.signedIn) {
-        await AuthService.instance.syncProfile();
-        if (mounted) {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (_) => const HomeScreen()),
-            (route) => false,
-          );
+
+
+
+
+
+
+
+
+_authSub = AuthService.instance.authStateChanges.listen((data) async {
+  if (data.event == AuthChangeEvent.signedIn) {
+    await AuthService.instance.syncProfile();
+
+    // Google менен кирген customer'дин seller_status'ун тазалоо
+    final user = AuthService.instance.currentUser;
+    if (user != null) {
+      try {
+        final profile = await supabase
+            .from('profiles')
+            .select('role, seller_status')
+            .eq('id', user.id)
+            .maybeSingle();
+
+        final role = profile?['role'] as String?;
+        final sellerStatus = profile?['seller_status'] as String?;
+
+        // Эгер сатуучу эмес болсо жана seller_status pending болсо — жок кылуу
+        if (role != 'seller' && sellerStatus != null) {
+          await supabase
+              .from('profiles')
+              .update({'seller_status': null})
+              .eq('id', user.id);
         }
-      } else if (data.event == AuthChangeEvent.signedOut && mounted) {
-        setState(() => _isLoading = false);
-      }
-    });
+      } catch (_) {}
+    }
+
+    if (mounted) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        (route) => false,
+      );
+    }
+  } else if (data.event == AuthChangeEvent.signedOut && mounted) {
+    setState(() => _isLoading = false);
+  }
+});
+
+
+
+
   }
 
   @override

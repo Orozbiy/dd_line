@@ -26,7 +26,7 @@ class _ProductCardState extends State<ProductCard>
     super.initState();
     _heartController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 30),
     );
     _heartAnim = Tween<double>(begin: 1.0, end: 1.35).animate(
       CurvedAnimation(parent: _heartController, curve: Curves.elasticOut),
@@ -73,9 +73,9 @@ class _ProductCardState extends State<ProductCard>
             final cardWidth = constraints.maxWidth;
             final cardHeight = constraints.maxHeight;
 
-            const infoReserved = 105.0;
+            const infoReserved = 112.0;
             final imgHeight =
-                (cardHeight - infoReserved).clamp(80.0, cardHeight * 0.75);
+                (cardHeight - infoReserved).clamp(80.0, cardHeight * 0.78);
 
             return Container(
               decoration: BoxDecoration(
@@ -223,7 +223,7 @@ class _ProductCardState extends State<ProductCard>
                   // ── Маалымат бөлүмү ──
                   Expanded(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+                      padding: const EdgeInsets.fromLTRB(8, 2, 8, 2),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.start,
