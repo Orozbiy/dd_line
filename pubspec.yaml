@@ -31,7 +31,7 @@ dependencies:
   webview_flutter: ^4.7.0
   cached_network_image: ^3.4.1
   flutter_cache_manager: ^3.4.1
-  
+  google_fonts: ^6.2.1
   audioplayers: ^6.1.0
   path_provider: ^2.1.4
 
