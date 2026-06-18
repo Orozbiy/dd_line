@@ -73,7 +73,7 @@ class _ProductCardState extends State<ProductCard>
             final cardWidth = constraints.maxWidth;
             final cardHeight = constraints.maxHeight;
 
-            const infoReserved = 90.0;
+            const infoReserved = 105.0;
             final imgHeight =
                 (cardHeight - infoReserved).clamp(80.0, cardHeight * 0.75);
 
@@ -235,20 +235,20 @@ class _ProductCardState extends State<ProductCard>
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.plusJakartaSans(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                              fontSize: 19,
+                              fontWeight: FontWeight.w900,
                               color: Colors.black87,
                               height: 1.3,
                             ),
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 2),
                           // Баа
                           if (hasDiscount) ...[
                             Text(
                               '${widget.product.discountedPrice!.toStringAsFixed(0)} сом',
                               style: GoogleFonts.plusJakartaSans(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
+                                fontSize: 19,
+                                fontWeight: FontWeight.w900,
                                 color: AppColors.error,
                               ),
                               maxLines: 1,

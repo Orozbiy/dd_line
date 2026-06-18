@@ -17,9 +17,15 @@ class ProductRepository {
   double _randomSeed =
       DateTime.now().millisecondsSinceEpoch % 1000000 / 1000000;
 
-  /// Жаңылоо учурунда чакырылат — жаңы seed орнотот.
+  /// ✅ Ушул сессияда мурда көрсөтүлгөн товарлардын ID'лери.
+  /// Жаңылоо басылганда — тазаланат, жаңы топтом берилет.
+  final Set<String> _shownIds = {};
+
+  /// Жаңылоо учурунда чакырылат — жаңы seed орнотот + тарых тазаланат.
   void refreshSeed() {
     _randomSeed = DateTime.now().millisecondsSinceEpoch % 1000000 / 1000000;
+    _shownIds.clear();
+    debugPrint('🔄 Seed жаңырды, shownIds тазаланды');
   }
 
   static const List<String> bannedWords = [
@@ -113,17 +119,35 @@ class ProductRepository {
       );
       final results = _mapAndFilter(data as List);
 
-      if (results.length < pageSize) {
+      // ✅ Мурда көрсөтүлгөндөрдү чыгар
+      final fresh = results.where((p) => !_shownIds.contains(p.id)).toList();
+
+      if (fresh.length < pageSize) {
         final extra = await _fetchRandom(
           offset: offset,
-          extraLimit: pageSize - results.length,
+          extraLimit: pageSize - fresh.length,
         );
-        final seen = results.map((p) => p.id).toSet();
-        final merged = [...results, ...extra.where((p) => !seen.contains(p.id))];
-        return merged.take(pageSize).toList();
+        final seen = fresh.map((p) => p.id).toSet();
+        final merged = [
+          ...fresh,
+          ...extra.where((p) => !seen.contains(p.id)),
+        ];
+        final result = merged.take(pageSize).toList();
+        for (final p in result) {
+          _shownIds.add(p.id);
+        }
+        debugPrint(
+            '📦 personalized+extra: ${result.length} товар, shownIds=${_shownIds.length}');
+        return result;
       }
 
-      return results;
+      final result = fresh.take(pageSize).toList();
+      for (final p in result) {
+        _shownIds.add(p.id);
+      }
+      debugPrint(
+          '📦 personalized: ${result.length} товар, shownIds=${_shownIds.length}');
+      return result;
     } catch (e) {
       debugPrint('⚠️ _fetchPersonalized ката: $e → random жүктөлөт');
       return await _fetchRandom(offset: offset);
@@ -140,14 +164,27 @@ class ProductRepository {
       final params = <String, dynamic>{
         'p_seed': _randomSeed,
         'p_offset': offset,
-        'p_limit': extraLimit ?? pageSize,
+        'p_limit': (extraLimit ?? pageSize) * 3, // көбүрөөк жүктөп, чыпкалайбыз
       };
       if (categoryId != null && categoryId.isNotEmpty) {
         params['p_category_id'] = categoryId;
       }
 
       final data = await supabase.rpc('get_random_feed', params: params);
-      return _mapAndFilter(data as List);
+      final all = _mapAndFilter(data as List);
+
+      // ✅ Мурда көрүлбөгөндөрдү тандо
+      final limit = extraLimit ?? pageSize;
+      final unseen = all.where((p) => !_shownIds.contains(p.id)).toList();
+      final source = unseen.length >= limit ? unseen : all;
+      final result = source.take(limit).toList();
+
+      for (final p in result) {
+        _shownIds.add(p.id);
+      }
+      debugPrint(
+          '📦 random RPC: берилди=${result.length}, unseen=${unseen.length}, shownIds=${_shownIds.length}');
+      return result;
     } catch (e) {
       debugPrint('⚠️ _fetchRandom RPC ката: $e → fallback');
       return await _fetchFallback(
@@ -178,16 +215,33 @@ class ProductRepository {
       query = query.eq('region', region);
     }
 
-    final bigLimit = limit * 5;
     final rng = Random((_randomSeed * 1000000).toInt());
 
-    final data = await query
-        .order('created_at', ascending: false)
-        .range(0, bigLimit - 1);
-
+    // Баардык товарларды жүктө
+    final data = await query.order('created_at', ascending: false);
     final all = _mapAndFilter(data);
     all.shuffle(rng);
-    return all.take(limit).toList();
+
+    // ✅ Мурда көрүлбөгөндөрдү тандо
+    final unseen = all.where((p) => !_shownIds.contains(p.id)).toList();
+
+    // Эгер жетишсиз болсо — тарыхты тазалап баарынан алабыз (тегерек)
+    if (unseen.length < limit && all.length >= limit) {
+      debugPrint('🔁 Баардык товар көрүлдү — тарых тазаланат');
+      _shownIds.clear();
+    }
+
+    final source =
+        unseen.length >= limit ? unseen : all.where((p) => !_shownIds.contains(p.id)).toList();
+    final result = source.take(limit).toList();
+
+    for (final p in result) {
+      _shownIds.add(p.id);
+    }
+
+    debugPrint(
+        '📦 fallback: берилди=${result.length}, unseen=${unseen.length}, shownIds=${_shownIds.length}');
+    return result;
   }
 
   // ══════════════════════════════════════════════════════════════════

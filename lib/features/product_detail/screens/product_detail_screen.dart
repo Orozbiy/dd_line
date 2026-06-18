@@ -472,7 +472,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             _buildPriceSection(),
                             const SizedBox(height: 8),
                             Text(_product.name,
-                                style: AppTextStyles.headingMedium),
+                                style: AppTextStyles.headingMedium
+                                    .copyWith(fontSize: 24)),
                             const SizedBox(height: 8),
                             Row(
                               children: [
@@ -480,10 +481,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   const Icon(Icons.star_rounded,
                                       color: Colors.amber, size: 16),
                                   const SizedBox(width: 2),
-                                  Text(
-                                    _product.rating!.toStringAsFixed(1),
-                                    style: AppTextStyles.labelMedium,
-                                  ),
+                                  Text(_product.rating!.toStringAsFixed(1),
+                                      style: AppTextStyles.labelMedium
+                                          .copyWith(fontSize: 16)),
                                   if ((_product.ratingCount ?? 0) > 0)
                                     Text(
                                       ' (${_product.ratingCount})',
