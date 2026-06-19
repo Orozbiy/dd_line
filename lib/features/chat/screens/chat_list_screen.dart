@@ -72,29 +72,35 @@ class _ChatListScreenState extends State<ChatListScreen> {
 
   void _selectAll(List<ChatModel> chats) => setState(() => _selectedIds.addAll(chats.map((c) => c.id)));
 
-  Future<void> _deleteSelected() async {
-    final loc = AppLocalizations.of(context);
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text(loc.get('delete_chat')),
-        content: Text('${_selectedIds.length} ${loc.get('delete_chat_confirm')}'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(loc.get('no'))),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: Text(loc.get('yes'), style: const TextStyle(color: Colors.red))),
-        ],
-      ),
-    );
-    if (confirm != true) return;
+ Future<void> _deleteSelected() async {
+  final loc = AppLocalizations.of(context);
+  final confirm = await showDialog<bool>(
+    context: context,
+    builder: (_) => AlertDialog(
+      title: Text(loc.get('delete_chat')),
+      content: Text('${_selectedIds.length} ${loc.get('delete_chat_confirm')}'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context, false), child: Text(loc.get('no'))),
+        TextButton(onPressed: () => Navigator.pop(context, true), child: Text(loc.get('yes'), style: const TextStyle(color: Colors.red))),
+      ],
+    ),
+  );
+  if (confirm != true) return;
 
-    final toDelete = Set<String>.from(_selectedIds);
-    setState(() => _cachedChats.removeWhere((c) => toDelete.contains(c.id)));
-    _exitSelectionMode();
-    await _saveCache(_cachedChats);
-    for (final id in toDelete) {
-      try { await _service.deleteChat(id); } catch (e) { debugPrint('❌ deleteChat ката: $e'); }
+  final toDelete = Set<String>.from(_selectedIds);
+  setState(() => _cachedChats.removeWhere((c) => toDelete.contains(c.id)));
+  _exitSelectionMode();
+  await _saveCache(_cachedChats);
+  
+  for (final id in toDelete) {
+    try {
+      // ← isSeller параметри кошулду
+      await _service.deleteChat(id, isSeller: widget.isSeller);
+    } catch (e) {
+      debugPrint('❌ deleteChat ката: $e');
     }
   }
+}
 
   @override
   Widget build(BuildContext context) {

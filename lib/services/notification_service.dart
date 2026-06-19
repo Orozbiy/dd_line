@@ -102,13 +102,15 @@ class NotificationService {
     });
 
     // ── BACKGROUND → FOREGROUND: колдонмо фондо турганда notification таптаганда ──
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      final chatId = message.data['chatId'] as String?;
-      debugPrint('🔔 [Background→Foreground tap] chatId=$chatId');
-      if (chatId != null) {
-        _navigateToChat(chatId);
-      }
-    });
+  FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) async {
+  final chatId = message.data['chatId'] as String?;
+  debugPrint('🔔 [Background→Foreground tap] chatId=$chatId');
+  if (chatId != null) {
+    // Navigator даяр болгончо күтөбүз
+    await Future.delayed(const Duration(milliseconds: 600));
+    _navigateToChat(chatId);
+  }
+});
 
     // ── TERMINATED → OPEN: колдонмо толук өчүк турганда notification таптаганда ──
     // (handleInitialMessage main.dart'та init'тен кийин чакырылат)
@@ -142,98 +144,103 @@ class NotificationService {
   // ─────────────────────────────────────────────────────────────
   // NAVIGATE TO CHAT — chatId аркылуу ChatScreen'ге өтүү
   // Supabase'тан chat маалыматтарын алып, ChatScreen.fromChat() менен ачат
+  // 
+  // 
+  // 
+  // 
+  // 
+  // 
+  // 
   // ─────────────────────────────────────────────────────────────
-  Future<void> _navigateToChat(String chatId) async {
-    final context = navigatorKey.currentContext;
-    if (context == null) {
-      debugPrint('⚠️ navigatorKey.currentContext null — navigate болбой жатат');
+ Future<void> _navigateToChat(String chatId) async {
+  // Context даяр болгончо күтөбүз (макс 3 секунд)
+  BuildContext? context;
+  for (int i = 0; i < 15; i++) {
+    context = navigatorKey.currentContext;
+    if (context != null) break;
+    await Future.delayed(const Duration(milliseconds: 200));
+  }
+
+  if (context == null) {
+    debugPrint('⚠️ navigatorKey.currentContext null — navigate болбой жатат');
+    return;
+  }
+
+  try {
+    final user = supabase.auth.currentUser;
+    if (user == null) {
+      debugPrint('⚠️ Колдонуучу кирген эмес — navigate токтотулду');
       return;
     }
 
-    try {
-      final user = supabase.auth.currentUser;
-      if (user == null) {
-        debugPrint('⚠️ Колдонуучу кирген эмес — navigate токтотулду');
-        return;
-      }
+    final row = await supabase
+        .from('chats')
+        .select('id, seller_id, buyer_id, product_id, seller_name, last_message, last_message_at')
+        .eq('id', chatId)
+        .maybeSingle();
 
-      // Supabase'тан chat маалыматтарын алуу
-      final row = await supabase
-          .from('chats')
-          .select(
-              'id, seller_id, buyer_id, product_id, seller_name, last_message, last_message_at')
-          .eq('id', chatId)
-          .maybeSingle();
-
-      if (row == null) {
-        debugPrint('⚠️ Chat табылбады: chatId=$chatId');
-        return;
-      }
-
-      // Учурдагы колдонуучу сатуучубу же кардарбы
-      final isSeller = row['seller_id'] == user.id;
-
-      // Товар маалыматы
-      String productName = '';
-      String productImage = '';
-      final productId = row['product_id'] as String?;
-      if (productId != null) {
-        try {
-          final product = await supabase
-              .from('products')
-              .select('title, images')
-              .eq('id', productId)
-              .maybeSingle();
-          if (product != null) {
-            productName = product['title'] as String? ?? '';
-            final images = product['images'] as List?;
-            productImage = (images != null && images.isNotEmpty)
-                ? images.first as String
-                : '';
-          }
-        } catch (_) {}
-      }
-
-      // Башка колдонуучунун аватары
-      String otherAvatarUrl = '';
-      final otherUserId = isSeller
-          ? row['buyer_id'] as String? ?? ''
-          : row['seller_id'] as String? ?? '';
-      try {
-        final profile = await supabase
-            .from('profiles')
-            .select('avatar_url')
-            .eq('id', otherUserId)
-            .maybeSingle();
-        otherAvatarUrl = profile?['avatar_url'] as String? ?? '';
-      } catch (_) {}
-
-      // Эскертүү: navigator context'и mounted болушу керек
-      if (!context.mounted) return;
-
-      // ChatScreen импорту
-      // ignore: use_build_context_synchronously
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => _buildChatScreen(
-            chatId: chatId,
-            sellerName: row['seller_name'] as String? ?? 'Сатуучу',
-            productName: productName,
-            productImage: productImage,
-            isSeller: isSeller,
-            buyerId: row['buyer_id'] as String? ?? '',
-            sellerId: row['seller_id'] as String? ?? '',
-            otherAvatarUrl: otherAvatarUrl,
-          ),
-        ),
-      );
-
-      debugPrint('✅ ChatScreen\'ге navigate болду → chatId=$chatId');
-    } catch (e) {
-      debugPrint('❌ _navigateToChat катасы: $e');
+    if (row == null) {
+      debugPrint('⚠️ Chat табылбады: chatId=$chatId');
+      return;
     }
-  }
 
+    final isSeller = row['seller_id'] == user.id;
+
+    String productName = '';
+    String productImage = '';
+    final productId = row['product_id'] as String?;
+    if (productId != null) {
+      try {
+        final product = await supabase
+            .from('products')
+            .select('title, images')
+            .eq('id', productId)
+            .maybeSingle();
+        if (product != null) {
+          productName = product['title'] as String? ?? '';
+          final images = product['images'] as List?;
+          productImage = (images != null && images.isNotEmpty) ? images.first as String : '';
+        }
+      } catch (_) {}
+    }
+
+    String otherAvatarUrl = '';
+    final otherUserId = isSeller
+        ? row['buyer_id'] as String? ?? ''
+        : row['seller_id'] as String? ?? '';
+    try {
+      final profile = await supabase
+          .from('profiles')
+          .select('avatar_url')
+          .eq('id', otherUserId)
+          .maybeSingle();
+      otherAvatarUrl = profile?['avatar_url'] as String? ?? '';
+    } catch (_) {}
+
+    // Context дагы эле жашап жатабы?
+    context = navigatorKey.currentContext;
+    if (context == null || !context.mounted) return;
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => _buildChatScreen(
+          chatId: chatId,
+          sellerName: row['seller_name'] as String? ?? 'Сатуучу',
+          productName: productName,
+          productImage: productImage,
+          isSeller: isSeller,
+          buyerId: row['buyer_id'] as String? ?? '',
+          sellerId: row['seller_id'] as String? ?? '',
+          otherAvatarUrl: otherAvatarUrl,
+        ),
+      ),
+    );
+
+    debugPrint('✅ ChatScreen\'ге navigate болду → chatId=$chatId');
+  } catch (e) {
+    debugPrint('❌ _navigateToChat катасы: $e');
+  }
+}
   // ─────────────────────────────────────────────────────────────
   // ChatScreen widget'ын lazy import менен кура
   // (circular import болбосун деп функция катары бөлүндү)

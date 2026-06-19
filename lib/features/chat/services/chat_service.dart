@@ -97,25 +97,16 @@ class ChatService {
   }
 
   /// Чатты толугу менен өчүрүү (билдирүүлөр → чат жазуусу).
-  Future<void> deleteChat(String chatId) async {
-    // ✅ Адегенде билдирүүлөрдү өчүр (cascade иштебесе да өчөт)
-    try {
-      await supabase.from('messages').delete().eq('chat_id', chatId);
-      debugPrint('🗑️ messages өчүрүлдү → chatId=$chatId');
-    } catch (e) {
-      debugPrint('⚠️ messages өчүрүүдө ката: $e');
-      // Каталанса да улантабыз — cascade болушу мүмкүн
-    }
-
-    // ✅ Анан чатты өчүр
-    try {
-      await supabase.from('chats').delete().eq('id', chatId);
-      debugPrint('🗑️ chat өчүрүлдү → chatId=$chatId');
-    } catch (e) {
-      debugPrint('❌ chat өчүрүүдө ката: $e');
-      rethrow; // Чат өчпөсө — калкып чыксын
-    }
+ Future<void> deleteChat(String chatId, {required bool isSeller}) async {
+  try {
+    final field = isSeller ? 'deleted_for_seller' : 'deleted_for_buyer';
+    await supabase.from('chats').update({field: true}).eq('id', chatId);
+    debugPrint('🗑️ chat жашырылды → chatId=$chatId, $field=true');
+  } catch (e) {
+    debugPrint('❌ deleteChat ката: $e');
+    rethrow;
   }
+}
 
   /// Тандалган билдирүүлөрдү гана өчүрүү.
   Future<void> deleteMessages(List<String> messageIds) async {
@@ -134,24 +125,31 @@ class ChatService {
   }
 
   /// Кардардын чаттарынын стриму.
-  Stream<List<ChatModel>> buyerChatsStream(String buyerId) {
-    return supabase
-        .from('chats')
-        .stream(primaryKey: ['id'])
-        .eq('buyer_id', buyerId)
-        .order('last_message_at', ascending: false)
-        .asyncMap((rows) => _enrichChats(rows, isSeller: false));
-  }
+Stream<List<ChatModel>> buyerChatsStream(String buyerId) {
+  return supabase
+      .from('chats')
+      .stream(primaryKey: ['id'])
+      .eq('buyer_id', buyerId)
+      .order('last_message_at', ascending: false)
+      .asyncMap((rows) {
+        // Алуучу үчүн жашырылгандарды чыгарып салабыз
+        final filtered = rows.where((r) => r['deleted_for_buyer'] != true).toList();
+        return _enrichChats(filtered, isSeller: false);
+      });
+}
 
-  /// Сатуучунун чаттарынын стриму.
-  Stream<List<ChatModel>> sellerChatsStream(String sellerId) {
-    return supabase
-        .from('chats')
-        .stream(primaryKey: ['id'])
-        .eq('seller_id', sellerId)
-        .order('last_message_at', ascending: false)
-        .asyncMap((rows) => _enrichChats(rows, isSeller: true));
-  }
+Stream<List<ChatModel>> sellerChatsStream(String sellerId) {
+  return supabase
+      .from('chats')
+      .stream(primaryKey: ['id'])
+      .eq('seller_id', sellerId)
+      .order('last_message_at', ascending: false)
+      .asyncMap((rows) {
+        // Сатуучу үчүн жашырылгандарды чыгарып салабыз
+        final filtered = rows.where((r) => r['deleted_for_seller'] != true).toList();
+        return _enrichChats(filtered, isSeller: true);
+      });
+}
 
   Future<List<ChatModel>> _enrichChats(
     List<Map<String, dynamic>> rows, {
