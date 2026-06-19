@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
+import '../../../core/app_localizations.dart';
 import '../../../core/seller_auth_service.dart';
 import '../../../core/supabase_client.dart';
 import '../models/seller_model.dart';
@@ -18,13 +19,13 @@ class SellerLoginScreen extends StatefulWidget {
 }
 
 class _SellerLoginScreenState extends State<SellerLoginScreen> {
-  final _phoneCtrl = TextEditingController();
-  final _passwordCtrl = TextEditingController();
-  final _sellerService = SellerService();
+  final _phoneCtrl      = TextEditingController();
+  final _passwordCtrl   = TextEditingController();
+  final _sellerService  = SellerService();
 
-  bool _obscure = true;
-  bool _isLoading = false;
-  bool _checkingSession = true;
+  bool _obscure          = true;
+  bool _isLoading        = false;
+  bool _checkingSession  = true;
 
   @override
   void initState() {
@@ -40,7 +41,6 @@ class _SellerLoginScreenState extends State<SellerLoginScreen> {
     }
 
     final seller = await _sellerService.getSellerByUid(user.id);
-
     if (!mounted) return;
 
     if (seller == null) {
@@ -50,26 +50,14 @@ class _SellerLoginScreenState extends State<SellerLoginScreen> {
     }
 
     if (seller.status == SellerStatus.pending) {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => const SellerPendingScreen()),
-        (route) => false,
-      );
+      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const SellerPendingScreen()), (route) => false);
     } else if (seller.status == SellerStatus.rejected) {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => const SellerRejectedScreen()),
-        (route) => false,
-      );
+      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const SellerRejectedScreen()), (route) => false);
     } else if (seller.status == SellerStatus.blocked) {
       await supabase.auth.signOut();
       setState(() => _checkingSession = false);
     } else {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => SellerDashboardScreen(uid: seller.uid)),
-        (route) => false,
-      );
+      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => SellerDashboardScreen(uid: seller.uid)), (route) => false);
     }
   }
 
@@ -93,52 +81,38 @@ class _SellerLoginScreenState extends State<SellerLoginScreen> {
   }
 
   Future<void> _login() async {
+    final loc        = AppLocalizations.of(context);
     final localPhone = _phoneCtrl.text.trim();
-    final password = _passwordCtrl.text;
+    final password   = _passwordCtrl.text;
 
     if (localPhone.length < 9) {
-      _showSnack('Телефон номерин толук жазыңыз');
+      _showSnack(loc.get('reg_err_phone'));
       return;
     }
     if (password.isEmpty) {
-      _showSnack('Паролду жазыңыз');
+      _showSnack(loc.get('login_err_pass'));
       return;
     }
 
     setState(() => _isLoading = true);
     try {
-      final phone = SellerAuthService.formatPhone(localPhone);
-      final seller = await SellerAuthService.instance.login(
-        phone: phone,
-        password: password,
-      );
+      final phone  = SellerAuthService.formatPhone(localPhone);
+      final seller = await SellerAuthService.instance.login(phone: phone, password: password);
 
       if (!mounted) return;
 
       if (seller.status == SellerStatus.pending) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => const SellerPendingScreen()),
-          (route) => false,
-        );
+        Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const SellerPendingScreen()), (route) => false);
       } else if (seller.status == SellerStatus.rejected) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => const SellerRejectedScreen()),
-          (route) => false,
-        );
+        Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const SellerRejectedScreen()), (route) => false);
       } else if (seller.status == SellerStatus.blocked) {
         await supabase.auth.signOut();
-        _showSnack('Аккаунтуңуз блокголду. Администратор менен байланышыңыз.');
+        _showSnack(loc.get('login_blocked'));
       } else {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => SellerDashboardScreen(uid: seller.uid)),
-          (route) => false,
-        );
+        Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => SellerDashboardScreen(uid: seller.uid)), (route) => false);
       }
     } catch (e) {
-      if (mounted) _showSnack('Ката: $e');
+      if (mounted) _showSnack('${AppLocalizations.of(context).get('error')}: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -146,6 +120,8 @@ class _SellerLoginScreenState extends State<SellerLoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+
     if (_checkingSession) {
       return const Scaffold(
         backgroundColor: Colors.white,
@@ -163,16 +139,12 @@ class _SellerLoginScreenState extends State<SellerLoginScreen> {
             if (Navigator.canPop(context)) {
               Navigator.pop(context);
             } else {
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (_) => const HomeScreen()),
-                (route) => false,
-              );
+              Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const HomeScreen()), (route) => false);
             }
           },
           child: const Icon(Icons.arrow_back, color: AppColors.black),
         ),
-        title: const Text('Кирүү', style: AppTextStyles.headingMedium),
+        title: Text(loc.get('login_title'), style: AppTextStyles.headingMedium),
         centerTitle: true,
       ),
       body: SafeArea(
@@ -182,16 +154,16 @@ class _SellerLoginScreenState extends State<SellerLoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 24),
-              const Text('Сатуучу катары кирүү', style: AppTextStyles.headingLarge),
+              Text(loc.get('login_heading'), style: AppTextStyles.headingLarge),
               const SizedBox(height: 8),
               Text(
-                'Телефон номериңиз жана паролуңуз менен кириңиз',
+                loc.get('login_subheading'),
                 style: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey500),
               ),
               const SizedBox(height: 32),
 
-              // ── ТЕЛЕФОН ────────────────────────────
-              Text('Телефон номери', style: AppTextStyles.labelLarge.copyWith(color: AppColors.grey600)),
+              // ── ТЕЛЕФОН ──
+              Text(loc.get('reg_label_phone'), style: AppTextStyles.labelLarge.copyWith(color: AppColors.grey600)),
               const SizedBox(height: 8),
               TextField(
                 controller: _phoneCtrl,
@@ -209,8 +181,8 @@ class _SellerLoginScreenState extends State<SellerLoginScreen> {
               ),
               const SizedBox(height: 20),
 
-              // ── ПАРОЛЬ ─────────────────────────────
-              Text('Пароль', style: AppTextStyles.labelLarge.copyWith(color: AppColors.grey600)),
+              // ── ПАРОЛЬ ──
+              Text(loc.get('reg_label_pass'), style: AppTextStyles.labelLarge.copyWith(color: AppColors.grey600)),
               const SizedBox(height: 8),
               TextField(
                 controller: _passwordCtrl,
@@ -242,24 +214,17 @@ class _SellerLoginScreenState extends State<SellerLoginScreen> {
                     elevation: 0,
                   ),
                   child: _isLoading
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
-                        )
-                      : Text('Кирүү', style: AppTextStyles.labelLarge.copyWith(color: Colors.white, fontSize: 16)),
+                      ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
+                      : Text(loc.get('login_btn'), style: AppTextStyles.labelLarge.copyWith(color: Colors.white, fontSize: 16)),
                 ),
               ),
               const SizedBox(height: 16),
 
               Center(
                 child: TextButton(
-                  onPressed: () => Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (_) => const SellerRegisterScreen()),
-                  ),
+                  onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const SellerRegisterScreen())),
                   child: Text(
-                    'Аккаунтуңуз жокпу? Катталуу',
+                    loc.get('login_no_account'),
                     style: AppTextStyles.bodyMedium.copyWith(color: AppColors.primary, fontWeight: FontWeight.w600),
                   ),
                 ),

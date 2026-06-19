@@ -1,5 +1,8 @@
 // lib/features/chat/models/chat_model.dart
 
+import 'package:flutter/material.dart';
+import '../../../core/app_localizations.dart';
+
 class ChatModel {
   final String id;
   final String sellerId;
@@ -37,25 +40,21 @@ class ChatModel {
     this.lastSeen = '',
   });
 
-  /// Supabase'тин `chats` таблицасынан (snake_case) моделди жасоо.
-  factory ChatModel.fromMap(Map<String, dynamic> data,
-      {required bool isSeller}) {
-    final productData = data['products'] as Map<String, dynamic>?;
-    final images = productData?['images'] as List?;
-
+  factory ChatModel.fromMap(Map<String, dynamic> data, {required bool isSeller}) {
+    final productData  = data['products'] as Map<String, dynamic>?;
+    final images       = productData?['images'] as List?;
     final sellerUnread = data['seller_unread'] as int? ?? 0;
-    final buyerUnread = data['buyer_unread'] as int? ?? 0;
+    final buyerUnread  = data['buyer_unread']  as int? ?? 0;
 
     return ChatModel(
-      id: data['id'] as String? ?? '',
-      sellerId: data['seller_id'] as String? ?? '',
-      sellerName: data['seller_name'] as String? ?? '',
+      id:           data['id']            as String? ?? '',
+      sellerId:     data['seller_id']     as String? ?? '',
+      sellerName:   data['seller_name']   as String? ?? '',
       sellerAvatar: data['seller_avatar'] as String? ?? '',
-      buyerId: data['buyer_id'] as String? ?? '',
-      buyerAvatar: data['buyer_avatar'] as String? ?? '',
-      productId: data['product_id'] as String?,
-      productName:
-          productData?['title'] as String? ?? data['product_name'] as String?,
+      buyerId:      data['buyer_id']      as String? ?? '',
+      buyerAvatar:  data['buyer_avatar']  as String? ?? '',
+      productId:    data['product_id']    as String?,
+      productName:  productData?['title'] as String? ?? data['product_name'] as String?,
       productImage: (images != null && images.isNotEmpty)
           ? images.first as String
           : data['product_image'] as String?,
@@ -63,33 +62,30 @@ class ChatModel {
       lastTime: data['last_message_at'] != null
           ? DateTime.parse(data['last_message_at'] as String)
           : DateTime.now(),
-      unreadCount: isSeller ? sellerUnread : buyerUnread,
+      unreadCount:  isSeller ? sellerUnread : buyerUnread,
       sellerUnread: sellerUnread,
-      buyerUnread: buyerUnread,
-      isOnline: false,
-      lastSeen: '',
+      buyerUnread:  buyerUnread,
+      isOnline:     false,
+      lastSeen:     '',
     );
   }
 
   // ── SharedPreferences кэш үчүн ──
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'seller_id': sellerId,
-      'seller_name': sellerName,
-      'seller_avatar': sellerAvatar,
-      'buyer_id': buyerId,
-      'buyer_avatar': buyerAvatar,
-      'product_id': productId,
-      'product_name': productName,
-      'product_image': productImage,
-      'last_message': lastMessage,
-      'last_message_at': lastTime.toIso8601String(),
-      'seller_unread': sellerUnread,
-      'buyer_unread': buyerUnread,
-    };
-  }
+  Map<String, dynamic> toJson() => {
+    'id':             id,
+    'seller_id':      sellerId,
+    'seller_name':    sellerName,
+    'seller_avatar':  sellerAvatar,
+    'buyer_id':       buyerId,
+    'buyer_avatar':   buyerAvatar,
+    'product_id':     productId,
+    'product_name':   productName,
+    'product_image':  productImage,
+    'last_message':   lastMessage,
+    'last_message_at':lastTime.toIso8601String(),
+    'seller_unread':  sellerUnread,
+    'buyer_unread':   buyerUnread,
+  };
 
   factory ChatModel.fromJson(Map<String, dynamic> json) {
     final sellerUnread = json['seller_unread'] as int? ?? 0;
@@ -113,11 +109,22 @@ class ChatModel {
     );
   }
 
+  /// Тилге жараша форматталган убакыт
+  String formattedTimeLocalized(BuildContext context) {
+    final loc  = AppLocalizations.of(context);
+    final diff = DateTime.now().difference(lastTime);
+    if (diff.inMinutes < 1) return loc.get('time_now');
+    if (diff.inMinutes < 60) return '${diff.inMinutes} ${loc.get('time_min')}';
+    if (diff.inHours   < 24) return '${diff.inHours} ${loc.get('time_hour')}';
+    return '${diff.inDays} ${loc.get('time_day')}';
+  }
+
+  /// Эски колдонуу үчүн (context жок жерлерде) — кыргызча калат
   String get formattedTime {
     final diff = DateTime.now().difference(lastTime);
     if (diff.inMinutes < 1) return 'Азыр';
     if (diff.inMinutes < 60) return '${diff.inMinutes} мин';
-    if (diff.inHours < 24) return '${diff.inHours} саат';
+    if (diff.inHours   < 24) return '${diff.inHours} саат';
     return '${diff.inDays} күн';
   }
 }

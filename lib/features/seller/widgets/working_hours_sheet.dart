@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
+import '../../../core/app_localizations.dart';
 import '../../../core/supabase_client.dart';
 
 /// Сатуучунун дашбордунан чакырылат.
 /// stores таблицасына work_start, work_end, work_days жазат.
 class WorkingHoursSheet extends StatefulWidget {
   final String sellerUid;
-  final String? initialStart; // '09:00'
-  final String? initialEnd;   // '18:00'
-  final String? initialDays;  // 'Дш-Жм'
-
+  final String? initialStart;
+  final String? initialEnd;
+  final String? initialDays;
+  
   const WorkingHoursSheet({
     super.key,
     required this.sellerUid,
@@ -26,11 +27,20 @@ class WorkingHoursSheet extends StatefulWidget {
 class _WorkingHoursSheetState extends State<WorkingHoursSheet> {
   late TimeOfDay _start;
   late TimeOfDay _end;
-  late String _days;
+  late String    _days;
   bool _saving = false;
 
-  // Жумуш күндөрүнүн опциялары
-  static const _dayOptions = [
+  // Жумуш күндөрү опциялары — ачкычтар менен, build() ичинде которулат
+  static const _dayKeys = [
+    'hours_mon_fri',
+    'hours_mon_sat',
+    'hours_mon_sun',
+    'hours_no_sun',
+    'hours_daily',
+  ];
+
+  // Supabase'ке сакталуучу туруктуу маанилер (тилге байланышпайт)
+  static const _dayValues = [
     'Дш-Жм',
     'Дш-Шб',
     'Дш-Жк',
@@ -43,15 +53,12 @@ class _WorkingHoursSheetState extends State<WorkingHoursSheet> {
     super.initState();
     _start = _parseTime(widget.initialStart ?? '09:00');
     _end   = _parseTime(widget.initialEnd   ?? '18:00');
-    _days  = widget.initialDays ?? 'Дш-Жм';
+    _days  = widget.initialDays ?? _dayValues[0];
   }
 
   TimeOfDay _parseTime(String t) {
     final parts = t.split(':');
-    return TimeOfDay(
-      hour:   int.tryParse(parts[0]) ?? 9,
-      minute: int.tryParse(parts[1]) ?? 0,
-    );
+    return TimeOfDay(hour: int.tryParse(parts[0]) ?? 9, minute: int.tryParse(parts[1]) ?? 0);
   }
 
   String _fmt(TimeOfDay t) =>
@@ -67,13 +74,11 @@ class _WorkingHoursSheetState extends State<WorkingHoursSheet> {
       ),
     );
     if (picked == null) return;
-    setState(() {
-      if (isStart) _start = picked;
-      else _end = picked;
-    });
+    setState(() { if (isStart) _start = picked; else _end = picked; });
   }
 
   Future<void> _save() async {
+    final loc = AppLocalizations.of(context);
     setState(() => _saving = true);
     try {
       await supabase.from('stores').update({
@@ -83,18 +88,15 @@ class _WorkingHoursSheetState extends State<WorkingHoursSheet> {
       }).eq('owner_id', widget.sellerUid);
 
       if (mounted) {
-        Navigator.pop(context, true); // true = сакталды
+        Navigator.pop(context, true);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Иштөө убактысы сакталды'),
-            backgroundColor: AppColors.success,
-          ),
+          SnackBar(content: Text(loc.get('hours_saved')), backgroundColor: AppColors.success),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ Ката: $e'), backgroundColor: AppColors.error),
+          SnackBar(content: Text('❌ ${loc.get('error')}: $e'), backgroundColor: AppColors.error),
         );
       }
     } finally {
@@ -104,14 +106,14 @@ class _WorkingHoursSheetState extends State<WorkingHoursSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      padding: EdgeInsets.fromLTRB(
-        20, 16, 20, MediaQuery.of(context).padding.bottom + 20,
-      ),
+      padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(context).padding.bottom + 20),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -120,15 +122,12 @@ class _WorkingHoursSheetState extends State<WorkingHoursSheet> {
           Center(
             child: Container(
               width: 40, height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.grey300,
-                borderRadius: BorderRadius.circular(2),
-              ),
+              decoration: BoxDecoration(color: AppColors.grey300, borderRadius: BorderRadius.circular(2)),
             ),
           ),
           const SizedBox(height: 16),
 
-          const Text('🕐 Иштөө убактысы', style: AppTextStyles.headingSmall),
+          Text('🕐 ${loc.get('dash_hours')}', style: AppTextStyles.headingSmall),
           const SizedBox(height: 20),
 
           // ── Башталуу — Аяктоо ──
@@ -136,7 +135,7 @@ class _WorkingHoursSheetState extends State<WorkingHoursSheet> {
             children: [
               Expanded(
                 child: _TimeCard(
-                  label: 'Башталат',
+                  label: loc.get('hours_start'),
                   time: _fmt(_start),
                   onTap: () => _pickTime(isStart: true),
                 ),
@@ -147,7 +146,7 @@ class _WorkingHoursSheetState extends State<WorkingHoursSheet> {
               ),
               Expanded(
                 child: _TimeCard(
-                  label: 'Аяктайт',
+                  label: loc.get('hours_end'),
                   time: _fmt(_end),
                   onTap: () => _pickTime(isStart: false),
                 ),
@@ -157,27 +156,27 @@ class _WorkingHoursSheetState extends State<WorkingHoursSheet> {
           const SizedBox(height: 20),
 
           // ── Жумуш күндөрү ──
-          const Text('Жумуш күндөрү', style: AppTextStyles.labelLarge),
+          Text(loc.get('hours_workdays'), style: AppTextStyles.labelLarge),
           const SizedBox(height: 10),
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: _dayOptions.map((d) {
-              final selected = _days == d;
+            children: List.generate(_dayKeys.length, (i) {
+              final value    = _dayValues[i];
+              final label    = loc.get(_dayKeys[i]);
+              final selected = _days == value;
               return GestureDetector(
-                onTap: () => setState(() => _days = d),
+                onTap: () => setState(() => _days = value),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 150),
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
                     color: selected ? AppColors.primary : AppColors.grey100,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: selected ? AppColors.primary : Colors.transparent,
-                    ),
+                    border: Border.all(color: selected ? AppColors.primary : Colors.transparent),
                   ),
                   child: Text(
-                    d,
+                    label,
                     style: AppTextStyles.labelSmall.copyWith(
                       color: selected ? Colors.white : AppColors.grey600,
                       fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
@@ -185,7 +184,7 @@ class _WorkingHoursSheetState extends State<WorkingHoursSheet> {
                   ),
                 ),
               );
-            }).toList(),
+            }),
           ),
           const SizedBox(height: 24),
 
@@ -203,7 +202,7 @@ class _WorkingHoursSheetState extends State<WorkingHoursSheet> {
                 const Icon(Icons.access_time_rounded, color: AppColors.primary, size: 18),
                 const SizedBox(width: 8),
                 Text(
-                  '$_days  ${_fmt(_start)} — ${_fmt(_end)}',
+                  '${loc.get(_dayKeys[_dayValues.indexOf(_days)])}  ${_fmt(_start)} — ${_fmt(_end)}',
                   style: AppTextStyles.labelLarge.copyWith(color: AppColors.primary),
                 ),
               ],
@@ -223,11 +222,8 @@ class _WorkingHoursSheetState extends State<WorkingHoursSheet> {
                 elevation: 0,
               ),
               child: _saving
-                  ? const SizedBox(
-                      width: 22, height: 22,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                    )
-                  : const Text('Сактоо', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                  ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : Text(loc.get('save'), style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
             ),
           ),
         ],
@@ -259,14 +255,7 @@ class _TimeCard extends StatelessWidget {
           children: [
             Text(label, style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey500)),
             const SizedBox(height: 6),
-            Text(
-              time,
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                color: AppColors.black,
-              ),
-            ),
+            Text(time, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.black)),
             const SizedBox(height: 4),
             const Icon(Icons.edit_outlined, size: 14, color: AppColors.grey400),
           ],
