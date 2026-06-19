@@ -125,7 +125,7 @@ class ChatService {
   }
 
   // ════════════════════════════════════════════════════
-  // БИЛДИРҮҮЛӨР СТРИМУ  (убакытты .toLocal() менен алат)
+  // БИЛДИРҮҮЛӨР СТРИМУ
   // ════════════════════════════════════════════════════
 
   Stream<List<MessageModel>> messagesStream(String chatId) {
@@ -166,10 +166,7 @@ class ChatService {
   }
 
   // ════════════════════════════════════════════════════
-  // BATCH ENRICH  ← негизги оптималдаштыруу
-  //
-  // Мурда: N чат × 4 запрос = 4N
-  // Азыр:  4 параллел запрос (кэш толгондо 0)
+  // BATCH ENRICH
   // ════════════════════════════════════════════════════
 
   Future<List<ChatModel>> _enrichChats(
@@ -178,17 +175,19 @@ class ChatService {
   }) async {
     if (rows.isEmpty) return [];
 
-    // ── 1. Кэште жок ID'лерди чогулт ─────────────────
+    // ── 1. Кэште жок же null болгон ID'лерди чогулт ──
     final missingProductIds = <String>{};
     final missingSellerIds  = <String>{};
-    final missingUserIds    = <String>{}; // buyer + seller (аты + аватар)
+    final missingUserIds    = <String>{};
 
     for (final row in rows) {
+      // Продукт
       final pid = row['product_id'] as String?;
       if (pid != null && !_productCache.containsKey(pid)) {
         missingProductIds.add(pid);
       }
 
+      // Дүкөн аты
       final sid = row['seller_id'] as String? ?? '';
       if ((row['seller_name'] as String? ?? '').isEmpty &&
           !_storeCache.containsKey(sid)) {
@@ -197,10 +196,16 @@ class ChatService {
 
       final buyId = row['buyer_id']  as String? ?? '';
       final selId = row['seller_id'] as String? ?? '';
-      if (!_avatarCache.containsKey(buyId)) missingUserIds.add(buyId);
-      if (!_avatarCache.containsKey(selId)) missingUserIds.add(selId);
-      // Buyer атын алуу үчүн
-      if (!_nameCache.containsKey(buyId))   missingUserIds.add(buyId);
+
+      // ✅ ОҢДОО: null болсо да кайра суранат
+      // Мурда: containsKey(buyId) → null болсо да өтпөй калчу
+      // Азыр: мааниси null же жок болсо — кайра запрос жасайт
+      final buyerNameMissing   = !_nameCache.containsKey(buyId)   || _nameCache[buyId] == null;
+      final buyerAvatarMissing = !_avatarCache.containsKey(buyId) || _avatarCache[buyId] == null;
+      final sellerAvatarMissing= !_avatarCache.containsKey(selId) || _avatarCache[selId] == null;
+
+      if (buyerNameMissing || buyerAvatarMissing) missingUserIds.add(buyId);
+      if (sellerAvatarMissing) missingUserIds.add(selId);
     }
 
     // ── 2. Параллел batch запростор ───────────────────
@@ -216,9 +221,11 @@ class ChatService {
               for (final p in list) {
                 _productCache[p['id'] as String] = p;
               }
-            }).catchError((_) {}),
+            }).catchError((e) {
+              debugPrint('❌ products batch ката: $e');
+            }),
 
-      // Дүкөн аттары (сатуучу профили)
+      // Дүкөн аттары
       if (missingSellerIds.isNotEmpty)
         supabase
             .from('stores')
@@ -229,30 +236,39 @@ class ChatService {
                 _storeCache[s['owner_id'] as String] =
                     s['store_name'] as String? ?? '';
               }
-              // Базада жок болсо — бош деп белгиле
               for (final id in missingSellerIds) {
                 _storeCache.putIfAbsent(id, () => '');
               }
-            }).catchError((_) {}),
+            }).catchError((e) {
+              debugPrint('❌ stores batch ката: $e');
+            }),
 
-      // Профилдер: аватар + Google аты (buyer + seller бирге)
+      // ✅ ОҢДОО: profiles'тен buyer аты + аватары алынат
+      // null болгон жазуулар да кайра суралат
       if (missingUserIds.isNotEmpty)
         supabase
             .from('profiles')
             .select('id, full_name, avatar_url')
             .inFilter('id', missingUserIds.toList())
             .then((list) {
+              debugPrint('👤 profiles жүктөлдү: ${list.length} колдонуучу');
               for (final p in list) {
-                final uid = p['id'] as String;
-                _nameCache[uid]   = p['full_name']  as String?;
-                _avatarCache[uid] = p['avatar_url'] as String?;
+                final uid    = p['id']         as String;
+                final name   = p['full_name']  as String?;
+                final avatar = p['avatar_url'] as String?;
+                _nameCache[uid]   = name;
+                _avatarCache[uid] = avatar;
+                debugPrint('  → $uid: name=$name, avatar=${avatar != null ? "бар" : "жок"}');
               }
-              // Базада жок болсо — null деп белгиле (кайра сурабайт)
+              // Базада таптакыр жок болсо гана null деп белгиле
+              // (жогоруда мааниси bar болсо эч качан жазылбайт)
               for (final uid in missingUserIds) {
-                _nameCache.putIfAbsent(uid, () => null);
-                _avatarCache.putIfAbsent(uid, () => null);
+                if (!_nameCache.containsKey(uid))   _nameCache[uid]   = null;
+                if (!_avatarCache.containsKey(uid)) _avatarCache[uid] = null;
               }
-            }).catchError((_) {}),
+            }).catchError((e) {
+              debugPrint('❌ profiles batch ката: $e');
+            }),
     ]);
 
     // ── 3. Кэштен ChatModel түзүү ─────────────────────
@@ -274,16 +290,22 @@ class ChatService {
         enriched['seller_name'] = _storeCache[sid];
       }
 
-      // Buyer Google аты  ← ЖАЦ: сатуучуга туура аты көрүнөт
+      // ✅ Buyer Google аты — null болбосо гана жазат
       final buyId = row['buyer_id'] as String? ?? '';
-      if (_nameCache.containsKey(buyId)) {
-        enriched['buyer_name'] = _nameCache[buyId];
+      final buyerName = _nameCache[buyId];
+      if (buyerName != null && buyerName.isNotEmpty) {
+        enriched['buyer_name'] = buyerName;
+        debugPrint('✅ buyer_name коюлду: $buyerName (buyId=$buyId)');
+      } else {
+        debugPrint('⚠️ buyer_name жок: buyId=$buyId, cache=${_nameCache[buyId]}');
       }
 
       // Аватарлар
       final selId = row['seller_id'] as String? ?? '';
-      enriched['buyer_avatar']  = _avatarCache[buyId];
-      enriched['seller_avatar'] = _avatarCache[selId];
+      final buyerAvatar  = _avatarCache[buyId];
+      final sellerAvatar = _avatarCache[selId];
+      if (buyerAvatar  != null) enriched['buyer_avatar']  = buyerAvatar;
+      if (sellerAvatar != null) enriched['seller_avatar'] = sellerAvatar;
 
       result.add(ChatModel.fromMap(enriched, isSeller: isSeller));
     }
