@@ -13,20 +13,15 @@ class ProductRepository {
 
   static const int pageSize = 20;
 
-  /// Жаңылоо баскычы басылганда өзгөрөт → товарлар алмашат.
   double _randomSeed =
       DateTime.now().millisecondsSinceEpoch % 1000000 / 1000000;
 
-  /// ✅ Ушул сессияда мурда көрсөтүлгөн товарлардын ID'лери.
-  /// Жаңылоо басылганда — тазаланат, жаңы топтом берилет.
   final Set<String> _shownIds = {};
 
-  /// Жаңылоо учурунда чакырылат — жаңы seed орнотот + тарых тазаланат.
   void refreshSeed() {
-  _randomSeed = DateTime.now().millisecondsSinceEpoch % 1000000 / 1000000;
-  // ✅ _shownIds.clear() — ЖОК! Тарыхты сактайбыз
-  debugPrint('🔄 Seed жаңырды, shownIds=${_shownIds.length} сакталды');
-}
+    _randomSeed = DateTime.now().millisecondsSinceEpoch % 1000000 / 1000000;
+    debugPrint('🔄 Seed жаңырды, shownIds=${_shownIds.length} сакталды');
+  }
 
   static const List<String> bannedWords = [
     'төш', 'сутюк', 'ички кийим', 'бюстгальтер', 'трус', 'стринг',
@@ -34,6 +29,23 @@ class ProductRepository {
     'трусы', 'стринги', 'нижнее бельё',
     'нижнее', 'белье', 'бельё',
   ];
+
+  // ══════════════════════════════════════════════════════════════════
+  // ЖАРДАМЧЫ: категория фильтри
+  //
+  // ✅ НЕГИЗГИ ОҢДОО:
+  // Мурда: .eq('category_id', '1')  → '1_2', '1_3' табылбайт
+  // Азыр:  .like('category_id', '1%') → '1', '1_2', '1_3' баары табылат
+  //
+  // Эгер кичи категория тандалса (мис. '1_2') — так дал келүү:
+  // .like('category_id', '1_2%') → '1_2' гана табылат
+  // ══════════════════════════════════════════════════════════════════
+
+  bool _isMainCategory(String categoryId) {
+    // Кичи категория '_' белгисин камтыйт: '1_2', '4_3' ж.б.
+    // Негизги категория: '1', '4', '12' ж.б.
+    return !categoryId.contains('_');
+  }
 
   // ══════════════════════════════════════════════════════════════════
   // GPS
@@ -104,110 +116,122 @@ class ProductRepository {
     );
   }
 
-
-
-
- Future<List<ProductModel>> _fetchPersonalized({
-  required String userId,
-  int offset = 0,
-}) async {
-  try {
-    final data = await supabase.rpc(
-      'get_personalized_feed',
-      params: {
-        'p_user_id': userId,
-        'p_offset': offset,
-        'p_limit': pageSize,
-      },
-    );
-    final results = _mapAndFilter(data as List);
-
-    // Мурда көрүлгөндөрдү чыгар
-    final fresh = results.where((p) => !_shownIds.contains(p.id)).toList();
-
-    List<ProductModel> result;
-
-    if (fresh.length >= pageSize) {
-      result = fresh.take(pageSize).toList();
-    } else {
-      // Random'дан толуктайбыз
-      final extra = await supabase.rpc(
-        'get_random_feed',
+  Future<List<ProductModel>> _fetchPersonalized({
+    required String userId,
+    int offset = 0,
+  }) async {
+    try {
+      final data = await supabase.rpc(
+        'get_personalized_feed',
         params: {
-          'p_seed':   _randomSeed,
-          'p_offset': 0,
-          'p_limit':  pageSize * 3,
-          if (_shownIds.isNotEmpty) 'p_exclude_ids': _shownIds.toList(),
+          'p_user_id': userId,
+          'p_offset': offset,
+          'p_limit': pageSize,
         },
       );
-      final extraMapped = _mapAndFilter(extra as List);
-      final seenInFresh = fresh.map((p) => p.id).toSet();
-      final extraFresh = extraMapped
-          .where((p) => !seenInFresh.contains(p.id))
-          .toList();
+      final results = _mapAndFilter(data as List);
+      final fresh = results.where((p) => !_shownIds.contains(p.id)).toList();
 
-      result = [...fresh, ...extraFresh].take(pageSize).toList();
+      List<ProductModel> result;
+
+      if (fresh.length >= pageSize) {
+        result = fresh.take(pageSize).toList();
+      } else {
+        final extra = await supabase.rpc(
+          'get_random_feed',
+          params: {
+            'p_seed': _randomSeed,
+            'p_offset': 0,
+            'p_limit': pageSize * 3,
+            if (_shownIds.isNotEmpty) 'p_exclude_ids': _shownIds.toList(),
+          },
+        );
+        final extraMapped = _mapAndFilter(extra as List);
+        final seenInFresh = fresh.map((p) => p.id).toSet();
+        final extraFresh =
+            extraMapped.where((p) => !seenInFresh.contains(p.id)).toList();
+        result = [...fresh, ...extraFresh].take(pageSize).toList();
+      }
+
+      if (result.isEmpty) {
+        debugPrint('🔁 Баардык товар көрүлдү — тарых тазаланат');
+        _shownIds.clear();
+        return await _fetchPersonalized(userId: userId, offset: offset);
+      }
+
+      for (final p in result) _shownIds.add(p.id);
+      debugPrint(
+          '📦 personalized: ${result.length} товар, shownIds=${_shownIds.length}');
+      return result;
+    } catch (e) {
+      debugPrint('⚠️ _fetchPersonalized ката: $e → random жүктөлөт');
+      return await _fetchRandom(offset: offset);
     }
-
-    // ✅ Товар чыкпаса — тарых тазалап кайра жүктө
-    if (result.isEmpty) {
-      debugPrint('🔁 Баардык товар көрүлдү — тарых тазаланат, кайра башталат');
-      _shownIds.clear();
-      return await _fetchPersonalized(userId: userId, offset: offset);
-    }
-
-    for (final p in result) {
-      _shownIds.add(p.id);
-    }
-
-    debugPrint('📦 personalized: ${result.length} товар, shownIds=${_shownIds.length}');
-    return result;
-  } catch (e) {
-    debugPrint('⚠️ _fetchPersonalized ката: $e → random жүктөлөт');
-    return await _fetchRandom(offset: offset);
   }
-}
-
-
-
-
 
   Future<List<ProductModel>> _fetchRandom({
-  int offset = 0,
-  String? categoryId,
-  String? region,
-  int? extraLimit,
-}) async {
-  try {
-    final params = <String, dynamic>{
-      'p_seed':   _randomSeed,
-      'p_offset': offset,
-      'p_limit':  extraLimit ?? pageSize,
-      // ✅ мурда көрүлгөндөрдү SQL'ге өткөр
-      if (_shownIds.isNotEmpty)
-        'p_exclude_ids': _shownIds.toList(),
-    };
-    if (categoryId != null && categoryId.isNotEmpty) {
-      params['p_category_id'] = categoryId;
+    int offset = 0,
+    String? categoryId,
+    String? region,
+    int? extraLimit,
+  }) async {
+    try {
+      final params = <String, dynamic>{
+        'p_seed': _randomSeed,
+        'p_offset': offset,
+        'p_limit': extraLimit ?? pageSize,
+        if (_shownIds.isNotEmpty) 'p_exclude_ids': _shownIds.toList(),
+      };
+
+      // ✅ RPC'га категория жиберебиз — RPC ичинде LIKE колдонушу керек
+      // Эгер RPC LIKE колдонбосо — fallback'та оңдолот
+      if (categoryId != null && categoryId.isNotEmpty) {
+        params['p_category_id'] = categoryId;
+      }
+
+      final data = await supabase.rpc('get_random_feed', params: params);
+      var result = _mapAndFilter(data as List);
+
+      // ✅ ОҢДОО: RPC негизги категория боюнча чыпкаласа,
+      // кичи категориялардагы товарлар чыкпайт.
+      // Жергиликтүү фильтр кошобуз.
+      if (categoryId != null && categoryId.isNotEmpty) {
+        result = _filterByCategory(result, categoryId);
+      }
+
+      for (final p in result) _shownIds.add(p.id);
+      debugPrint('📦 random: ${result.length} товар, shownIds=${_shownIds.length}');
+      return result;
+    } catch (e) {
+      debugPrint('⚠️ _fetchRandom RPC ката: $e → fallback');
+      return await _fetchFallback(
+        offset: offset,
+        categoryId: categoryId,
+        region: region,
+        limit: extraLimit ?? pageSize,
+      );
     }
-
-    final data = await supabase.rpc('get_random_feed', params: params);
-    final result = _mapAndFilter(data as List);
-
-    // ✅ Көрүлдү деп белгиле
-    for (final p in result) _shownIds.add(p.id);
-    debugPrint('📦 random: ${result.length} товар, shownIds=${_shownIds.length}');
-    return result;
-  } catch (e) {
-    debugPrint('⚠️ _fetchRandom RPC ката: $e → fallback');
-    return await _fetchFallback(
-      offset: offset,
-      categoryId: categoryId,
-      region: region,
-      limit: extraLimit ?? pageSize,
-    );
   }
-}
+
+  /// ✅ Жергиликтүү категория фильтри
+  /// Негизги категория '1' → '1', '1_2', '1_3'... баарын кайтарат
+  /// Кичи категория '1_2' → '1_2' гана кайтарат
+  List<ProductModel> _filterByCategory(
+      List<ProductModel> products, String categoryId) {
+    if (_isMainCategory(categoryId)) {
+      // Негизги: category_id '1' менен башталган баары
+      return products
+          .where((p) =>
+              p.category != null &&
+              (p.category == categoryId ||
+                  p.category!.startsWith('${categoryId}_')))
+          .toList();
+    } else {
+      // Кичи: так дал келүү
+      return products.where((p) => p.category == categoryId).toList();
+    }
+  }
+
   /// Fallback: RPC жок болсо жөнөкөй Supabase query.
   Future<List<ProductModel>> _fetchFallback({
     int offset = 0,
@@ -220,36 +244,35 @@ class ProductRepository {
         .select('*, stores(store_name, owner_id)')
         .eq('is_active', true);
 
+    // ✅ НЕГИЗГИ ОҢДОО: .eq → .like
+    // '1'   → LIKE '1%'   → '1', '1_2', '1_3' баары табылат
+    // '1_2' → LIKE '1_2%' → '1_2' гана табылат
     if (categoryId != null && categoryId.isNotEmpty) {
-      query = query.eq('category_id', categoryId);
+      query = query.like('category_id', '$categoryId%');
     }
+
     if (region != null && region.isNotEmpty) {
       query = query.eq('region', region);
     }
 
     final rng = Random((_randomSeed * 1000000).toInt());
-
-    // Баардык товарларды жүктө
     final data = await query.order('created_at', ascending: false);
     final all = _mapAndFilter(data);
     all.shuffle(rng);
 
-    // ✅ Мурда көрүлбөгөндөрдү тандо
     final unseen = all.where((p) => !_shownIds.contains(p.id)).toList();
 
-    // Эгер жетишсиз болсо — тарыхты тазалап баарынан алабыз (тегерек)
     if (unseen.length < limit && all.length >= limit) {
       debugPrint('🔁 Баардык товар көрүлдү — тарых тазаланат');
       _shownIds.clear();
     }
 
-    final source =
-        unseen.length >= limit ? unseen : all.where((p) => !_shownIds.contains(p.id)).toList();
+    final source = unseen.length >= limit
+        ? unseen
+        : all.where((p) => !_shownIds.contains(p.id)).toList();
     final result = source.take(limit).toList();
 
-    for (final p in result) {
-      _shownIds.add(p.id);
-    }
+    for (final p in result) _shownIds.add(p.id);
 
     debugPrint(
         '📦 fallback: берилди=${result.length}, unseen=${unseen.length}, shownIds=${_shownIds.length}');
@@ -257,7 +280,7 @@ class ProductRepository {
   }
 
   // ══════════════════════════════════════════════════════════════════
-  // ✅ ЖАҢЫ ТОВАРЛАР — created_at боюнча сорттолот
+  // ✅ ЖАҢЫ ТОВАРЛАР
   // ══════════════════════════════════════════════════════════════════
 
   Future<List<ProductModel>> fetchNewest({
@@ -270,13 +293,13 @@ class ProductRepository {
           .select('*, stores(store_name, owner_id)')
           .eq('is_active', true);
 
+      // ✅ ОҢДОО: .eq → .like
       if (categoryId != null && categoryId.isNotEmpty) {
-        query = query.eq('category_id', categoryId);
+        query = query.like('category_id', '$categoryId%');
       }
 
-      final data = await query
-          .order('created_at', ascending: false)
-          .limit(limit);
+      final data =
+          await query.order('created_at', ascending: false).limit(limit);
 
       return _mapAndFilter(data as List);
     } catch (e) {
@@ -286,7 +309,7 @@ class ProductRepository {
   }
 
   // ══════════════════════════════════════════════════════════════════
-  // ✅ ТААНЫМАЛ ТОВАРЛАР — rating боюнча сорттолот
+  // ✅ ТААНЫМАЛ ТОВАРЛАР
   // ══════════════════════════════════════════════════════════════════
 
   Future<List<ProductModel>> fetchPopular({
@@ -300,8 +323,9 @@ class ProductRepository {
           .eq('is_active', true)
           .not('rating', 'is', null);
 
+      // ✅ ОҢДОО: .eq → .like
       if (categoryId != null && categoryId.isNotEmpty) {
-        query = query.eq('category_id', categoryId);
+        query = query.like('category_id', '$categoryId%');
       }
 
       final data = await query
@@ -365,7 +389,13 @@ class ProductRepository {
         params: params,
       );
 
-      final results = _mapAndFilter(data as List);
+      var results = _mapAndFilter(data as List);
+
+      // ✅ ОҢДОО: RPC так дал келүү берсе — жергиликтүү фильтр
+      if (categoryId != null && categoryId.isNotEmpty) {
+        results = _filterByCategory(results, categoryId);
+      }
+
       if (results.isNotEmpty) return results;
 
       return await _searchFallback(
@@ -423,8 +453,9 @@ class ProductRepository {
           .eq('is_active', true)
           .ilike('title', '%$pattern%');
 
+      // ✅ ОҢДОО: .eq → .like
       if (categoryId != null && categoryId.isNotEmpty) {
-        q = q.eq('category_id', categoryId);
+        q = q.like('category_id', '$categoryId%');
       }
 
       final data = await q.order('rating', ascending: false).limit(limit);
@@ -457,7 +488,14 @@ class ProductRepository {
     }
 
     final data = await supabase.rpc('products_nearby', params: params);
-    return _mapAndFilter(data as List);
+    var result = _mapAndFilter(data as List);
+
+    // ✅ ОҢДОО: жергиликтүү фильтр кошулду
+    if (categoryId != null && categoryId.isNotEmpty) {
+      result = _filterByCategory(result, categoryId);
+    }
+
+    return result;
   }
 
   // ══════════════════════════════════════════════════════════════════
