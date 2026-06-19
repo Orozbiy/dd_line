@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
+import '../../../core/app_localizations.dart';
 import '../models/category_model.dart';
 
 enum ProductFilterMode { all, newest, popular }
@@ -43,14 +44,12 @@ class _CategoryListState extends State<CategoryList> {
   void _onCategoryTap(CategoryModel cat) {
     setState(() {
       if (_selectedCategoryId == cat.id) {
-        // Эгер ошол эле категорияны кайра бассак — өчүр
         _selectedCategoryId = null;
         _selectedSubId = null;
         widget.onCategorySelected('');
       } else {
         _selectedCategoryId = cat.id;
         _selectedSubId = null;
-        // Негизги категорияны тандоо — баарын жүктөйт
         widget.onCategorySelected(cat.id);
       }
     });
@@ -60,11 +59,9 @@ class _CategoryListState extends State<CategoryList> {
     setState(() {
       if (_selectedSubId == sub.id) {
         _selectedSubId = null;
-        // Кичи категория өчүрүлсө — негизги категория активдүү болот
         widget.onCategorySelected(_selectedCategoryId ?? '');
       } else {
         _selectedSubId = sub.id;
-        // "Баары" болсо — негизги категориянын id жибер
         if (sub.name == 'Баары') {
           widget.onCategorySelected(_selectedCategoryId ?? '');
         } else {
@@ -102,6 +99,7 @@ class _CategoryListState extends State<CategoryList> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final cat = _selectedCategory;
 
     return Column(
@@ -117,7 +115,7 @@ class _CategoryListState extends State<CategoryList> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Категория баскычы
+                // ── Категория баскычы ──
                 GestureDetector(
                   onTap: _openCategorySheet,
                   child: AnimatedContainer(
@@ -133,8 +131,7 @@ class _CategoryListState extends State<CategoryList> {
                       boxShadow: _selectedCategoryId != null
                           ? [
                               BoxShadow(
-                                color: AppColors.primary
-                                    .withValues(alpha: 0.35),
+                                color: AppColors.primary.withValues(alpha: 0.35),
                                 blurRadius: 8,
                                 offset: const Offset(0, 3),
                               )
@@ -152,8 +149,8 @@ class _CategoryListState extends State<CategoryList> {
                         const SizedBox(width: 6),
                         Text(
                           _selectedCategoryId != null
-                              ? (cat?.name ?? 'Категория')
-                              : 'Категория',
+                              ? (cat?.name ?? loc.get('cat_label'))
+                              : loc.get('cat_label'),
                           style: AppTextStyles.labelLarge.copyWith(
                             color: _selectedCategoryId != null
                                 ? Colors.white
@@ -172,7 +169,7 @@ class _CategoryListState extends State<CategoryList> {
                   ),
                 ),
 
-                // Жаңы товарлар
+                // ── Жаңы товарлар ──
                 GestureDetector(
                   onTap: () => _setFilterMode(ProductFilterMode.newest),
                   child: AnimatedContainer(
@@ -206,7 +203,7 @@ class _CategoryListState extends State<CategoryList> {
                                 : AppColors.grey600),
                         const SizedBox(width: 5),
                         Text(
-                          'Жаңы товарлар',
+                          loc.get('cat_newest'),
                           style: AppTextStyles.labelLarge.copyWith(
                             color: _filterMode == ProductFilterMode.newest
                                 ? Colors.white
@@ -219,7 +216,7 @@ class _CategoryListState extends State<CategoryList> {
                   ),
                 ),
 
-                // Таанымал
+                // ── Таанымал ──
                 GestureDetector(
                   onTap: () => _setFilterMode(ProductFilterMode.popular),
                   child: AnimatedContainer(
@@ -252,7 +249,7 @@ class _CategoryListState extends State<CategoryList> {
                                 : AppColors.grey600),
                         const SizedBox(width: 5),
                         Text(
-                          'Таанымал',
+                          loc.get('cat_popular'),
                           style: AppTextStyles.labelLarge.copyWith(
                             color: _filterMode == ProductFilterMode.popular
                                 ? Colors.white
@@ -269,7 +266,7 @@ class _CategoryListState extends State<CategoryList> {
           ),
         ),
 
-        // ── Кичи категориялар — категория тандалганда гана чыгат ──
+        // ── Кичи категориялар ──
         AnimatedSize(
           duration: const Duration(milliseconds: 250),
           curve: Curves.easeInOut,
@@ -322,45 +319,31 @@ class _SubCategoryBar extends StatelessWidget {
             onTap: () => onSubTap(sub),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 14, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
                 color: isSelected
                     ? color
                     : color.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
-                  color: isSelected
-                      ? color
-                      : color.withValues(alpha: 0.25),
+                  color: isSelected ? color : color.withValues(alpha: 0.25),
                   width: 1.5,
                 ),
                 boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: color.withValues(alpha: 0.3),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
-                        )
-                      ]
+                    ? [BoxShadow(color: color.withValues(alpha: 0.3), blurRadius: 6, offset: const Offset(0, 2))]
                     : [],
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(sub.icon,
-                      style: const TextStyle(fontSize: 14)),
+                  Text(sub.icon, style: const TextStyle(fontSize: 14)),
                   const SizedBox(width: 5),
                   Text(
                     sub.name,
                     style: TextStyle(
                       fontSize: 12,
-                      fontWeight: isSelected
-                          ? FontWeight.w700
-                          : FontWeight.w500,
-                      color: isSelected
-                          ? Colors.white
-                          : color.withValues(alpha: 0.85),
+                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                      color: isSelected ? Colors.white : color.withValues(alpha: 0.85),
                     ),
                   ),
                 ],
@@ -389,7 +372,9 @@ class _CategoryBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc  = AppLocalizations.of(context);
     final maxH = MediaQuery.of(context).size.height * 0.85;
+
     return ConstrainedBox(
       constraints: BoxConstraints(maxHeight: maxH),
       child: Container(
@@ -402,19 +387,17 @@ class _CategoryBottomSheet extends StatelessWidget {
           children: [
             const SizedBox(height: 12),
             Container(
-              width: 40,
-              height: 4,
+              width: 40, height: 4,
               decoration: BoxDecoration(
-                color: AppColors.grey300,
-                borderRadius: BorderRadius.circular(2),
-              ),
+                  color: AppColors.grey300,
+                  borderRadius: BorderRadius.circular(2)),
             ),
             const SizedBox(height: 16),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: Text('Категория тандоо',
+                child: Text(loc.get('cat_select'),
                     style: AppTextStyles.headingSmall),
               ),
             ),
@@ -424,8 +407,7 @@ class _CategoryBottomSheet extends StatelessWidget {
                 shrinkWrap: true,
                 physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(12, 0, 12, 24),
-                gridDelegate:
-                    const SliverGridDelegateWithFixedCrossAxisCount(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 4,
                   childAspectRatio: 0.82,
                   crossAxisSpacing: 8,
@@ -433,10 +415,10 @@ class _CategoryBottomSheet extends StatelessWidget {
                 ),
                 itemCount: categories.length,
                 itemBuilder: (context, index) {
-                  final cat = categories[index];
+                  final cat       = categories[index];
                   final isSelected = selectedId == cat.id;
-                  final color =
-                      Color(int.parse('0xFF${cat.color}'));
+                  final color     = Color(int.parse('0xFF${cat.color}'));
+
                   return GestureDetector(
                     onTap: () => onSelected(cat),
                     child: AnimatedContainer(
@@ -447,9 +429,7 @@ class _CategoryBottomSheet extends StatelessWidget {
                             : const Color(0xFFF7F7F7),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: isSelected
-                              ? color
-                              : Colors.transparent,
+                          color: isSelected ? color : Colors.transparent,
                           width: 2,
                         ),
                       ),
@@ -457,8 +437,7 @@ class _CategoryBottomSheet extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Container(
-                            width: 46,
-                            height: 46,
+                            width: 46, height: 46,
                             decoration: BoxDecoration(
                               color: isSelected
                                   ? color.withValues(alpha: 0.2)
@@ -466,17 +445,13 @@ class _CategoryBottomSheet extends StatelessWidget {
                               shape: BoxShape.circle,
                             ),
                             child: Center(
-                              child: Text(
-                                cat.icon,
-                                style:
-                                    const TextStyle(fontSize: 22),
-                              ),
+                              child: Text(cat.icon,
+                                  style: const TextStyle(fontSize: 22)),
                             ),
                           ),
                           const SizedBox(height: 6),
                           Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 4),
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
                             child: Text(
                               cat.name,
                               textAlign: TextAlign.center,
@@ -487,9 +462,7 @@ class _CategoryBottomSheet extends StatelessWidget {
                                 fontWeight: isSelected
                                     ? FontWeight.w700
                                     : FontWeight.w500,
-                                color: isSelected
-                                    ? color
-                                    : AppColors.grey600,
+                                color: isSelected ? color : AppColors.grey600,
                                 height: 1.2,
                               ),
                             ),

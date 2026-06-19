@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
+import '../../../core/app_localizations.dart';
 
 class FilterOptions {
   final RangeValues priceRange;
@@ -63,28 +64,29 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
   late final TextEditingController _minCtrl;
   late final TextEditingController _maxCtrl;
 
-  // ✅ 1 миллион
   static const double _maxPrice = 1000000;
 
   final List<String> sizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
-  final List<Map<String, String>> sortOptions = [
-    {'value': 'popular',    'label': 'Популярдуу',      'icon': '🔥'},
-    {'value': 'price_asc',  'label': 'Баасы: Арзандан', 'icon': '⬆️'},
-    {'value': 'price_desc', 'label': 'Баасы: Кымбаттан','icon': '⬇️'},
-    {'value': 'rating',     'label': 'Рейтинги жогору', 'icon': '⭐'},
-    {'value': 'newest',     'label': 'Жаңылары',        'icon': '🆕'},
+  // Сорттоо параметрлери — ачкыч гана, label build() ичинде алынат
+  final List<Map<String, String>> _sortValues = [
+    {'value': 'popular',    'icon': '🔥', 'key': 'sort_popular'},
+    {'value': 'price_asc',  'icon': '⬆️', 'key': 'sort_price_asc'},
+    {'value': 'price_desc', 'icon': '⬇️', 'key': 'sort_price_desc'},
+    {'value': 'rating',     'icon': '⭐', 'key': 'sort_rating'},
+    {'value': 'newest',     'icon': '🆕', 'key': 'sort_newest'},
   ];
 
-@override
+  @override
   void initState() {
     super.initState();
-    _priceRange = widget.initialOptions.priceRange;
-    _minCtrl = TextEditingController(text: _priceRange.start.toInt().toString());
-    _maxCtrl = TextEditingController(text: _priceRange.end.toInt().toString());
+    _priceRange    = widget.initialOptions.priceRange;
+    _minCtrl       = TextEditingController(text: _priceRange.start.toInt().toString());
+    _maxCtrl       = TextEditingController(text: _priceRange.end.toInt().toString());
     _selectedSizes = List.from(widget.initialOptions.selectedSizes);
-    _sortBy = widget.initialOptions.sortBy;
+    _sortBy        = widget.initialOptions.sortBy;
   }
+
   @override
   void dispose() {
     _minCtrl.dispose();
@@ -92,13 +94,13 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
     super.dispose();
   }
 
-void _reset() {
+  void _reset() {
     setState(() {
-      _priceRange = const RangeValues(0, _maxPrice);
+      _priceRange    = const RangeValues(0, _maxPrice);
       _selectedSizes = [];
-      _sortBy = 'popular';
-      _minCtrl.text = '0';
-      _maxCtrl.text = _maxPrice.toInt().toString();
+      _sortBy        = 'popular';
+      _minCtrl.text  = '0';
+      _maxCtrl.text  = _maxPrice.toInt().toString();
     });
   }
 
@@ -108,6 +110,17 @@ void _reset() {
     if (_selectedSizes.isNotEmpty) count++;
     if (_sortBy != 'popular') count++;
     return count;
+  }
+
+  String _formatPrice(double price) {
+    if (price >= _maxPrice) return '1 000 000+ с';
+    final str = price.toInt().toString();
+    final buf = StringBuffer();
+    for (int i = 0; i < str.length; i++) {
+      if (i > 0 && (str.length - i) % 3 == 0) buf.write(' ');
+      buf.write(str[i]);
+    }
+    return '${buf.toString()} с';
   }
 
   Widget _priceField({
@@ -138,23 +151,10 @@ void _reset() {
     );
   }
 
-
-
-  // Баа форматтоо: 1000000 → "1 000 000 с"
-  String _formatPrice(double price) {
-    if (price >= _maxPrice) return '1 000 000+ с';
-    final str = price.toInt().toString();
-    final buf = StringBuffer();
-    for (int i = 0; i < str.length; i++) {
-      if (i > 0 && (str.length - i) % 3 == 0) buf.write(' ');
-      buf.write(str[i]);
-    }
-    return '${buf.toString()} с';
-  }
-  
-
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+
     return Container(
       decoration: const BoxDecoration(
         color: AppColors.white,
@@ -166,12 +166,10 @@ void _reset() {
           // ── Жогорку сызык ──
           Container(
             margin: const EdgeInsets.only(top: 12),
-            width: 40,
-            height: 4,
+            width: 40, height: 4,
             decoration: BoxDecoration(
-              color: AppColors.grey300,
-              borderRadius: BorderRadius.circular(2),
-            ),
+                color: AppColors.grey300,
+                borderRadius: BorderRadius.circular(2)),
           ),
 
           // ── Баш сөз ──
@@ -182,7 +180,7 @@ void _reset() {
               children: [
                 Row(
                   children: [
-                    const Text('Фильтр', style: AppTextStyles.headingMedium),
+                    Text(loc.get('filter'), style: AppTextStyles.headingMedium),
                     if (_activeFilterCount > 0) ...[
                       const SizedBox(width: 8),
                       Container(
@@ -204,7 +202,7 @@ void _reset() {
                 TextButton(
                   onPressed: _reset,
                   child: Text(
-                    'Тазалоо',
+                    loc.get('filter_reset'),
                     style: AppTextStyles.labelLarge
                         .copyWith(color: AppColors.grey500),
                   ),
@@ -226,7 +224,7 @@ void _reset() {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Баасы', style: AppTextStyles.headingSmall),
+                      Text(loc.get('price'), style: AppTextStyles.headingSmall),
                       Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 6),
@@ -235,7 +233,6 @@ void _reset() {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          // ✅ Форматталган баа
                           '${_formatPrice(_priceRange.start)} — ${_formatPrice(_priceRange.end)}',
                           style: AppTextStyles.labelMedium
                               .copyWith(color: AppColors.primary),
@@ -246,13 +243,11 @@ void _reset() {
                   const SizedBox(height: 8),
                   SliderTheme(
                     data: SliderTheme.of(context).copyWith(
-                      activeTrackColor: AppColors.primary,
+                      activeTrackColor:   AppColors.primary,
                       inactiveTrackColor: AppColors.grey200,
-                      thumbColor: AppColors.primary,
-                      overlayColor:
-                          AppColors.primary.withValues(alpha: 0.1),
-                      thumbShape: const RoundSliderThumbShape(
-                          enabledThumbRadius: 12),
+                      thumbColor:  AppColors.primary,
+                      overlayColor: AppColors.primary.withValues(alpha: 0.1),
+                      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12),
                       trackHeight: 4,
                     ),
                     child: RangeSlider(
@@ -262,7 +257,7 @@ void _reset() {
                       divisions: 200,
                       onChanged: (values) {
                         setState(() {
-                          _priceRange = values;
+                          _priceRange  = values;
                           _minCtrl.text = values.start.toInt().toString();
                           _maxCtrl.text = values.end.toInt().toString();
                         });
@@ -310,9 +305,9 @@ void _reset() {
                   const SizedBox(height: 20),
 
                   // ── 2. СОРТТОО ──
-                  const Text('Сорттоо', style: AppTextStyles.headingSmall),
+                  Text(loc.get('filter_sort'), style: AppTextStyles.headingSmall),
                   const SizedBox(height: 12),
-                  ...sortOptions.map((option) {
+                  ..._sortValues.map((option) {
                     final isSelected = _sortBy == option['value'];
                     return GestureDetector(
                       onTap: () => setState(() => _sortBy = option['value']!),
@@ -340,7 +335,7 @@ void _reset() {
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
-                                option['label']!,
+                                loc.get(option['key']!),
                                 style: AppTextStyles.bodyMedium.copyWith(
                                   color: isSelected
                                       ? AppColors.primary
@@ -365,7 +360,7 @@ void _reset() {
                   const SizedBox(height: 20),
 
                   // ── 3. РАЗМЕР ──
-                  const Text('Размер', style: AppTextStyles.headingSmall),
+                  Text(loc.get('size_label'), style: AppTextStyles.headingSmall),
                   const SizedBox(height: 12),
                   Wrap(
                     spacing: 10,
@@ -384,12 +379,9 @@ void _reset() {
                         },
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
-                          width: 60,
-                          height: 48,
+                          width: 60, height: 48,
                           decoration: BoxDecoration(
-                            color: isSelected
-                                ? AppColors.primary
-                                : AppColors.grey50,
+                            color: isSelected ? AppColors.primary : AppColors.grey50,
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
                               color: isSelected
@@ -450,7 +442,9 @@ void _reset() {
                 elevation: 0,
               ),
               child: Text(
-                'Колдонуу${_activeFilterCount > 0 ? ' ($_activeFilterCount фильтр)' : ''}',
+                _activeFilterCount > 0
+                    ? '${loc.get('filter_apply')} ($_activeFilterCount ${loc.get('filter_count_suffix')})'
+                    : loc.get('filter_apply'),
                 style: AppTextStyles.headingSmall
                     .copyWith(color: AppColors.white),
               ),

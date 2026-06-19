@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
+import '../../../core/app_localizations.dart';
 import '../../home/screens/home_screen.dart';
 import 'seller_login_screen.dart';
 import '../../../core/supabase_client.dart';
+
 /// Каттоодон кийин же кирүүдө "pending" статусундагы сатуучуга
 /// көрсөтүлүүчү күтүү экраны.
 class SellerPendingScreen extends StatelessWidget {
@@ -11,6 +13,8 @@ class SellerPendingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -43,15 +47,16 @@ class SellerPendingScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 28),
-              const Text(
-                'Өтүнүчүңүз каралууда',
+              Text(
+                loc.get('pending_title'),
                 style: AppTextStyles.headingLarge,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
               Text(
-                'Сиздин катталуу өтүнүчүңүз администратор\nтарабынан текшерилүүдө. Бекитилгенде\nдүкөнүңүздү башкара аласыз.',
-                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey500, height: 1.5),
+                loc.get('pending_desc'),
+                style: AppTextStyles.bodyMedium
+                    .copyWith(color: AppColors.grey500, height: 1.5),
                 textAlign: TextAlign.center,
               ),
               const Spacer(flex: 3),
@@ -66,11 +71,13 @@ class SellerPendingScreen extends StatelessWidget {
                   ),
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: AppColors.primary, width: 1.5),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
                   ),
                   child: Text(
-                    'Башкы баракка кайтуу',
-                    style: AppTextStyles.labelLarge.copyWith(color: AppColors.primary, fontSize: 16),
+                    loc.get('pending_btn_home'),
+                    style: AppTextStyles.labelLarge
+                        .copyWith(color: AppColors.primary, fontSize: 16),
                   ),
                 ),
               ),
@@ -98,6 +105,8 @@ class SellerRejectedScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -119,15 +128,16 @@ class SellerRejectedScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 28),
-              const Text(
-                'Өтүнүч четке кагылды',
+              Text(
+                loc.get('rejected_title'),
                 style: AppTextStyles.headingLarge,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
               Text(
-                'Кайра аракет кылуу үчүн администратор менен байланышыңыз.',
-                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey500, height: 1.5),
+                loc.get('rejected_desc'),
+                style: AppTextStyles.bodyMedium
+                    .copyWith(color: AppColors.grey500, height: 1.5),
                 textAlign: TextAlign.center,
               ),
               const Spacer(flex: 3),
@@ -138,11 +148,13 @@ class SellerRejectedScreen extends StatelessWidget {
                   onPressed: () => _logout(context),
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: AppColors.primary, width: 1.5),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
                   ),
                   child: Text(
-                    'Чыгуу',
-                    style: AppTextStyles.labelLarge.copyWith(color: AppColors.primary, fontSize: 16),
+                    loc.get('sign_out'),
+                    style: AppTextStyles.labelLarge
+                        .copyWith(color: AppColors.primary, fontSize: 16),
                   ),
                 ),
               ),

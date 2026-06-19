@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
+import '../../../core/app_localizations.dart';
 import '../../../core/supabase_client.dart';
 
-/// `stores` таблицасынан жеңил модель — карта экраны үчүн гана.
 class _StoreLocation {
   final String id;
   final String shopName;
   final String ownerName;
-  final String containerNumber; // market + district
+  final String containerNumber;
   final double? latitude;
   final double? longitude;
 
@@ -23,19 +23,19 @@ class _StoreLocation {
   });
 
   factory _StoreLocation.fromMap(Map<String, dynamic> data) {
-    final profile = data['profiles'] as Map<String, dynamic>?;
+    final profile   = data['profiles'] as Map<String, dynamic>?;
     final container = [
-      data['market'] as String? ?? '',
+      data['market']   as String? ?? '',
       data['district'] as String? ?? '',
     ].where((s) => s.isNotEmpty).join(', ');
 
     return _StoreLocation(
-      id: data['id'] as String? ?? '',
-      shopName: data['store_name'] as String? ?? '',
-      ownerName: profile?['full_name'] as String? ?? '',
+      id:              data['id']         as String? ?? '',
+      shopName:        data['store_name'] as String? ?? '',
+      ownerName:       profile?['full_name'] as String? ?? '',
       containerNumber: container,
-      latitude: (data['latitude'] as num?)?.toDouble(),
-      longitude: (data['longitude'] as num?)?.toDouble(),
+      latitude:        (data['latitude']  as num?)?.toDouble(),
+      longitude:       (data['longitude'] as num?)?.toDouble(),
     );
   }
 }
@@ -48,11 +48,11 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> {
-  List<_StoreLocation> _sellers = [];
+  List<_StoreLocation> _sellers  = [];
   List<_StoreLocation> _filtered = [];
   _StoreLocation? _selectedSeller;
-  bool _isLoading = true;
-  int _noLocationCount = 0;
+  bool _isLoading      = true;
+  int  _noLocationCount = 0;
   final _searchController = TextEditingController();
 
   @override
@@ -70,10 +70,10 @@ class _MapScreenState extends State<MapScreen> {
   Future<void> _loadSellers() async {
     try {
       final data = await supabase
-    .from('stores')
-    .select('*, profiles!inner(full_name, seller_status)')
-    .eq('is_active', true)
-    .eq('profiles.seller_status', 'approved');
+          .from('stores')
+          .select('*, profiles!inner(full_name, seller_status)')
+          .eq('is_active', true)
+          .eq('profiles.seller_status', 'approved');
 
       final all = (data as List)
           .cast<Map<String, dynamic>>()
@@ -86,10 +86,10 @@ class _MapScreenState extends State<MapScreen> {
           all.where((s) => s.latitude == null || s.longitude == null).length;
 
       setState(() {
-        _sellers = withLocation;
-        _filtered = withLocation;
+        _sellers         = withLocation;
+        _filtered        = withLocation;
         _noLocationCount = noLocation;
-        _isLoading = false;
+        _isLoading       = false;
       });
     } catch (e) {
       debugPrint('❌ _loadSellers: $e');
@@ -108,21 +108,14 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Future<void> _open2GIS(_StoreLocation seller) async {
+    final loc = AppLocalizations.of(context);
     final lat = seller.latitude!;
     final lng = seller.longitude!;
 
-    final appUri = Uri.parse(
-      'dgis://2gis.ru/routeSearch/rsType/pedestrian/to/$lng,$lat',
-    );
-    final webUri = Uri.parse(
-      'https://2gis.kg/bishkek/geo/$lng,$lat',
-    );
-    final playStoreUri = Uri.parse(
-      'https://play.google.com/store/apps/details?id=ru.dublgis.dgismobile',
-    );
-    final appStoreUri = Uri.parse(
-      'https://apps.apple.com/app/id481627348',
-    );
+    final appUri       = Uri.parse('dgis://2gis.ru/routeSearch/rsType/pedestrian/to/$lng,$lat');
+    final webUri       = Uri.parse('https://2gis.kg/bishkek/geo/$lng,$lat');
+    final playStoreUri = Uri.parse('https://play.google.com/store/apps/details?id=ru.dublgis.dgismobile');
+    final appStoreUri  = Uri.parse('https://apps.apple.com/app/id481627348');
 
     if (await canLaunchUrl(appUri)) {
       await launchUrl(appUri);
@@ -133,35 +126,30 @@ class _MapScreenState extends State<MapScreen> {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20)),
-          title: const Text('2ГИС орнотулган жок'),
-          content:
-              const Text('Маршрут үчүн 2ГИС тиркемесин жүктөп алыңыз.'),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(loc.get('2gis_not_installed')),
+          content: Text(loc.get('2gis_download_hint')),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Жок'),
+              child: Text(loc.get('no')),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 elevation: 0,
               ),
               onPressed: () async {
                 Navigator.pop(ctx);
-                final isIOS =
-                    Theme.of(context).platform == TargetPlatform.iOS;
+                final isIOS    = Theme.of(context).platform == TargetPlatform.iOS;
                 final storeUri = isIOS ? appStoreUri : playStoreUri;
                 if (await canLaunchUrl(storeUri)) {
-                  await launchUrl(storeUri,
-                      mode: LaunchMode.externalApplication);
+                  await launchUrl(storeUri, mode: LaunchMode.externalApplication);
                 }
               },
-              child: const Text('Жүктөп алуу',
-                  style: TextStyle(color: Colors.white)),
+              child: Text(loc.get('download'),
+                  style: const TextStyle(color: Colors.white)),
             ),
           ],
         ),
@@ -171,6 +159,8 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF4F5F7),
       body: SafeArea(
@@ -185,7 +175,7 @@ class _MapScreenState extends State<MapScreen> {
                 children: [
                   Row(
                     children: [
-                      const Text(' Дүкөнчүлөрдүн тизмеги.',
+                      Text(' ${loc.get('map_title')}',
                           style: AppTextStyles.headingMedium),
                       const Spacer(),
                       if (!_isLoading)
@@ -197,7 +187,7 @@ class _MapScreenState extends State<MapScreen> {
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
-                            '${_sellers.length} дүкөн',
+                            '${_sellers.length} ${loc.get('map_store_count')}',
                             style: AppTextStyles.labelSmall
                                 .copyWith(color: AppColors.primary),
                           ),
@@ -210,7 +200,7 @@ class _MapScreenState extends State<MapScreen> {
                     onChanged: _search,
                     style: AppTextStyles.bodyMedium,
                     decoration: InputDecoration(
-                      hintText: 'Дүкөн же контейнер издөө...',
+                      hintText: loc.get('map_search_hint'),
                       hintStyle: AppTextStyles.bodyMedium
                           .copyWith(color: AppColors.grey400),
                       prefixIcon: const Icon(Icons.search,
@@ -244,17 +234,14 @@ class _MapScreenState extends State<MapScreen> {
             Expanded(
               child: _isLoading
                   ? const Center(
-                      child: CircularProgressIndicator(
-                          color: AppColors.primary))
+                      child: CircularProgressIndicator(color: AppColors.primary))
                   : _filtered.isEmpty
-                      ? _buildEmpty()
+                      ? _buildEmpty(loc)
                       : ListView.separated(
                           padding: const EdgeInsets.all(16),
                           itemCount: _filtered.length,
-                          separatorBuilder: (_, __) =>
-                              const SizedBox(height: 10),
-                          itemBuilder: (_, i) =>
-                              _buildSellerCard(_filtered[i]),
+                          separatorBuilder: (_, __) => const SizedBox(height: 10),
+                          itemBuilder: (_, i) => _buildSellerCard(_filtered[i], loc),
                         ),
             ),
 
@@ -262,15 +249,14 @@ class _MapScreenState extends State<MapScreen> {
             if (!_isLoading && _noLocationCount > 0)
               Container(
                 color: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Row(
                   children: [
                     const Icon(Icons.info_outline,
                         size: 14, color: AppColors.grey400),
                     const SizedBox(width: 6),
                     Text(
-                      '$_noLocationCount дүкөндүн локациясы кошулган жок',
+                      '$_noLocationCount ${loc.get('map_no_location')}',
                       style: AppTextStyles.labelSmall
                           .copyWith(color: AppColors.grey400),
                     ),
@@ -283,27 +269,25 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  Widget _buildEmpty() {
+  Widget _buildEmpty(AppLocalizations loc) {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           const Text('📍', style: TextStyle(fontSize: 48)),
           const SizedBox(height: 12),
-          const Text('Дүкөн табылган жок',
-              style: AppTextStyles.headingSmall),
+          Text(loc.get('map_not_found'), style: AppTextStyles.headingSmall),
           const SizedBox(height: 8),
           Text(
-            'Издөөнү өзгөртүп көрүңүз',
-            style: AppTextStyles.bodySmall
-                .copyWith(color: AppColors.grey500),
+            loc.get('map_try_search'),
+            style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey500),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSellerCard(_StoreLocation seller) {
+  Widget _buildSellerCard(_StoreLocation seller, AppLocalizations loc) {
     final isSelected = _selectedSeller?.id == seller.id;
 
     return GestureDetector(
@@ -332,8 +316,7 @@ class _MapScreenState extends State<MapScreen> {
             Row(
               children: [
                 Container(
-                  width: 48,
-                  height: 48,
+                  width: 48, height: 48,
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [Color(0xFFD97706), Color(0xFFEF4444)],
@@ -369,12 +352,16 @@ class _MapScreenState extends State<MapScreen> {
                           const Icon(Icons.location_on_outlined,
                               size: 13, color: AppColors.primary),
                           const SizedBox(width: 4),
-                          Text(
-                            seller.containerNumber.isNotEmpty
-                                ? seller.containerNumber
-                                : 'Жайгашкан жери белгисиз',
-                            style: AppTextStyles.labelSmall
-                                .copyWith(color: AppColors.grey500),
+                          Expanded(
+                            child: Text(
+                              seller.containerNumber.isNotEmpty
+                                  ? seller.containerNumber
+                                  : loc.get('location_unknown'),
+                              style: AppTextStyles.labelSmall
+                                  .copyWith(color: AppColors.grey500),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ],
                       ),
@@ -382,8 +369,7 @@ class _MapScreenState extends State<MapScreen> {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: AppColors.success.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
@@ -426,7 +412,7 @@ class _MapScreenState extends State<MapScreen> {
                   ),
                   icon: const Icon(Icons.navigation_rounded,
                       size: 18, color: Colors.white),
-                  label: Text('2ГИС менен маршрут',
+                  label: Text(loc.get('open_2gis'),
                       style: AppTextStyles.labelLarge
                           .copyWith(color: Colors.white)),
                 ),

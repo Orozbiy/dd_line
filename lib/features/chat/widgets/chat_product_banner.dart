@@ -1,15 +1,15 @@
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
+import '../../../core/app_localizations.dart';
 import '../../../core/supabase_client.dart';
 import '../../../core/utils/image_utils.dart';
 
 class ChatProductBanner extends StatefulWidget {
   final String? productId;
-  final String? productName;   // fallback — чат моделинен
-  final String? productImage;  // fallback — чат моделинен
+  final String? productName;
+  final String? productImage;
 
   const ChatProductBanner({
     super.key,
@@ -41,10 +41,14 @@ class _ChatProductBannerState extends State<ChatProductBanner> {
     try {
       final row = await supabase
           .from('products')
-          .select('id, title, price, discounted_price, images, description, colors, sizes, in_stock, category_id')
+          .select(
+              'id, title, price, discounted_price, images, description, colors, sizes, in_stock, category_id')
           .eq('id', widget.productId!)
           .maybeSingle();
-      if (mounted) setState(() { _product = row; _loading = false; });
+      if (mounted) setState(() {
+        _product = row;
+        _loading = false;
+      });
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }
@@ -52,14 +56,16 @@ class _ChatProductBannerState extends State<ChatProductBanner> {
 
   @override
   Widget build(BuildContext context) {
-    // Эч кандай товар жок болсо — эч нерсе көрсөтпө
     if (!_loading && _product == null && (widget.productName?.isEmpty ?? true)) {
       return const SizedBox.shrink();
     }
 
+    final loc = AppLocalizations.of(context);
+
     final name = (_product?['title'] as String?) ?? widget.productName ?? '';
     final images = List<String>.from(_product?['images'] as List? ?? []);
-    final imageUrl = images.isNotEmpty ? images.first : (widget.productImage ?? '');
+    final imageUrl =
+        images.isNotEmpty ? images.first : (widget.productImage ?? '');
     final price = (_product?['price'] as num?)?.toDouble();
     final discounted = (_product?['discounted_price'] as num?)?.toDouble();
     final description = _product?['description'] as String?;
@@ -87,47 +93,35 @@ class _ChatProductBannerState extends State<ChatProductBanner> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Башкы сап (дайыма көрүнөт) ──
+            // ── Башкы сап ──
             GestureDetector(
               onTap: () => setState(() => _expanded = !_expanded),
               child: Padding(
                 padding: const EdgeInsets.all(10),
                 child: Row(
                   children: [
-                    // Сүрөт
-
-
-
                     ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: imageUrl.isNotEmpty
                           ? CachedNetworkImage(
-  imageUrl: toCloudinaryThumb(imageUrl, width: 150), // ← оңдолду
-  width: 52,
-  height: 52,
-  fit: BoxFit.cover,
-  placeholder: (_, __) => Container(
-    width: 52,
-    height: 52,
-    color: AppColors.grey100,
-  ),
-  errorWidget: (_, __, ___) => _noImage(),
-)
+                              imageUrl: toCloudinaryThumb(imageUrl, width: 150),
+                              width: 52,
+                              height: 52,
+                              fit: BoxFit.cover,
+                              placeholder: (_, __) => Container(
+                                  width: 52,
+                                  height: 52,
+                                  color: AppColors.grey100),
+                              errorWidget: (_, __, ___) => _noImage(),
+                            )
                           : _noImage(),
                     ),
-
-
-
-
-
                     const SizedBox(width: 10),
-
-                    // Аты жана баасы
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Баш белги
+                          // Баш белги + складдагы абал
                           Row(
                             children: [
                               Container(
@@ -135,13 +129,16 @@ class _ChatProductBannerState extends State<ChatProductBanner> {
                                     horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
                                   gradient: const LinearGradient(
-                                    colors: [Color(0xFFD97706), Color(0xFFEF4444)],
+                                    colors: [
+                                      Color(0xFFD97706),
+                                      Color(0xFFEF4444)
+                                    ],
                                   ),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
-                                child: const Text(
-                                  '🛍 Товар',
-                                  style: TextStyle(
+                                child: Text(
+                                  loc.get('banner_product_label'),
+                                  style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 10,
                                       fontWeight: FontWeight.w700),
@@ -150,7 +147,9 @@ class _ChatProductBannerState extends State<ChatProductBanner> {
                               const SizedBox(width: 6),
                               if (inStock != null)
                                 Text(
-                                  inStock > 0 ? '✅ Барда' : '❌ Жок',
+                                  inStock > 0
+                                      ? loc.get('in_stock')
+                                      : loc.get('out_of_stock'),
                                   style: TextStyle(
                                     fontSize: 11,
                                     color: inStock > 0
@@ -176,9 +175,10 @@ class _ChatProductBannerState extends State<ChatProductBanner> {
                             const SizedBox(height: 2),
                             Row(
                               children: [
-                                if (discounted != null && discounted < price) ...[
+                                if (discounted != null &&
+                                    discounted < price) ...[
                                   Text(
-                                    '${discounted.toStringAsFixed(0)} с',
+                                    '${discounted.toStringAsFixed(0)} ${loc.get('currency')}',
                                     style: const TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w800,
@@ -187,7 +187,7 @@ class _ChatProductBannerState extends State<ChatProductBanner> {
                                   ),
                                   const SizedBox(width: 6),
                                   Text(
-                                    '${price.toStringAsFixed(0)} с',
+                                    '${price.toStringAsFixed(0)} ${loc.get('currency')}',
                                     style: TextStyle(
                                       fontSize: 11,
                                       color: AppColors.grey400,
@@ -196,7 +196,7 @@ class _ChatProductBannerState extends State<ChatProductBanner> {
                                   ),
                                 ] else
                                   Text(
-                                    '${price.toStringAsFixed(0)} с',
+                                    '${price.toStringAsFixed(0)} ${loc.get('currency')}',
                                     style: const TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w800,
@@ -210,7 +210,6 @@ class _ChatProductBannerState extends State<ChatProductBanner> {
                       ),
                     ),
 
-                    // Жайып/жабуу жебеси
                     Icon(
                       _expanded
                           ? Icons.keyboard_arrow_up_rounded
@@ -230,26 +229,22 @@ class _ChatProductBannerState extends State<ChatProductBanner> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Сүрөттөмө
                     if (description != null && description.isNotEmpty) ...[
-                      _infoRow('📄', 'Сүрөттөмө', description),
+                      _infoRow('📄', loc.get('description'), description),
                       const SizedBox(height: 6),
                     ],
-
-                    // Размерлер
                     if (sizes.isNotEmpty) ...[
-                      _infoRow('📏', 'Размерлер', sizes.join(' · ')),
+                      _infoRow('📏', loc.get('sizes'), sizes.join(' · ')),
                       const SizedBox(height: 6),
                     ],
-
-                    // Түстөр
                     if (colors.isNotEmpty) ...[
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('🎨  ', style: TextStyle(fontSize: 13)),
+                          const Text('🎨  ',
+                              style: TextStyle(fontSize: 13)),
                           Text(
-                            'Түстөр:  ',
+                            '${loc.get('colors')}:  ',
                             style: AppTextStyles.labelSmall
                                 .copyWith(color: AppColors.grey500),
                           ),
@@ -264,10 +259,12 @@ class _ChatProductBannerState extends State<ChatProductBanner> {
                       ),
                       const SizedBox(height: 6),
                     ],
-
-                    // Складдагы саны
                     if (inStock != null)
-                      _infoRow('📦', 'Складда', '$inStock дана'),
+                      _infoRow(
+                        '📦',
+                        loc.get('banner_stock_label'),
+                        '$inStock ${loc.get('pcs')}',
+                      ),
                   ],
                 ),
               ),

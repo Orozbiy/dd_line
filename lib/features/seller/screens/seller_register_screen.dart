@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
+import '../../../core/app_localizations.dart';
 import '../../../core/seller_auth_service.dart';
 import '../services/seller_service.dart';
 import 'seller_login_screen.dart';
 import 'seller_pending_screen.dart';
-
-
 
 class SellerRegisterScreen extends StatefulWidget {
   const SellerRegisterScreen({super.key});
@@ -53,6 +52,7 @@ class _SellerRegisterScreenState extends State<SellerRegisterScreen> {
   }
 
   Future<void> _register() async {
+    final loc = AppLocalizations.of(context);
     final name = _nameCtrl.text.trim();
     final ageText = _ageCtrl.text.trim();
     final shopName = _shopNameCtrl.text.trim();
@@ -62,20 +62,20 @@ class _SellerRegisterScreenState extends State<SellerRegisterScreen> {
     final passwordConfirm = _passwordConfirmCtrl.text;
 
     if (name.isEmpty) {
-      _showSnack('Аты-жөнүңүздү жазыңыз');
+      _showSnack(loc.get('reg_err_name'));
       return;
     }
     final age = int.tryParse(ageText);
     if (age == null || age < 14 || age > 100) {
-      _showSnack('Жашыңызды туура жазыңыз');
+      _showSnack(loc.get('reg_err_age'));
       return;
     }
     if (shopName.isEmpty && containerNumber.isEmpty) {
-      _showSnack('Контейнер номерин же дүкөндүн атын жазыңыз');
+      _showSnack(loc.get('reg_err_container'));
       return;
     }
     if (localPhone.length < 9) {
-      _showSnack('Телефон номерин толук жазыңыз');
+      _showSnack(loc.get('reg_err_phone'));
       return;
     }
 
@@ -85,14 +85,13 @@ class _SellerRegisterScreenState extends State<SellerRegisterScreen> {
       return;
     }
     if (password != passwordConfirm) {
-      _showSnack('Пароль дал келген жок');
+      _showSnack(loc.get('reg_err_pass_mismatch'));
       return;
     }
 
     setState(() => _isLoading = true);
     try {
-     
-     final formattedPhone = SellerAuthService.formatPhone(localPhone);
+      final formattedPhone = SellerAuthService.formatPhone(localPhone);
       await SellerAuthService.instance.register(
         phone: formattedPhone,
         password: password,
@@ -106,24 +105,27 @@ class _SellerRegisterScreenState extends State<SellerRegisterScreen> {
 
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(
-          builder: (_) => const SellerPendingScreen(),
-        ),
+        MaterialPageRoute(builder: (_) => const SellerPendingScreen()),
         (route) => false,
       );
     } catch (e) {
-  debugPrint('SellerRegister error: $e');
-  if (e is SellerPhoneTakenException) {
-    if (mounted) _showSnack(e.toString());
-  } else {
-    if (mounted) _showSnack('Ката: $e');  // <- убактынча, чыныгы катаны көрсөтөт
-  }
-}finally {
+      debugPrint('SellerRegister error: $e');
+      if (e is SellerPhoneTakenException) {
+        if (mounted) _showSnack(e.toString());
+      } else {
+        if (mounted) _showSnack('${AppLocalizations.of(context).get('error')}: $e');
+      }
+    } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  InputDecoration _decoration({String? hint, String? prefixText, TextStyle? prefixStyle, Widget? suffixIcon}) {
+  InputDecoration _decoration({
+    String? hint,
+    String? prefixText,
+    TextStyle? prefixStyle,
+    Widget? suffixIcon,
+  }) {
     return InputDecoration(
       hintText: hint,
       prefixText: prefixText,
@@ -132,17 +134,21 @@ class _SellerRegisterScreenState extends State<SellerRegisterScreen> {
       filled: true,
       fillColor: const Color(0xFFF7F7F7),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+      border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
     );
   }
 
   Widget _label(String text) => Padding(
         padding: const EdgeInsets.only(bottom: 8),
-        child: Text(text, style: AppTextStyles.labelLarge.copyWith(color: AppColors.grey600)),
+        child: Text(text,
+            style: AppTextStyles.labelLarge.copyWith(color: AppColors.grey600)),
       );
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -152,7 +158,7 @@ class _SellerRegisterScreenState extends State<SellerRegisterScreen> {
           onTap: () => Navigator.pop(context),
           child: const Icon(Icons.arrow_back, color: AppColors.black),
         ),
-        title: const Text('Катталуу', style: AppTextStyles.headingMedium),
+        title: Text(loc.get('reg_title'), style: AppTextStyles.headingMedium),
         centerTitle: true,
       ),
       body: SafeArea(
@@ -162,52 +168,53 @@ class _SellerRegisterScreenState extends State<SellerRegisterScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 8),
-              const Text('Дүкөнүңүздү ачыңыз!', style: AppTextStyles.headingLarge),
+              Text(loc.get('reg_heading'), style: AppTextStyles.headingLarge),
               const SizedBox(height: 8),
               Text(
-                'Маалыматтарыңызды толтуруңуз',
+                loc.get('reg_subheading'),
                 style: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey500),
               ),
               const SizedBox(height: 28),
 
-              // ── АТЫ-ЖӨНҮ ───────────────────────────
-              _label('Аты-жөнү'),
+              // ── АТЫ-ЖӨНҮ / ФИО ─────────────────────
+              _label(loc.get('reg_label_name')),
               TextField(
                 controller: _nameCtrl,
                 style: AppTextStyles.bodyMedium,
-                decoration: _decoration(hint: 'Мисалы: Айгерим Осмонова'),
+                decoration: _decoration(hint: loc.get('reg_hint_name')),
               ),
               const SizedBox(height: 20),
 
-              // ── ЖАШЫ ───────────────────────────────
-              _label('Жашы'),
+              // ── ЖАШЫ / ВОЗРАСТ ──────────────────────
+              _label(loc.get('reg_label_age')),
               TextField(
                 controller: _ageCtrl,
                 keyboardType: TextInputType.number,
                 style: AppTextStyles.bodyMedium,
-                decoration: _decoration(hint: 'Мисалы: 28'),
+                decoration: _decoration(hint: loc.get('reg_hint_age')),
               ),
               const SizedBox(height: 20),
 
-              // ── КОНТЕЙНЕР / ДҮКӨН АТЫ ──────────────
-              _label('Контейнер номери же дүкөндүн аты'),
+              // ── КОНТЕЙНЕР ───────────────────────────
+              _label(loc.get('reg_label_container')),
               TextField(
                 controller: _containerCtrl,
                 style: AppTextStyles.bodyMedium,
-                decoration: _decoration(hint: 'Мисалы: 4-катар, А-12'),
+                decoration: _decoration(hint: loc.get('reg_hint_container')),
               ),
               const SizedBox(height: 20),
 
-              _label('Дүкөндүн аты (милдеттүү эмес)'),
+              // ── ДҮКӨН АТЫ / НАЗВАНИЕ МАГАЗИНА ───────
+              _label(loc.get('reg_label_shop')),
               TextField(
                 controller: _shopNameCtrl,
                 style: AppTextStyles.bodyMedium,
-                decoration: _decoration(hint: 'Мисалы: Айгерим Shop'),
+                decoration: _decoration(hint: loc.get('reg_hint_shop')),
               ),
               const SizedBox(height: 20),
 
-              // ── ТЕЛЕФОН ────────────────────────────
-              _label('Телефон номери'),
+              // ── ТЕЛЕФОН ─────────────────────────────
+              _label(loc.get('reg_label_phone')),
               TextField(
                 controller: _phoneCtrl,
                 keyboardType: TextInputType.phone,
@@ -215,29 +222,32 @@ class _SellerRegisterScreenState extends State<SellerRegisterScreen> {
                 decoration: _decoration(
                   hint: '700123456',
                   prefixText: '+996  ',
-                  prefixStyle: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w700),
+                  prefixStyle: AppTextStyles.bodyMedium
+                      .copyWith(fontWeight: FontWeight.w700),
                 ),
               ),
               const SizedBox(height: 20),
 
-              // ── ПАРОЛЬ ─────────────────────────────
-              _label('Пароль'),
+              // ── ПАРОЛЬ ──────────────────────────────
+              _label(loc.get('reg_label_pass')),
               TextField(
                 controller: _passwordCtrl,
                 obscureText: _obscure1,
                 style: AppTextStyles.bodyMedium,
                 decoration: _decoration(
-                  hint: 'Кеминде 8 символ, баш/кичи тамга, сан, белги',
+                  hint: loc.get('reg_hint_pass'),
                   suffixIcon: GestureDetector(
                     onTap: () => setState(() => _obscure1 = !_obscure1),
-                    child: Icon(_obscure1 ? Icons.visibility_off : Icons.visibility, color: AppColors.grey400),
+                    child: Icon(
+                        _obscure1 ? Icons.visibility_off : Icons.visibility,
+                        color: AppColors.grey400),
                   ),
                 ),
               ),
               const SizedBox(height: 20),
 
-              // ── ПАРОЛЬ КАЙТАЛОО ────────────────────
-              _label('Паролду кайталаңыз'),
+              // ── ПАРОЛЬ КАЙТАЛОО / ПОДТВЕРЖДЕНИЕ ─────
+              _label(loc.get('reg_label_pass_confirm')),
               TextField(
                 controller: _passwordConfirmCtrl,
                 obscureText: _obscure2,
@@ -247,7 +257,9 @@ class _SellerRegisterScreenState extends State<SellerRegisterScreen> {
                   hint: '••••••••',
                   suffixIcon: GestureDetector(
                     onTap: () => setState(() => _obscure2 = !_obscure2),
-                    child: Icon(_obscure2 ? Icons.visibility_off : Icons.visibility, color: AppColors.grey400),
+                    child: Icon(
+                        _obscure2 ? Icons.visibility_off : Icons.visibility,
+                        color: AppColors.grey400),
                   ),
                 ),
               ),
@@ -260,16 +272,22 @@ class _SellerRegisterScreenState extends State<SellerRegisterScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     disabledBackgroundColor: AppColors.grey200,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
                     elevation: 0,
                   ),
                   child: _isLoading
                       ? const SizedBox(
                           width: 22,
                           height: 22,
-                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                          child: CircularProgressIndicator(
+                              color: Colors.white, strokeWidth: 2.5),
                         )
-                      : Text('🏪  Дүкөн ачуу', style: AppTextStyles.labelLarge.copyWith(color: Colors.white, fontSize: 16)),
+                      : Text(
+                          loc.get('reg_btn_open'),
+                          style: AppTextStyles.labelLarge
+                              .copyWith(color: Colors.white, fontSize: 16),
+                        ),
                 ),
               ),
               const SizedBox(height: 16),
@@ -278,11 +296,14 @@ class _SellerRegisterScreenState extends State<SellerRegisterScreen> {
                 child: TextButton(
                   onPressed: () => Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (_) => const SellerLoginScreen()),
+                    MaterialPageRoute(
+                        builder: (_) => const SellerLoginScreen()),
                   ),
                   child: Text(
-                    'Аккаунтуңуз барбы? Кирүү',
-                    style: AppTextStyles.bodyMedium.copyWith(color: AppColors.primary, fontWeight: FontWeight.w600),
+                    loc.get('reg_have_account'),
+                    style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
