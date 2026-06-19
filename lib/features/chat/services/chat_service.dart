@@ -3,10 +3,22 @@ import '../../../core/supabase_client.dart';
 import '../models/chat_model.dart';
 import '../models/message_model.dart';
 
-/// Supabase'тин `chats` жана `messages` таблицалары аркылуу
-/// иштеген чат сервиси (Realtime колдонот).
+/// Optimized ChatService
+/// - Batch запростор (N чат = 4 запрос, эмес 4N)
+/// - Параллел Future.wait()
+/// - Сессия кэши (кайра жүктөбөйт)
+/// - Buyer Google атын туура алат
 class ChatService {
-  /// Кардар-сатуучу-товар комбинациясы үчүн чатты табуу/түзүү.
+  // ── Сессия кэши ────────────────────────────────────────
+  final Map<String, Map<String, dynamic>> _productCache = {};
+  final Map<String, String>  _storeCache  = {}; // owner_id → store_name
+  final Map<String, String?> _nameCache   = {}; // user_id  → full_name
+  final Map<String, String?> _avatarCache = {}; // user_id  → avatar_url
+
+  // ════════════════════════════════════════════════════
+  // ЧАТ ТАБУУ / ТҮЗҮҮ
+  // ════════════════════════════════════════════════════
+
   Future<String> getOrCreateChat({
     required String buyerId,
     required String sellerId,
@@ -15,21 +27,19 @@ class ChatService {
     final existing = await supabase
         .from('chats')
         .select('id')
-        .eq('buyer_id', buyerId)
-        .eq('seller_id', sellerId)
+        .eq('buyer_id',   buyerId)
+        .eq('seller_id',  sellerId)
         .eq('product_id', productId)
         .maybeSingle();
 
-    if (existing != null) {
-      return existing['id'] as String;
-    }
+    if (existing != null) return existing['id'] as String;
 
     final inserted = await supabase
         .from('chats')
         .insert({
-          'buyer_id': buyerId,
-          'seller_id': sellerId,
-          'product_id': productId,
+          'buyer_id':     buyerId,
+          'seller_id':    sellerId,
+          'product_id':   productId,
           'last_message': '',
         })
         .select('id')
@@ -38,178 +48,258 @@ class ChatService {
     return inserted['id'] as String;
   }
 
-  /// Билдирүү жөнөтүү.
+  // ════════════════════════════════════════════════════
+  // БИЛДИРҮҮ ЖӨНӨТҮҮ
+  // ════════════════════════════════════════════════════
+
   Future<void> sendMessage({
     required String chatId,
     required String senderId,
     String? text,
     String? imageUrl,
     String? audioUrl,
-    int? audioDuration,
+    int?    audioDuration,
     String? replyToId,
     String? replyToText,
   }) async {
     await supabase.from('messages').insert({
-      'chat_id': chatId,
-      'sender_id': senderId,
-      'text': text,
-      'image_url': imageUrl,
-      'audio_url': audioUrl,
+      'chat_id':        chatId,
+      'sender_id':      senderId,
+      'text':           text,
+      'image_url':      imageUrl,
+      'audio_url':      audioUrl,
       'audio_duration': audioDuration,
-      'is_read': false,
-      if (replyToId != null) 'reply_to_id': replyToId,
+      'is_read':        false,
+      if (replyToId   != null) 'reply_to_id':   replyToId,
       if (replyToText != null) 'reply_to_text': replyToText,
     });
   }
 
-  /// Чатты "окулду" деп белгилөө.
+  // ════════════════════════════════════════════════════
+  // ОКУЛДУ ДЕГЕН БЕЛГИЛӨӨ
+  // ════════════════════════════════════════════════════
+
   Future<void> markAsRead({
     required String chatId,
     required String myUserId,
-    required bool readerIsBuyer,
+    required bool   readerIsBuyer,
   }) async {
-    debugPrint(
-        '👁️ markAsRead чакырылды → chatId=$chatId, myUserId=$myUserId, readerIsBuyer=$readerIsBuyer');
-
     try {
-      final chatUpdateResult = await supabase
-          .from('chats')
-          .update({
-            if (readerIsBuyer) 'buyer_unread': 0,
-            if (!readerIsBuyer) 'seller_unread': 0,
-          })
-          .eq('id', chatId)
-          .select();
-      debugPrint('👁️ chats update натыйжасы: $chatUpdateResult');
-
-      final msgUpdateResult = await supabase
-          .from('messages')
-          .update({'is_read': true})
-          .eq('chat_id', chatId)
-          .eq('is_read', false)
-          .neq('sender_id', myUserId)
-          .select();
-      debugPrint(
-          '👁️ messages update натыйжасы: ${msgUpdateResult.length} — $msgUpdateResult');
+      await Future.wait([
+        supabase.from('chats').update({
+          if (readerIsBuyer)  'buyer_unread':  0,
+          if (!readerIsBuyer) 'seller_unread': 0,
+        }).eq('id', chatId),
+        supabase.from('messages')
+            .update({'is_read': true})
+            .eq('chat_id',    chatId)
+            .eq('is_read',    false)
+            .neq('sender_id', myUserId),
+      ]);
     } catch (e) {
-      debugPrint('❌ markAsRead катасы: $e');
+      debugPrint('❌ markAsRead ката: $e');
     }
   }
 
-  /// Чатты толугу менен өчүрүү (билдирүүлөр → чат жазуусу).
- Future<void> deleteChat(String chatId, {required bool isSeller}) async {
-  try {
-    final field = isSeller ? 'deleted_for_seller' : 'deleted_for_buyer';
-    await supabase.from('chats').update({field: true}).eq('id', chatId);
-    debugPrint('🗑️ chat жашырылды → chatId=$chatId, $field=true');
-  } catch (e) {
-    debugPrint('❌ deleteChat ката: $e');
-    rethrow;
-  }
-}
+  // ════════════════════════════════════════════════════
+  // SOFT-DELETE
+  // ════════════════════════════════════════════════════
 
-  /// Тандалган билдирүүлөрдү гана өчүрүү.
+  Future<void> deleteChat(String chatId, {required bool isSeller}) async {
+    try {
+      final field = isSeller ? 'deleted_for_seller' : 'deleted_for_buyer';
+      await supabase.from('chats').update({field: true}).eq('id', chatId);
+    } catch (e) {
+      debugPrint('❌ deleteChat ката: $e');
+      rethrow;
+    }
+  }
+
+  // ════════════════════════════════════════════════════
+  // ТАНДАЛГАН БИЛДИРҮҮЛӨРДҮ ӨЧҮРҮҮ
+  // ════════════════════════════════════════════════════
+
   Future<void> deleteMessages(List<String> messageIds) async {
     if (messageIds.isEmpty) return;
     await supabase.from('messages').delete().inFilter('id', messageIds);
   }
 
-  /// Чаттагы билдирүүлөрдүн реалдуу убакыттагы стриму.
+  // ════════════════════════════════════════════════════
+  // БИЛДИРҮҮЛӨР СТРИМУ  (убакытты .toLocal() менен алат)
+  // ════════════════════════════════════════════════════
+
   Stream<List<MessageModel>> messagesStream(String chatId) {
     return supabase
         .from('messages')
         .stream(primaryKey: ['id'])
         .eq('chat_id', chatId)
         .order('created_at', ascending: true)
-        .map((rows) => rows.map((row) => MessageModel.fromMap(row)).toList());
+        .map((rows) => rows.map((r) => MessageModel.fromMap(r)).toList());
   }
 
-  /// Кардардын чаттарынын стриму.
-Stream<List<ChatModel>> buyerChatsStream(String buyerId) {
-  return supabase
-      .from('chats')
-      .stream(primaryKey: ['id'])
-      .eq('buyer_id', buyerId)
-      .order('last_message_at', ascending: false)
-      .asyncMap((rows) {
-        // Алуучу үчүн жашырылгандарды чыгарып салабыз
-        final filtered = rows.where((r) => r['deleted_for_buyer'] != true).toList();
-        return _enrichChats(filtered, isSeller: false);
-      });
-}
+  // ════════════════════════════════════════════════════
+  // ЧАТТАР СТРИМДЕРИ
+  // ════════════════════════════════════════════════════
 
-Stream<List<ChatModel>> sellerChatsStream(String sellerId) {
-  return supabase
-      .from('chats')
-      .stream(primaryKey: ['id'])
-      .eq('seller_id', sellerId)
-      .order('last_message_at', ascending: false)
-      .asyncMap((rows) {
-        // Сатуучу үчүн жашырылгандарды чыгарып салабыз
-        final filtered = rows.where((r) => r['deleted_for_seller'] != true).toList();
-        return _enrichChats(filtered, isSeller: true);
-      });
-}
+  Stream<List<ChatModel>> buyerChatsStream(String buyerId) {
+    return supabase
+        .from('chats')
+        .stream(primaryKey: ['id'])
+        .eq('buyer_id', buyerId)
+        .order('last_message_at', ascending: false)
+        .asyncMap((rows) {
+          final f = rows.where((r) => r['deleted_for_buyer'] != true).toList();
+          return _enrichChats(f, isSeller: false);
+        });
+  }
+
+  Stream<List<ChatModel>> sellerChatsStream(String sellerId) {
+    return supabase
+        .from('chats')
+        .stream(primaryKey: ['id'])
+        .eq('seller_id', sellerId)
+        .order('last_message_at', ascending: false)
+        .asyncMap((rows) {
+          final f = rows.where((r) => r['deleted_for_seller'] != true).toList();
+          return _enrichChats(f, isSeller: true);
+        });
+  }
+
+  // ════════════════════════════════════════════════════
+  // BATCH ENRICH  ← негизги оптималдаштыруу
+  //
+  // Мурда: N чат × 4 запрос = 4N
+  // Азыр:  4 параллел запрос (кэш толгондо 0)
+  // ════════════════════════════════════════════════════
 
   Future<List<ChatModel>> _enrichChats(
     List<Map<String, dynamic>> rows, {
     required bool isSeller,
   }) async {
+    if (rows.isEmpty) return [];
+
+    // ── 1. Кэште жок ID'лерди чогулт ─────────────────
+    final missingProductIds = <String>{};
+    final missingSellerIds  = <String>{};
+    final missingUserIds    = <String>{}; // buyer + seller (аты + аватар)
+
+    for (final row in rows) {
+      final pid = row['product_id'] as String?;
+      if (pid != null && !_productCache.containsKey(pid)) {
+        missingProductIds.add(pid);
+      }
+
+      final sid = row['seller_id'] as String? ?? '';
+      if ((row['seller_name'] as String? ?? '').isEmpty &&
+          !_storeCache.containsKey(sid)) {
+        missingSellerIds.add(sid);
+      }
+
+      final buyId = row['buyer_id']  as String? ?? '';
+      final selId = row['seller_id'] as String? ?? '';
+      if (!_avatarCache.containsKey(buyId)) missingUserIds.add(buyId);
+      if (!_avatarCache.containsKey(selId)) missingUserIds.add(selId);
+      // Buyer атын алуу үчүн
+      if (!_nameCache.containsKey(buyId))   missingUserIds.add(buyId);
+    }
+
+    // ── 2. Параллел batch запростор ───────────────────
+    await Future.wait([
+
+      // Продукттар
+      if (missingProductIds.isNotEmpty)
+        supabase
+            .from('products')
+            .select('id, title, images')
+            .inFilter('id', missingProductIds.toList())
+            .then((list) {
+              for (final p in list) {
+                _productCache[p['id'] as String] = p;
+              }
+            }).catchError((_) {}),
+
+      // Дүкөн аттары (сатуучу профили)
+      if (missingSellerIds.isNotEmpty)
+        supabase
+            .from('stores')
+            .select('owner_id, store_name')
+            .inFilter('owner_id', missingSellerIds.toList())
+            .then((list) {
+              for (final s in list) {
+                _storeCache[s['owner_id'] as String] =
+                    s['store_name'] as String? ?? '';
+              }
+              // Базада жок болсо — бош деп белгиле
+              for (final id in missingSellerIds) {
+                _storeCache.putIfAbsent(id, () => '');
+              }
+            }).catchError((_) {}),
+
+      // Профилдер: аватар + Google аты (buyer + seller бирге)
+      if (missingUserIds.isNotEmpty)
+        supabase
+            .from('profiles')
+            .select('id, full_name, avatar_url')
+            .inFilter('id', missingUserIds.toList())
+            .then((list) {
+              for (final p in list) {
+                final uid = p['id'] as String;
+                _nameCache[uid]   = p['full_name']  as String?;
+                _avatarCache[uid] = p['avatar_url'] as String?;
+              }
+              // Базада жок болсо — null деп белгиле (кайра сурабайт)
+              for (final uid in missingUserIds) {
+                _nameCache.putIfAbsent(uid, () => null);
+                _avatarCache.putIfAbsent(uid, () => null);
+              }
+            }).catchError((_) {}),
+    ]);
+
+    // ── 3. Кэштен ChatModel түзүү ─────────────────────
     final result = <ChatModel>[];
 
     for (final row in rows) {
       final enriched = Map<String, dynamic>.from(row);
 
-      final productId = row['product_id'] as String?;
-      if (productId != null) {
-        try {
-          final product = await supabase
-              .from('products')
-              .select('title, images')
-              .eq('id', productId)
-              .maybeSingle();
-          if (product != null) enriched['products'] = product;
-        } catch (_) {}
+      // Продукт
+      final pid = row['product_id'] as String?;
+      if (pid != null && _productCache.containsKey(pid)) {
+        enriched['products'] = _productCache[pid];
       }
 
-      if ((row['seller_name'] as String? ?? '').isEmpty) {
-        try {
-          final store = await supabase
-              .from('stores')
-              .select('store_name')
-              .eq('owner_id', row['seller_id'])
-              .maybeSingle();
-          if (store != null) {
-            enriched['seller_name'] = store['store_name'];
-          }
-        } catch (_) {}
+      // Дүкөн аты
+      final sid = row['seller_id'] as String? ?? '';
+      if ((row['seller_name'] as String? ?? '').isEmpty &&
+          _storeCache.containsKey(sid)) {
+        enriched['seller_name'] = _storeCache[sid];
       }
 
-      try {
-        final buyerProfile = await supabase
-            .from('profiles')
-            .select('avatar_url')
-            .eq('id', row['buyer_id'])
-            .maybeSingle();
-        if (buyerProfile != null) {
-          enriched['buyer_avatar'] = buyerProfile['avatar_url'];
-        }
-      } catch (_) {}
+      // Buyer Google аты  ← ЖАЦ: сатуучуга туура аты көрүнөт
+      final buyId = row['buyer_id'] as String? ?? '';
+      if (_nameCache.containsKey(buyId)) {
+        enriched['buyer_name'] = _nameCache[buyId];
+      }
 
-      try {
-        final sellerProfile = await supabase
-            .from('profiles')
-            .select('avatar_url')
-            .eq('id', row['seller_id'])
-            .maybeSingle();
-        if (sellerProfile != null) {
-          enriched['seller_avatar'] = sellerProfile['avatar_url'];
-        }
-      } catch (_) {}
+      // Аватарлар
+      final selId = row['seller_id'] as String? ?? '';
+      enriched['buyer_avatar']  = _avatarCache[buyId];
+      enriched['seller_avatar'] = _avatarCache[selId];
 
       result.add(ChatModel.fromMap(enriched, isSeller: isSeller));
     }
 
     return result;
+  }
+
+  // ════════════════════════════════════════════════════
+  // КЭШТИ ТАЗАЛОО  (logout болгондо чакыр)
+  // ════════════════════════════════════════════════════
+
+  void clearCache() {
+    _productCache.clear();
+    _storeCache.clear();
+    _nameCache.clear();
+    _avatarCache.clear();
+    debugPrint('🧹 ChatService кэш тазаланды');
   }
 }

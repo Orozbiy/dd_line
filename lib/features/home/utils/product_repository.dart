@@ -11,7 +11,7 @@ class ProductRepository {
   ProductRepository._();
   static final ProductRepository instance = ProductRepository._();
 
-  static const int pageSize = 10;
+  static const int pageSize = 20;
 
   /// Жаңылоо баскычы басылганда өзгөрөт → товарлар алмашат.
   double _randomSeed =

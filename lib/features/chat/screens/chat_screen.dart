@@ -109,28 +109,55 @@ class _ChatScreenState extends State<ChatScreen> {
     super.dispose();
   }
 
-  Future<void> _loadMyName() async {
-    try {
-      final myId = _myId;
-      if (myId == null) return;
-      final table = widget.isSeller ? 'sellers' : 'profiles';
-      final row = await supabase.from(table).select('store_name, full_name').eq('id', myId).maybeSingle();
-      if (row != null && mounted) {
-        final name = widget.isSeller
-            ? (row['store_name'] as String? ?? row['full_name'] as String? ?? '')
-            : (row['full_name'] as String? ?? '');
-        setState(() => _myDisplayName = name);
+
+
+Future<void> _loadMyName() async {
+  try {
+    final myId = _myId;
+    if (myId == null) return;
+
+    if (widget.isSeller) {
+      // ── Сатуучу: өз дүкөн атын stores таблицасынан алат ──
+      final storeRow = await supabase
+          .from('stores')
+          .select('store_name')
+          .eq('owner_id', myId)
+          .maybeSingle();
+
+      if (storeRow != null && mounted) {
+        setState(() => _myDisplayName = storeRow['store_name'] as String? ?? '');
       }
-      if (widget.isSeller) {
-        final buyerRow = await supabase.from('profiles').select('full_name').eq('id', widget.buyerId).maybeSingle();
-        if (buyerRow != null && mounted) setState(() => _receiverDisplayName = buyerRow['full_name'] as String? ?? '');
-      } else {
-        if (mounted) setState(() => _receiverDisplayName = widget.sellerName);
+
+      // ── Receiver = buyer: profiles'тен Google аты ──
+      final buyerRow = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', widget.buyerId)
+          .maybeSingle();
+
+      if (buyerRow != null && mounted) {
+        setState(() =>
+            _receiverDisplayName = buyerRow['full_name'] as String? ?? '');
       }
-    } catch (e) {
-      debugPrint('⚠️ _loadMyName ката: $e');
+    } else {
+      // ── Кардар: өз атын profiles'тен алат ──
+      final profileRow = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', myId)
+          .maybeSingle();
+
+      if (profileRow != null && mounted) {
+        setState(() => _myDisplayName = profileRow['full_name'] as String? ?? '');
+      }
+
+      // ── Receiver = сатуучу: widget'тен берилген ат ──
+      if (mounted) setState(() => _receiverDisplayName = widget.sellerName);
     }
+  } catch (e) {
+    debugPrint('⚠️ _loadMyName ката: $e');
   }
+}
 
   Future<void> _markRead() async {
     final myId = _myId;

@@ -77,11 +77,18 @@ class _ChatListScreenState extends State<ChatListScreen> {
   final confirm = await showDialog<bool>(
     context: context,
     builder: (_) => AlertDialog(
-      title: Text(loc.get('delete_chat')),
+      title:   Text(loc.get('delete_chat')),
       content: Text('${_selectedIds.length} ${loc.get('delete_chat_confirm')}'),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context, false), child: Text(loc.get('no'))),
-        TextButton(onPressed: () => Navigator.pop(context, true), child: Text(loc.get('yes'), style: const TextStyle(color: Colors.red))),
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: Text(loc.get('no')),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, true),
+          child: Text(loc.get('yes'),
+              style: const TextStyle(color: Colors.red)),
+        ),
       ],
     ),
   );
@@ -91,7 +98,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
   setState(() => _cachedChats.removeWhere((c) => toDelete.contains(c.id)));
   _exitSelectionMode();
   await _saveCache(_cachedChats);
-  
+
   for (final id in toDelete) {
     try {
       // ← isSeller параметри кошулду
