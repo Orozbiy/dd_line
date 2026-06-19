@@ -1,4 +1,5 @@
 import '../features/seller/models/seller_model.dart';
+import '../services/notification_service.dart';
 import 'supabase_client.dart';
 
 /// Сатуучулар үчүн телефон номери + пароль аркылуу кирүү/каттоо.
@@ -69,6 +70,9 @@ class SellerAuthService {
         .select()
         .single();
 
+    // ✅ Катталган соң FCM токенди сакта
+    await NotificationService().saveMyToken();
+
     return SellerModel.fromJson(row);
   }
 
@@ -95,6 +99,9 @@ class SellerAuthService {
         .select()
         .eq('id', user.id)
         .single();
+
+    // ✅ Кирген соң FCM токенди сакта — уведомления иштеши үчүн
+    await NotificationService().saveMyToken();
 
     return SellerModel.fromJson(row);
   }

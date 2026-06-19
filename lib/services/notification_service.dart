@@ -35,7 +35,7 @@ class NotificationService {
   // INIT
   // ─────────────────────────────────────────────────────────────
   Future<void> init() async {
- debugPrint('🚀 NotificationService.init() башталды');  
+    debugPrint('🚀 NotificationService.init() башталды');
 
     await _messaging.requestPermission(
       alert: true,
@@ -65,7 +65,7 @@ class NotificationService {
 
     // ── FOREGROUND: колдонмо ачык турганда билдирүүнү көрсөт ──
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-  debugPrint('🔔 onMessage келди: ${message.data}');  // ← кош
+      debugPrint('🔔 onMessage келди: ${message.data}');
 
       final notification = message.notification;
       final title =
@@ -96,24 +96,19 @@ class NotificationService {
             presentSound: true,
           ),
         ),
-        // chatId payload'у — таптаганда onDidReceiveNotificationResponse'ка берилет
         payload: message.data['chatId'],
       );
     });
 
     // ── BACKGROUND → FOREGROUND: колдонмо фондо турганда notification таптаганда ──
-  FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) async {
-  final chatId = message.data['chatId'] as String?;
-  debugPrint('🔔 [Background→Foreground tap] chatId=$chatId');
-  if (chatId != null) {
-    // Navigator даяр болгончо күтөбүз
-    await Future.delayed(const Duration(milliseconds: 600));
-    _navigateToChat(chatId);
-  }
-});
-
-    // ── TERMINATED → OPEN: колдонмо толук өчүк турганда notification таптаганда ──
-    // (handleInitialMessage main.dart'та init'тен кийин чакырылат)
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) async {
+      final chatId = message.data['chatId'] as String?;
+      debugPrint('🔔 [Background→Foreground tap] chatId=$chatId');
+      if (chatId != null) {
+        await Future.delayed(const Duration(milliseconds: 600));
+        _navigateToChat(chatId);
+      }
+    });
 
     // ── iOS foreground notification ──
     await _messaging.setForegroundNotificationPresentationOptions(
@@ -126,8 +121,7 @@ class NotificationService {
   }
 
   // ─────────────────────────────────────────────────────────────
-  // TERMINATED STATE: колдонмо өчүк турганда notification таптаса
-  // main.dart'та _initFirebase() ичинен чакырылат
+  // TERMINATED STATE
   // ─────────────────────────────────────────────────────────────
   Future<void> handleInitialMessage() async {
     final message = await _messaging.getInitialMessage();
@@ -135,116 +129,104 @@ class NotificationService {
     final chatId = message.data['chatId'] as String?;
     debugPrint('🔔 [Terminated→Open] chatId=$chatId');
     if (chatId != null) {
-      // SplashRouter жүктөлүп бүтүшүн күтөбүз
       await Future.delayed(const Duration(milliseconds: 800));
       _navigateToChat(chatId);
     }
   }
 
   // ─────────────────────────────────────────────────────────────
-  // NAVIGATE TO CHAT — chatId аркылуу ChatScreen'ге өтүү
-  // Supabase'тан chat маалыматтарын алып, ChatScreen.fromChat() менен ачат
-  // 
-  // 
-  // 
-  // 
-  // 
-  // 
-  // 
+  // NAVIGATE TO CHAT
   // ─────────────────────────────────────────────────────────────
- Future<void> _navigateToChat(String chatId) async {
-  // Context даяр болгончо күтөбүз (макс 3 секунд)
-  BuildContext? context;
-  for (int i = 0; i < 15; i++) {
-    context = navigatorKey.currentContext;
-    if (context != null) break;
-    await Future.delayed(const Duration(milliseconds: 200));
-  }
+  Future<void> _navigateToChat(String chatId) async {
+    BuildContext? context;
+    for (int i = 0; i < 15; i++) {
+      context = navigatorKey.currentContext;
+      if (context != null) break;
+      await Future.delayed(const Duration(milliseconds: 200));
+    }
 
-  if (context == null) {
-    debugPrint('⚠️ navigatorKey.currentContext null — navigate болбой жатат');
-    return;
-  }
-
-  try {
-    final user = supabase.auth.currentUser;
-    if (user == null) {
-      debugPrint('⚠️ Колдонуучу кирген эмес — navigate токтотулду');
+    if (context == null) {
+      debugPrint('⚠️ navigatorKey.currentContext null — navigate болбой жатат');
       return;
     }
 
-    final row = await supabase
-        .from('chats')
-        .select('id, seller_id, buyer_id, product_id, seller_name, last_message, last_message_at')
-        .eq('id', chatId)
-        .maybeSingle();
-
-    if (row == null) {
-      debugPrint('⚠️ Chat табылбады: chatId=$chatId');
-      return;
-    }
-
-    final isSeller = row['seller_id'] == user.id;
-
-    String productName = '';
-    String productImage = '';
-    final productId = row['product_id'] as String?;
-    if (productId != null) {
-      try {
-        final product = await supabase
-            .from('products')
-            .select('title, images')
-            .eq('id', productId)
-            .maybeSingle();
-        if (product != null) {
-          productName = product['title'] as String? ?? '';
-          final images = product['images'] as List?;
-          productImage = (images != null && images.isNotEmpty) ? images.first as String : '';
-        }
-      } catch (_) {}
-    }
-
-    String otherAvatarUrl = '';
-    final otherUserId = isSeller
-        ? row['buyer_id'] as String? ?? ''
-        : row['seller_id'] as String? ?? '';
     try {
-      final profile = await supabase
-          .from('profiles')
-          .select('avatar_url')
-          .eq('id', otherUserId)
+      final user = supabase.auth.currentUser;
+      if (user == null) {
+        debugPrint('⚠️ Колдонуучу кирген эмес — navigate токтотулду');
+        return;
+      }
+
+      final row = await supabase
+          .from('chats')
+          .select('id, seller_id, buyer_id, product_id, seller_name, last_message, last_message_at')
+          .eq('id', chatId)
           .maybeSingle();
-      otherAvatarUrl = profile?['avatar_url'] as String? ?? '';
-    } catch (_) {}
 
-    // Context дагы эле жашап жатабы?
-    context = navigatorKey.currentContext;
-    if (context == null || !context.mounted) return;
+      if (row == null) {
+        debugPrint('⚠️ Chat табылбады: chatId=$chatId');
+        return;
+      }
 
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => _buildChatScreen(
-          chatId: chatId,
-          sellerName: row['seller_name'] as String? ?? 'Сатуучу',
-          productName: productName,
-          productImage: productImage,
-          isSeller: isSeller,
-          buyerId: row['buyer_id'] as String? ?? '',
-          sellerId: row['seller_id'] as String? ?? '',
-          otherAvatarUrl: otherAvatarUrl,
+      final isSeller = row['seller_id'] == user.id;
+
+      String productName = '';
+      String productImage = '';
+      final productId = row['product_id'] as String?;
+      if (productId != null) {
+        try {
+          final product = await supabase
+              .from('products')
+              .select('title, images')
+              .eq('id', productId)
+              .maybeSingle();
+          if (product != null) {
+            productName = product['title'] as String? ?? '';
+            final images = product['images'] as List?;
+            productImage = (images != null && images.isNotEmpty)
+                ? images.first as String
+                : '';
+          }
+        } catch (_) {}
+      }
+
+      String otherAvatarUrl = '';
+      final otherUserId = isSeller
+          ? row['buyer_id'] as String? ?? ''
+          : row['seller_id'] as String? ?? '';
+      try {
+        final profile = await supabase
+            .from('profiles')
+            .select('avatar_url')
+            .eq('id', otherUserId)
+            .maybeSingle();
+        otherAvatarUrl = profile?['avatar_url'] as String? ?? '';
+      } catch (_) {}
+
+      context = navigatorKey.currentContext;
+      if (context == null || !context.mounted) return;
+
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => _buildChatScreen(
+            chatId: chatId,
+            sellerName: row['seller_name'] as String? ?? 'Сатуучу',
+            productName: productName,
+            productImage: productImage,
+            isSeller: isSeller,
+            buyerId: row['buyer_id'] as String? ?? '',
+            sellerId: row['seller_id'] as String? ?? '',
+            otherAvatarUrl: otherAvatarUrl,
+          ),
         ),
-      ),
-    );
+      );
 
-    debugPrint('✅ ChatScreen\'ге navigate болду → chatId=$chatId');
-  } catch (e) {
-    debugPrint('❌ _navigateToChat катасы: $e');
+      debugPrint('✅ ChatScreen\'ге navigate болду → chatId=$chatId');
+    } catch (e) {
+      debugPrint('❌ _navigateToChat катасы: $e');
+    }
   }
-}
-  // ─────────────────────────────────────────────────────────────
-  // ChatScreen widget'ын lazy import менен кура
-  // (circular import болбосун деп функция катары бөлүндү)
-  // ─────────────────────────────────────────────────────────────
+
   Widget _buildChatScreen({
     required String chatId,
     required String sellerName,
@@ -255,8 +237,6 @@ class NotificationService {
     required String sellerId,
     required String otherAvatarUrl,
   }) {
-    // Import'ту бул файлдын башына кош:
-    // import '../features/chat/screens/chat_screen.dart';
     return _ChatScreenProxy(
       chatId: chatId,
       sellerName: sellerName,
@@ -298,7 +278,6 @@ class NotificationService {
     }
   }
 
-  /// Logout'та токенди өчүрүү
   Future<void> clearMyToken() async {
     try {
       final user = supabase.auth.currentUser;
@@ -311,7 +290,7 @@ class NotificationService {
   }
 
   // ─────────────────────────────────────────────────────────────
-  // ACCESS TOKEN — service_account.json аркылуу
+  // ACCESS TOKEN
   // ─────────────────────────────────────────────────────────────
   Future<String?> _getAccessToken() async {
     try {
@@ -331,6 +310,8 @@ class NotificationService {
 
   // ─────────────────────────────────────────────────────────────
   // SEND CHAT NOTIFICATION — FCM v1 API
+  // ✅ ОҢДОЛДУ: 'notification' поля кошулду — фондо/өчүк учурда
+  //    Android системасы notification'ду автоматтык көрсөтөт
   // ─────────────────────────────────────────────────────────────
   Future<void> sendChatNotification({
     required String receiverUid,
@@ -373,6 +354,14 @@ class NotificationService {
         body: jsonEncode({
           'message': {
             'token': fcmToken,
+
+            // ✅ НЕГИЗГИ ОҢДОО: бул поля болмосо фондо/өчүк учурда
+            // Android notification КӨРСӨТПӨЙТ
+            'notification': {
+              'title': senderName,
+              'body': messageText,
+            },
+
             'android': {
               'priority': 'high',
               'notification': {
@@ -399,8 +388,8 @@ class NotificationService {
               'chatId': chatId,
               'type': 'chat_message',
               'senderName': senderName,
-              'title': senderName, // ← notification title data'да
-              'body': messageText, // ← notification body data'да
+              'title': senderName,
+              'body': messageText,
             },
           },
         }),
@@ -443,16 +432,6 @@ class NotificationService {
 
 // ─────────────────────────────────────────────────────────────
 // Proxy widget — circular import'тан качуу үчүн
-// notification_service.dart ChatScreen'ди түз import кылбайт,
-// анын ордуна _ChatScreenProxy колдонот.
-//
-// ❗ Бул классты ЖОК КЫЛ жана notification_service.dart'ка
-//    төмөнкү import'ту кош:
-//    import '../features/chat/screens/chat_screen.dart';
-//    Анан _buildChatScreen() ичинде ChatScreen(...) түз кайтар.
-//
-// Же болбосо ушул proxy'ни chat_screen.dart'та сактап кой —
-// ал жерде ChatScreen жеткиликтүү.
 // ─────────────────────────────────────────────────────────────
 class _ChatScreenProxy extends StatelessWidget {
   final String chatId;
