@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../main.dart';
-import '../../../core/locale_provider.dart';
 
 class LanguageSection extends StatefulWidget {
   const LanguageSection({super.key});
@@ -53,7 +52,7 @@ class _LanguageSectionState extends State<LanguageSection> {
   }
 
   Widget _option(
-    LocaleProvider provider,
+    dynamic provider,
     String selected,
     String code,
     String title,

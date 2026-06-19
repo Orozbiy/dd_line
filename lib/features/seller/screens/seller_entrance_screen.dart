@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
+import '../../../core/app_localizations.dart';
 import 'seller_login_screen.dart';
 import 'seller_register_screen.dart';
 
-/// Сатуучу баскычына басканда чыгуучу тандоо экраны:
-/// "Кирүү" же "Катталуу".
 class SellerEntranceScreen extends StatelessWidget {
   const SellerEntranceScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -20,7 +20,7 @@ class SellerEntranceScreen extends StatelessWidget {
           onTap: () => Navigator.pop(context),
           child: const Icon(Icons.arrow_back, color: AppColors.black),
         ),
-        title: const Text('Сатуучу', style: AppTextStyles.headingMedium),
+        title: Text(loc.get('seller_title'), style: AppTextStyles.headingMedium),
         centerTitle: true,
       ),
       body: SafeArea(
@@ -53,20 +53,19 @@ class SellerEntranceScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 28),
-              const Text(
-                'Дүкөнүңүздү башкарыңыз!',
+              Text(
+                loc.get('shop_title'),
                 style: AppTextStyles.headingLarge,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
               Text(
-                'DD Online аркылуу товарларыңызды\nДордой базарынан дүйнөгө сатыңыз',
-                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey500, height: 1.5),
+                loc.get('shop_desc'),
+                style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.grey500, height: 1.5),
                 textAlign: TextAlign.center,
               ),
               const Spacer(flex: 3),
-
-              // ── КИРҮҮ ──────────────────────────────
               SizedBox(
                 width: double.infinity,
                 height: 54,
@@ -77,18 +76,18 @@ class SellerEntranceScreen extends StatelessWidget {
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
                     elevation: 0,
                   ),
                   child: Text(
-                    'Кирүү',
-                    style: AppTextStyles.labelLarge.copyWith(color: Colors.white, fontSize: 16),
+                    loc.get('login'),
+                    style: AppTextStyles.labelLarge
+                        .copyWith(color: Colors.white, fontSize: 16),
                   ),
                 ),
               ),
               const SizedBox(height: 14),
-
-              // ── КАТТАЛУУ ───────────────────────────
               SizedBox(
                 width: double.infinity,
                 height: 54,
@@ -99,11 +98,13 @@ class SellerEntranceScreen extends StatelessWidget {
                   ),
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: AppColors.primary, width: 1.5),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
                   ),
                   child: Text(
-                    'Катталуу',
-                    style: AppTextStyles.labelLarge.copyWith(color: AppColors.primary, fontSize: 16),
+                    loc.get('register'),
+                    style: AppTextStyles.labelLarge
+                        .copyWith(color: AppColors.primary, fontSize: 16),
                   ),
                 ),
               ),

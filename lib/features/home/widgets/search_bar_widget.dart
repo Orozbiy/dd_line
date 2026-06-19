@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
+import '../../../core/app_localizations.dart';
 
-/// Издөө куту - пайдалоочу товар издөп жаткан жери
 class SearchBarWidget extends StatefulWidget {
-  final Function(String) onChanged;  // Текст өзгөргөндө чалуу функция
-  final Function()? onClear;         // Өчүргөндө чалуу функция
+  final Function(String) onChanged;
+  final Function()? onClear;
 
   const SearchBarWidget({
     super.key,
@@ -24,9 +24,7 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
   void initState() {
     super.initState();
     _controller = TextEditingController();
-    _controller.addListener(() {
-      setState(() {});  // UI жаңыланы
-    });
+    _controller.addListener(() => setState(() {}));
   }
 
   @override
@@ -37,6 +35,7 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -54,15 +53,9 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
         onChanged: widget.onChanged,
         style: AppTextStyles.bodyMedium,
         decoration: InputDecoration(
-          hintText: 'Товар издеңиз...',
-          hintStyle: AppTextStyles.bodyMedium.copyWith(
-            color: AppColors.grey400,
-          ),
-          prefixIcon: const Icon(
-            Icons.search,
-            color: AppColors.primary,
-            size: 24,
-          ),
+          hintText: loc.get('search_hint'),
+          hintStyle: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey400),
+          prefixIcon: const Icon(Icons.search, color: AppColors.primary, size: 24),
           suffixIcon: _controller.text.isNotEmpty
               ? GestureDetector(
                   onTap: () {
@@ -70,10 +63,7 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
                     widget.onClear?.call();
                     widget.onChanged('');
                   },
-                  child: const Icon(
-                    Icons.close,
-                    color: AppColors.grey400,
-                  ),
+                  child: const Icon(Icons.close, color: AppColors.grey400),
                 )
               : null,
           border: OutlineInputBorder(
@@ -86,10 +76,7 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(
-              color: AppColors.primary,
-              width: 2,
-            ),
+            borderSide: const BorderSide(color: AppColors.primary, width: 2),
           ),
           filled: true,
           fillColor: AppColors.grey50,

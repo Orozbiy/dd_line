@@ -3,6 +3,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
+import '../../../core/app_localizations.dart';
 import '../../../core/supabase_client.dart';
 import '../../../core/utils/favorites_manager.dart';
 import '../../../data/models/product_model.dart';
@@ -50,41 +51,24 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   Future<void> _loadFullProductData() async {
     try {
-      final data = await supabase
-          .from('products')
-          .select('*, stores(*)')
-          .eq('id', widget.product.id)
-          .single();
-
+      final data = await supabase.from('products').select('*, stores(*)').eq('id', widget.product.id).single();
       if (mounted) {
         setState(() => _product = ProductModel.fromMap(data));
-
         final storeData = data['stores'] as Map<String, dynamic>?;
         if (storeData != null) {
           setState(() {
             _storeId = storeData['id'] as String?;
             _sellerUid = storeData['owner_id'] as String?;
             _shopName = storeData['store_name'] as String? ?? '';
-            _containerNumber = [
-              storeData['market'] as String? ?? '',
-              storeData['district'] as String? ?? '',
-            ].where((s) => s.isNotEmpty).join(', ');
+            _containerNumber = [storeData['market'] as String? ?? '', storeData['district'] as String? ?? ''].where((s) => s.isNotEmpty).join(', ');
             _workStart = storeData['work_start'] as String? ?? '';
             _workEnd = storeData['work_end'] as String? ?? '';
             _workDays = storeData['work_days'] as String? ?? '';
           });
-
           if (_sellerUid != null) {
             try {
-              final profile = await supabase
-                  .from('profiles')
-                  .select('full_name')
-                  .eq('id', _sellerUid!)
-                  .single();
-              if (mounted) {
-                setState(
-                    () => _sellerName = profile['full_name'] as String? ?? '');
-              }
+              final profile = await supabase.from('profiles').select('full_name').eq('id', _sellerUid!).single();
+              if (mounted) setState(() => _sellerName = profile['full_name'] as String? ?? '');
             } catch (_) {}
           }
         }
@@ -100,19 +84,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   Future<void> _loadSimilarProducts() async {
     if (_product.category == null || _product.category!.isEmpty) return;
     try {
-      final data = await supabase
-          .from('products')
-          .select('*, stores(store_name, owner_id)')
-          .eq('category_id', _product.category!)
-          .eq('is_active', true)
-          .limit(10);
-
-      final list = (data as List)
-          .cast<Map<String, dynamic>>()
-          .where((row) => row['id'] != _product.id)
-          .map((row) => ProductModel.fromMap(row))
-          .toList();
-
+      final data = await supabase.from('products').select('*, stores(store_name, owner_id)').eq('category_id', _product.category!).eq('is_active', true).limit(10);
+      final list = (data as List).cast<Map<String, dynamic>>().where((row) => row['id'] != _product.id).map((row) => ProductModel.fromMap(row)).toList();
       if (mounted) setState(() => _similarProducts = list);
     } catch (e) {
       debugPrint('_loadSimilarProducts: $e');
@@ -120,11 +93,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Future<void> _openMapNavigation() async {
+    final loc = AppLocalizations.of(context);
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
-        if (mounted) _showSnack('📍 Уруксат бериңиз');
+        if (mounted) _showSnack(loc.get('location_denied'));
         return;
       }
     }
@@ -132,128 +106,76 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       if (mounted) await Geolocator.openAppSettings();
       return;
     }
-
     final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      await Geolocator.openLocationSettings();
-      return;
-    }
+    if (!serviceEnabled) { await Geolocator.openLocationSettings(); return; }
 
     double? sellerLat = _product.latitude;
     double? sellerLng = _product.longitude;
-    debugPrint('1) product lat=$sellerLat lng=$sellerLng');
 
     if (sellerLat == null || sellerLng == null) {
       String? storeId = _storeId;
-      debugPrint('2) _storeId=$storeId');
-
       if (storeId == null) {
         try {
-          final row = await supabase
-              .from('products')
-              .select('store_id')
-              .eq('id', _product.id)
-              .single();
+          final row = await supabase.from('products').select('store_id').eq('id', _product.id).single();
           storeId = row['store_id'] as String?;
-          debugPrint('3) products.store_id=$storeId');
-        } catch (e) {
-          debugPrint('❌ store_id алуу: $e');
-        }
+        } catch (e) { debugPrint('❌ store_id алуу: $e'); }
       }
-
       if (storeId != null) {
         setState(() => _dataLoading = true);
         try {
-          final store = await supabase
-              .from('stores')
-              .select('latitude, longitude')
-              .eq('id', storeId)
-              .single();
-          debugPrint('4) stores row=$store');
+          final store = await supabase.from('stores').select('latitude, longitude').eq('id', storeId).single();
           sellerLat = (store['latitude'] as num?)?.toDouble();
           sellerLng = (store['longitude'] as num?)?.toDouble();
-        } catch (e) {
-          debugPrint('❌ stores lat/lng алуу: $e');
-        }
+        } catch (e) { debugPrint('❌ stores lat/lng: $e'); }
         if (!mounted) return;
         setState(() => _dataLoading = false);
       }
     }
-    debugPrint('5) final lat=$sellerLat lng=$sellerLng');
+
     if (sellerLat == null || sellerLng == null) {
-      if (mounted) _showSnack('Сатуучунун картадагы жери белгисиз');
+      if (mounted) _showSnack(loc.get('location_unknown'));
       return;
     }
 
     await showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => _NavigationGuideSheet(
-        shopName: _shopName,
-        containerNumber: _containerNumber,
-        sellerLat: sellerLat!,
-        sellerLng: sellerLng!,
-      ),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => _NavigationGuideSheet(shopName: _shopName, containerNumber: _containerNumber, sellerLat: sellerLat!, sellerLng: sellerLng!),
     );
   }
 
   Future<void> _openChat() async {
+    final loc = AppLocalizations.of(context);
     if (_sellerUid == null || _sellerUid!.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Сатуучу маалыматы жок!'),
-        backgroundColor: AppColors.warning,
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(loc.get('seller_no_info')), backgroundColor: AppColors.warning));
       return;
     }
-
     final user = supabase.auth.currentUser;
     if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Чат үчүн кирүү керек!'),
-        backgroundColor: AppColors.warning,
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(loc.get('chat_login_required')), backgroundColor: AppColors.warning));
       return;
     }
-
     if (user.id == _sellerUid) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Бул сиздин өз товарыңыз!'),
-        backgroundColor: AppColors.warning,
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(loc.get('own_product')), backgroundColor: AppColors.warning));
       return;
     }
-
     setState(() => _chatLoading = true);
     try {
-      final chatId = await _chatService.getOrCreateChat(
+      final chatId = await _chatService.getOrCreateChat(buyerId: user.id, sellerId: _sellerUid!, productId: _product.id);
+      if (!mounted) return;
+      Navigator.push(context, MaterialPageRoute(builder: (_) => ChatScreen(
+        chatId: chatId,
+        sellerName: _shopName.isNotEmpty ? _shopName : _sellerName,
+        productId: _product.id,
+        productName: _product.name,
+        productImage: _product.imageUrl,
+        isSeller: false,
         buyerId: user.id,
         sellerId: _sellerUid!,
-        productId: _product.id,
-      );
-      if (!mounted) return;
-
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => ChatScreen(
-            chatId: chatId,
-            sellerName: _shopName.isNotEmpty ? _shopName : _sellerName,
-            productId: _product.id,
-            productName: _product.name,
-            productImage: _product.imageUrl,
-            isSeller: false,
-            buyerId: user.id,
-            sellerId: _sellerUid!,
-          ),
-        ),
-      );
+      )));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Ката: $e'), backgroundColor: AppColors.error),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${AppLocalizations.of(context).get('error')}: $e'), backgroundColor: AppColors.error));
     } finally {
       if (mounted) setState(() => _chatLoading = false);
     }
@@ -261,14 +183,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   void _showSnack(String msg) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: AppColors.error,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(msg),
+      backgroundColor: AppColors.error,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    ));
   }
 
   bool _isOpenNow() {
@@ -276,10 +196,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final now = TimeOfDay.now();
     TimeOfDay parse(String t) {
       final p = t.split(':');
-      return TimeOfDay(
-          hour: int.tryParse(p[0]) ?? 0, minute: int.tryParse(p[1]) ?? 0);
+      return TimeOfDay(hour: int.tryParse(p[0]) ?? 0, minute: int.tryParse(p[1]) ?? 0);
     }
-
     final s = parse(_workStart);
     final e = parse(_workEnd);
     final nowMin = now.hour * 60 + now.minute;
@@ -287,74 +205,38 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Widget _buildPriceSection() {
-    final hasDiscount = _product.discountedPrice != null &&
-        _product.discountedPrice! < _product.price;
-
+    final hasDiscount = _product.discountedPrice != null && _product.discountedPrice! < _product.price;
     if (hasDiscount) {
       final discounted = _product.discountedPrice!;
       final pct = ((1 - discounted / _product.price) * 100).round();
       final saved = (_product.price - discounted).toStringAsFixed(0);
-
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Text(
-                '${discounted.toStringAsFixed(0)} сом',
-                style: AppTextStyles.headingLarge.copyWith(
-                    color: AppColors.error, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: AppColors.error,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  '-$pct%',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
+          Row(children: [
+            Text('${discounted.toStringAsFixed(0)} сом', style: AppTextStyles.headingLarge.copyWith(color: AppColors.error, fontWeight: FontWeight.bold)),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(color: AppColors.error, borderRadius: BorderRadius.circular(6)),
+              child: Text('-$pct%', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+            ),
+          ]),
           const SizedBox(height: 4),
-          Row(
-            children: [
-              Text(
-                '${_product.price.toStringAsFixed(0)} сом',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.grey400,
-                  decoration: TextDecoration.lineThrough,
-                  decorationColor: AppColors.grey400,
-                  decorationThickness: 1.5,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '$saved сомго арзан',
-                style:
-                    AppTextStyles.labelSmall.copyWith(color: AppColors.success),
-              ),
-            ],
-          ),
+          Row(children: [
+            Text('${_product.price.toStringAsFixed(0)} сом', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey400, decoration: TextDecoration.lineThrough, decorationColor: AppColors.grey400, decorationThickness: 1.5)),
+            const SizedBox(width: 8),
+            Text('$saved сомго арзан', style: AppTextStyles.labelSmall.copyWith(color: AppColors.success)),
+          ]),
         ],
       );
     }
-
-    return Text(
-      '${_product.price.toStringAsFixed(0)} сом',
-      style: AppTextStyles.headingLarge.copyWith(color: AppColors.primary),
-    );
+    return Text('${_product.price.toStringAsFixed(0)} сом', style: AppTextStyles.headingLarge.copyWith(color: AppColors.primary));
   }
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final isFav = _fav.isFavorite(_product.id);
 
     return Scaffold(
@@ -369,46 +251,25 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               onTap: () => Navigator.pop(context),
               child: Container(
                 margin: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.9),
-                  shape: BoxShape.circle,
-                ),
+                decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.9), shape: BoxShape.circle),
                 child: const Icon(Icons.arrow_back, color: AppColors.black),
               ),
             ),
             actions: [
               GestureDetector(
-                onTap: () {
-                  _fav.toggle(_product);
-                  setState(() {});
-                },
+                onTap: () { _fav.toggle(_product); setState(() {}); },
                 child: Container(
                   margin: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.9),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Icon(
-                      isFav ? Icons.favorite : Icons.favorite_border,
-                      color: isFav ? Colors.red : AppColors.grey600,
-                    ),
-                  ),
+                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.9), shape: BoxShape.circle),
+                  child: Padding(padding: const EdgeInsets.all(8), child: Icon(isFav ? Icons.favorite : Icons.favorite_border, color: isFav ? Colors.red : AppColors.grey600)),
                 ),
               ),
               GestureDetector(
                 onTap: () => ShareWidget.show(context, _product),
                 child: Container(
                   margin: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.9),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Padding(
-                    padding: EdgeInsets.all(8),
-                    child: Icon(Icons.share_outlined, color: AppColors.grey600),
-                  ),
+                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.9), shape: BoxShape.circle),
+                  child: const Padding(padding: EdgeInsets.all(8), child: Icon(Icons.share_outlined, color: AppColors.grey600)),
                 ),
               ),
               const SizedBox(width: 4),
@@ -416,53 +277,33 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             flexibleSpace: FlexibleSpaceBar(
               background: _product.imageUrl.isNotEmpty
                   ? GestureDetector(
-                      onTap: () => Navigator.push(
-                        context,
-                        PageRouteBuilder(
-                          opaque: false,
-                          barrierColor: Colors.black,
-                          transitionDuration: const Duration(milliseconds: 250),
-                          pageBuilder: (_, __, ___) => _FullscreenImageScreen(
-                            imageUrl: _product.imageUrl,
-                            heroTag: 'product_image_${_product.id}',
-                          ),
-                        ),
-                      ),
+                      onTap: () => Navigator.push(context, PageRouteBuilder(
+                        opaque: false,
+                        barrierColor: Colors.black,
+                        transitionDuration: const Duration(milliseconds: 250),
+                        pageBuilder: (_, __, ___) => _FullscreenImageScreen(imageUrl: _product.imageUrl, heroTag: 'product_image_${_product.id}'),
+                      )),
                       child: Hero(
                         tag: 'product_image_${_product.id}',
                         child: CachedNetworkImage(
-                          imageUrl:
-                              toCloudinaryThumb(_product.imageUrl, width: 800),
+                          imageUrl: toCloudinaryThumb(_product.imageUrl, width: 800),
                           fit: BoxFit.cover,
                           fadeInDuration: const Duration(milliseconds: 150),
-                          placeholder: (_, __) =>
-                              Container(color: AppColors.grey100),
-                          errorWidget: (_, __, ___) => Container(
-                            color: AppColors.grey100,
-                            child: const Icon(Icons.image_not_supported,
-                                size: 80, color: AppColors.grey300),
-                          ),
+                          placeholder: (_, __) => Container(color: AppColors.grey100),
+                          errorWidget: (_, __, ___) => Container(color: AppColors.grey100, child: const Icon(Icons.image_not_supported, size: 80, color: AppColors.grey300)),
                         ),
                       ),
                     )
-                  : Container(
-                      color: AppColors.grey100,
-                      child: const Icon(Icons.image,
-                          size: 80, color: AppColors.grey300),
-                    ),
+                  : Container(color: AppColors.grey100, child: const Icon(Icons.image, size: 80, color: AppColors.grey300)),
             ),
           ),
           SliverToBoxAdapter(
             child: _dataLoading
-                ? const Padding(
-                    padding: EdgeInsets.all(32),
-                    child: Center(
-                        child: CircularProgressIndicator(
-                            color: AppColors.primary)),
-                  )
+                ? const Padding(padding: EdgeInsets.all(32), child: Center(child: CircularProgressIndicator(color: AppColors.primary)))
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // ── Баа + аты ──
                       Container(
                         color: Colors.white,
                         padding: const EdgeInsets.all(16),
@@ -471,77 +312,53 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           children: [
                             _buildPriceSection(),
                             const SizedBox(height: 8),
-                            Text(_product.name,
-                                style: AppTextStyles.headingMedium
-                                    .copyWith(fontSize: 24)),
+                            Text(_product.name, style: AppTextStyles.headingMedium.copyWith(fontSize: 24)),
                             const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                if ((_product.rating ?? 0) > 0) ...[
-                                  const Icon(Icons.star_rounded,
-                                      color: Colors.amber, size: 16),
-                                  const SizedBox(width: 2),
-                                  Text(_product.rating!.toStringAsFixed(1),
-                                      style: AppTextStyles.labelMedium
-                                          .copyWith(fontSize: 16)),
-                                  if ((_product.ratingCount ?? 0) > 0)
-                                    Text(
-                                      ' (${_product.ratingCount})',
-                                      style: AppTextStyles.labelSmall
-                                          .copyWith(color: AppColors.grey400),
-                                    ),
-                                ],
-                                const Spacer(),
-                                if (_product.distanceFormatted.isNotEmpty)
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 10, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primary
-                                          .withValues(alpha: 0.08),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        const Icon(Icons.location_on,
-                                            size: 14, color: AppColors.primary),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          _product.distanceFormatted,
-                                          style: AppTextStyles.labelSmall
-                                              .copyWith(
-                                                  color: AppColors.primary),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
+                            Row(children: [
+                              if ((_product.rating ?? 0) > 0) ...[
+                                const Icon(Icons.star_rounded, color: Colors.amber, size: 16),
+                                const SizedBox(width: 2),
+                                Text(_product.rating!.toStringAsFixed(1), style: AppTextStyles.labelMedium.copyWith(fontSize: 16)),
+                                if ((_product.ratingCount ?? 0) > 0)
+                                  Text(' (${_product.ratingCount})', style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey400)),
                               ],
-                            ),
+                              const Spacer(),
+                              if (_product.distanceFormatted.isNotEmpty)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(8)),
+                                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                                    const Icon(Icons.location_on, size: 14, color: AppColors.primary),
+                                    const SizedBox(width: 4),
+                                    Text(_product.distanceFormatted, style: AppTextStyles.labelSmall.copyWith(color: AppColors.primary)),
+                                  ]),
+                                ),
+                            ]),
                           ],
                         ),
                       ),
                       const SizedBox(height: 8),
-                      _buildCharacteristics(),
+                      _buildCharacteristics(loc),
                       const SizedBox(height: 8),
-                      if (_product.description != null &&
-                          _product.description!.isNotEmpty) ...[
+
+                      // ── Сүрөттөмө ──
+                      if (_product.description != null && _product.description!.isNotEmpty) ...[
                         Container(
                           color: Colors.white,
                           padding: const EdgeInsets.all(16),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Сүрөттөмө',
-                                  style: AppTextStyles.headingSmall),
+                              Text(loc.get('description'), style: AppTextStyles.headingSmall),
                               const SizedBox(height: 8),
-                              Text(_product.description!,
-                                  style: AppTextStyles.bodyMedium),
+                              Text(_product.description!, style: AppTextStyles.bodyMedium),
                             ],
                           ),
                         ),
                         const SizedBox(height: 8),
                       ],
+
+                      // ── Размер тандоо ──
                       if (_product.sizes.isNotEmpty) ...[
                         Container(
                           color: Colors.white,
@@ -549,8 +366,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Размер тандаңыз',
-                                  style: AppTextStyles.headingSmall),
+                              Text(loc.get('select_size'), style: AppTextStyles.headingSmall),
                               const SizedBox(height: 12),
                               Wrap(
                                 spacing: 8,
@@ -558,33 +374,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                 children: _product.sizes.map((size) {
                                   final isSel = selectedSize == size;
                                   return GestureDetector(
-                                    onTap: () =>
-                                        setState(() => selectedSize = size),
+                                    onTap: () => setState(() => selectedSize = size),
                                     child: AnimatedContainer(
-                                      duration:
-                                          const Duration(milliseconds: 200),
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 16, vertical: 10),
+                                      duration: const Duration(milliseconds: 200),
+                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                                       decoration: BoxDecoration(
-                                        color: isSel
-                                            ? AppColors.primary
-                                            : Colors.white,
+                                        color: isSel ? AppColors.primary : Colors.white,
                                         borderRadius: BorderRadius.circular(10),
-                                        border: Border.all(
-                                          color: isSel
-                                              ? AppColors.primary
-                                              : AppColors.grey200,
-                                        ),
+                                        border: Border.all(color: isSel ? AppColors.primary : AppColors.grey200),
                                       ),
-                                      child: Text(
-                                        size,
-                                        style:
-                                            AppTextStyles.labelLarge.copyWith(
-                                          color: isSel
-                                              ? Colors.white
-                                              : AppColors.black,
-                                        ),
-                                      ),
+                                      child: Text(size, style: AppTextStyles.labelLarge.copyWith(color: isSel ? Colors.white : AppColors.black)),
                                     ),
                                   );
                                 }).toList(),
@@ -594,76 +393,54 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         ),
                         const SizedBox(height: 8),
                       ],
+
+                      // ── Сатуучу маалыматы ──
                       Container(
                         color: Colors.white,
                         padding: const EdgeInsets.all(16),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Сатуучу',
-                                style: AppTextStyles.headingSmall),
+                            Text(loc.get('seller'), style: AppTextStyles.headingSmall),
                             const SizedBox(height: 12),
                             if (_shopName.isNotEmpty) ...[
-                              _infoRow(
-                                  Icons.store_outlined, 'Дүкөн', _shopName),
+                              _infoRow(Icons.store_outlined, loc.get('shop'), _shopName),
                               const SizedBox(height: 8),
                             ],
                             if (_sellerName.isNotEmpty) ...[
-                              _infoRow(
-                                  Icons.person_outline, 'Сатуучу', _sellerName),
+                              _infoRow(Icons.person_outline, loc.get('seller'), _sellerName),
                               const SizedBox(height: 8),
                             ],
                             if (_containerNumber.isNotEmpty) ...[
-                              _infoRow(
-                                Icons.location_on_outlined,
-                                'Жайгашкан жери',
-                                _containerNumber,
-                                valueColor: AppColors.primary,
-                              ),
+                              _infoRow(Icons.location_on_outlined, loc.get('container'), _containerNumber, valueColor: AppColors.primary),
                             ],
-                            if (_workStart.isNotEmpty &&
-                                _workEnd.isNotEmpty) ...[
+                            if (_workStart.isNotEmpty && _workEnd.isNotEmpty) ...[
                               const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  Container(
-                                    width: 8,
-                                    height: 8,
-                                    decoration: BoxDecoration(
-                                      color: _isOpenNow()
-                                          ? const Color(0xFF10B981)
-                                          : const Color(0xFFF87171),
-                                      shape: BoxShape.circle,
-                                    ),
+                              Row(children: [
+                                Container(
+                                  width: 8, height: 8,
+                                  decoration: BoxDecoration(
+                                    color: _isOpenNow() ? const Color(0xFF10B981) : const Color(0xFFF87171),
+                                    shape: BoxShape.circle,
                                   ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    _isOpenNow() ? 'Ачык' : 'Жабык',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: _isOpenNow()
-                                          ? const Color(0xFF10B981)
-                                          : const Color(0xFFF87171),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    '·  ${_workDays.isNotEmpty ? "$_workDays  " : ""}$_workStart — $_workEnd',
-                                    style: const TextStyle(
-                                        fontSize: 12, color: Color(0xFF6B7280)),
-                                  ),
-                                ],
-                              ),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  _isOpenNow() ? loc.get('open') : loc.get('closed'),
+                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _isOpenNow() ? const Color(0xFF10B981) : const Color(0xFFF87171)),
+                                ),
+                                const SizedBox(width: 8),
+                                Text('·  ${_workDays.isNotEmpty ? "$_workDays  " : ""}$_workStart — $_workEnd', style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+                              ]),
                             ],
                             if (_shopName.isEmpty && _sellerName.isEmpty)
-                              Text('Маалымат жок',
-                                  style: AppTextStyles.bodyMedium
-                                      .copyWith(color: AppColors.grey500)),
+                              Text(loc.get('no_info'), style: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey500)),
                           ],
                         ),
                       ),
                       const SizedBox(height: 8),
+
+                      // ── Сатуучуга жазуу ──
                       if (_sellerUid != null)
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -672,29 +449,20 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             child: OutlinedButton.icon(
                               onPressed: _chatLoading ? null : _openChat,
                               icon: _chatLoading
-                                  ? const SizedBox(
-                                      width: 18,
-                                      height: 18,
-                                      child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: AppColors.primary))
-                                  : const Icon(Icons.chat_bubble_outline,
-                                      color: AppColors.primary),
-                              label: Text('Сатуучуга жазуу',
-                                  style: AppTextStyles.labelLarge
-                                      .copyWith(color: AppColors.primary)),
+                                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary))
+                                  : const Icon(Icons.chat_bubble_outline, color: AppColors.primary),
+                              label: Text(loc.get('write_seller'), style: AppTextStyles.labelLarge.copyWith(color: AppColors.primary)),
                               style: OutlinedButton.styleFrom(
-                                side:
-                                    const BorderSide(color: AppColors.primary),
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 14),
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14)),
+                                side: const BorderSide(color: AppColors.primary),
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                               ),
                             ),
                           ),
                         ),
                       const SizedBox(height: 8),
+
+                      // ── Окшош товарлар ──
                       if (_similarProducts.isNotEmpty)
                         Container(
                           color: Colors.white,
@@ -702,96 +470,42 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Окшош товарлар',
-                                  style: AppTextStyles.headingSmall),
+                              Text(loc.get('similar'), style: AppTextStyles.headingSmall),
                               const SizedBox(height: 12),
                               SizedBox(
                                 height: 220,
                                 child: ListView.separated(
                                   scrollDirection: Axis.horizontal,
                                   itemCount: _similarProducts.length,
-                                  separatorBuilder: (_, __) =>
-                                      const SizedBox(width: 12),
+                                  separatorBuilder: (_, __) => const SizedBox(width: 12),
                                   itemBuilder: (context, i) {
                                     final p = _similarProducts[i];
-                                    final pHasDiscount = p.hasPromotion &&
-                                        p.discountedPrice != null &&
-                                        p.discountedPrice! < p.price;
+                                    final pHasDiscount = p.hasPromotion && p.discountedPrice != null && p.discountedPrice! < p.price;
                                     return GestureDetector(
-                                      onTap: () => Navigator.pushReplacement(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) =>
-                                              ProductDetailScreen(product: p),
-                                        ),
-                                      ),
+                                      onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => ProductDetailScreen(product: p))),
                                       child: SizedBox(
                                         width: 140,
                                         child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
+                                          crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
                                             ClipRRect(
-                                              borderRadius:
-                                                  BorderRadius.circular(10),
+                                              borderRadius: BorderRadius.circular(10),
                                               child: CachedNetworkImage(
-                                                imageUrl: toCloudinaryThumb(
-                                                    p.imageUrl,
-                                                    width: 300),
-                                                height: 140,
-                                                width: 140,
-                                                fit: BoxFit.cover,
-                                                fadeInDuration: const Duration(
-                                                    milliseconds: 150),
-                                                placeholder: (_, __) =>
-                                                    Container(
-                                                  height: 140,
-                                                  width: 140,
-                                                  color: AppColors.grey100,
-                                                ),
-                                                errorWidget: (_, __, ___) =>
-                                                    Container(
-                                                  height: 140,
-                                                  color: AppColors.grey100,
-                                                  child: const Icon(Icons
-                                                      .image_not_supported),
-                                                ),
+                                                imageUrl: toCloudinaryThumb(p.imageUrl, width: 300),
+                                                height: 140, width: 140, fit: BoxFit.cover,
+                                                fadeInDuration: const Duration(milliseconds: 150),
+                                                placeholder: (_, __) => Container(height: 140, width: 140, color: AppColors.grey100),
+                                                errorWidget: (_, __, ___) => Container(height: 140, color: AppColors.grey100, child: const Icon(Icons.image_not_supported)),
                                               ),
                                             ),
                                             const SizedBox(height: 6),
-                                            Text(
-                                              p.name,
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: AppTextStyles.labelMedium,
-                                            ),
+                                            Text(p.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: AppTextStyles.labelMedium),
                                             const SizedBox(height: 4),
                                             if (pHasDiscount) ...[
-                                              Text(
-                                                '${p.discountedPrice!.toStringAsFixed(0)} сом',
-                                                style: AppTextStyles.labelLarge
-                                                    .copyWith(
-                                                  color: AppColors.error,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                              Text(
-                                                '${p.price.toStringAsFixed(0)} сом',
-                                                style: AppTextStyles.labelSmall
-                                                    .copyWith(
-                                                  color: AppColors.grey400,
-                                                  decoration: TextDecoration
-                                                      .lineThrough,
-                                                ),
-                                              ),
+                                              Text('${p.discountedPrice!.toStringAsFixed(0)} сом', style: AppTextStyles.labelLarge.copyWith(color: AppColors.error, fontWeight: FontWeight.bold)),
+                                              Text('${p.price.toStringAsFixed(0)} сом', style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey400, decoration: TextDecoration.lineThrough)),
                                             ] else
-                                              Text(
-                                                '${p.price.toStringAsFixed(0)} сом',
-                                                style: AppTextStyles.labelLarge
-                                                    .copyWith(
-                                                        color:
-                                                            AppColors.primary),
-                                              ),
+                                              Text('${p.price.toStringAsFixed(0)} сом', style: AppTextStyles.labelLarge.copyWith(color: AppColors.primary)),
                                           ],
                                         ),
                                       ),
@@ -803,10 +517,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           ),
                         ),
                       const SizedBox(height: 8),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: ReviewSection(productId: _product.id),
-                      ),
+                      Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: ReviewSection(productId: _product.id)),
                       const SizedBox(height: 100),
                     ],
                   ),
@@ -814,77 +525,51 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         ],
       ),
       bottomNavigationBar: Container(
-        padding: EdgeInsets.fromLTRB(
-            16, 12, 16, MediaQuery.of(context).padding.bottom + 12),
+        padding: EdgeInsets.fromLTRB(16, 12, 16, MediaQuery.of(context).padding.bottom + 12),
         decoration: BoxDecoration(
           color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 12,
-              offset: const Offset(0, -3),
-            ),
-          ],
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 12, offset: const Offset(0, -3))],
         ),
-        child: Row(
-          children: [
-            Container(
-              width: 52,
+        child: Row(children: [
+          Container(
+            width: 52, height: 52,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+            ),
+            child: IconButton(
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CartScreen())),
+              icon: const Icon(Icons.shopping_cart_outlined, color: AppColors.primary),
+              tooltip: loc.get('cart'),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: SizedBox(
               height: 52,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(14),
-                border:
-                    Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
-              ),
-              child: IconButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const CartScreen()),
-                  );
-                },
-                icon: const Icon(Icons.shopping_cart_outlined,
-                    color: AppColors.primary),
-                tooltip: 'Себет',
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: SizedBox(
-                height: 52,
-                child: ElevatedButton.icon(
-                  onPressed: _openMapNavigation,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
-                    elevation: 0,
-                  ),
-                  icon:
-                      const Icon(Icons.navigation_rounded, color: Colors.white),
-                  label: Text(
-                    'Маршрут түзүү',
-                    style: AppTextStyles.headingSmall
-                        .copyWith(color: Colors.white),
-                  ),
+              child: ElevatedButton.icon(
+                onPressed: _openMapNavigation,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  elevation: 0,
                 ),
+                icon: const Icon(Icons.navigation_rounded, color: Colors.white),
+                label: Text(loc.get('route'), style: AppTextStyles.headingSmall.copyWith(color: Colors.white)),
               ),
             ),
-          ],
-        ),
+          ),
+        ]),
       ),
     );
   }
 
-  Widget _buildCharacteristics() {
+  Widget _buildCharacteristics(AppLocalizations loc) {
     final hasColors = _product.colors.isNotEmpty;
     final hasSizes = _product.sizes.isNotEmpty;
     final hasStock = _product.inStock != null;
-
-    if (!hasColors && !hasSizes && !hasStock) {
-      return const SizedBox.shrink();
-    }
+    if (!hasColors && !hasSizes && !hasStock) return const SizedBox.shrink();
 
     return Container(
       color: Colors.white,
@@ -892,110 +577,50 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Характеристикалар', style: AppTextStyles.headingSmall),
+          Text(loc.get('characteristics'), style: AppTextStyles.headingSmall),
           const SizedBox(height: 12),
-
-          // ── Запас ──
           if (hasStock) ...[
-            Row(
-              children: [
-                Icon(
-                  (_product.inStock ?? 0) > 0
-                      ? Icons.check_circle_outline
-                      : Icons.cancel_outlined,
-                  size: 16,
-                  color: (_product.inStock ?? 0) > 0
-                      ? AppColors.success
-                      : AppColors.error,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  (_product.inStock ?? 0) > 0
-                      ? 'Запаста бар: ${_product.inStock} дана'
-                      : 'Запаста жок',
-                  style: AppTextStyles.labelMedium.copyWith(
-                    color: (_product.inStock ?? 0) > 0
-                        ? AppColors.success
-                        : AppColors.error,
-                  ),
-                ),
-              ],
-            ),
+            Row(children: [
+              Icon((_product.inStock ?? 0) > 0 ? Icons.check_circle_outline : Icons.cancel_outlined, size: 16, color: (_product.inStock ?? 0) > 0 ? AppColors.success : AppColors.error),
+              const SizedBox(width: 6),
+              Text(
+                (_product.inStock ?? 0) > 0 ? '${loc.get('in_stock')}: ${_product.inStock} ${loc.get('pcs')}' : loc.get('out_of_stock'),
+                style: AppTextStyles.labelMedium.copyWith(color: (_product.inStock ?? 0) > 0 ? AppColors.success : AppColors.error),
+              ),
+            ]),
             const SizedBox(height: 10),
           ],
-
-          // ── Түстөр ──
           if (hasColors) ...[
-            Text('🎨 Жеткиликтүү түстөр',
-                style: AppTextStyles.labelMedium
-                    .copyWith(color: AppColors.grey500)),
+            Text('🎨 ${loc.get('colors')}', style: AppTextStyles.labelMedium.copyWith(color: AppColors.grey500)),
             const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _product.colors.map((colorName) {
-                return Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: AppColors.grey50,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: AppColors.grey200),
-                  ),
-                  child: Text(colorName, style: AppTextStyles.labelSmall),
-                );
-              }).toList(),
-            ),
+            Wrap(spacing: 8, runSpacing: 8, children: _product.colors.map((c) => Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(color: AppColors.grey50, borderRadius: BorderRadius.circular(20), border: Border.all(color: AppColors.grey200)),
+              child: Text(c, style: AppTextStyles.labelSmall),
+            )).toList()),
             const SizedBox(height: 10),
           ],
-
-          // ── Размерлер ──
           if (hasSizes) ...[
-            Text('📐 Жеткиликтүү размерлер',
-                style: AppTextStyles.labelMedium
-                    .copyWith(color: AppColors.grey500)),
+            Text('📐 ${loc.get('sizes')}', style: AppTextStyles.labelMedium.copyWith(color: AppColors.grey500)),
             const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _product.sizes.map((size) {
-                return Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: AppColors.grey50,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: AppColors.grey200),
-                  ),
-                  child: Text(size, style: AppTextStyles.labelSmall),
-                );
-              }).toList(),
-            ),
+            Wrap(spacing: 8, runSpacing: 8, children: _product.sizes.map((s) => Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(color: AppColors.grey50, borderRadius: BorderRadius.circular(20), border: Border.all(color: AppColors.grey200)),
+              child: Text(s, style: AppTextStyles.labelSmall),
+            )).toList()),
           ],
         ],
       ),
     );
   }
 
-  Widget _infoRow(IconData icon, String label, String value,
-      {Color? valueColor}) {
-    return Row(
-      children: [
-        Icon(icon, size: 18, color: AppColors.grey500),
-        const SizedBox(width: 8),
-        Text('$label: ', style: AppTextStyles.labelMedium),
-        Expanded(
-          child: Text(
-            value,
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: valueColor ?? AppColors.black,
-              fontWeight: FontWeight.w600,
-            ),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
+  Widget _infoRow(IconData icon, String label, String value, {Color? valueColor}) {
+    return Row(children: [
+      Icon(icon, size: 18, color: AppColors.grey500),
+      const SizedBox(width: 8),
+      Text('$label: ', style: AppTextStyles.labelMedium),
+      Expanded(child: Text(value, style: AppTextStyles.bodyMedium.copyWith(color: valueColor ?? AppColors.black, fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis)),
+    ]);
   }
 }
 
@@ -1008,12 +633,7 @@ class _NavigationGuideSheet extends StatefulWidget {
   final double sellerLat;
   final double sellerLng;
 
-  const _NavigationGuideSheet({
-    required this.shopName,
-    required this.containerNumber,
-    required this.sellerLat,
-    required this.sellerLng,
-  });
+  const _NavigationGuideSheet({required this.shopName, required this.containerNumber, required this.sellerLat, required this.sellerLng});
 
   @override
   State<_NavigationGuideSheet> createState() => _NavigationGuideSheetState();
@@ -1021,18 +641,11 @@ class _NavigationGuideSheet extends StatefulWidget {
 
 class _NavigationGuideSheetState extends State<_NavigationGuideSheet> {
   Future<void> _open2GIS() async {
-    final appUri = Uri.parse(
-      'dgis://2gis.ru/routeSearch/rsType/pedestrian/to/${widget.sellerLng},${widget.sellerLat}',
-    );
-    final webUri = Uri.parse(
-      'https://2gis.kg/bishkek/geo/${widget.sellerLng},${widget.sellerLat}',
-    );
-    final playStoreUri = Uri.parse(
-      'https://play.google.com/store/apps/details?id=ru.dublgis.dgismobile',
-    );
-    final appStoreUri = Uri.parse(
-      'https://apps.apple.com/app/id481627348',
-    );
+    final loc = AppLocalizations.of(context);
+    final appUri = Uri.parse('dgis://2gis.ru/routeSearch/rsType/pedestrian/to/${widget.sellerLng},${widget.sellerLat}');
+    final webUri = Uri.parse('https://2gis.kg/bishkek/geo/${widget.sellerLng},${widget.sellerLat}');
+    final playStoreUri = Uri.parse('https://play.google.com/store/apps/details?id=ru.dublgis.dgismobile');
+    final appStoreUri = Uri.parse('https://apps.apple.com/app/id481627348');
 
     if (await canLaunchUrl(appUri)) {
       await launchUrl(appUri);
@@ -1043,37 +656,20 @@ class _NavigationGuideSheetState extends State<_NavigationGuideSheet> {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Text('2ГИС орнотулган жок'),
-          content: const Text(
-            'Маршрут үчүн 2ГИС тиркемесин жүктөп алыңыз.',
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(loc.get('2gis_not_installed')),
+          content: Text(loc.get('2gis_download_hint')),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Жок'),
-            ),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(loc.get('no'))),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
-                elevation: 0,
-              ),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), elevation: 0),
               onPressed: () async {
                 Navigator.pop(ctx);
                 final isIOS = Theme.of(context).platform == TargetPlatform.iOS;
                 final storeUri = isIOS ? appStoreUri : playStoreUri;
-                if (await canLaunchUrl(storeUri)) {
-                  await launchUrl(storeUri,
-                      mode: LaunchMode.externalApplication);
-                }
+                if (await canLaunchUrl(storeUri)) await launchUrl(storeUri, mode: LaunchMode.externalApplication);
               },
-              child: const Text(
-                'Жүктөп алуу',
-                style: TextStyle(color: Colors.white),
-              ),
+              child: Text(loc.get('download'), style: const TextStyle(color: Colors.white)),
             ),
           ],
         ),
@@ -1083,79 +679,45 @@ class _NavigationGuideSheetState extends State<_NavigationGuideSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
+          Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
           const SizedBox(height: 20),
           Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.navigation_rounded,
-                color: AppColors.primary, size: 32),
+            width: 64, height: 64,
+            decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), shape: BoxShape.circle),
+            child: const Icon(Icons.navigation_rounded, color: AppColors.primary, size: 32),
           ),
           const SizedBox(height: 16),
-          Text(
-            widget.shopName.isNotEmpty ? widget.shopName : 'Дүкөн',
-            style: AppTextStyles.headingSmall,
-            textAlign: TextAlign.center,
-          ),
+          Text(widget.shopName.isNotEmpty ? widget.shopName : loc.get('shop'), style: AppTextStyles.headingSmall, textAlign: TextAlign.center),
           if (widget.containerNumber.isNotEmpty) ...[
             const SizedBox(height: 4),
-            Text(
-              '📍 ${widget.containerNumber}',
-              style:
-                  AppTextStyles.labelSmall.copyWith(color: AppColors.primary),
-            ),
+            Text('📍 ${widget.containerNumber}', style: AppTextStyles.labelSmall.copyWith(color: AppColors.primary)),
           ],
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.grey[50],
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey[200]!),
-            ),
-            child: Column(
-              children: [
-                _step('1', 'Төмөндөгү баскычты басыңыз'),
-                const SizedBox(height: 10),
-                _step('2', '2ГИС тиркемеси ачылат'),
-                const SizedBox(height: 10),
-                _step('3', '"Маршрут түзүү" баскычын басып жолго чыгыңыз'),
-              ],
-            ),
+            decoration: BoxDecoration(color: Colors.grey[50], borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.grey[200]!)),
+            child: Column(children: [
+              _step('1', loc.get('nav_step1')),
+              const SizedBox(height: 10),
+              _step('2', loc.get('nav_step2')),
+              const SizedBox(height: 10),
+              _step('3', loc.get('nav_step3')),
+            ]),
           ),
           const SizedBox(height: 20),
           SizedBox(
-            width: double.infinity,
-            height: 52,
+            width: double.infinity, height: 52,
             child: ElevatedButton.icon(
               onPressed: _open2GIS,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
-                elevation: 0,
-              ),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)), elevation: 0),
               icon: const Icon(Icons.map_rounded, color: Colors.white),
-              label: Text(
-                '2ГИС менен маршрут түзүү',
-                style: AppTextStyles.headingSmall.copyWith(color: Colors.white),
-              ),
+              label: Text(loc.get('open_2gis'), style: AppTextStyles.headingSmall.copyWith(color: Colors.white)),
             ),
           ),
         ],
@@ -1164,103 +726,57 @@ class _NavigationGuideSheetState extends State<_NavigationGuideSheet> {
   }
 
   Widget _step(String num, String text) {
-    return Row(
-      children: [
-        Container(
-          width: 24,
-          height: 24,
-          decoration: const BoxDecoration(
-            color: AppColors.primary,
-            shape: BoxShape.circle,
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            num,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(text, style: AppTextStyles.bodyMedium),
-        ),
-      ],
-    );
+    return Row(children: [
+      Container(width: 24, height: 24, decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle), alignment: Alignment.center,
+        child: Text(num, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold))),
+      const SizedBox(width: 12),
+      Expanded(child: Text(text, style: AppTextStyles.bodyMedium)),
+    ]);
   }
 }
 
 // ══════════════════════════════════════════════════════
-// ══════════════════════════════════════════════════════
-// СҮРӨТТҮ ТОЛУК ЭКРАНДА КӨРСӨТҮҮ (zoom/pan + Hero animation)
+// FULLSCREEN IMAGE
 // ══════════════════════════════════════════════════════
 class _FullscreenImageScreen extends StatelessWidget {
   final String imageUrl;
   final String heroTag;
-
-  const _FullscreenImageScreen({
-    required this.imageUrl,
-    required this.heroTag,
-  });
+  const _FullscreenImageScreen({required this.imageUrl, required this.heroTag});
 
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
-
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          // ── Сүрөт — экранды толук жабат ──
-          SizedBox(
-            width: screenSize.width,
-            height: screenSize.height,
-            child: InteractiveViewer(
-              minScale: 0.8,
-              maxScale: 5.0,
-              child: Hero(
-                tag: heroTag,
-                child: CachedNetworkImage(
-                  imageUrl: imageUrl,
-                  width: screenSize.width,
-                  height: screenSize.height,
-                  fit: BoxFit.contain,
-                  placeholder: (_, __) => const Center(
-                    child: CircularProgressIndicator(color: Colors.white),
-                  ),
-                  errorWidget: (_, __, ___) => const Center(
-                    child: Icon(
-                      Icons.image_not_supported_outlined,
-                      color: Colors.white54,
-                      size: 64,
-                    ),
-                  ),
-                ),
+      body: Stack(children: [
+        SizedBox(
+          width: screenSize.width, height: screenSize.height,
+          child: InteractiveViewer(
+            minScale: 0.8, maxScale: 5.0,
+            child: Hero(
+              tag: heroTag,
+              child: CachedNetworkImage(
+                imageUrl: imageUrl, width: screenSize.width, height: screenSize.height, fit: BoxFit.contain,
+                placeholder: (_, __) => const Center(child: CircularProgressIndicator(color: Colors.white)),
+                errorWidget: (_, __, ___) => const Center(child: Icon(Icons.image_not_supported_outlined, color: Colors.white54, size: 64)),
               ),
             ),
           ),
-
-          // ── Жабуу баскычы ──
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.black54,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Icon(Icons.close, color: Colors.white, size: 24),
-                ),
+        ),
+        SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(20)),
+                child: const Icon(Icons.close, color: Colors.white, size: 24),
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ]),
     );
   }
 }

@@ -13,9 +13,8 @@ import 'firebase_options.dart';
 import 'services/notification_service.dart';
 import 'core/active_status_tracker.dart';
 import 'package:flutter/foundation.dart';
-import 'core/locale_provider.dart';
+import 'core/locale_provider.dart';   // ← УШУЛ БОЛУШУ КЕРЕК
 import 'core/app_localizations.dart';
-
 // ══════════════════════════════════════════════════════
 // ФОНДО HANDLER
 // ══════════════════════════════════════════════════════
@@ -23,7 +22,8 @@ import 'core/app_localizations.dart';
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   if (defaultTargetPlatform == TargetPlatform.windows) return;
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  debugPrint('🔔 Фондо билдирүү: ${message.notification?.title} — ${message.notification?.body}');
+  debugPrint(
+      '🔔 Фондо билдирүү: ${message.notification?.title} — ${message.notification?.body}');
 }
 
 // ══════════════════════════════════════════════════════
@@ -101,6 +101,7 @@ class _DDOnlineAppState extends State<DDOnlineApp> {
 
   @override
   void dispose() {
+    _localeProvider.removeListener(() => setState(() {}));
     _localeProvider.dispose();
     super.dispose();
   }
@@ -109,6 +110,7 @@ class _DDOnlineAppState extends State<DDOnlineApp> {
   Widget build(BuildContext context) {
     return LocaleScope(
       provider: _localeProvider,
+      locale: _localeProvider.locale, // ← ЖАҢЫ: locale өзүнчө берилет
       child: MaterialApp(
         title: 'DD Online',
         debugShowCheckedModeBanner: false,
@@ -129,22 +131,27 @@ class _DDOnlineAppState extends State<DDOnlineApp> {
 }
 
 // ══════════════════════════════════════════════════════
-// LOCALE SCOPE — бүткүл колдонмого LocaleProvider берет
+// LOCALE SCOPE — ОҢДОЛДУ: locale өзүнчө сакталат
+// updateShouldNotify туура иштейт
 // ══════════════════════════════════════════════════════
 class LocaleScope extends InheritedWidget {
   final LocaleProvider provider;
+  final Locale locale; // ← ЖАҢЫ
 
   const LocaleScope({
     super.key,
     required this.provider,
+    required this.locale, // ← ЖАҢЫ
     required super.child,
   });
 
   static LocaleProvider of(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<LocaleScope>()!.provider;
 
+  // ← ОҢДОЛДУ: мурда old.provider != provider дайым FALSE болчу
+  // (бир эле объект), эми locale салыштырылат — туура иштейт
   @override
-  bool updateShouldNotify(LocaleScope old) => old.provider != provider;
+  bool updateShouldNotify(LocaleScope old) => old.locale != locale;
 }
 
 // ══════════════════════════════════════════════════════

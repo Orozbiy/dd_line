@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
+import '../../../core/app_localizations.dart';
 import '../utils/cart_manager.dart';
 
 class CartScreen extends StatefulWidget {
@@ -15,6 +16,7 @@ class _CartScreenState extends State<CartScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final items = _cart.items;
 
     return Scaffold(
@@ -27,7 +29,7 @@ class _CartScreenState extends State<CartScreen> {
           onTap: () => Navigator.pop(context),
           child: const Icon(Icons.arrow_back, color: AppColors.black),
         ),
-        title: const Text('Себет', style: AppTextStyles.headingMedium),
+        title: Text(loc.get('cart'), style: AppTextStyles.headingMedium),
         actions: [
           if (items.isNotEmpty)
             TextButton(
@@ -36,23 +38,26 @@ class _CartScreenState extends State<CartScreen> {
                   context: context,
                   builder: (_) => AlertDialog(
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    title: const Text('Себетти тазалоо', style: AppTextStyles.headingSmall),
-                    content: const Text('Бардык товарларды өчүрөсүзбү?', style: AppTextStyles.bodyMedium),
+                    title: Text(loc.get('cart_clear_title'), style: AppTextStyles.headingSmall),
+                    content: Text(loc.get('cart_clear_confirm'), style: AppTextStyles.bodyMedium),
                     actions: [
-                      TextButton(onPressed: () => Navigator.pop(context), child: const Text('Жок', style: TextStyle(color: AppColors.grey500))),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(loc.get('no'), style: const TextStyle(color: AppColors.grey500)),
+                      ),
                       TextButton(
                         onPressed: () {
                           _cart.clear();
                           setState(() {});
                           Navigator.pop(context);
                         },
-                        child: const Text('Ооба', style: TextStyle(color: AppColors.error)),
+                        child: Text(loc.get('yes'), style: const TextStyle(color: AppColors.error)),
                       ),
                     ],
                   ),
                 );
               },
-              child: Text('Тазалоо', style: AppTextStyles.labelMedium.copyWith(color: AppColors.error)),
+              child: Text(loc.get('filter_reset'), style: AppTextStyles.labelMedium.copyWith(color: AppColors.error)),
             ),
         ],
       ),
@@ -63,9 +68,9 @@ class _CartScreenState extends State<CartScreen> {
                 children: [
                   const Icon(Icons.shopping_cart_outlined, size: 80, color: AppColors.grey300),
                   const SizedBox(height: 16),
-                  Text('Себет бош', style: AppTextStyles.headingSmall.copyWith(color: AppColors.grey400)),
+                  Text(loc.get('cart_empty'), style: AppTextStyles.headingSmall.copyWith(color: AppColors.grey400)),
                   const SizedBox(height: 8),
-                  const Text('Товарларды кошуңуз!', style: AppTextStyles.bodyMedium),
+                  Text(loc.get('cart_empty_desc'), style: AppTextStyles.bodyMedium),
                   const SizedBox(height: 24),
                   ElevatedButton(
                     onPressed: () => Navigator.pop(context),
@@ -75,14 +80,13 @@ class _CartScreenState extends State<CartScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    child: Text('Товарларга кайт', style: AppTextStyles.labelLarge.copyWith(color: Colors.white)),
+                    child: Text(loc.get('back_to_products'), style: AppTextStyles.labelLarge.copyWith(color: Colors.white)),
                   ),
                 ],
               ),
             )
           : Column(
               children: [
-                // Товарлар тизмеси
                 Expanded(
                   child: ListView.builder(
                     padding: const EdgeInsets.all(12),
@@ -99,7 +103,6 @@ class _CartScreenState extends State<CartScreen> {
                         ),
                         child: Row(
                           children: [
-                            // Сүрөт
                             ClipRRect(
                               borderRadius: BorderRadius.circular(10),
                               child: Image.network(
@@ -113,8 +116,6 @@ class _CartScreenState extends State<CartScreen> {
                               ),
                             ),
                             const SizedBox(width: 12),
-
-                            // Маалымат
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -122,18 +123,14 @@ class _CartScreenState extends State<CartScreen> {
                                   Text(item.product.name, style: AppTextStyles.labelLarge, maxLines: 2, overflow: TextOverflow.ellipsis),
                                   const SizedBox(height: 4),
                                   if (item.selectedSize != null)
-                                    Text('Размер: ${item.selectedSize}', style: AppTextStyles.bodySmall),
+                                    Text('${loc.get('size_label')}: ${item.selectedSize}', style: AppTextStyles.bodySmall),
                                   const SizedBox(height: 8),
                                   Row(
                                     children: [
                                       Text(item.product.priceFormatted, style: AppTextStyles.headingSmall.copyWith(color: AppColors.primary)),
                                       const Spacer(),
-                                      // Саны өзгөртүү
                                       Container(
-                                        decoration: BoxDecoration(
-                                          color: AppColors.grey100,
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
+                                        decoration: BoxDecoration(color: AppColors.grey100, borderRadius: BorderRadius.circular(8)),
                                         child: Row(
                                           children: [
                                             GestureDetector(
@@ -172,8 +169,6 @@ class _CartScreenState extends State<CartScreen> {
                     },
                   ),
                 ),
-
-                // Жалпы баасы + Буйрутма
                 Container(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                   decoration: BoxDecoration(
@@ -185,15 +180,15 @@ class _CartScreenState extends State<CartScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Товарлар саны:', style: AppTextStyles.bodyMedium),
-                          Text('${_cart.totalCount} даана', style: AppTextStyles.labelLarge),
+                          Text(loc.get('items_count'), style: AppTextStyles.bodyMedium),
+                          Text('${_cart.totalCount} ${loc.get('pcs')}', style: AppTextStyles.labelLarge),
                         ],
                       ),
                       const SizedBox(height: 8),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Жалпы баасы:', style: AppTextStyles.headingSmall),
+                          Text(loc.get('total_price'), style: AppTextStyles.headingSmall),
                           Text(
                             '${_cart.totalPrice.toStringAsFixed(0)} с',
                             style: AppTextStyles.headingMedium.copyWith(color: AppColors.primary),
@@ -207,14 +202,11 @@ class _CartScreenState extends State<CartScreen> {
                             context: context,
                             builder: (_) => AlertDialog(
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                              title: const Row(children: [
-                                Text('🎉 ', style: TextStyle(fontSize: 24)),
-                                Text('Буйрутма берилди!', style: AppTextStyles.headingSmall),
+                              title: Row(children: [
+                                const Text('🎉 ', style: TextStyle(fontSize: 24)),
+                                Text(loc.get('order_placed'), style: AppTextStyles.headingSmall),
                               ]),
-                              content: const Text(
-                                'Сиздин буйрутмаңыз кабыл алынды!\nСатуучу менен чат аркылуу байланышыңыз.',
-                                style: AppTextStyles.bodyMedium,
-                              ),
+                              content: Text(loc.get('order_placed_desc'), style: AppTextStyles.bodyMedium),
                               actions: [
                                 ElevatedButton(
                                   onPressed: () {
@@ -224,7 +216,7 @@ class _CartScreenState extends State<CartScreen> {
                                     Navigator.pop(context);
                                   },
                                   style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-                                  child: const Text('Жакшы!', style: TextStyle(color: Colors.white)),
+                                  child: Text(loc.get('great'), style: const TextStyle(color: Colors.white)),
                                 ),
                               ],
                             ),
@@ -237,7 +229,7 @@ class _CartScreenState extends State<CartScreen> {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                           elevation: 0,
                         ),
-                        child: Text('Буйрутма берүү', style: AppTextStyles.headingSmall.copyWith(color: Colors.white)),
+                        child: Text(loc.get('checkout'), style: AppTextStyles.headingSmall.copyWith(color: Colors.white)),
                       ),
                     ],
                   ),
