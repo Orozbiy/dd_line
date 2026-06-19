@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
+import '../../../main.dart';
+import '../../../core/locale_provider.dart';
 
-/// Тил тандоо бөлүмү — Кыргызча / Орусча.
 class LanguageSection extends StatefulWidget {
   const LanguageSection({super.key});
 
@@ -11,24 +12,11 @@ class LanguageSection extends StatefulWidget {
 }
 
 class _LanguageSectionState extends State<LanguageSection> {
-  String _selectedLanguage = 'ky'; // 'ky' = Кыргызча, 'ru' = Орусча
-
-  void _selectLanguage(String code) {
-    setState(() => _selectedLanguage = code);
-    // TODO: тил которуу логикасы (мис. LocaleProvider)
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Жакында кошулат'),
-        backgroundColor: AppColors.primary,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(12))),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
+    final provider = LocaleScope.of(context);
+    final selected = provider.locale.languageCode;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -51,27 +39,32 @@ class _LanguageSectionState extends State<LanguageSection> {
               children: [
                 Icon(Icons.language, color: AppColors.primary, size: 20),
                 SizedBox(width: 8),
-                Text('Тил', style: AppTextStyles.headingSmall),
+                Text('Тил / Язык', style: AppTextStyles.headingSmall),
               ],
             ),
           ),
-          _languageOption(code: 'ky', title: 'Кыргызча', flag: '🇰🇬'),
+          _option(provider, selected, 'ky', 'Кыргызча', '🇰🇬'),
           const Divider(height: 1, color: Color(0xFFEEEEEE)),
-          _languageOption(code: 'ru', title: 'Орусча', flag: '🇷🇺'),
+          _option(provider, selected, 'ru', 'Орусча', '🇷🇺'),
           const SizedBox(height: 8),
         ],
       ),
     );
   }
 
-  Widget _languageOption({
-    required String code,
-    required String title,
-    required String flag,
-  }) {
-    final isSelected = _selectedLanguage == code;
+  Widget _option(
+    LocaleProvider provider,
+    String selected,
+    String code,
+    String title,
+    String flag,
+  ) {
+    final isSelected = selected == code;
     return InkWell(
-      onTap: () => _selectLanguage(code),
+      onTap: () async {
+        await provider.setLocale(code);
+        if (mounted) setState(() {});
+      },
       borderRadius: BorderRadius.circular(12),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
@@ -79,13 +72,9 @@ class _LanguageSectionState extends State<LanguageSection> {
           children: [
             Text(flag, style: const TextStyle(fontSize: 22)),
             const SizedBox(width: 12),
-            Expanded(
-              child: Text(title, style: AppTextStyles.bodyMedium),
-            ),
+            Expanded(child: Text(title, style: AppTextStyles.bodyMedium)),
             Icon(
-              isSelected
-                  ? Icons.radio_button_checked
-                  : Icons.radio_button_off,
+              isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
               color: isSelected ? AppColors.primary : AppColors.grey300,
             ),
           ],

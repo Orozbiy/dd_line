@@ -2,6 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'config/theme/app_theme.dart';
 import 'core/supabase_client.dart';
 import 'core/utils/favorites_manager.dart';
@@ -11,14 +12,16 @@ import 'features/home/screens/home_screen.dart';
 import 'firebase_options.dart';
 import 'services/notification_service.dart';
 import 'core/active_status_tracker.dart';
-import 'package:flutter/foundation.dart'; // defaultTargetPlatform үчүн
+import 'package:flutter/foundation.dart';
+import 'core/locale_provider.dart';
+import 'core/app_localizations.dart';
 
 // ══════════════════════════════════════════════════════
-// ФОНДО HANDLER — @pragma милдеттүү, эң жогорку деңгээлде
+// ФОНДО HANDLER
 // ══════════════════════════════════════════════════════
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  if (defaultTargetPlatform == TargetPlatform.windows) return; // Windows'то өткөрүп жиберебиз
+  if (defaultTargetPlatform == TargetPlatform.windows) return;
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   debugPrint('🔔 Фондо билдирүү: ${message.notification?.title} — ${message.notification?.body}');
 }
@@ -38,10 +41,10 @@ Future<void> main() async {
 
   debugPrint('🚀 Supabase init...');
   await SupabaseInit.init();
-  
+
   debugPrint('🚀 Firebase init...');
   await _initFirebase();
-  
+
   debugPrint('🚀 Cart & Favorites...');
   await CartManager.instance.loadFromPrefs();
   await FavoritesManager().loadFromPrefs();
@@ -53,50 +56,95 @@ Future<void> main() async {
   runApp(const ActiveStatusTracker(child: DDOnlineApp()));
 }
 
-
 Future<void> _initFirebase() async {
   try {
     debugPrint('🚀 _initFirebase башталды');
-    
     try {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
     } catch (e) {
-      // duplicate-app катасын өткөрүп жиберебиз
       debugPrint('🔥 Firebase мурда init болгон, улантабыз');
     }
-    
     debugPrint('🚀 Firebase init болду');
     await NotificationService().init();
     debugPrint('🚀 NotificationService init болду');
-
     unawaited(NotificationService().handleInitialMessage());
   } catch (e) {
     debugPrint('⚠️ Firebase init ката: $e');
   }
 }
+
 void unawaited(Future<void> future) {
   future.catchError((e) => debugPrint('⚠️ Untracked error: $e'));
 }
 
 // ══════════════════════════════════════════════════════
-// APP — navigatorKey кошулду
+// APP — LocaleProvider кошулду
 // ══════════════════════════════════════════════════════
-class DDOnlineApp extends StatelessWidget {
+class DDOnlineApp extends StatefulWidget {
   const DDOnlineApp({super.key});
 
   @override
+  State<DDOnlineApp> createState() => _DDOnlineAppState();
+}
+
+class _DDOnlineAppState extends State<DDOnlineApp> {
+  final _localeProvider = LocaleProvider();
+
+  @override
+  void initState() {
+    super.initState();
+    _localeProvider.loadSavedLocale();
+    _localeProvider.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _localeProvider.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'DD Online',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      // ✅ navigatorKey — notification'дон ChatScreen'ге navigate үчүн
-      navigatorKey: navigatorKey,
-      home: const SplashRouter(),
+    return LocaleScope(
+      provider: _localeProvider,
+      child: MaterialApp(
+        title: 'DD Online',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme,
+        navigatorKey: navigatorKey,
+        locale: _localeProvider.locale,
+        supportedLocales: const [Locale('ky'), Locale('ru')],
+        localizationsDelegates: const [
+          AppLocalizationsDelegate(),
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: const SplashRouter(),
+      ),
     );
   }
+}
+
+// ══════════════════════════════════════════════════════
+// LOCALE SCOPE — бүткүл колдонмого LocaleProvider берет
+// ══════════════════════════════════════════════════════
+class LocaleScope extends InheritedWidget {
+  final LocaleProvider provider;
+
+  const LocaleScope({
+    super.key,
+    required this.provider,
+    required super.child,
+  });
+
+  static LocaleProvider of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<LocaleScope>()!.provider;
+
+  @override
+  bool updateShouldNotify(LocaleScope old) => old.provider != provider;
 }
 
 // ══════════════════════════════════════════════════════
@@ -121,9 +169,7 @@ class _SplashRouterState extends State<SplashRouter> {
 
   Future<void> _determineScreen() async {
     _targetScreen = await _getTargetScreen();
-    if (mounted) {
-      setState(() => _checking = false);
-    }
+    if (mounted) setState(() => _checking = false);
   }
 
   Future<Widget> _getTargetScreen() async {
@@ -135,21 +181,18 @@ class _SplashRouterState extends State<SplashRouter> {
   @override
   Widget build(BuildContext context) {
     if (_checking) return const _SplashScreen();
-
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 300),
       switchInCurve: Curves.easeOut,
-      transitionBuilder: (child, animation) => FadeTransition(
-        opacity: animation,
-        child: child,
-      ),
+      transitionBuilder: (child, animation) =>
+          FadeTransition(opacity: animation, child: child),
       child: _targetScreen!,
     );
   }
 }
 
 // ══════════════════════════════════════════════════════
-// SPLASH SCREEN (өзгөргөн жок — толук сакталды)
+// SPLASH SCREEN (өзгөргөн жок)
 // ══════════════════════════════════════════════════════
 class _SplashScreen extends StatefulWidget {
   const _SplashScreen();
