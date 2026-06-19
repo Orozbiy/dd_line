@@ -62,7 +62,8 @@ class _CategoryListState extends State<CategoryList> {
         widget.onCategorySelected(_selectedCategoryId ?? '');
       } else {
         _selectedSubId = sub.id;
-        if (sub.name == 'Баары') {
+        // id '..._1' — "Баары" кичи категориясы (тилден көз карандысыз id боюнча текшерилет)
+        if (sub.id.endsWith('_1')) {
           widget.onCategorySelected(_selectedCategoryId ?? '');
         } else {
           widget.onCategorySelected(sub.id);
@@ -149,7 +150,7 @@ class _CategoryListState extends State<CategoryList> {
                         const SizedBox(width: 6),
                         Text(
                           _selectedCategoryId != null
-                              ? (cat?.name ?? loc.get('cat_label'))
+                              ? (cat?.localizedName(loc.locale.languageCode) ?? loc.get('cat_label'))
                               : loc.get('cat_label'),
                           style: AppTextStyles.labelLarge.copyWith(
                             color: _selectedCategoryId != null
@@ -313,7 +314,7 @@ class _SubCategoryBar extends StatelessWidget {
         itemBuilder: (context, i) {
           final sub = category.subcategories[i];
           final isSelected = selectedSubId == sub.id ||
-              (selectedSubId == null && sub.name == 'Баары');
+              (selectedSubId == null && sub.id.endsWith('_1'));
 
           return GestureDetector(
             onTap: () => onSubTap(sub),
@@ -333,20 +334,25 @@ class _SubCategoryBar extends StatelessWidget {
                     ? [BoxShadow(color: color.withValues(alpha: 0.3), blurRadius: 6, offset: const Offset(0, 2))]
                     : [],
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(sub.icon, style: const TextStyle(fontSize: 14)),
-                  const SizedBox(width: 5),
-                  Text(
-                    sub.name,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                      color: isSelected ? Colors.white : color.withValues(alpha: 0.85),
-                    ),
-                  ),
-                ],
+              child: Builder(
+                builder: (context) {
+                  final loc = AppLocalizations.of(context);
+                  return Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(sub.icon, style: const TextStyle(fontSize: 14)),
+                      const SizedBox(width: 5),
+                      Text(
+                        sub.localizedName(loc.locale.languageCode),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                          color: isSelected ? Colors.white : color.withValues(alpha: 0.85),
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           );
@@ -453,7 +459,7 @@ class _CategoryBottomSheet extends StatelessWidget {
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 4),
                             child: Text(
-                              cat.name,
+                              cat.localizedName(loc.locale.languageCode),
                               textAlign: TextAlign.center,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,

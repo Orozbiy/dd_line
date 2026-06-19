@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
+import '../../../core/app_localizations.dart';
 import '../services/seller_service.dart';
 import '../../../core/supabase_client.dart';
+
 class LocationPickerScreen extends StatefulWidget {
   final String shopName;
   final String sellerUid;
@@ -25,7 +27,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
   final _service = SellerService();
   late TextEditingController _latCtrl;
   late TextEditingController _lngCtrl;
-  bool _saving = false;
+  bool _saving   = false;
   bool _editMode = false;
 
   double? _savedLat;
@@ -36,11 +38,11 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
   @override
   void initState() {
     super.initState();
-    _savedLat = widget.initialLat;
-    _savedLng = widget.initialLng;
-    _latCtrl = TextEditingController(text: widget.initialLat?.toString() ?? '');
-    _lngCtrl = TextEditingController(text: widget.initialLng?.toString() ?? '');
-    _editMode = !_hasSaved;
+    _savedLat  = widget.initialLat;
+    _savedLng  = widget.initialLng;
+    _latCtrl   = TextEditingController(text: widget.initialLat?.toString() ?? '');
+    _lngCtrl   = TextEditingController(text: widget.initialLng?.toString() ?? '');
+    _editMode  = !_hasSaved;
   }
 
   @override
@@ -59,6 +61,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
   }
 
   Future<void> _saveLocation() async {
+    final loc = AppLocalizations.of(context);
     if (!_isValid) return;
     setState(() => _saving = true);
     try {
@@ -69,23 +72,26 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       await _service.updateLocation(uid, lat, lng);
 
       setState(() {
-        _savedLat = lat;
-        _savedLng = lng;
-        _editMode = false;
+        _savedLat  = lat;
+        _savedLng  = lng;
+        _editMode  = false;
       });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Локация сакталды!'),
-            backgroundColor: Color(0xFF16A34A),
+          SnackBar(
+            content: Text(loc.get('loc_saved')),
+            backgroundColor: const Color(0xFF16A34A),
           ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ката: $e'), backgroundColor: AppColors.error),
+          SnackBar(
+            content: Text('${AppLocalizations.of(context).get('error')}: $e'),
+            backgroundColor: AppColors.error,
+          ),
         );
       }
     } finally {
@@ -95,6 +101,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc       = AppLocalizations.of(context);
     final bottomPad = MediaQuery.of(context).padding.bottom;
 
     return Scaffold(
@@ -109,8 +116,10 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
         title: Column(
           children: [
             Text(widget.shopName, style: AppTextStyles.headingSmall),
-            Text('Дүкөндүн жайгашкан жери',
-                style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey400)),
+            Text(
+              loc.get('dash_location'),
+              style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey400),
+            ),
           ],
         ),
         centerTitle: true,
@@ -121,7 +130,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
 
-            // ── САКТАЛГАН ЛОКАЦИЯ КАРТОЧКАСЫ ──
+            // ── САКТАЛГАН ЛОКАЦИЯ ──
             if (_hasSaved) ...[
               Container(
                 padding: const EdgeInsets.all(16),
@@ -138,14 +147,14 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Локация сакталган',
-                              style: AppTextStyles.labelLarge
-                                  .copyWith(color: const Color(0xFF16A34A))),
+                          Text(
+                            loc.get('loc_saved_label'),
+                            style: AppTextStyles.labelLarge.copyWith(color: const Color(0xFF16A34A)),
+                          ),
                           const SizedBox(height: 4),
                           Text(
                             'Lat: ${_savedLat!.toStringAsFixed(6)}\nLng: ${_savedLng!.toStringAsFixed(6)}',
-                            style: AppTextStyles.bodySmall
-                                .copyWith(color: AppColors.grey500),
+                            style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey500),
                           ),
                         ],
                       ),
@@ -166,12 +175,8 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                   border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
                 ),
                 child: Text(
-                  '1. Google Maps же Yandex Maps ач\n'
-                  '2. Дүкөнүңдүн жерин тап\n'
-                  '3. Картага узак бас → координаттар чыгат\n'
-                  '4. Ошол сандарды бул жерге жаз',
-                  style: AppTextStyles.bodySmall
-                      .copyWith(color: AppColors.grey600, height: 1.6),
+                  loc.get('loc_instructions'),
+                  style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey600, height: 1.6),
                 ),
               ),
               const SizedBox(height: 20),
@@ -215,8 +220,10 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
               if (_hasSaved)
                 TextButton(
                   onPressed: () => setState(() => _editMode = false),
-                  child: Text('Жокко чыгаруу',
-                      style: AppTextStyles.labelMedium.copyWith(color: AppColors.grey500)),
+                  child: Text(
+                    loc.get('cancel'),
+                    style: AppTextStyles.labelMedium.copyWith(color: AppColors.grey500),
+                  ),
                 ),
 
               SizedBox(
@@ -231,18 +238,17 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                     elevation: 0,
                   ),
                   child: _saving
-                      ? const SizedBox(
-                          width: 22, height: 22,
-                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
-                        )
-                      : Text('📍  Сактоо',
-                          style: AppTextStyles.labelLarge.copyWith(color: Colors.white, fontSize: 16)),
+                      ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
+                      : Text(
+                          '📍  ${loc.get('save')}',
+                          style: AppTextStyles.labelLarge.copyWith(color: Colors.white, fontSize: 16),
+                        ),
                 ),
               ),
               SizedBox(height: bottomPad + 8),
             ],
 
-            // ── ӨЗГӨРТҮҮ БАСКЫЧЫ (форма жок болгондо) ──
+            // ── ӨЗГӨРТҮҮ БАСКЫЧЫ ──
             if (!_editMode) ...[
               const Spacer(),
               SizedBox(
@@ -251,8 +257,10 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                 child: OutlinedButton.icon(
                   onPressed: () => setState(() => _editMode = true),
                   icon: const Icon(Icons.edit_location_alt_outlined, color: AppColors.primary),
-                  label: Text('Локацияны өзгөртүү',
-                      style: AppTextStyles.labelLarge.copyWith(color: AppColors.primary)),
+                  label: Text(
+                    loc.get('loc_edit'),
+                    style: AppTextStyles.labelLarge.copyWith(color: AppColors.primary),
+                  ),
                   style: OutlinedButton.styleFrom(
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     side: const BorderSide(color: AppColors.primary, width: 1.5),

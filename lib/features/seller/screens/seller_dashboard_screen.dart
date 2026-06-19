@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
+import '../../../core/app_localizations.dart';
 import '../models/seller_model.dart';
 import '../services/seller_service.dart';
 import '../services/subscription_service.dart';
@@ -24,14 +25,15 @@ class SellerDashboardScreen extends StatefulWidget {
 }
 
 class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
-  final _service = SellerService();
+  final _service    = SellerService();
   final _subService = SubscriptionService();
   final _chatService = ChatService();
+
   SellerModel? _seller;
   bool _isLoading = true;
   String _workStart = '09:00';
-  String _workEnd = '18:00';
-  String _workDays = 'Дш-Жм';
+  String _workEnd   = '18:00';
+  String _workDays  = 'Дш-Жм';
 
   @override
   void initState() {
@@ -41,7 +43,6 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
 
   Future<void> _loadSeller() async {
     final seller = await _service.getSellerByUid(widget.uid);
-
     if (seller != null) {
       try {
         final store = await supabase
@@ -52,16 +53,15 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
         if (store != null && mounted) {
           setState(() {
             _workStart = store['work_start'] as String? ?? '09:00';
-            _workEnd = store['work_end'] as String? ?? '18:00';
-            _workDays = store['work_days'] as String? ?? 'Дш-Жм';
+            _workEnd   = store['work_end']   as String? ?? '18:00';
+            _workDays  = store['work_days']  as String? ?? 'Дш-Жм';
           });
         }
       } catch (_) {}
     }
-
     if (mounted) {
       setState(() {
-        _seller = seller;
+        _seller    = seller;
         _isLoading = false;
       });
     }
@@ -74,45 +74,37 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
   }
 
   void _logout() {
+    final loc = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Чыгуу', style: AppTextStyles.headingSmall),
-        content:
-            const Text('Дүкөндөн чыгасызбы?', style: AppTextStyles.bodyMedium),
+        title: Text(loc.get('sign_out'), style: AppTextStyles.headingSmall),
+        content: Text(loc.get('dash_logout_confirm'), style: AppTextStyles.bodyMedium),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child:
-                const Text('Жок', style: TextStyle(color: AppColors.grey500)),
+            child: Text(loc.get('no'), style: const TextStyle(color: AppColors.grey500)),
           ),
           TextButton(
             onPressed: () {
-              Navigator.pop(context); // диалог жабуу
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) =>
-                      SellerCloseAccountScreen(sellerUid: _seller!.uid),
-                ),
-              );
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(
+                builder: (_) => SellerCloseAccountScreen(sellerUid: _seller!.uid),
+              ));
             },
-            child: const Text('Дүкөндөн баш тартуу',
-                style: TextStyle(color: AppColors.error)),
+            child: Text(loc.get('dash_close_account'), style: const TextStyle(color: AppColors.error)),
           ),
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
               await supabase.auth.signOut();
               if (!mounted) return;
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (_) => const SellerLoginScreen()),
-                (route) => false,
-              );
+              Navigator.pushAndRemoveUntil(context,
+                  MaterialPageRoute(builder: (_) => const SellerLoginScreen()),
+                  (route) => false);
             },
-            child: const Text('Ооба', style: TextStyle(color: AppColors.error)),
+            child: Text(loc.get('yes'), style: const TextStyle(color: AppColors.error)),
           ),
         ],
       ),
@@ -120,17 +112,15 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
   }
 
   void _goBack() {
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => const HomeScreen()),
-      (route) => false,
-    );
+    Navigator.pushAndRemoveUntil(context,
+        MaterialPageRoute(builder: (_) => const HomeScreen()), (route) => false);
   }
 
   void _showSubscriptionSheet() {
+    final loc     = AppLocalizations.of(context);
     final cardCtrl = TextEditingController();
-    final expCtrl = TextEditingController();
-    final cvvCtrl = TextEditingController();
+    final expCtrl  = TextEditingController();
+    final cvvCtrl  = TextEditingController();
     bool agreed = false;
 
     showModalBottomSheet(
@@ -138,16 +128,12 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setS) => Padding(
           padding: EdgeInsets.only(
-            left: 20,
-            right: 20,
-            top: 24,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
-          ),
+              left: 20, right: 20, top: 24,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -160,12 +146,10 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Айлык жазылуу',
-                            style: AppTextStyles.headingSmall),
+                        Text(loc.get('sub_monthly'), style: AppTextStyles.headingSmall),
                         Text(
-                          'Ар айдын 1-күнүндө 2 000 сом алынат',
-                          style: AppTextStyles.bodySmall
-                              .copyWith(color: AppColors.grey500),
+                          loc.get('sub_charge_info'),
+                          style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey500),
                         ),
                       ],
                     ),
@@ -179,27 +163,17 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                   decoration: BoxDecoration(
                     color: const Color(0xFFEEFFF5),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                        color: AppColors.success.withValues(alpha: 0.3)),
+                    border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.credit_card,
-                          color: AppColors.success, size: 20),
+                      const Icon(Icons.credit_card, color: AppColors.success, size: 20),
                       const SizedBox(width: 8),
-                      Text(
-                        _seller!.cardMasked ?? '',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.success,
-                        ),
-                      ),
+                      Text(_seller!.cardMasked ?? '',
+                          style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.success)),
                       const SizedBox(width: 4),
-                      Text(
-                        'байланган',
-                        style: AppTextStyles.bodySmall
-                            .copyWith(color: AppColors.grey500),
-                      ),
+                      Text(loc.get('sub_card_linked'),
+                          style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey500)),
                     ],
                   ),
                 ),
@@ -211,44 +185,27 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                 maxLength: 19,
                 decoration: _inputDec(
                   _seller?.hasCard == true
-                      ? 'Жаңы карта номери (алмаштыруу)'
-                      : 'Карта номери',
+                      ? loc.get('sub_new_card')
+                      : loc.get('sub_card_number'),
                   '0000 0000 0000 0000',
                 ),
                 onChanged: (v) {
                   final digits = v.replaceAll(' ', '');
                   final formatted = digits
-                      .replaceAllMapped(
-                          RegExp(r'.{1,4}'), (m) => '${m.group(0)} ')
+                      .replaceAllMapped(RegExp(r'.{1,4}'), (m) => '${m.group(0)} ')
                       .trim();
                   cardCtrl.value = TextEditingValue(
                     text: formatted,
-                    selection:
-                        TextSelection.collapsed(offset: formatted.length),
+                    selection: TextSelection.collapsed(offset: formatted.length),
                   );
                 },
               ),
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Expanded(
-                    child: TextField(
-                      controller: expCtrl,
-                      keyboardType: TextInputType.number,
-                      maxLength: 5,
-                      decoration: _inputDec('Мөөнөтү', 'MM/YY'),
-                    ),
-                  ),
+                  Expanded(child: TextField(controller: expCtrl, keyboardType: TextInputType.number, maxLength: 5, decoration: _inputDec(loc.get('sub_expiry'), 'MM/YY'))),
                   const SizedBox(width: 12),
-                  Expanded(
-                    child: TextField(
-                      controller: cvvCtrl,
-                      keyboardType: TextInputType.number,
-                      maxLength: 3,
-                      obscureText: true,
-                      decoration: _inputDec('CVV', '•••'),
-                    ),
-                  ),
+                  Expanded(child: TextField(controller: cvvCtrl, keyboardType: TextInputType.number, maxLength: 3, obscureText: true, decoration: _inputDec('CVV', '•••'))),
                 ],
               ),
               const SizedBox(height: 12),
@@ -257,19 +214,12 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Checkbox(
-                      value: agreed,
-                      onChanged: (v) => setS(() => agreed = v ?? false),
-                      activeColor: AppColors.primary,
-                    ),
-                    const Expanded(
+                    Checkbox(value: agreed, onChanged: (v) => setS(() => agreed = v ?? false), activeColor: AppColors.primary),
+                    Expanded(
                       child: Padding(
-                        padding: EdgeInsets.only(top: 12),
-                        child: Text(
-                          'Ар айдын 1-күнүндө картамдан 2 000 сом алынышына макулмун. Каалаган убакта токтотсо болот.',
-                          style:
-                              TextStyle(fontSize: 13, color: Color(0xFF374151)),
-                        ),
+                        padding: const EdgeInsets.only(top: 12),
+                        child: Text(loc.get('sub_agree_text'),
+                            style: const TextStyle(fontSize: 13, color: Color(0xFF374151))),
                       ),
                     ),
                   ],
@@ -277,45 +227,34 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
               ),
               const SizedBox(height: 16),
               SizedBox(
-                width: double.infinity,
-                height: 50,
+                width: double.infinity, height: 50,
                 child: ElevatedButton(
-                  onPressed:
-                      agreed && cardCtrl.text.replaceAll(' ', '').length == 16
-                          ? () => _saveCard(cardCtrl.text, ctx)
-                          : null,
+                  onPressed: agreed && cardCtrl.text.replaceAll(' ', '').length == 16
+                      ? () => _saveCard(cardCtrl.text, ctx)
+                      : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     disabledBackgroundColor: AppColors.grey200,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   child: Text(
-                    _seller?.hasCard == true
-                        ? '🔄  Картаны алмаштыруу'
-                        : '✅  Картаны байлоо',
-                    style: const TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.w600),
+                    _seller?.hasCard == true ? loc.get('sub_replace_card') : loc.get('sub_link_card'),
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
               if (_seller?.autoPayEnabled == true) ...[
                 const SizedBox(height: 10),
                 SizedBox(
-                  width: double.infinity,
-                  height: 46,
+                  width: double.infinity, height: 46,
                   child: OutlinedButton(
                     onPressed: () => _cancelSub(ctx),
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: AppColors.error),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    child: const Text(
-                      '⛔  Авто төлөмдү токтотуу',
-                      style: TextStyle(
-                          color: AppColors.error, fontWeight: FontWeight.w600),
-                    ),
+                    child: Text(loc.get('sub_cancel_autopay'),
+                        style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.w600)),
                   ),
                 ),
               ],
@@ -324,10 +263,8 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                 Center(
                   child: TextButton(
                     onPressed: () => _removeCard(ctx),
-                    child: const Text(
-                      'Картаны өчүрүү',
-                      style: TextStyle(color: AppColors.grey500, fontSize: 13),
-                    ),
+                    child: Text(loc.get('sub_remove_card'),
+                        style: const TextStyle(color: AppColors.grey500, fontSize: 13)),
                   ),
                 ),
               ],
@@ -343,47 +280,44 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
         hintText: hint,
         counterText: '',
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       );
 
   Future<void> _saveCard(String cardNumber, BuildContext ctx) async {
+    final loc    = AppLocalizations.of(context);
     Navigator.pop(ctx);
     final digits = cardNumber.replaceAll(' ', '');
-    if (digits.length < 16) return; // ← КОШ
+    if (digits.length < 16) return;
     final masked = '•••• ${digits.substring(12)}';
-    await _subService.saveCard(
-      uid: _seller!.uid,
-      cardToken: 'token_${digits.substring(12)}',
-      cardMasked: masked,
-    );
+    await _subService.saveCard(uid: _seller!.uid, cardToken: 'token_${digits.substring(12)}', cardMasked: masked);
     await _loadSeller();
-    if (mounted)
-      _showSnack('✅ Карта байланды! Авто төлөм иштейт.', AppColors.success);
+    if (mounted) _showSnack(loc.get('sub_card_saved'), AppColors.success);
   }
 
   Future<void> _cancelSub(BuildContext ctx) async {
+    final loc = AppLocalizations.of(context);
     Navigator.pop(ctx);
     await _subService.cancelAutoPayment(_seller!.uid);
     await _loadSeller();
-    if (mounted) _showSnack('⛔ Авто төлөм токтотулду', AppColors.error);
+    if (mounted) _showSnack(loc.get('sub_autopay_cancelled'), AppColors.error);
   }
 
   Future<void> _removeCard(BuildContext ctx) async {
+    final loc = AppLocalizations.of(context);
     Navigator.pop(ctx);
     await _subService.removeCard(_seller!.uid);
     await _loadSeller();
-    if (mounted) _showSnack('🗑️ Карта өчүрүлдү', AppColors.grey600);
+    if (mounted) _showSnack(loc.get('sub_card_removed'), AppColors.grey600);
   }
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+
     if (_isLoading) {
       return PopScope(
         canPop: false,
-        onPopInvokedWithResult: (didPop, result) {
-          if (!didPop) _goBack();
-        },
+        onPopInvokedWithResult: (didPop, _) { if (!didPop) _goBack(); },
         child: const Scaffold(body: Center(child: CircularProgressIndicator())),
       );
     }
@@ -391,23 +325,14 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
     if (_seller == null) {
       return PopScope(
         canPop: false,
-        onPopInvokedWithResult: (didPop, result) {
-          if (!didPop) _goBack();
-        },
-        child: const Scaffold(
-          body: Center(
-            child:
-                Text('Маалымат табылган жок', style: AppTextStyles.bodyMedium),
-          ),
-        ),
+        onPopInvokedWithResult: (didPop, _) { if (!didPop) _goBack(); },
+        child: Scaffold(body: Center(child: Text(loc.get('no_info'), style: AppTextStyles.bodyMedium))),
       );
     }
 
     return PopScope(
       canPop: false,
-      onPopInvokedWithResult: (didPop, result) {
-        if (!didPop) _goBack();
-      },
+      onPopInvokedWithResult: (didPop, _) { if (!didPop) _goBack(); },
       child: Scaffold(
         backgroundColor: const Color(0xFFF4F5F7),
         appBar: AppBar(
@@ -417,11 +342,11 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
             onTap: _goBack,
             child: const Icon(Icons.arrow_back, color: AppColors.black),
           ),
-          title: const Row(
+          title: Row(
             children: [
-              Text('🏪', style: TextStyle(fontSize: 22)),
-              SizedBox(width: 8),
-              Text('Дүкөнүм', style: AppTextStyles.headingMedium),
+              const Text('🏪', style: TextStyle(fontSize: 22)),
+              const SizedBox(width: 8),
+              Text(loc.get('dash_title'), style: AppTextStyles.headingMedium),
             ],
           ),
         ),
@@ -430,6 +355,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // ── Сатуучу карточкасы ──
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
@@ -440,13 +366,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(18),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFD97706).withValues(alpha: 0.3),
-                      blurRadius: 16,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
+                  boxShadow: [BoxShadow(color: const Color(0xFFD97706).withValues(alpha: 0.3), blurRadius: 16, offset: const Offset(0, 6))],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -454,22 +374,12 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                     Row(
                       children: [
                         Container(
-                          width: 52,
-                          height: 52,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(14),
-                          ),
+                          width: 52, height: 52,
+                          decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(14)),
                           child: Center(
                             child: Text(
-                              _seller!.shopName.isNotEmpty
-                                  ? _seller!.shopName[0].toUpperCase()
-                                  : '🏪',
-                              style: const TextStyle(
-                                fontSize: 26,
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
+                              _seller!.shopName.isNotEmpty ? _seller!.shopName[0].toUpperCase() : '🏪',
+                              style: const TextStyle(fontSize: 26, color: Colors.white, fontWeight: FontWeight.bold),
                             ),
                           ),
                         ),
@@ -478,17 +388,9 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                _seller!.shopName,
-                                style: AppTextStyles.headingSmall
-                                    .copyWith(color: Colors.white),
-                              ),
+                              Text(_seller!.shopName, style: AppTextStyles.headingSmall.copyWith(color: Colors.white)),
                               const SizedBox(height: 4),
-                              Text(
-                                _seller!.name,
-                                style: AppTextStyles.labelMedium
-                                    .copyWith(color: Colors.white70),
-                              ),
+                              Text(_seller!.name, style: AppTextStyles.labelMedium.copyWith(color: Colors.white70)),
                             ],
                           ),
                         ),
@@ -499,157 +401,98 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                     const SizedBox(height: 12),
                     Row(
                       children: [
-                        const Icon(Icons.phone,
-                            color: Colors.white70, size: 16),
+                        const Icon(Icons.phone, color: Colors.white70, size: 16),
                         const SizedBox(width: 6),
-                        Text(
-                          _seller!.phone,
-                          style: AppTextStyles.labelMedium
-                              .copyWith(color: Colors.white),
-                        ),
+                        Text(_seller!.phone, style: AppTextStyles.labelMedium.copyWith(color: Colors.white)),
                       ],
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 24),
-              const Text('Башкаруу', style: AppTextStyles.headingSmall),
+              Text(loc.get('dash_manage'), style: AppTextStyles.headingSmall),
               const SizedBox(height: 12),
-              _buildMenuItem(
-                icon: '📦',
-                title: 'Менин товарларым',
-                subtitle: 'Товарларды кошуу, өзгөртүү',
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => SellerProductScreen(
-                      sellerUid: _seller!.uid,
-                      shopName: _seller!.shopName,
-                    ),
-                  ),
-                ),
-              ),
+
+              _buildMenuItem(icon: '📦', title: loc.get('my_products'), subtitle: loc.get('dash_products_sub'),
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => SellerProductScreen(sellerUid: _seller!.uid, shopName: _seller!.shopName)))),
               const SizedBox(height: 10),
-              _buildMenuItem(
-                icon: '📊',
-                title: 'Статистика',
-                subtitle: 'Сатуу маалыматтары',
-                onTap: () => _showSnack('Жакында кошулат!'),
-              ),
+
+              _buildMenuItem(icon: '📊', title: loc.get('dash_stats'), subtitle: loc.get('dash_stats_sub'),
+                onTap: () => _showSnack(loc.get('coming_soon'))),
               const SizedBox(height: 10),
-              _buildMenuItem(
-                icon: '📍',
-                title: 'Дүкөндүн жайгашкан жери',
-                subtitle: 'Картада жериңизди белгилеңиз',
+
+              _buildMenuItem(icon: '📍', title: loc.get('dash_location'), subtitle: loc.get('dash_location_sub'),
                 onTap: () async {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => LocationPickerScreen(
-                        shopName: _seller!.shopName,
-                        sellerUid: _seller!.uid,
-                        initialLat: _seller!.latitude,
-                        initialLng: _seller!.longitude,
-                      ),
-                    ),
-                  );
+                  await Navigator.push(context, MaterialPageRoute(builder: (_) => LocationPickerScreen(shopName: _seller!.shopName, sellerUid: _seller!.uid, initialLat: _seller!.latitude, initialLng: _seller!.longitude)));
                   _loadSeller();
-                },
-              ),
+                }),
               const SizedBox(height: 10),
-              _buildMenuItem(
-                icon: '🕐',
-                title: 'Иштөө убактысы',
-                subtitle: '$_workDays  $_workStart — $_workEnd',
+
+              _buildMenuItem(icon: '🕐', title: loc.get('dash_hours'), subtitle: '$_workDays  $_workStart — $_workEnd',
                 onTap: () async {
                   final saved = await showModalBottomSheet<bool>(
                     context: context,
                     isScrollControlled: true,
                     backgroundColor: Colors.transparent,
-                    builder: (_) => WorkingHoursSheet(
-                      sellerUid: widget.uid,
-                      initialStart: _workStart,
-                      initialEnd: _workEnd,
-                      initialDays: _workDays,
-                    ),
+                    builder: (_) => WorkingHoursSheet(sellerUid: widget.uid, initialStart: _workStart, initialEnd: _workEnd, initialDays: _workDays),
                   );
                   if (saved == true) _loadSeller();
-                },
-              ),
+                }),
               const SizedBox(height: 10),
-              _buildChatMenuItem(),
+
+              _buildChatMenuItem(loc),
               const SizedBox(height: 10),
-              _buildMenuItem(
-                icon: '📞',
-                title: 'Номер өзгөртүү',
-                subtitle: 'Admin га өтүнүч жиберүү',
-                onTap: () => _showSnack('Жакында кошулат!'),
-              ),
+
+              _buildMenuItem(icon: '📞', title: loc.get('dash_change_phone'), subtitle: loc.get('dash_change_phone_sub'),
+                onTap: () => _showSnack(loc.get('coming_soon'))),
               const SizedBox(height: 10),
-              _buildSubscriptionButton(),
+
+              _buildSubscriptionButton(loc),
               const SizedBox(height: 24),
+
+              // ── Байланыш блогу ──
               Container(
                 margin: const EdgeInsets.only(bottom: 16),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF0FFF4),
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                      color: const Color(0xFF22C55E).withValues(alpha: 0.3)),
+                  border: Border.all(color: const Color(0xFF22C55E).withValues(alpha: 0.3)),
                 ),
-                child: const Row(
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('💬', style: TextStyle(fontSize: 22)),
-                    SizedBox(width: 12),
+                    const Text('💬', style: TextStyle(fontSize: 22)),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Кайрылуу үчүн',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF16A34A),
-                            ),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            'Активдүү сатуучулар проблемаларын WhatsApp аркылуу жиберсин:',
-                            style: TextStyle(
-                                fontSize: 13, color: Color(0xFF374151)),
-                          ),
-                          SizedBox(height: 6),
-                          Text(
-                            '+996221000330',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF16A34A),
-                            ),
-                          ),
+                          Text(loc.get('dash_contact_title'),
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF16A34A))),
+                          const SizedBox(height: 4),
+                          Text(loc.get('dash_contact_desc'),
+                              style: const TextStyle(fontSize: 13, color: Color(0xFF374151))),
+                          const SizedBox(height: 6),
+                          const Text('+996221000330',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF16A34A))),
                         ],
                       ),
                     ),
                   ],
                 ),
               ),
+
               SizedBox(
-                width: double.infinity,
-                height: 50,
+                width: double.infinity, height: 50,
                 child: OutlinedButton(
                   onPressed: _logout,
                   style: OutlinedButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     side: const BorderSide(color: AppColors.error, width: 1.5),
                   ),
-                  child: Text(
-                    '🚪  Чыгуу',
-                    style: AppTextStyles.labelLarge
-                        .copyWith(color: AppColors.error),
-                  ),
+                  child: Text('🚪  ${loc.get('sign_out')}',
+                      style: AppTextStyles.labelLarge.copyWith(color: AppColors.error)),
                 ),
               ),
               const SizedBox(height: 16),
@@ -660,10 +503,10 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
     );
   }
 
-  Widget _buildSubscriptionButton() {
+  Widget _buildSubscriptionButton(AppLocalizations loc) {
     final hasCard = _seller?.hasCard ?? false;
-    final autoOn = _seller?.autoPayEnabled ?? false;
-    final paid = _seller?.currentMonthPaid ?? false;
+    final autoOn  = _seller?.autoPayEnabled ?? false;
+    final paid    = _seller?.currentMonthPaid ?? false;
 
     Color borderColor;
     Color bgColor;
@@ -671,25 +514,25 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
     String subtitleText;
 
     if (autoOn && paid) {
-      borderColor = AppColors.success;
-      bgColor = const Color(0xFFEEFFF5);
-      statusText = '✅ Бул айдын төлөмү өткөрүлдү';
-      subtitleText = '${_seller?.cardMasked ?? ''} · 2 000 сом/ай';
+      borderColor  = AppColors.success;
+      bgColor      = const Color(0xFFEEFFF5);
+      statusText   = loc.get('sub_status_paid');
+      subtitleText = '${_seller?.cardMasked ?? ''} · ${loc.get('sub_per_month')}';
     } else if (autoOn && !paid) {
-      borderColor = AppColors.primary;
-      bgColor = const Color(0xFFFFF8F0);
-      statusText = '💳 Авто төлөм иштеп жатат';
-      subtitleText = '${_seller?.cardMasked ?? ''} · Айдын 1-күнүндө алынат';
+      borderColor  = AppColors.primary;
+      bgColor      = const Color(0xFFFFF8F0);
+      statusText   = loc.get('sub_status_active');
+      subtitleText = '${_seller?.cardMasked ?? ''} · ${loc.get('sub_charge_day')}';
     } else if (hasCard && !autoOn) {
-      borderColor = AppColors.grey400;
-      bgColor = Colors.white;
-      statusText = '⏸️ Авто төлөм токтотулган';
+      borderColor  = AppColors.grey400;
+      bgColor      = Colors.white;
+      statusText   = loc.get('sub_status_paused');
       subtitleText = _seller?.cardMasked ?? '';
     } else {
-      borderColor = AppColors.error.withValues(alpha: 0.5);
-      bgColor = const Color(0xFFFFF1F0);
-      statusText = '💳 Жазылуу — 2 000 сом/ай';
-      subtitleText = 'Картаны байлап авто төлөм орнотуңуз';
+      borderColor  = AppColors.error.withValues(alpha: 0.5);
+      bgColor      = const Color(0xFFFFF1F0);
+      statusText   = loc.get('sub_status_none');
+      subtitleText = loc.get('sub_link_hint');
     }
 
     return GestureDetector(
@@ -700,13 +543,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
           color: bgColor,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: borderColor.withValues(alpha: 0.5)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
         ),
         child: Row(
           children: [
@@ -718,57 +555,32 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                 children: [
                   Text(statusText, style: AppTextStyles.labelLarge),
                   const SizedBox(height: 2),
-                  Text(
-                    subtitleText,
-                    style: AppTextStyles.bodySmall
-                        .copyWith(color: AppColors.grey500),
-                  ),
+                  Text(subtitleText, style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey500)),
                 ],
               ),
             ),
-            Icon(
-              Icons.arrow_forward_ios,
-              color: AppColors.grey400,
-              size: 16,
-            ),
+            const Icon(Icons.arrow_forward_ios, color: AppColors.grey400, size: 16),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildChatMenuItem() {
+  Widget _buildChatMenuItem(AppLocalizations loc) {
     return StreamBuilder<List>(
       stream: _chatService.sellerChatsStream(_seller!.uid),
       builder: (context, snap) {
         final chats = snap.data ?? [];
-        final totalUnread = chats.fold<int>(
-          0,
-          (sum, chat) => sum + ((chat as dynamic).sellerUnread as int),
-        );
+        final totalUnread = chats.fold<int>(0, (sum, chat) => sum + ((chat as dynamic).sellerUnread as int));
 
         return GestureDetector(
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => ChatListScreen(
-                isSeller: true,
-                sellerId: _seller!.uid,
-              ),
-            ),
-          ),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ChatListScreen(isSeller: true, sellerId: _seller!.uid))),
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(14),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
             ),
             child: Row(
               children: [
@@ -778,24 +590,12 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                     const Text('💬', style: TextStyle(fontSize: 28)),
                     if (totalUnread > 0)
                       Positioned(
-                        top: -6,
-                        right: -8,
+                        top: -6, right: -8,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: AppColors.error,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: Colors.white, width: 1.5),
-                          ),
-                          child: Text(
-                            totalUnread > 99 ? '99+' : '$totalUnread',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(color: AppColors.error, borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.white, width: 1.5)),
+                          child: Text(totalUnread > 99 ? '99+' : '$totalUnread',
+                              style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
                         ),
                       ),
                   ],
@@ -807,25 +607,14 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                     children: [
                       Row(
                         children: [
-                          const Text('Билдирүүлөр',
-                              style: AppTextStyles.labelLarge),
+                          Text(loc.get('dash_messages'), style: AppTextStyles.labelLarge),
                           if (totalUnread > 0) ...[
                             const SizedBox(width: 8),
                             Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 7, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: AppColors.error,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Text(
-                                '$totalUnread жаңы',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                              decoration: BoxDecoration(color: AppColors.error, borderRadius: BorderRadius.circular(10)),
+                              child: Text('$totalUnread ${loc.get('dash_new')}',
+                                  style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
                             ),
                           ],
                         ],
@@ -833,22 +622,17 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                       const SizedBox(height: 2),
                       Text(
                         totalUnread > 0
-                            ? '$totalUnread окулбаган билдирүү бар'
-                            : 'Кардарлар менен чат',
+                            ? '$totalUnread ${loc.get('dash_unread')}'
+                            : loc.get('dash_chat_with_customers'),
                         style: AppTextStyles.labelSmall.copyWith(
-                          color: totalUnread > 0
-                              ? AppColors.error
-                              : AppColors.grey500,
-                          fontWeight: totalUnread > 0
-                              ? FontWeight.w600
-                              : FontWeight.normal,
+                          color: totalUnread > 0 ? AppColors.error : AppColors.grey500,
+                          fontWeight: totalUnread > 0 ? FontWeight.w600 : FontWeight.normal,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const Icon(Icons.arrow_forward_ios,
-                    color: AppColors.grey400, size: 16),
+                const Icon(Icons.arrow_forward_ios, color: AppColors.grey400, size: 16),
               ],
             ),
           ),
@@ -870,13 +654,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
         ),
         child: Row(
           children: [
@@ -888,16 +666,11 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                 children: [
                   Text(title, style: AppTextStyles.labelLarge),
                   const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: AppTextStyles.labelSmall
-                        .copyWith(color: AppColors.grey500, fontSize: 12),
-                  ),
+                  Text(subtitle, style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey500, fontSize: 12)),
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios,
-                color: AppColors.grey400, size: 16),
+            const Icon(Icons.arrow_forward_ios, color: AppColors.grey400, size: 16),
           ],
         ),
       ),

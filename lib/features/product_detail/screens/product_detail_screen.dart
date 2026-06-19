@@ -57,13 +57,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         final storeData = data['stores'] as Map<String, dynamic>?;
         if (storeData != null) {
           setState(() {
-            _storeId = storeData['id'] as String?;
-            _sellerUid = storeData['owner_id'] as String?;
-            _shopName = storeData['store_name'] as String? ?? '';
-            _containerNumber = [storeData['market'] as String? ?? '', storeData['district'] as String? ?? ''].where((s) => s.isNotEmpty).join(', ');
-            _workStart = storeData['work_start'] as String? ?? '';
-            _workEnd = storeData['work_end'] as String? ?? '';
-            _workDays = storeData['work_days'] as String? ?? '';
+            _storeId          = storeData['id'] as String?;
+            _sellerUid        = storeData['owner_id'] as String?;
+            _shopName         = storeData['store_name'] as String? ?? '';
+            _containerNumber  = [storeData['market'] as String? ?? '', storeData['district'] as String? ?? ''].where((s) => s.isNotEmpty).join(', ');
+            _workStart        = storeData['work_start'] as String? ?? '';
+            _workEnd          = storeData['work_end'] as String? ?? '';
+            _workDays         = storeData['work_days'] as String? ?? '';
           });
           if (_sellerUid != null) {
             try {
@@ -204,17 +204,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     return nowMin >= s.hour * 60 + s.minute && nowMin < e.hour * 60 + e.minute;
   }
 
-  Widget _buildPriceSection() {
+  Widget _buildPriceSection(AppLocalizations loc) {
+    final cur = loc.get('currency');
     final hasDiscount = _product.discountedPrice != null && _product.discountedPrice! < _product.price;
     if (hasDiscount) {
       final discounted = _product.discountedPrice!;
-      final pct = ((1 - discounted / _product.price) * 100).round();
+      final pct   = ((1 - discounted / _product.price) * 100).round();
       final saved = (_product.price - discounted).toStringAsFixed(0);
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            Text('${discounted.toStringAsFixed(0)} сом', style: AppTextStyles.headingLarge.copyWith(color: AppColors.error, fontWeight: FontWeight.bold)),
+            Text('${discounted.toStringAsFixed(0)} $cur', style: AppTextStyles.headingLarge.copyWith(color: AppColors.error, fontWeight: FontWeight.bold)),
             const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -224,20 +225,21 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           ]),
           const SizedBox(height: 4),
           Row(children: [
-            Text('${_product.price.toStringAsFixed(0)} сом', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey400, decoration: TextDecoration.lineThrough, decorationColor: AppColors.grey400, decorationThickness: 1.5)),
+            Text('${_product.price.toStringAsFixed(0)} $cur', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey400, decoration: TextDecoration.lineThrough, decorationColor: AppColors.grey400, decorationThickness: 1.5)),
             const SizedBox(width: 8),
-            Text('$saved сомго арзан', style: AppTextStyles.labelSmall.copyWith(color: AppColors.success)),
+            Text('$saved ${loc.get('price_saved')}', style: AppTextStyles.labelSmall.copyWith(color: AppColors.success)),
           ]),
         ],
       );
     }
-    return Text('${_product.price.toStringAsFixed(0)} сом', style: AppTextStyles.headingLarge.copyWith(color: AppColors.primary));
+    return Text('${_product.price.toStringAsFixed(0)} $cur', style: AppTextStyles.headingLarge.copyWith(color: AppColors.primary));
   }
 
   @override
   Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context);
+    final loc   = AppLocalizations.of(context);
     final isFav = _fav.isFavorite(_product.id);
+    final cur   = loc.get('currency');
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F5F7),
@@ -310,7 +312,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildPriceSection(),
+                            _buildPriceSection(loc),
                             const SizedBox(height: 8),
                             Text(_product.name, style: AppTextStyles.headingMedium.copyWith(fontSize: 24)),
                             const SizedBox(height: 8),
@@ -502,10 +504,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                             Text(p.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: AppTextStyles.labelMedium),
                                             const SizedBox(height: 4),
                                             if (pHasDiscount) ...[
-                                              Text('${p.discountedPrice!.toStringAsFixed(0)} сом', style: AppTextStyles.labelLarge.copyWith(color: AppColors.error, fontWeight: FontWeight.bold)),
-                                              Text('${p.price.toStringAsFixed(0)} сом', style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey400, decoration: TextDecoration.lineThrough)),
+                                              Text('${p.discountedPrice!.toStringAsFixed(0)} $cur', style: AppTextStyles.labelLarge.copyWith(color: AppColors.error, fontWeight: FontWeight.bold)),
+                                              Text('${p.price.toStringAsFixed(0)} $cur', style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey400, decoration: TextDecoration.lineThrough)),
                                             ] else
-                                              Text('${p.price.toStringAsFixed(0)} сом', style: AppTextStyles.labelLarge.copyWith(color: AppColors.primary)),
+                                              Text('${p.price.toStringAsFixed(0)} $cur', style: AppTextStyles.labelLarge.copyWith(color: AppColors.primary)),
                                           ],
                                         ),
                                       ),
@@ -567,8 +569,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   Widget _buildCharacteristics(AppLocalizations loc) {
     final hasColors = _product.colors.isNotEmpty;
-    final hasSizes = _product.sizes.isNotEmpty;
-    final hasStock = _product.inStock != null;
+    final hasSizes  = _product.sizes.isNotEmpty;
+    final hasStock  = _product.inStock != null;
     if (!hasColors && !hasSizes && !hasStock) return const SizedBox.shrink();
 
     return Container(
@@ -581,10 +583,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           const SizedBox(height: 12),
           if (hasStock) ...[
             Row(children: [
-              Icon((_product.inStock ?? 0) > 0 ? Icons.check_circle_outline : Icons.cancel_outlined, size: 16, color: (_product.inStock ?? 0) > 0 ? AppColors.success : AppColors.error),
+              Icon((_product.inStock ?? 0) > 0 ? Icons.check_circle_outline : Icons.cancel_outlined,
+                  size: 16, color: (_product.inStock ?? 0) > 0 ? AppColors.success : AppColors.error),
               const SizedBox(width: 6),
               Text(
-                (_product.inStock ?? 0) > 0 ? '${loc.get('in_stock')}: ${_product.inStock} ${loc.get('pcs')}' : loc.get('out_of_stock'),
+                (_product.inStock ?? 0) > 0
+                    ? '${loc.get('in_stock')}: ${_product.inStock} ${loc.get('pcs')}'
+                    : loc.get('out_of_stock'),
                 style: AppTextStyles.labelMedium.copyWith(color: (_product.inStock ?? 0) > 0 ? AppColors.success : AppColors.error),
               ),
             ]),
@@ -642,10 +647,10 @@ class _NavigationGuideSheet extends StatefulWidget {
 class _NavigationGuideSheetState extends State<_NavigationGuideSheet> {
   Future<void> _open2GIS() async {
     final loc = AppLocalizations.of(context);
-    final appUri = Uri.parse('dgis://2gis.ru/routeSearch/rsType/pedestrian/to/${widget.sellerLng},${widget.sellerLat}');
-    final webUri = Uri.parse('https://2gis.kg/bishkek/geo/${widget.sellerLng},${widget.sellerLat}');
+    final appUri       = Uri.parse('dgis://2gis.ru/routeSearch/rsType/pedestrian/to/${widget.sellerLng},${widget.sellerLat}');
+    final webUri       = Uri.parse('https://2gis.kg/bishkek/geo/${widget.sellerLng},${widget.sellerLat}');
     final playStoreUri = Uri.parse('https://play.google.com/store/apps/details?id=ru.dublgis.dgismobile');
-    final appStoreUri = Uri.parse('https://apps.apple.com/app/id481627348');
+    final appStoreUri  = Uri.parse('https://apps.apple.com/app/id481627348');
 
     if (await canLaunchUrl(appUri)) {
       await launchUrl(appUri);
@@ -665,7 +670,7 @@ class _NavigationGuideSheetState extends State<_NavigationGuideSheet> {
               style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), elevation: 0),
               onPressed: () async {
                 Navigator.pop(ctx);
-                final isIOS = Theme.of(context).platform == TargetPlatform.iOS;
+                final isIOS    = Theme.of(context).platform == TargetPlatform.iOS;
                 final storeUri = isIOS ? appStoreUri : playStoreUri;
                 if (await canLaunchUrl(storeUri)) await launchUrl(storeUri, mode: LaunchMode.externalApplication);
               },

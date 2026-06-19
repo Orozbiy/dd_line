@@ -2,19 +2,22 @@ import 'package:flutter/material.dart';
 import '../../promotions/screens/promotion_screen.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
+import '../../../core/app_localizations.dart';
 
 class AppEndDrawer extends StatelessWidget {
   const AppEndDrawer({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+
     final stories = [
-      {'label': 'Жаңылык', 'emoji': '🔥', 'color': '0xFFD97706'},
-      {'label': 'Жеңил', 'emoji': '👟', 'color': '0xFF8B5CF6'},
-      {'label': 'Техника', 'emoji': '📱', 'color': '0xFF3B82F6'},
-      {'label': 'Кийим', 'emoji': '👗', 'color': '0xFFEC4899'},
-      {'label': 'Тамак', 'emoji': '🥗', 'color': '0xFF10B981'},
-      {'label': 'Акция', 'emoji': '🎁', 'color': '0xFFF87171'},
+      {'label': loc.get('drawer_story_new'),  'emoji': '🔥', 'color': '0xFFD97706'},
+      {'label': loc.get('drawer_story_light'),'emoji': '👟', 'color': '0xFF8B5CF6'},
+      {'label': loc.get('drawer_story_tech'), 'emoji': '📱', 'color': '0xFF3B82F6'},
+      {'label': loc.get('drawer_story_cloth'),'emoji': '👗', 'color': '0xFFEC4899'},
+      {'label': loc.get('drawer_story_food'), 'emoji': '🥗', 'color': '0xFF10B981'},
+      {'label': loc.get('drawer_story_sale'), 'emoji': '🎁', 'color': '0xFFF87171'},
     ];
 
     return Drawer(
@@ -29,14 +32,13 @@ class AppEndDrawer extends StatelessWidget {
               padding: EdgeInsets.fromLTRB(16, 20, 16, 12),
               child: Text('DD Online', style: AppTextStyles.headingLarge),
             ),
-
             const Divider(height: 1, color: Color(0xFFEEEEEE)),
             const SizedBox(height: 16),
 
             // ── Stories ──
-            const Padding(
-              padding: EdgeInsets.only(left: 16, bottom: 10),
-              child: Text('Жаңылыктар', style: AppTextStyles.labelLarge),
+            Padding(
+              padding: const EdgeInsets.only(left: 16, bottom: 10),
+              child: Text(loc.get('drawer_stories_title'), style: AppTextStyles.labelLarge),
             ),
             SizedBox(
               height: 90,
@@ -46,13 +48,12 @@ class AppEndDrawer extends StatelessWidget {
                 itemCount: stories.length,
                 separatorBuilder: (_, __) => const SizedBox(width: 14),
                 itemBuilder: (context, i) {
-                  final s = stories[i];
+                  final s     = stories[i];
                   final color = Color(int.parse(s['color']!));
                   return Column(
                     children: [
                       Container(
-                        width: 56,
-                        height: 56,
+                        width: 56, height: 56,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           gradient: LinearGradient(
@@ -60,23 +61,12 @@ class AppEndDrawer extends StatelessWidget {
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
-                          border: Border.all(
-                            color: AppColors.primary,
-                            width: 2.5,
-                          ),
+                          border: Border.all(color: AppColors.primary, width: 2.5),
                         ),
-                        child: Center(
-                          child: Text(
-                            s['emoji']!,
-                            style: const TextStyle(fontSize: 24),
-                          ),
-                        ),
+                        child: Center(child: Text(s['emoji']!, style: const TextStyle(fontSize: 24))),
                       ),
                       const SizedBox(height: 6),
-                      Text(
-                        s['label']!,
-                        style: AppTextStyles.labelSmall,
-                      ),
+                      Text(s['label']!, style: AppTextStyles.labelSmall),
                     ],
                   );
                 },
@@ -93,12 +83,7 @@ class AppEndDrawer extends StatelessWidget {
               child: GestureDetector(
                 onTap: () {
                   Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const PromotionScreen(),
-                    ),
-                  );
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const PromotionScreen()));
                 },
                 child: Container(
                   width: double.infinity,
@@ -110,13 +95,7 @@ class AppEndDrawer extends StatelessWidget {
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.3),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+                    boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 12, offset: const Offset(0, 4))],
                   ),
                   child: Row(
                     children: [
@@ -125,25 +104,15 @@ class AppEndDrawer extends StatelessWidget {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Акциялар',
-                            style: AppTextStyles.headingSmall
-                                .copyWith(color: Colors.white),
-                          ),
+                          Text(loc.get('drawer_promo_title'),
+                              style: AppTextStyles.headingSmall.copyWith(color: Colors.white)),
                           const SizedBox(height: 2),
-                          Text(
-                            'Арзан баадагы товарлар',
-                            style: AppTextStyles.bodySmall
-                                .copyWith(color: Colors.white70),
-                          ),
+                          Text(loc.get('drawer_promo_subtitle'),
+                              style: AppTextStyles.bodySmall.copyWith(color: Colors.white70)),
                         ],
                       ),
                       const Spacer(),
-                      const Icon(
-                        Icons.arrow_forward_ios_rounded,
-                        color: Colors.white,
-                        size: 20,
-                      ),
+                      const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 20),
                     ],
                   ),
                 ),
@@ -155,10 +124,7 @@ class AppEndDrawer extends StatelessWidget {
             // ── Footer ──
             const Padding(
               padding: EdgeInsets.all(20),
-              child: Text(
-                'Дордой Базары ',
-                style: AppTextStyles.labelSmall,
-              ),
+              child: Text('Дордой Базары', style: AppTextStyles.labelSmall),
             ),
           ],
         ),
