@@ -15,12 +15,16 @@ class _LanguageSectionState extends State<LanguageSection> {
   Widget build(BuildContext context) {
     final provider = LocaleScope.of(context);
     final selected = provider.locale.languageCode;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final dividerColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFEEEEEE);
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -42,9 +46,9 @@ class _LanguageSectionState extends State<LanguageSection> {
               ],
             ),
           ),
-          _option(provider, selected, 'ky', 'Кыргызча', '🇰🇬'),
-          const Divider(height: 1, color: Color(0xFFEEEEEE)),
-          _option(provider, selected, 'ru', 'Орусча', '🇷🇺'),
+          _option(provider, selected, 'ky', 'Кыргызча', '🇰🇬', dividerColor),
+          Divider(height: 1, color: dividerColor),
+          _option(provider, selected, 'ru', 'Орусча', '🇷🇺', dividerColor),
           const SizedBox(height: 8),
         ],
       ),
@@ -57,6 +61,7 @@ class _LanguageSectionState extends State<LanguageSection> {
     String code,
     String title,
     String flag,
+    Color dividerColor,
   ) {
     final isSelected = selected == code;
     return InkWell(

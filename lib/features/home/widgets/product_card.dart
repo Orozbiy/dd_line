@@ -54,14 +54,22 @@ class _ProductCardState extends State<ProductCard>
 
   @override
   Widget build(BuildContext context) {
-    final isFav = _favorites.isFavorite(widget.product.id);
-    final rating = widget.product.rating ?? 0.0;
+    final isFav      = _favorites.isFavorite(widget.product.id);
+    final rating     = widget.product.rating ?? 0.0;
+    final isDark     = Theme.of(context).brightness == Brightness.dark;
+    final cardColor  = isDark ? const Color(0xFF1E1E1E) : AppColors.white;
+    final textColor  = isDark ? Colors.white : Colors.black87;
+    final ratingColor = isDark ? Colors.white60 : Colors.black54;
+    final shimmerColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFEEEEEE);
+    final favBgColor = isDark
+        ? Colors.black.withValues(alpha: 0.5)
+        : Colors.white.withValues(alpha: 0.85);
+
     final hasDiscount = widget.product.hasPromotion &&
         widget.product.discountedPrice != null &&
         widget.product.discountedPrice! < widget.product.price;
     final discountPct = hasDiscount
-        ? ((1 - widget.product.discountedPrice! / widget.product.price) * 100)
-            .round()
+        ? ((1 - widget.product.discountedPrice! / widget.product.price) * 100).round()
         : 0;
     final isNew = widget.product.isNew;
 
@@ -70,20 +78,18 @@ class _ProductCardState extends State<ProductCard>
       child: ClipRect(
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final cardWidth = constraints.maxWidth;
+            final cardWidth  = constraints.maxWidth;
             final cardHeight = constraints.maxHeight;
-
             const infoReserved = 112.0;
-            final imgHeight =
-                (cardHeight - infoReserved).clamp(80.0, cardHeight * 0.78);
+            final imgHeight = (cardHeight - infoReserved).clamp(80.0, cardHeight * 0.78);
 
             return Container(
               decoration: BoxDecoration(
-                color: AppColors.white,
+                color: cardColor,
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.black.withValues(alpha: 0.07),
+                    color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.07),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -95,15 +101,14 @@ class _ProductCardState extends State<ProductCard>
                 children: [
                   // ── Сүрөт ──
                   ClipRRect(
-                    borderRadius:
-                        const BorderRadius.vertical(top: Radius.circular(14)),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
                     child: SizedBox(
                       width: cardWidth,
                       height: imgHeight,
                       child: Stack(
                         fit: StackFit.expand,
                         children: [
-                          Container(color: const Color(0xFFEEEEEE)),
+                          Container(color: shimmerColor),
 
                           CachedNetworkImage(
                             imageUrl: _thumbUrl(widget.product.imageUrl),
@@ -111,10 +116,10 @@ class _ProductCardState extends State<ProductCard>
                             fadeInDuration: const Duration(milliseconds: 250),
                             placeholder: (_, __) => const SizedBox.shrink(),
                             errorWidget: (_, __, ___) => Container(
-                              color: const Color(0xFFEEEEEE),
-                              child: const Icon(
+                              color: shimmerColor,
+                              child: Icon(
                                 Icons.image_not_supported_outlined,
-                                color: AppColors.grey300,
+                                color: isDark ? AppColors.grey600 : AppColors.grey300,
                                 size: 32,
                               ),
                             ),
@@ -123,34 +128,9 @@ class _ProductCardState extends State<ProductCard>
                           // Discount badge
                           if (hasDiscount)
                             Positioned(
-                              top: 8,
-                              left: 8,
+                              top: 8, left: 8,
                               child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 6, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: AppColors.error,
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: const Text(
-                                  '',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-
-                          // Discount badge текст
-                          if (hasDiscount)
-                            Positioned(
-                              top: 8,
-                              left: 8,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 6, vertical: 3),
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                                 decoration: BoxDecoration(
                                   color: AppColors.error,
                                   borderRadius: BorderRadius.circular(6),
@@ -169,11 +149,9 @@ class _ProductCardState extends State<ProductCard>
                           // New badge
                           if (isNew && !hasDiscount)
                             Positioned(
-                              top: 8,
-                              left: 8,
+                              top: 8, left: 8,
                               child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 6, vertical: 3),
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                                 decoration: BoxDecoration(
                                   color: AppColors.success,
                                   borderRadius: BorderRadius.circular(6),
@@ -191,24 +169,20 @@ class _ProductCardState extends State<ProductCard>
 
                           // Favorite button
                           Positioned(
-                            top: 6,
-                            right: 6,
+                            top: 6, right: 6,
                             child: GestureDetector(
                               onTap: _toggleFavorite,
                               child: Container(
                                 padding: const EdgeInsets.all(5),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.85),
+                                  color: favBgColor,
                                   shape: BoxShape.circle,
                                 ),
                                 child: ScaleTransition(
                                   scale: _heartAnim,
                                   child: Icon(
-                                    isFav
-                                        ? Icons.favorite
-                                        : Icons.favorite_border,
-                                    color:
-                                        isFav ? Colors.red : AppColors.grey400,
+                                    isFav ? Icons.favorite : Icons.favorite_border,
+                                    color: isFav ? Colors.red : AppColors.grey400,
                                     size: 18,
                                   ),
                                 ),
@@ -237,7 +211,7 @@ class _ProductCardState extends State<ProductCard>
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 19,
                               fontWeight: FontWeight.w900,
-                              color: Colors.black87,
+                              color: textColor,
                               height: 1.3,
                             ),
                           ),
@@ -282,15 +256,14 @@ class _ProductCardState extends State<ProductCard>
                             Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.star_rounded,
-                                    color: Colors.amber, size: 15),
+                                const Icon(Icons.star_rounded, color: Colors.amber, size: 15),
                                 const SizedBox(width: 3),
                                 Text(
                                   rating.toStringAsFixed(1),
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w500,
-                                    color: Colors.black54,
+                                    color: ratingColor,
                                   ),
                                 ),
                               ],

@@ -5,12 +5,9 @@ import '../widgets/settings_header.dart';
 import '../widgets/language_section.dart';
 import '../widgets/notifications_toggle.dart';
 import '../widgets/dark_mode_toggle.dart';
-
 import '../widgets/cache_menu_item.dart';
 import '../widgets/support_menu_item.dart';
 import '../widgets/terms_menu_item.dart';
-
-const _dividerColor = Color(0xFFEEEEEE);
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -18,11 +15,16 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF121212) : const Color(0xFFF4F5F7);
+    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final dividerColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFEEEEEE);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F5F7),
+      backgroundColor: bgColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: cardColor,
         elevation: 0,
         title: Text(loc.get('settings'), style: AppTextStyles.headingSmall),
       ),
@@ -38,7 +40,7 @@ class SettingsScreen extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: cardColor,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
@@ -48,18 +50,17 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              child: const Column(
+              child: Column(
                 children: [
-                  NotificationsToggle(),
-                  Divider(height: 1, color: _dividerColor),
-                  DarkModeToggle(),
-                
-                  Divider(height: 1, color: _dividerColor),
-                  CacheMenuItem(),
-                  Divider(height: 1, color: _dividerColor),
-                  SupportMenuItem(),
-                  Divider(height: 1, color: _dividerColor),
-                  TermsMenuItem(),
+                  const NotificationsToggle(),
+                  Divider(height: 1, color: dividerColor),
+                  const DarkModeToggle(),
+                  Divider(height: 1, color: dividerColor),
+                  const CacheMenuItem(),
+                  Divider(height: 1, color: dividerColor),
+                  const SupportMenuItem(),
+                  Divider(height: 1, color: dividerColor),
+                  const TermsMenuItem(),
                 ],
               ),
             ),

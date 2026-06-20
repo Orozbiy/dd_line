@@ -114,10 +114,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _showEditSheet() {
     final loc = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final sheetColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: sheetColor,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (_) => Padding(
@@ -143,7 +146,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               decoration: InputDecoration(
                 hintText: loc.get('profile_hint_name'),
                 filled: true,
-                fillColor: AppColors.grey50,
+                fillColor: isDark ? const Color(0xFF2C2C2C) : AppColors.grey50,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
               ),
             ),
@@ -207,16 +210,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF121212) : const Color(0xFFF4F5F7);
+    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final dividerColor = isDark ? const Color(0xFF2C2C2C) : null;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F5F7),
+      backgroundColor: bgColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: cardColor,
         elevation: 0,
         centerTitle: true,
         leading: GestureDetector(
           onTap: () => Navigator.pop(context),
-          child: const Icon(Icons.arrow_back, color: AppColors.black),
+          child: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
         ),
         title: Text(loc.get('profile'), style: AppTextStyles.headingMedium),
         actions: [
@@ -266,7 +274,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             onTap: _pickAndUploadAvatar,
                             child: Container(
                               width: 30, height: 30,
-                              decoration: BoxDecoration(color: AppColors.primary, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2)),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: cardColor, width: 2),
+                              ),
                               child: _isUploadingPhoto
                                   ? const Padding(padding: EdgeInsets.all(6), child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                                   : const Icon(Icons.camera_alt, color: Colors.white, size: 16),
@@ -293,14 +305,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   // ── МААЛЫМАТТАР ──
                   Container(
                     margin: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
+                    decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(14)),
                     child: Column(
                       children: [
-                        _profileItem(Icons.person_outline,  loc.get('profile_label_name'), _fullName),
-                        const Divider(height: 1, indent: 54),
-                        _profileItem(Icons.email_outlined,  'Email', _email),
-                        const Divider(height: 1, indent: 54),
-                        _profileItem(Icons.phone_outlined,  loc.get('profile_label_phone'), _phone),
+                        _profileItem(Icons.person_outline, loc.get('profile_label_name'), _fullName),
+                        Divider(height: 1, indent: 54, color: dividerColor),
+                        _profileItem(Icons.email_outlined, 'Email', _email),
+                        Divider(height: 1, indent: 54, color: dividerColor),
+                        _profileItem(Icons.phone_outlined, loc.get('profile_label_phone'), _phone),
                       ],
                     ),
                   ),
@@ -316,7 +328,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFFEEEE),
+                          color: isDark
+                              ? AppColors.error.withValues(alpha: 0.15)
+                              : const Color(0xFFFFEEEE),
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
                         ),

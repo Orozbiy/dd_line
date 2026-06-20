@@ -42,22 +42,20 @@ class _CategoryListState extends State<CategoryList> {
   }
 
   void _onCategoryTap(CategoryModel cat) {
-  setState(() {
-    if (_selectedCategoryId == cat.id) {
-      _selectedCategoryId = null;
-      _selectedSubId = null;
-      // Filter mode reset — категория алынганда
-      _filterMode = ProductFilterMode.all;
-      widget.onFilterModeChanged?.call(ProductFilterMode.all);
-      widget.onCategorySelected('');
-    } else {
-      _selectedCategoryId = cat.id;
-      _selectedSubId = null;
-      // Filter mode учурдагыдай калат, бирок HomeScreen кайра жүктөйт
-      widget.onCategorySelected(cat.id);
-    }
-  });
-}
+    setState(() {
+      if (_selectedCategoryId == cat.id) {
+        _selectedCategoryId = null;
+        _selectedSubId = null;
+        _filterMode = ProductFilterMode.all;
+        widget.onFilterModeChanged?.call(ProductFilterMode.all);
+        widget.onCategorySelected('');
+      } else {
+        _selectedCategoryId = cat.id;
+        _selectedSubId = null;
+        widget.onCategorySelected(cat.id);
+      }
+    });
+  }
 
   void _onSubCategoryTap(SubCategoryModel sub) {
     setState(() {
@@ -66,7 +64,6 @@ class _CategoryListState extends State<CategoryList> {
         widget.onCategorySelected(_selectedCategoryId ?? '');
       } else {
         _selectedSubId = sub.id;
-        // id '..._1' — "Баары" кичи категориясы (тилден көз карандысыз id боюнча текшерилет)
         if (sub.id.endsWith('_1')) {
           widget.onCategorySelected(_selectedCategoryId ?? '');
         } else {
@@ -104,13 +101,15 @@ class _CategoryListState extends State<CategoryList> {
 
   @override
   Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context);
-    final cat = _selectedCategory;
+    final loc    = AppLocalizations.of(context);
+    final cat    = _selectedCategory;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final inactiveBg = isDark ? const Color(0xFF2C2C2C) : AppColors.grey100;
+    final inactiveIcon = isDark ? AppColors.grey400 : AppColors.grey600;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // ── Негизги фильтр катары ──
         SizedBox(
           height: 52,
           child: SingleChildScrollView(
@@ -126,49 +125,32 @@ class _CategoryListState extends State<CategoryList> {
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     margin: const EdgeInsets.only(right: 8),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 9),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
                     decoration: BoxDecoration(
-                      color: _selectedCategoryId != null
-                          ? AppColors.primary
-                          : AppColors.grey100,
+                      color: _selectedCategoryId != null ? AppColors.primary : inactiveBg,
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: _selectedCategoryId != null
-                          ? [
-                              BoxShadow(
-                                color: AppColors.primary.withValues(alpha: 0.35),
-                                blurRadius: 8,
-                                offset: const Offset(0, 3),
-                              )
-                            ]
+                          ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.35), blurRadius: 8, offset: const Offset(0, 3))]
                           : [],
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.grid_view_rounded,
-                            size: 17,
-                            color: _selectedCategoryId != null
-                                ? Colors.white
-                                : AppColors.grey600),
+                        Icon(Icons.grid_view_rounded, size: 17,
+                            color: _selectedCategoryId != null ? Colors.white : inactiveIcon),
                         const SizedBox(width: 6),
                         Text(
                           _selectedCategoryId != null
                               ? (cat?.localizedName(loc.locale.languageCode) ?? loc.get('cat_label'))
                               : loc.get('cat_label'),
                           style: AppTextStyles.labelLarge.copyWith(
-                            color: _selectedCategoryId != null
-                                ? Colors.white
-                                : AppColors.grey600,
+                            color: _selectedCategoryId != null ? Colors.white : inactiveIcon,
                             fontSize: 13,
                           ),
                         ),
                         const SizedBox(width: 3),
-                        Icon(Icons.keyboard_arrow_down_rounded,
-                            size: 16,
-                            color: _selectedCategoryId != null
-                                ? Colors.white
-                                : AppColors.grey500),
+                        Icon(Icons.keyboard_arrow_down_rounded, size: 16,
+                            color: _selectedCategoryId != null ? Colors.white : inactiveIcon),
                       ],
                     ),
                   ),
@@ -180,39 +162,26 @@ class _CategoryListState extends State<CategoryList> {
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     margin: const EdgeInsets.only(right: 8),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 9),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
                     decoration: BoxDecoration(
                       color: _filterMode == ProductFilterMode.newest
                           ? const Color(0xFF16A34A)
-                          : AppColors.grey100,
+                          : inactiveBg,
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: _filterMode == ProductFilterMode.newest
-                          ? [
-                              BoxShadow(
-                                color: const Color(0xFF16A34A)
-                                    .withValues(alpha: 0.35),
-                                blurRadius: 8,
-                                offset: const Offset(0, 3),
-                              )
-                            ]
+                          ? [BoxShadow(color: const Color(0xFF16A34A).withValues(alpha: 0.35), blurRadius: 8, offset: const Offset(0, 3))]
                           : [],
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.fiber_new_rounded,
-                            size: 16,
-                            color: _filterMode == ProductFilterMode.newest
-                                ? Colors.white
-                                : AppColors.grey600),
+                        Icon(Icons.fiber_new_rounded, size: 16,
+                            color: _filterMode == ProductFilterMode.newest ? Colors.white : inactiveIcon),
                         const SizedBox(width: 5),
                         Text(
                           loc.get('cat_newest'),
                           style: AppTextStyles.labelLarge.copyWith(
-                            color: _filterMode == ProductFilterMode.newest
-                                ? Colors.white
-                                : AppColors.grey600,
+                            color: _filterMode == ProductFilterMode.newest ? Colors.white : inactiveIcon,
                             fontSize: 13,
                           ),
                         ),
@@ -226,39 +195,26 @@ class _CategoryListState extends State<CategoryList> {
                   onTap: () => _setFilterMode(ProductFilterMode.popular),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 9),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
                     decoration: BoxDecoration(
                       color: _filterMode == ProductFilterMode.popular
                           ? const Color(0xFFD97706)
-                          : AppColors.grey100,
+                          : inactiveBg,
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: _filterMode == ProductFilterMode.popular
-                          ? [
-                              BoxShadow(
-                                color: const Color(0xFFD97706)
-                                    .withValues(alpha: 0.35),
-                                blurRadius: 8,
-                                offset: const Offset(0, 3),
-                              )
-                            ]
+                          ? [BoxShadow(color: const Color(0xFFD97706).withValues(alpha: 0.35), blurRadius: 8, offset: const Offset(0, 3))]
                           : [],
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.trending_up_rounded,
-                            size: 16,
-                            color: _filterMode == ProductFilterMode.popular
-                                ? Colors.white
-                                : AppColors.grey600),
+                        Icon(Icons.trending_up_rounded, size: 16,
+                            color: _filterMode == ProductFilterMode.popular ? Colors.white : inactiveIcon),
                         const SizedBox(width: 5),
                         Text(
                           loc.get('cat_popular'),
                           style: AppTextStyles.labelLarge.copyWith(
-                            color: _filterMode == ProductFilterMode.popular
-                                ? Colors.white
-                                : AppColors.grey600,
+                            color: _filterMode == ProductFilterMode.popular ? Colors.white : inactiveIcon,
                             fontSize: 13,
                           ),
                         ),
@@ -271,7 +227,6 @@ class _CategoryListState extends State<CategoryList> {
           ),
         ),
 
-        // ── Кичи категориялар ──
         AnimatedSize(
           duration: const Duration(milliseconds: 250),
           curve: Curves.easeInOut,
@@ -288,9 +243,6 @@ class _CategoryListState extends State<CategoryList> {
   }
 }
 
-// ════════════════════════════════════════════════════
-// КИЧИ КАТЕГОРИЯЛАР КАТАРЫ
-// ════════════════════════════════════════════════════
 class _SubCategoryBar extends StatelessWidget {
   final CategoryModel category;
   final String? selectedSubId;
@@ -304,7 +256,8 @@ class _SubCategoryBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = Color(int.parse('0xFF${category.color}'));
+    final color  = Color(int.parse('0xFF${category.color}'));
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       height: 48,
@@ -316,9 +269,12 @@ class _SubCategoryBar extends StatelessWidget {
         itemCount: category.subcategories.length,
         separatorBuilder: (_, __) => const SizedBox(width: 8),
         itemBuilder: (context, i) {
-          final sub = category.subcategories[i];
+          final sub        = category.subcategories[i];
           final isSelected = selectedSubId == sub.id ||
               (selectedSubId == null && sub.id.endsWith('_1'));
+          final unselBg = isDark
+              ? color.withValues(alpha: 0.15)
+              : color.withValues(alpha: 0.08);
 
           return GestureDetector(
             onTap: () => onSubTap(sub),
@@ -326,9 +282,7 @@ class _SubCategoryBar extends StatelessWidget {
               duration: const Duration(milliseconds: 180),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
-                color: isSelected
-                    ? color
-                    : color.withValues(alpha: 0.08),
+                color: isSelected ? color : unselBg,
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
                   color: isSelected ? color : color.withValues(alpha: 0.25),
@@ -351,7 +305,9 @@ class _SubCategoryBar extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                          color: isSelected ? Colors.white : color.withValues(alpha: 0.85),
+                          color: isSelected
+                              ? Colors.white
+                              : color.withValues(alpha: isDark ? 1.0 : 0.85),
                         ),
                       ),
                     ],
@@ -366,9 +322,6 @@ class _SubCategoryBar extends StatelessWidget {
   }
 }
 
-// ════════════════════════════════════════════════════
-// CATEGORY BOTTOM SHEET
-// ════════════════════════════════════════════════════
 class _CategoryBottomSheet extends StatelessWidget {
   final List<CategoryModel> categories;
   final String? selectedId;
@@ -382,15 +335,20 @@ class _CategoryBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final loc  = AppLocalizations.of(context);
-    final maxH = MediaQuery.of(context).size.height * 0.85;
+    final loc    = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final maxH   = MediaQuery.of(context).size.height * 0.85;
+    final bgColor     = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final handleColor = isDark ? const Color(0xFF3A3A3A) : AppColors.grey300;
+    final itemBg      = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF7F7F7);
+    final textColor   = isDark ? AppColors.grey400 : AppColors.grey600;
 
     return ConstrainedBox(
       constraints: BoxConstraints(maxHeight: maxH),
       child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -398,17 +356,14 @@ class _CategoryBottomSheet extends StatelessWidget {
             const SizedBox(height: 12),
             Container(
               width: 40, height: 4,
-              decoration: BoxDecoration(
-                  color: AppColors.grey300,
-                  borderRadius: BorderRadius.circular(2)),
+              decoration: BoxDecoration(color: handleColor, borderRadius: BorderRadius.circular(2)),
             ),
             const SizedBox(height: 16),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: Text(loc.get('cat_select'),
-                    style: AppTextStyles.headingSmall),
+                child: Text(loc.get('cat_select'), style: AppTextStyles.headingSmall),
               ),
             ),
             const SizedBox(height: 12),
@@ -425,18 +380,16 @@ class _CategoryBottomSheet extends StatelessWidget {
                 ),
                 itemCount: categories.length,
                 itemBuilder: (context, index) {
-                  final cat       = categories[index];
+                  final cat        = categories[index];
                   final isSelected = selectedId == cat.id;
-                  final color     = Color(int.parse('0xFF${cat.color}'));
+                  final color      = Color(int.parse('0xFF${cat.color}'));
 
                   return GestureDetector(
                     onTap: () => onSelected(cat),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
                       decoration: BoxDecoration(
-                        color: isSelected
-                            ? color.withValues(alpha: 0.15)
-                            : const Color(0xFFF7F7F7),
+                        color: isSelected ? color.withValues(alpha: 0.15) : itemBg,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: isSelected ? color : Colors.transparent,
@@ -455,8 +408,7 @@ class _CategoryBottomSheet extends StatelessWidget {
                               shape: BoxShape.circle,
                             ),
                             child: Center(
-                              child: Text(cat.icon,
-                                  style: const TextStyle(fontSize: 22)),
+                              child: Text(cat.icon, style: const TextStyle(fontSize: 22)),
                             ),
                           ),
                           const SizedBox(height: 6),
@@ -469,10 +421,8 @@ class _CategoryBottomSheet extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 fontSize: 11,
-                                fontWeight: isSelected
-                                    ? FontWeight.w700
-                                    : FontWeight.w500,
-                                color: isSelected ? color : AppColors.grey600,
+                                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                color: isSelected ? color : textColor,
                                 height: 1.2,
                               ),
                             ),

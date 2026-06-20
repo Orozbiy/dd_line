@@ -9,20 +9,23 @@ class AppEndDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context);
+    final loc    = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor      = isDark ? const Color(0xFF1E1E1E) : AppColors.white;
+    final dividerColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFEEEEEE);
 
     final stories = [
-      {'label': loc.get('drawer_story_new'),  'emoji': '🔥', 'color': '0xFFD97706'},
-      {'label': loc.get('drawer_story_light'),'emoji': '👟', 'color': '0xFF8B5CF6'},
-      {'label': loc.get('drawer_story_tech'), 'emoji': '📱', 'color': '0xFF3B82F6'},
-      {'label': loc.get('drawer_story_cloth'),'emoji': '👗', 'color': '0xFFEC4899'},
-      {'label': loc.get('drawer_story_food'), 'emoji': '🥗', 'color': '0xFF10B981'},
-      {'label': loc.get('drawer_story_sale'), 'emoji': '🎁', 'color': '0xFFF87171'},
+      {'label': loc.get('drawer_story_new'),   'emoji': '🔥', 'color': '0xFFD97706'},
+      {'label': loc.get('drawer_story_light'),  'emoji': '👟', 'color': '0xFF8B5CF6'},
+      {'label': loc.get('drawer_story_tech'),   'emoji': '📱', 'color': '0xFF3B82F6'},
+      {'label': loc.get('drawer_story_cloth'),  'emoji': '👗', 'color': '0xFFEC4899'},
+      {'label': loc.get('drawer_story_food'),   'emoji': '🥗', 'color': '0xFF10B981'},
+      {'label': loc.get('drawer_story_sale'),   'emoji': '🎁', 'color': '0xFFF87171'},
     ];
 
     return Drawer(
       width: MediaQuery.of(context).size.width * 0.90,
-      backgroundColor: AppColors.white,
+      backgroundColor: bgColor,
       child: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -32,7 +35,7 @@ class AppEndDrawer extends StatelessWidget {
               padding: EdgeInsets.fromLTRB(16, 20, 16, 12),
               child: Text('DD Online', style: AppTextStyles.headingLarge),
             ),
-            const Divider(height: 1, color: Color(0xFFEEEEEE)),
+            Divider(height: 1, color: dividerColor),
             const SizedBox(height: 16),
 
             // ── Stories ──
@@ -74,7 +77,7 @@ class AppEndDrawer extends StatelessWidget {
             ),
 
             const SizedBox(height: 20),
-            const Divider(height: 1, color: Color(0xFFEEEEEE)),
+            Divider(height: 1, color: dividerColor),
             const SizedBox(height: 20),
 
             // ── Promotions Card ──
@@ -122,9 +125,12 @@ class AppEndDrawer extends StatelessWidget {
             const Spacer(),
 
             // ── Footer ──
-            const Padding(
-              padding: EdgeInsets.all(20),
-              child: Text('Дордой Базары', style: AppTextStyles.labelSmall),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Text('Дордой Базары',
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color: isDark ? AppColors.grey500 : null,
+                  )),
             ),
           ],
         ),

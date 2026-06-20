@@ -30,7 +30,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   void initState() {
     super.initState();
     _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 900));
-    _fadeAnim = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
+    _fadeAnim  = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
     _slideAnim = Tween<Offset>(begin: const Offset(0, 0.12), end: Offset.zero)
         .animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
     _controller.forward();
@@ -38,7 +38,6 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     _authSub = AuthService.instance.authStateChanges.listen((data) async {
       if (data.event == AuthChangeEvent.signedIn) {
         await AuthService.instance.syncProfile();
-
         final user = AuthService.instance.currentUser;
         if (user != null) {
           try {
@@ -47,14 +46,13 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 .select('role, seller_status')
                 .eq('id', user.id)
                 .maybeSingle();
-            final role = profile?['role'] as String?;
+            final role         = profile?['role'] as String?;
             final sellerStatus = profile?['seller_status'] as String?;
             if (role != 'seller' && sellerStatus != null) {
               await supabase.from('profiles').update({'seller_status': null}).eq('id', user.id);
             }
           } catch (_) {}
         }
-
         if (mounted) {
           Navigator.pushAndRemoveUntil(
             context,
@@ -101,10 +99,13 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
   @override
   Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context);
+    final loc    = AppLocalizations.of(context);
+    final theme  = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF121212) : Colors.white;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: bgColor,
       body: SafeArea(
         child: FadeTransition(
           opacity: _fadeAnim,
@@ -156,7 +157,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                   const Spacer(flex: 2),
 
                   // ── КИРҮҮ БАСКЫЧЫ ──
-                  _buildGoogleButton(loc),
+                  _buildGoogleButton(loc, isDark),
 
                   const SizedBox(height: 16),
 
@@ -176,7 +177,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     );
   }
 
-  Widget _buildGoogleButton(AppLocalizations loc) {
+  Widget _buildGoogleButton(AppLocalizations loc, bool isDark) {
     if (defaultTargetPlatform == TargetPlatform.windows) {
       return GestureDetector(
         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SellerLoginScreen())),
@@ -201,6 +202,10 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       );
     }
 
+    final btnColor  = isDark ? const Color(0xFF2C2C2C) : Colors.white;
+    final btnBorder = isDark ? const Color(0xFF3A3A3A) : AppColors.grey200;
+    final textColor = isDark ? Colors.white : AppColors.black;
+
     return GestureDetector(
       onTap: _isLoading ? null : _handleGoogleSignIn,
       child: AnimatedContainer(
@@ -208,9 +213,9 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: btnColor,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.grey200, width: 1.5),
+          border: Border.all(color: btnBorder, width: 1.5),
           boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 12, offset: const Offset(0, 4))],
         ),
         child: _isLoading
@@ -220,7 +225,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 children: [
                   const _GoogleLogo(),
                   const SizedBox(width: 12),
-                  Text(loc.get('sign_in_google'), style: AppTextStyles.headingSmall.copyWith(color: AppColors.black)),
+                  Text(loc.get('sign_in_google'), style: AppTextStyles.headingSmall.copyWith(color: textColor)),
                 ],
               ),
       ),
@@ -256,8 +261,8 @@ class _GoogleGPainter extends CustomPainter {
     }
 
     drawArc(-90, 90, const Color(0xFF4285F4));
-    drawArc(0, 90, const Color(0xFF34A853));
-    drawArc(90, 90, const Color(0xFFFBBC05));
+    drawArc(0,   90, const Color(0xFF34A853));
+    drawArc(90,  90, const Color(0xFFFBBC05));
     drawArc(180, 90, const Color(0xFFEA4335));
   }
 

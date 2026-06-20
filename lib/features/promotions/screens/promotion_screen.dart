@@ -57,27 +57,32 @@ class _PromotionScreenState extends State<PromotionScreen> {
   @override
   Widget build(BuildContext context) {
     final loc      = AppLocalizations.of(context);
+    final isDark   = Theme.of(context).brightness == Brightness.dark;
+    final bgColor  = isDark ? const Color(0xFF121212) : const Color(0xFFF4F5F7);
+    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final inputBg  = isDark ? const Color(0xFF2C2C2C) : AppColors.grey100;
+    final dividerColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFEEEEEE);
     final filtered = _filtered;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F5F7),
+      backgroundColor: bgColor,
       appBar: AppBar(
         title: Text(loc.get('promo_title')),
-        backgroundColor: Colors.white,
-        foregroundColor: AppColors.black,
+        backgroundColor: cardColor,
+        foregroundColor: isDark ? Colors.white : AppColors.black,
         elevation: 0,
         centerTitle: true,
         titleTextStyle: AppTextStyles.headingMedium,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Container(height: 1, color: const Color(0xFFEEEEEE)),
+          child: Container(height: 1, color: dividerColor),
         ),
       ),
       body: Column(
         children: [
           // ── Search Bar ──
           Container(
-            color: Colors.white,
+            color: cardColor,
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
             child: TextField(
               controller: _searchController,
@@ -96,7 +101,7 @@ class _PromotionScreenState extends State<PromotionScreen> {
                       )
                     : null,
                 filled: true,
-                fillColor: AppColors.grey100,
+                fillColor: inputBg,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                 focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
@@ -109,10 +114,7 @@ class _PromotionScreenState extends State<PromotionScreen> {
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: Text(
-                  '${filtered.length} ${loc.get('promo_found')}',
-                  style: AppTextStyles.bodySmall,
-                ),
+                child: Text('${filtered.length} ${loc.get('promo_found')}', style: AppTextStyles.bodySmall),
               ),
             ),
 
@@ -129,9 +131,7 @@ class _PromotionScreenState extends State<PromotionScreen> {
                             const Text('😔', style: TextStyle(fontSize: 48)),
                             const SizedBox(height: 12),
                             Text(
-                              _allProducts.isEmpty
-                                  ? loc.get('promo_empty')
-                                  : loc.get('promo_not_found'),
+                              _allProducts.isEmpty ? loc.get('promo_empty') : loc.get('promo_not_found'),
                               style: AppTextStyles.bodyMedium,
                             ),
                           ],
@@ -166,6 +166,8 @@ class _PromoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final loc        = AppLocalizations.of(context);
+    final isDark     = Theme.of(context).brightness == Brightness.dark;
+    final cardColor  = isDark ? const Color(0xFF1E1E1E) : Colors.white;
     final cur        = loc.get('currency');
     final price      = (product['price'] as num?)?.toDouble() ?? 0;
     final discounted = (product['discounted_price'] as num?)?.toDouble() ?? price;
@@ -185,7 +187,7 @@ class _PromoCard extends StatelessWidget {
       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ProductDetailScreen(product: productModel))),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: cardColor,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 8, offset: const Offset(0, 2))],
         ),

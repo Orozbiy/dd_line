@@ -13,22 +13,17 @@ import 'firebase_options.dart';
 import 'services/notification_service.dart';
 import 'core/active_status_tracker.dart';
 import 'package:flutter/foundation.dart';
-import 'core/locale_provider.dart';   // ← УШУЛ БОЛУШУ КЕРЕК
+import 'core/locale_provider.dart';
 import 'core/app_localizations.dart';
-// ══════════════════════════════════════════════════════
-// ФОНДО HANDLER
-// ══════════════════════════════════════════════════════
+import 'core/theme_provider.dart'; // ← ЖАҢЫ
+
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   if (defaultTargetPlatform == TargetPlatform.windows) return;
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  debugPrint(
-      '🔔 Фондо билдирүү: ${message.notification?.title} — ${message.notification?.body}');
+  debugPrint('🔔 Фондо билдирүү: ${message.notification?.title} — ${message.notification?.body}');
 }
 
-// ══════════════════════════════════════════════════════
-// MAIN
-// ══════════════════════════════════════════════════════
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   debugPrint('🚀 MAIN БАШТАЛДЫ');
@@ -69,7 +64,6 @@ Future<void> _initFirebase() async {
     debugPrint('🚀 Firebase init болду');
     await NotificationService().init();
     debugPrint('🚀 NotificationService init болду');
-  
   } catch (e) {
     debugPrint('⚠️ Firebase init ката: $e');
   }
@@ -79,9 +73,6 @@ void unawaited(Future<void> future) {
   future.catchError((e) => debugPrint('⚠️ Untracked error: $e'));
 }
 
-// ══════════════════════════════════════════════════════
-// APP — LocaleProvider кошулду
-// ══════════════════════════════════════════════════════
 class DDOnlineApp extends StatefulWidget {
   const DDOnlineApp({super.key});
 
@@ -91,65 +82,95 @@ class DDOnlineApp extends StatefulWidget {
 
 class _DDOnlineAppState extends State<DDOnlineApp> {
   final _localeProvider = LocaleProvider();
+  final _themeProvider = ThemeProvider(); // ← ЖАҢЫ
 
   @override
   void initState() {
     super.initState();
     _localeProvider.loadSavedLocale();
     _localeProvider.addListener(() => setState(() {}));
+
+    _themeProvider.loadSavedTheme(); // ← ЖАҢЫ
+    _themeProvider.addListener(() => setState(() {})); // ← ЖАҢЫ
   }
 
   @override
   void dispose() {
     _localeProvider.removeListener(() => setState(() {}));
     _localeProvider.dispose();
+    _themeProvider.removeListener(() => setState(() {})); // ← ЖАҢЫ
+    _themeProvider.dispose(); // ← ЖАҢЫ
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return LocaleScope(
-      provider: _localeProvider,
-      locale: _localeProvider.locale, // ← ЖАҢЫ: locale өзүнчө берилет
-      child: MaterialApp(
-        title: 'DD Online',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        navigatorKey: navigatorKey,
+    return ThemeScope(
+      provider: _themeProvider,
+      isDark: _themeProvider.isDark,
+      child: LocaleScope(
+        provider: _localeProvider,
         locale: _localeProvider.locale,
-        supportedLocales: const [Locale('ky'), Locale('ru')],
-        localizationsDelegates: const [
-          AppLocalizationsDelegate(),
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        home: const SplashRouter(),
+        child: MaterialApp(
+          title: 'DD Online',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme, // ← ЖАҢЫ
+          themeMode: _themeProvider.themeMode, // ← ЖАҢЫ
+          navigatorKey: navigatorKey,
+          locale: _localeProvider.locale,
+          supportedLocales: const [Locale('ky'), Locale('ru')],
+          localizationsDelegates: const [
+            AppLocalizationsDelegate(),
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: const SplashRouter(),
+        ),
       ),
     );
   }
 }
 
 // ══════════════════════════════════════════════════════
-// LOCALE SCOPE — ОҢДОЛДУ: locale өзүнчө сакталат
-// updateShouldNotify туура иштейт
+// THEME SCOPE — ЖАҢЫ
+// ══════════════════════════════════════════════════════
+class ThemeScope extends InheritedWidget {
+  final ThemeProvider provider;
+  final bool isDark;
+
+  const ThemeScope({
+    super.key,
+    required this.provider,
+    required this.isDark,
+    required super.child,
+  });
+
+  static ThemeProvider of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<ThemeScope>()!.provider;
+
+  @override
+  bool updateShouldNotify(ThemeScope old) => old.isDark != isDark;
+}
+
+// ══════════════════════════════════════════════════════
+// LOCALE SCOPE
 // ══════════════════════════════════════════════════════
 class LocaleScope extends InheritedWidget {
   final LocaleProvider provider;
-  final Locale locale; // ← ЖАҢЫ
+  final Locale locale;
 
   const LocaleScope({
     super.key,
     required this.provider,
-    required this.locale, // ← ЖАҢЫ
+    required this.locale,
     required super.child,
   });
 
   static LocaleProvider of(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<LocaleScope>()!.provider;
 
-  // ← ОҢДОЛДУ: мурда old.provider != provider дайым FALSE болчу
-  // (бир эле объект), эми locale салыштырылат — туура иштейт
   @override
   bool updateShouldNotify(LocaleScope old) => old.locale != locale;
 }
@@ -175,41 +196,39 @@ class _SplashRouterState extends State<SplashRouter> {
   }
 
   Future<void> _determineScreen() async {
-  _targetScreen = await _getTargetScreen();
-  if (mounted) setState(() => _checking = false);
+    _targetScreen = await _getTargetScreen();
+    if (mounted) setState(() => _checking = false);
 
-  // ✅ ЖАҢЫ: колдонмо өчүк турганда notification басылганда
-  // HomeScreen жүктөлүп бүткөндөн кийин чатка navigate болот
-  final pendingChat = NotificationService.pendingChatId;
-  if (pendingChat != null) {
-    NotificationService.pendingChatId = null;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      NotificationService().navigateToChatPublic(pendingChat);
-    });
+    final pendingChat = NotificationService.pendingChatId;
+    if (pendingChat != null) {
+      NotificationService.pendingChatId = null;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        NotificationService().navigateToChatPublic(pendingChat);
+      });
+    }
+  }
+
+  Future<Widget> _getTargetScreen() async {
+    final user = supabase.auth.currentSession?.user;
+    if (user != null) return const HomeScreen();
+    return const WelcomeScreen();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_checking) return const _SplashScreen();
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      switchInCurve: Curves.easeOut,
+      transitionBuilder: (child, animation) =>
+          FadeTransition(opacity: animation, child: child),
+      child: _targetScreen!,
+    );
   }
 }
 
-Future<Widget> _getTargetScreen() async {
-  final user = supabase.auth.currentSession?.user;
-  if (user != null) return const HomeScreen();
-  return const WelcomeScreen();
-}
-
-@override
-Widget build(BuildContext context) {
-  if (_checking) return const _SplashScreen();
-  return AnimatedSwitcher(
-    duration: const Duration(milliseconds: 300),
-    switchInCurve: Curves.easeOut,
-    transitionBuilder: (child, animation) =>
-        FadeTransition(opacity: animation, child: child),
-    child: _targetScreen!,
-  );
-}
-}
-
 // ══════════════════════════════════════════════════════
-// SPLASH SCREEN (өзгөргөн жок)
+// SPLASH SCREEN
 // ══════════════════════════════════════════════════════
 class _SplashScreen extends StatefulWidget {
   const _SplashScreen();

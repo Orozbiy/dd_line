@@ -68,7 +68,6 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
 
   final List<String> sizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
-  // Сорттоо параметрлери — ачкыч гана, label build() ичинде алынат
   final List<Map<String, String>> _sortValues = [
     {'value': 'popular',    'icon': '🔥', 'key': 'sort_popular'},
     {'value': 'price_asc',  'icon': '⬆️', 'key': 'sort_price_asc'},
@@ -127,22 +126,26 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
     required TextEditingController controller,
     required String hint,
     required ValueChanged<String> onChanged,
+    required bool isDark,
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF7F7F7),
+        color: isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF7F7F7),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.grey200),
+        border: Border.all(color: isDark ? const Color(0xFF3A3A3A) : AppColors.grey200),
       ),
       child: TextField(
         controller: controller,
         keyboardType: TextInputType.number,
-        style: AppTextStyles.bodyMedium,
+        style: AppTextStyles.bodyMedium.copyWith(
+          color: isDark ? Colors.white : AppColors.black,
+        ),
         onChanged: onChanged,
         decoration: InputDecoration(
           hintText: hint,
           suffixText: 'с',
+          suffixStyle: TextStyle(color: isDark ? AppColors.grey400 : AppColors.grey500),
           border: InputBorder.none,
           isDense: true,
           contentPadding: const EdgeInsets.symmetric(vertical: 12),
@@ -153,12 +156,19 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context);
+    final loc    = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor      = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final dividerColor = isDark ? const Color(0xFF2C2C2C) : AppColors.grey100;
+    final sortItemBg   = isDark ? const Color(0xFF2C2C2C) : AppColors.grey50;
+    final textColor    = isDark ? Colors.white : AppColors.black;
+    final sizeUnselBg  = isDark ? const Color(0xFF2C2C2C) : AppColors.grey50;
+    final sizeUnselBorder = isDark ? const Color(0xFF3A3A3A) : AppColors.grey200;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -168,8 +178,9 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
             margin: const EdgeInsets.only(top: 12),
             width: 40, height: 4,
             decoration: BoxDecoration(
-                color: AppColors.grey300,
-                borderRadius: BorderRadius.circular(2)),
+              color: isDark ? const Color(0xFF3A3A3A) : AppColors.grey300,
+              borderRadius: BorderRadius.circular(2),
+            ),
           ),
 
           // ── Баш сөз ──
@@ -180,38 +191,29 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
               children: [
                 Row(
                   children: [
-                    Text(loc.get('filter'), style: AppTextStyles.headingMedium),
+                    Text(loc.get('filter'), style: AppTextStyles.headingMedium.copyWith(color: textColor)),
                     if (_activeFilterCount > 0) ...[
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
                           color: AppColors.primary,
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Text(
-                          '$_activeFilterCount',
-                          style: AppTextStyles.labelSmall
-                              .copyWith(color: AppColors.white),
-                        ),
+                        child: Text('$_activeFilterCount', style: AppTextStyles.labelSmall.copyWith(color: Colors.white)),
                       ),
                     ],
                   ],
                 ),
                 TextButton(
                   onPressed: _reset,
-                  child: Text(
-                    loc.get('filter_reset'),
-                    style: AppTextStyles.labelLarge
-                        .copyWith(color: AppColors.grey500),
-                  ),
+                  child: Text(loc.get('filter_reset'), style: AppTextStyles.labelLarge.copyWith(color: AppColors.grey500)),
                 ),
               ],
             ),
           ),
 
-          const Divider(color: AppColors.grey100, height: 24),
+          Divider(color: dividerColor, height: 24),
 
           Flexible(
             child: SingleChildScrollView(
@@ -224,18 +226,16 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(loc.get('price'), style: AppTextStyles.headingSmall),
+                      Text(loc.get('price'), style: AppTextStyles.headingSmall.copyWith(color: textColor)),
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           color: AppColors.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           '${_formatPrice(_priceRange.start)} — ${_formatPrice(_priceRange.end)}',
-                          style: AppTextStyles.labelMedium
-                              .copyWith(color: AppColors.primary),
+                          style: AppTextStyles.labelMedium.copyWith(color: AppColors.primary),
                         ),
                       ),
                     ],
@@ -244,7 +244,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                   SliderTheme(
                     data: SliderTheme.of(context).copyWith(
                       activeTrackColor:   AppColors.primary,
-                      inactiveTrackColor: AppColors.grey200,
+                      inactiveTrackColor: isDark ? const Color(0xFF3A3A3A) : AppColors.grey200,
                       thumbColor:  AppColors.primary,
                       overlayColor: AppColors.primary.withValues(alpha: 0.1),
                       thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12),
@@ -257,7 +257,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                       divisions: 200,
                       onChanged: (values) {
                         setState(() {
-                          _priceRange  = values;
+                          _priceRange   = values;
                           _minCtrl.text = values.start.toInt().toString();
                           _maxCtrl.text = values.end.toInt().toString();
                         });
@@ -271,6 +271,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                         child: _priceField(
                           controller: _minCtrl,
                           hint: '0',
+                          isDark: isDark,
                           onChanged: (val) {
                             final v = double.tryParse(val) ?? 0;
                             setState(() {
@@ -280,14 +281,15 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                           },
                         ),
                       ),
-                      const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 10),
-                        child: Text('—', style: AppTextStyles.bodyMedium),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Text('—', style: AppTextStyles.bodyMedium.copyWith(color: textColor)),
                       ),
                       Expanded(
                         child: _priceField(
                           controller: _maxCtrl,
                           hint: '1000000',
+                          isDark: isDark,
                           onChanged: (val) {
                             final v = double.tryParse(val) ?? _maxPrice;
                             setState(() {
@@ -301,11 +303,11 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                   ),
 
                   const SizedBox(height: 20),
-                  const Divider(color: AppColors.grey100),
+                  Divider(color: dividerColor),
                   const SizedBox(height: 20),
 
                   // ── 2. СОРТТОО ──
-                  Text(loc.get('filter_sort'), style: AppTextStyles.headingSmall),
+                  Text(loc.get('filter_sort'), style: AppTextStyles.headingSmall.copyWith(color: textColor)),
                   const SizedBox(height: 12),
                   ..._sortValues.map((option) {
                     final isSelected = _sortBy == option['value'];
@@ -314,41 +316,30 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
                         margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 14),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                         decoration: BoxDecoration(
-                          color: isSelected
-                              ? AppColors.primary.withValues(alpha: 0.08)
-                              : AppColors.grey50,
+                          color: isSelected ? AppColors.primary.withValues(alpha: 0.08) : sortItemBg,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: isSelected
-                                ? AppColors.primary
-                                : Colors.transparent,
+                            color: isSelected ? AppColors.primary : Colors.transparent,
                             width: 1.5,
                           ),
                         ),
                         child: Row(
                           children: [
-                            Text(option['icon']!,
-                                style: const TextStyle(fontSize: 18)),
+                            Text(option['icon']!, style: const TextStyle(fontSize: 18)),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
                                 loc.get(option['key']!),
                                 style: AppTextStyles.bodyMedium.copyWith(
-                                  color: isSelected
-                                      ? AppColors.primary
-                                      : AppColors.black,
-                                  fontWeight: isSelected
-                                      ? FontWeight.w600
-                                      : FontWeight.w500,
+                                  color: isSelected ? AppColors.primary : textColor,
+                                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                                 ),
                               ),
                             ),
                             if (isSelected)
-                              const Icon(Icons.check_circle,
-                                  color: AppColors.primary, size: 20),
+                              const Icon(Icons.check_circle, color: AppColors.primary, size: 20),
                           ],
                         ),
                       ),
@@ -356,11 +347,11 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                   }),
 
                   const SizedBox(height: 20),
-                  const Divider(color: AppColors.grey100),
+                  Divider(color: dividerColor),
                   const SizedBox(height: 20),
 
                   // ── 3. РАЗМЕР ──
-                  Text(loc.get('size_label'), style: AppTextStyles.headingSmall),
+                  Text(loc.get('size_label'), style: AppTextStyles.headingSmall.copyWith(color: textColor)),
                   const SizedBox(height: 12),
                   Wrap(
                     spacing: 10,
@@ -381,12 +372,10 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                           duration: const Duration(milliseconds: 200),
                           width: 60, height: 48,
                           decoration: BoxDecoration(
-                            color: isSelected ? AppColors.primary : AppColors.grey50,
+                            color: isSelected ? AppColors.primary : sizeUnselBg,
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
-                              color: isSelected
-                                  ? AppColors.primary
-                                  : AppColors.grey200,
+                              color: isSelected ? AppColors.primary : sizeUnselBorder,
                               width: 1.5,
                             ),
                           ),
@@ -394,9 +383,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                             child: Text(
                               size,
                               style: AppTextStyles.labelLarge.copyWith(
-                                color: isSelected
-                                    ? AppColors.white
-                                    : AppColors.black,
+                                color: isSelected ? Colors.white : textColor,
                               ),
                             ),
                           ),
@@ -415,10 +402,10 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
           Container(
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
             decoration: BoxDecoration(
-              color: AppColors.white,
+              color: bgColor,
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.black.withValues(alpha: 0.06),
+                  color: Colors.black.withValues(alpha: 0.06),
                   blurRadius: 12,
                   offset: const Offset(0, -4),
                 ),
@@ -427,26 +414,24 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
             child: ElevatedButton(
               onPressed: () {
                 widget.onApply(FilterOptions(
-                  priceRange: _priceRange,
+                  priceRange:    _priceRange,
                   selectedSizes: _selectedSizes,
-                  sortBy: _sortBy,
+                  sortBy:        _sortBy,
                 ));
                 Navigator.pop(context);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.white,
+                foregroundColor: Colors.white,
                 minimumSize: const Size(double.infinity, 56),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 elevation: 0,
               ),
               child: Text(
                 _activeFilterCount > 0
                     ? '${loc.get('filter_apply')} ($_activeFilterCount ${loc.get('filter_count_suffix')})'
                     : loc.get('filter_apply'),
-                style: AppTextStyles.headingSmall
-                    .copyWith(color: AppColors.white),
+                style: AppTextStyles.headingSmall.copyWith(color: Colors.white),
               ),
             ),
           ),

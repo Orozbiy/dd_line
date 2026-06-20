@@ -57,13 +57,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         final storeData = data['stores'] as Map<String, dynamic>?;
         if (storeData != null) {
           setState(() {
-            _storeId          = storeData['id'] as String?;
-            _sellerUid        = storeData['owner_id'] as String?;
-            _shopName         = storeData['store_name'] as String? ?? '';
-            _containerNumber  = [storeData['market'] as String? ?? '', storeData['district'] as String? ?? ''].where((s) => s.isNotEmpty).join(', ');
-            _workStart        = storeData['work_start'] as String? ?? '';
-            _workEnd          = storeData['work_end'] as String? ?? '';
-            _workDays         = storeData['work_days'] as String? ?? '';
+            _storeId         = storeData['id'] as String?;
+            _sellerUid       = storeData['owner_id'] as String?;
+            _shopName        = storeData['store_name'] as String? ?? '';
+            _containerNumber = [storeData['market'] as String? ?? '', storeData['district'] as String? ?? ''].where((s) => s.isNotEmpty).join(', ');
+            _workStart       = storeData['work_start'] as String? ?? '';
+            _workEnd         = storeData['work_end'] as String? ?? '';
+            _workDays        = storeData['work_days'] as String? ?? '';
           });
           if (_sellerUid != null) {
             try {
@@ -164,14 +164,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       final chatId = await _chatService.getOrCreateChat(buyerId: user.id, sellerId: _sellerUid!, productId: _product.id);
       if (!mounted) return;
       Navigator.push(context, MaterialPageRoute(builder: (_) => ChatScreen(
-        chatId: chatId,
-        sellerName: _shopName.isNotEmpty ? _shopName : _sellerName,
-        productId: _product.id,
-        productName: _product.name,
+        chatId:       chatId,
+        sellerName:   _shopName.isNotEmpty ? _shopName : _sellerName,
+        productId:    _product.id,
+        productName:  _product.name,
         productImage: _product.imageUrl,
-        isSeller: false,
-        buyerId: user.id,
-        sellerId: _sellerUid!,
+        isSeller:     false,
+        buyerId:      user.id,
+        sellerId:     _sellerUid!,
       )));
     } catch (e) {
       if (!mounted) return;
@@ -237,24 +237,30 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final loc   = AppLocalizations.of(context);
-    final isFav = _fav.isFavorite(_product.id);
-    final cur   = loc.get('currency');
+    final loc    = AppLocalizations.of(context);
+    final isFav  = _fav.isFavorite(_product.id);
+    final cur    = loc.get('currency');
+    final theme  = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final bgColor   = isDark ? const Color(0xFF121212) : const Color(0xFFF4F5F7);
+    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final chipColor = isDark ? const Color(0xFF2C2C2C) : AppColors.grey50;
+    final chipBorder = isDark ? const Color(0xFF3A3A3A) : AppColors.grey200;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F5F7),
+      backgroundColor: bgColor,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
             expandedHeight: 320,
             pinned: true,
-            backgroundColor: Colors.white,
+            backgroundColor: cardColor,
             leading: GestureDetector(
               onTap: () => Navigator.pop(context),
               child: Container(
                 margin: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.9), shape: BoxShape.circle),
-                child: const Icon(Icons.arrow_back, color: AppColors.black),
+                decoration: BoxDecoration(color: cardColor.withValues(alpha: 0.9), shape: BoxShape.circle),
+                child: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
               ),
             ),
             actions: [
@@ -262,7 +268,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 onTap: () { _fav.toggle(_product); setState(() {}); },
                 child: Container(
                   margin: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.9), shape: BoxShape.circle),
+                  decoration: BoxDecoration(color: cardColor.withValues(alpha: 0.9), shape: BoxShape.circle),
                   child: Padding(padding: const EdgeInsets.all(8), child: Icon(isFav ? Icons.favorite : Icons.favorite_border, color: isFav ? Colors.red : AppColors.grey600)),
                 ),
               ),
@@ -270,7 +276,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 onTap: () => ShareWidget.show(context, _product),
                 child: Container(
                   margin: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.9), shape: BoxShape.circle),
+                  decoration: BoxDecoration(color: cardColor.withValues(alpha: 0.9), shape: BoxShape.circle),
                   child: const Padding(padding: EdgeInsets.all(8), child: Icon(Icons.share_outlined, color: AppColors.grey600)),
                 ),
               ),
@@ -307,7 +313,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     children: [
                       // ── Баа + аты ──
                       Container(
-                        color: Colors.white,
+                        color: cardColor,
                         padding: const EdgeInsets.all(16),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -340,13 +346,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      _buildCharacteristics(loc),
+                      _buildCharacteristics(loc, cardColor, chipColor, chipBorder),
                       const SizedBox(height: 8),
 
                       // ── Сүрөттөмө ──
                       if (_product.description != null && _product.description!.isNotEmpty) ...[
                         Container(
-                          color: Colors.white,
+                          color: cardColor,
                           padding: const EdgeInsets.all(16),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -363,7 +369,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       // ── Размер тандоо ──
                       if (_product.sizes.isNotEmpty) ...[
                         Container(
-                          color: Colors.white,
+                          color: cardColor,
                           padding: const EdgeInsets.all(16),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -381,11 +387,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                       duration: const Duration(milliseconds: 200),
                                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                                       decoration: BoxDecoration(
-                                        color: isSel ? AppColors.primary : Colors.white,
+                                        color: isSel ? AppColors.primary : chipColor,
                                         borderRadius: BorderRadius.circular(10),
-                                        border: Border.all(color: isSel ? AppColors.primary : AppColors.grey200),
+                                        border: Border.all(color: isSel ? AppColors.primary : chipBorder),
                                       ),
-                                      child: Text(size, style: AppTextStyles.labelLarge.copyWith(color: isSel ? Colors.white : AppColors.black)),
+                                      child: Text(size, style: AppTextStyles.labelLarge.copyWith(color: isSel ? Colors.white : theme.colorScheme.onSurface)),
                                     ),
                                   );
                                 }).toList(),
@@ -398,7 +404,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
                       // ── Сатуучу маалыматы ──
                       Container(
-                        color: Colors.white,
+                        color: cardColor,
                         padding: const EdgeInsets.all(16),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -432,7 +438,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _isOpenNow() ? const Color(0xFF10B981) : const Color(0xFFF87171)),
                                 ),
                                 const SizedBox(width: 8),
-                                Text('·  ${_workDays.isNotEmpty ? "$_workDays  " : ""}$_workStart — $_workEnd', style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+                                Text('·  ${_workDays.isNotEmpty ? "$_workDays  " : ""}$_workStart — $_workEnd',
+                                    style: TextStyle(fontSize: 12, color: isDark ? AppColors.grey400 : const Color(0xFF6B7280))),
                               ]),
                             ],
                             if (_shopName.isEmpty && _sellerName.isEmpty)
@@ -467,7 +474,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       // ── Окшош товарлар ──
                       if (_similarProducts.isNotEmpty)
                         Container(
-                          color: Colors.white,
+                          color: cardColor,
                           padding: const EdgeInsets.all(16),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -529,7 +536,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       bottomNavigationBar: Container(
         padding: EdgeInsets.fromLTRB(16, 12, 16, MediaQuery.of(context).padding.bottom + 12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: cardColor,
           boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 12, offset: const Offset(0, -3))],
         ),
         child: Row(children: [
@@ -567,14 +574,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  Widget _buildCharacteristics(AppLocalizations loc) {
+  Widget _buildCharacteristics(AppLocalizations loc, Color cardColor, Color chipColor, Color chipBorder) {
     final hasColors = _product.colors.isNotEmpty;
     final hasSizes  = _product.sizes.isNotEmpty;
     final hasStock  = _product.inStock != null;
     if (!hasColors && !hasSizes && !hasStock) return const SizedBox.shrink();
 
     return Container(
-      color: Colors.white,
+      color: cardColor,
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -600,7 +607,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             const SizedBox(height: 8),
             Wrap(spacing: 8, runSpacing: 8, children: _product.colors.map((c) => Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(color: AppColors.grey50, borderRadius: BorderRadius.circular(20), border: Border.all(color: AppColors.grey200)),
+              decoration: BoxDecoration(color: chipColor, borderRadius: BorderRadius.circular(20), border: Border.all(color: chipBorder)),
               child: Text(c, style: AppTextStyles.labelSmall),
             )).toList()),
             const SizedBox(height: 10),
@@ -610,7 +617,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             const SizedBox(height: 8),
             Wrap(spacing: 8, runSpacing: 8, children: _product.sizes.map((s) => Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(color: AppColors.grey50, borderRadius: BorderRadius.circular(20), border: Border.all(color: AppColors.grey200)),
+              decoration: BoxDecoration(color: chipColor, borderRadius: BorderRadius.circular(20), border: Border.all(color: chipBorder)),
               child: Text(s, style: AppTextStyles.labelSmall),
             )).toList()),
           ],
@@ -620,11 +627,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Widget _infoRow(IconData icon, String label, String value, {Color? valueColor}) {
+    final theme = Theme.of(context);
     return Row(children: [
       Icon(icon, size: 18, color: AppColors.grey500),
       const SizedBox(width: 8),
       Text('$label: ', style: AppTextStyles.labelMedium),
-      Expanded(child: Text(value, style: AppTextStyles.bodyMedium.copyWith(color: valueColor ?? AppColors.black, fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis)),
+      Expanded(child: Text(value, style: AppTextStyles.bodyMedium.copyWith(color: valueColor ?? theme.colorScheme.onSurface, fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis)),
     ]);
   }
 }
@@ -684,48 +692,57 @@ class _NavigationGuideSheetState extends State<_NavigationGuideSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
-          const SizedBox(height: 20),
-          Container(
-            width: 64, height: 64,
-            decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), shape: BoxShape.circle),
-            child: const Icon(Icons.navigation_rounded, color: AppColors.primary, size: 32),
-          ),
-          const SizedBox(height: 16),
-          Text(widget.shopName.isNotEmpty ? widget.shopName : loc.get('shop'), style: AppTextStyles.headingSmall, textAlign: TextAlign.center),
-          if (widget.containerNumber.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text('📍 ${widget.containerNumber}', style: AppTextStyles.labelSmall.copyWith(color: AppColors.primary)),
-          ],
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: Colors.grey[50], borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.grey[200]!)),
-            child: Column(children: [
-              _step('1', loc.get('nav_step1')),
-              const SizedBox(height: 10),
-              _step('2', loc.get('nav_step2')),
-              const SizedBox(height: 10),
-              _step('3', loc.get('nav_step3')),
-            ]),
-          ),
-          const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity, height: 52,
-            child: ElevatedButton.icon(
-              onPressed: _open2GIS,
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)), elevation: 0),
-              icon: const Icon(Icons.map_rounded, color: Colors.white),
-              label: Text(loc.get('open_2gis'), style: AppTextStyles.headingSmall.copyWith(color: Colors.white)),
+    final loc    = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final sheetBg     = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final stepBg      = isDark ? const Color(0xFF2C2C2C) : Colors.grey[50]!;
+    final stepBorder  = isDark ? const Color(0xFF3A3A3A) : Colors.grey[200]!;
+    final handleColor = isDark ? const Color(0xFF3A3A3A) : Colors.grey[300]!;
+
+    return Container(
+      color: sheetBg,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: handleColor, borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 20),
+            Container(
+              width: 64, height: 64,
+              decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), shape: BoxShape.circle),
+              child: const Icon(Icons.navigation_rounded, color: AppColors.primary, size: 32),
             ),
-          ),
-        ],
+            const SizedBox(height: 16),
+            Text(widget.shopName.isNotEmpty ? widget.shopName : loc.get('shop'), style: AppTextStyles.headingSmall, textAlign: TextAlign.center),
+            if (widget.containerNumber.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text('📍 ${widget.containerNumber}', style: AppTextStyles.labelSmall.copyWith(color: AppColors.primary)),
+            ],
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(color: stepBg, borderRadius: BorderRadius.circular(16), border: Border.all(color: stepBorder)),
+              child: Column(children: [
+                _step('1', loc.get('nav_step1')),
+                const SizedBox(height: 10),
+                _step('2', loc.get('nav_step2')),
+                const SizedBox(height: 10),
+                _step('3', loc.get('nav_step3')),
+              ]),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity, height: 52,
+              child: ElevatedButton.icon(
+                onPressed: _open2GIS,
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)), elevation: 0),
+                icon: const Icon(Icons.map_rounded, color: Colors.white),
+                label: Text(loc.get('open_2gis'), style: AppTextStyles.headingSmall.copyWith(color: Colors.white)),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

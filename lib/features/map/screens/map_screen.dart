@@ -51,7 +51,7 @@ class _MapScreenState extends State<MapScreen> {
   List<_StoreLocation> _sellers  = [];
   List<_StoreLocation> _filtered = [];
   _StoreLocation? _selectedSeller;
-  bool _isLoading      = true;
+  bool _isLoading       = true;
   int  _noLocationCount = 0;
   final _searchController = TextEditingController();
 
@@ -148,8 +148,7 @@ class _MapScreenState extends State<MapScreen> {
                   await launchUrl(storeUri, mode: LaunchMode.externalApplication);
                 }
               },
-              child: Text(loc.get('download'),
-                  style: const TextStyle(color: Colors.white)),
+              child: Text(loc.get('download'), style: const TextStyle(color: Colors.white)),
             ),
           ],
         ),
@@ -159,37 +158,38 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context);
+    final loc    = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor    = isDark ? const Color(0xFF121212) : const Color(0xFFF4F5F7);
+    final cardColor  = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final inputBg    = isDark ? const Color(0xFF2C2C2C) : AppColors.grey100;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F5F7),
+      backgroundColor: bgColor,
       body: SafeArea(
         child: Column(
           children: [
             // ── AppBar ──
             Container(
-              color: Colors.white,
+              color: cardColor,
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      Text(' ${loc.get('map_title')}',
-                          style: AppTextStyles.headingMedium),
+                      Text(' ${loc.get('map_title')}', style: AppTextStyles.headingMedium),
                       const Spacer(),
                       if (!_isLoading)
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
                             color: AppColors.primary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
                             '${_sellers.length} ${loc.get('map_store_count')}',
-                            style: AppTextStyles.labelSmall
-                                .copyWith(color: AppColors.primary),
+                            style: AppTextStyles.labelSmall.copyWith(color: AppColors.primary),
                           ),
                         ),
                     ],
@@ -201,24 +201,17 @@ class _MapScreenState extends State<MapScreen> {
                     style: AppTextStyles.bodyMedium,
                     decoration: InputDecoration(
                       hintText: loc.get('map_search_hint'),
-                      hintStyle: AppTextStyles.bodyMedium
-                          .copyWith(color: AppColors.grey400),
-                      prefixIcon: const Icon(Icons.search,
-                          color: AppColors.grey400, size: 20),
+                      hintStyle: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey400),
+                      prefixIcon: const Icon(Icons.search, color: AppColors.grey400, size: 20),
                       suffixIcon: _searchController.text.isNotEmpty
                           ? GestureDetector(
-                              onTap: () {
-                                _searchController.clear();
-                                _search('');
-                              },
-                              child: const Icon(Icons.close,
-                                  color: AppColors.grey400, size: 18),
+                              onTap: () { _searchController.clear(); _search(''); },
+                              child: const Icon(Icons.close, color: AppColors.grey400, size: 18),
                             )
                           : null,
                       filled: true,
-                      fillColor: AppColors.grey100,
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 10),
+                      fillColor: inputBg,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
@@ -233,32 +226,29 @@ class _MapScreenState extends State<MapScreen> {
             // ── Тизме ──
             Expanded(
               child: _isLoading
-                  ? const Center(
-                      child: CircularProgressIndicator(color: AppColors.primary))
+                  ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
                   : _filtered.isEmpty
                       ? _buildEmpty(loc)
                       : ListView.separated(
                           padding: const EdgeInsets.all(16),
                           itemCount: _filtered.length,
                           separatorBuilder: (_, __) => const SizedBox(height: 10),
-                          itemBuilder: (_, i) => _buildSellerCard(_filtered[i], loc),
+                          itemBuilder: (_, i) => _buildSellerCard(_filtered[i], loc, isDark, cardColor),
                         ),
             ),
 
             // ── Статистика ──
             if (!_isLoading && _noLocationCount > 0)
               Container(
-                color: Colors.white,
+                color: cardColor,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Row(
                   children: [
-                    const Icon(Icons.info_outline,
-                        size: 14, color: AppColors.grey400),
+                    const Icon(Icons.info_outline, size: 14, color: AppColors.grey400),
                     const SizedBox(width: 6),
                     Text(
                       '$_noLocationCount ${loc.get('map_no_location')}',
-                      style: AppTextStyles.labelSmall
-                          .copyWith(color: AppColors.grey400),
+                      style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey400),
                     ),
                   ],
                 ),
@@ -278,26 +268,24 @@ class _MapScreenState extends State<MapScreen> {
           const SizedBox(height: 12),
           Text(loc.get('map_not_found'), style: AppTextStyles.headingSmall),
           const SizedBox(height: 8),
-          Text(
-            loc.get('map_try_search'),
-            style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey500),
-          ),
+          Text(loc.get('map_try_search'),
+              style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey500)),
         ],
       ),
     );
   }
 
-  Widget _buildSellerCard(_StoreLocation seller, AppLocalizations loc) {
-    final isSelected = _selectedSeller?.id == seller.id;
+  Widget _buildSellerCard(_StoreLocation seller, AppLocalizations loc, bool isDark, Color cardColor) {
+    final isSelected   = _selectedSeller?.id == seller.id;
+    final dividerColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFEEEEEE);
 
     return GestureDetector(
-      onTap: () =>
-          setState(() => _selectedSeller = isSelected ? null : seller),
+      onTap: () => setState(() => _selectedSeller = isSelected ? null : seller),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: cardColor,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected ? AppColors.primary : Colors.transparent,
@@ -327,13 +315,8 @@ class _MapScreenState extends State<MapScreen> {
                   ),
                   child: Center(
                     child: Text(
-                      seller.shopName.isNotEmpty
-                          ? seller.shopName[0].toUpperCase()
-                          : '🏪',
-                      style: const TextStyle(
-                          fontSize: 20,
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold),
+                      seller.shopName.isNotEmpty ? seller.shopName[0].toUpperCase() : '🏪',
+                      style: const TextStyle(fontSize: 20, color: Colors.white, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
@@ -349,16 +332,14 @@ class _MapScreenState extends State<MapScreen> {
                       const SizedBox(height: 2),
                       Row(
                         children: [
-                          const Icon(Icons.location_on_outlined,
-                              size: 13, color: AppColors.primary),
+                          const Icon(Icons.location_on_outlined, size: 13, color: AppColors.primary),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
                               seller.containerNumber.isNotEmpty
                                   ? seller.containerNumber
                                   : loc.get('location_unknown'),
-                              style: AppTextStyles.labelSmall
-                                  .copyWith(color: AppColors.grey500),
+                              style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey500),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -381,18 +362,16 @@ class _MapScreenState extends State<MapScreen> {
 
             if (isSelected) ...[
               const SizedBox(height: 12),
-              const Divider(height: 1, color: Color(0xFFEEEEEE)),
+              Divider(height: 1, color: dividerColor),
               const SizedBox(height: 12),
               if (seller.ownerName.isNotEmpty)
                 Row(
                   children: [
-                    const Icon(Icons.person_outline,
-                        size: 14, color: AppColors.grey400),
+                    const Icon(Icons.person_outline, size: 14, color: AppColors.grey400),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(seller.ownerName,
-                          style: AppTextStyles.bodySmall
-                              .copyWith(color: AppColors.grey600),
+                          style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey600),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis),
                     ),
@@ -406,15 +385,12 @@ class _MapScreenState extends State<MapScreen> {
                   onPressed: () => _open2GIS(seller),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     elevation: 0,
                   ),
-                  icon: const Icon(Icons.navigation_rounded,
-                      size: 18, color: Colors.white),
+                  icon: const Icon(Icons.navigation_rounded, size: 18, color: Colors.white),
                   label: Text(loc.get('open_2gis'),
-                      style: AppTextStyles.labelLarge
-                          .copyWith(color: Colors.white)),
+                      style: AppTextStyles.labelLarge.copyWith(color: Colors.white)),
                 ),
               ),
             ],

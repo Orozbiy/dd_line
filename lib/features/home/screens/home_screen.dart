@@ -50,7 +50,6 @@ class _HomeScreenState extends State<HomeScreen>
   int _totalUnreadChat = 0;
   StreamSubscription<List<ChatModel>>? _chatSub;
 
-  // ✅ Камера панели
   bool _cameraVisible = false;
   late AnimationController _cameraAnim;
   late Animation<Offset> _cameraSlide;
@@ -435,7 +434,10 @@ class _HomeScreenState extends State<HomeScreen>
               decoration: BoxDecoration(
                 color: AppColors.error,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.white, width: 1.5),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.surface,
+                  width: 1.5,
+                ),
               ),
               child: Text(
                 _totalUnreadChat > 99 ? '99+' : '$_totalUnreadChat',
@@ -452,15 +454,17 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  // ✅ ЖАҢЫ BOTTOM NAV
   Widget _buildBottomNav(AppLocalizations loc) {
+    final theme = Theme.of(context);
+    final surface = theme.colorScheme.surface;
+   
+
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        // ── Негизги nav bar ──
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: surface,
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.08),
@@ -475,18 +479,13 @@ class _HomeScreenState extends State<HomeScreen>
               height: 64.0,
               child: Row(
                 children: [
-                  // 1 — Башкы
                   _navItem(
                     icon: Icons.home_outlined,
                     activeIcon: Icons.home_rounded,
                     label: loc.get('home'),
                     isActive: _currentTab == 0,
-                    onTap: () => setState(() {
-                      _currentTab = 0;
-                    }),
+                    onTap: () => setState(() => _currentTab = 0),
                   ),
-
-                  // 2 — Чат
                   Expanded(
                     child: GestureDetector(
                       onTap: () => Navigator.push(
@@ -509,14 +508,11 @@ class _HomeScreenState extends State<HomeScreen>
                       ),
                     ),
                   ),
-
-                  // 3 — Дүкөн (ортодо, стрелка жогорусунда — алыс боштук менен)
                   Expanded(
                     child: Stack(
                       clipBehavior: Clip.none,
                       alignment: Alignment.center,
                       children: [
-                        // Дүкөн тизмелери баскычы → MapScreen ачат
                         GestureDetector(
                           onTap: () => Navigator.push(
                             context,
@@ -531,7 +527,7 @@ class _HomeScreenState extends State<HomeScreen>
                               const SizedBox(height: 4),
                               Text(
                                 loc.get('map_title'),
-                                style: TextStyle(
+                                style: const TextStyle(
                                     fontSize: 9,
                                     color: AppColors.grey400,
                                     fontWeight: FontWeight.w500),
@@ -541,7 +537,6 @@ class _HomeScreenState extends State<HomeScreen>
                             ],
                           ),
                         ),
-                        // ✅ Стрелка — дүкөндөн 40px жогору (алыс, чалкашпайт)
                         Positioned(
                           top: -38,
                           child: GestureDetector(
@@ -552,7 +547,7 @@ class _HomeScreenState extends State<HomeScreen>
                               decoration: BoxDecoration(
                                 color: _cameraVisible
                                     ? AppColors.primary
-                                    : Colors.white,
+                                    : surface,
                                 shape: BoxShape.circle,
                                 border: Border.all(
                                   color: _cameraVisible
@@ -585,8 +580,6 @@ class _HomeScreenState extends State<HomeScreen>
                       ],
                     ),
                   ),
-
-                  // 4 — Тандамалар
                   Expanded(
                     child: GestureDetector(
                       onTap: () => Navigator.push(
@@ -600,7 +593,7 @@ class _HomeScreenState extends State<HomeScreen>
                           FavBadge(count: _favCount, active: false),
                           const SizedBox(height: 4),
                           Text(loc.get('favorites'),
-                              style: TextStyle(
+                              style: const TextStyle(
                                   fontSize: 10,
                                   color: AppColors.grey400,
                                   fontWeight: FontWeight.w500)),
@@ -608,8 +601,6 @@ class _HomeScreenState extends State<HomeScreen>
                       ),
                     ),
                   ),
-
-                  // 5 — Жөндөөлөр
                   _navItem(
                     icon: Icons.settings_outlined,
                     activeIcon: Icons.settings_rounded,
@@ -665,8 +656,17 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+   
+    final isDark = theme.brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF121212) : const Color(0xFFF4F5F7);
+    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final filterInactiveColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF0F0F0);
+    final filterIconColor = isDark ? AppColors.grey400 : AppColors.grey600;
+    final dividerColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFEEEEEE);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F5F7),
+      backgroundColor: bgColor,
       endDrawer: const AppEndDrawer(),
       floatingActionButton: _currentTab == 0
           ? Builder(
@@ -697,7 +697,7 @@ class _HomeScreenState extends State<HomeScreen>
                   slivers: [
                     SliverAppBar(
                       pinned: true,
-                      backgroundColor: Colors.white,
+                      backgroundColor: cardColor,
                       elevation: 0,
                       centerTitle: true,
                       leadingWidth: 90,
@@ -713,7 +713,9 @@ class _HomeScreenState extends State<HomeScreen>
                           padding: const EdgeInsets.symmetric(
                               horizontal: 6, vertical: 4),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFFF8F0),
+                            color: isDark
+                                ? const Color(0xFF2C1A00)
+                                : const Color(0xFFFFF8F0),
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
                                 color: const Color(0xFFD97706)
@@ -759,16 +761,18 @@ class _HomeScreenState extends State<HomeScreen>
                                   MaterialPageRoute(
                                       builder: (_) => const ProfileScreen()))
                               .then((_) => setState(() {})),
-                          child: const Padding(
-                              padding: EdgeInsets.only(right: 12),
+                          child: Padding(
+                              padding: const EdgeInsets.only(right: 12),
                               child: Icon(Icons.person_outline,
-                                  color: AppColors.grey600, size: 26)),
+                                  color: theme.colorScheme.onSurface
+                                      .withValues(alpha: 0.7),
+                                  size: 26)),
                         ),
                       ],
                     ),
                     SliverToBoxAdapter(
                       child: Container(
-                        color: Colors.white,
+                        color: cardColor,
                         padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
                         child: Row(
                           children: [
@@ -789,7 +793,7 @@ class _HomeScreenState extends State<HomeScreen>
                                 decoration: BoxDecoration(
                                   color: _isNearbyMode
                                       ? AppColors.primary
-                                      : const Color(0xFFF0F0F0),
+                                      : filterInactiveColor,
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: _isLocating
@@ -802,7 +806,7 @@ class _HomeScreenState extends State<HomeScreen>
                                     : Icon(Icons.near_me_rounded,
                                         color: _isNearbyMode
                                             ? Colors.white
-                                            : AppColors.grey600,
+                                            : filterIconColor,
                                         size: 22),
                               ),
                             ),
@@ -815,7 +819,7 @@ class _HomeScreenState extends State<HomeScreen>
                                 decoration: BoxDecoration(
                                   color: _filterCount > 0
                                       ? AppColors.primary
-                                      : const Color(0xFFF0F0F0),
+                                      : filterInactiveColor,
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Stack(
@@ -824,7 +828,7 @@ class _HomeScreenState extends State<HomeScreen>
                                     Icon(Icons.tune_rounded,
                                         color: _filterCount > 0
                                             ? Colors.white
-                                            : AppColors.grey600,
+                                            : filterIconColor,
                                         size: 22),
                                     if (_filterCount > 0)
                                       Positioned(
@@ -855,14 +859,14 @@ class _HomeScreenState extends State<HomeScreen>
                     ),
                     SliverToBoxAdapter(
                       child: Container(
-                        color: Colors.white,
+                        color: cardColor,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Divider(height: 1, color: Color(0xFFEEEEEE)),
+                            Divider(height: 1, color: dividerColor),
                             CategoryList(
                               onCategorySelected: (id) {
-                              setState(() => _selectedCategoryId = id); 
+                                setState(() => _selectedCategoryId = id);
                                 if (_isSearchMode && _searchQuery.isNotEmpty) {
                                   _onSearchChanged(_searchQuery);
                                 } else if (_isNearbyMode) {
@@ -924,7 +928,9 @@ class _HomeScreenState extends State<HomeScreen>
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 10, vertical: 6),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFEEF2FF),
+                                    color: isDark
+                                        ? AppColors.primary.withValues(alpha: 0.15)
+                                        : const Color(0xFFEEF2FF),
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(
                                         color: AppColors.primary
@@ -952,7 +958,9 @@ class _HomeScreenState extends State<HomeScreen>
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 12, vertical: 6),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFFFEEEE),
+                                    color: isDark
+                                        ? AppColors.error.withValues(alpha: 0.15)
+                                        : const Color(0xFFFFEEEE),
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(
                                         color: AppColors.error
@@ -1046,8 +1054,6 @@ class _HomeScreenState extends State<HomeScreen>
             offstage: _currentTab != 1,
             child: _mapLoaded ? const MapScreen() : const SizedBox.shrink(),
           ),
-
-          // ✅ Камера панели — body Stack'та, nav үстүндө ортодо
           if (_cameraVisible)
             Positioned(
               bottom: 64 + MediaQuery.of(context).padding.bottom + 12,

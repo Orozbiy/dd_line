@@ -113,19 +113,24 @@ class _ChatListScreenState extends State<ChatListScreen> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF121212) : const Color(0xFFF4F5F7);
+    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+
     final myId = supabase.auth.currentUser?.id ?? '';
     final stream = widget.isSeller
         ? _service.sellerChatsStream(widget.sellerId ?? myId)
         : _service.buyerChatsStream(myId);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F5F7),
+      backgroundColor: bgColor,
       appBar: _isSelectionMode
           ? AppBar(
-              backgroundColor: Colors.white,
+              backgroundColor: cardColor,
               elevation: 0,
               leading: IconButton(
-                icon: const Icon(Icons.close, color: AppColors.black),
+                icon: Icon(Icons.close, color: theme.colorScheme.onSurface),
                 onPressed: _exitSelectionMode,
               ),
               title: Text('${_selectedIds.length} ${loc.get('selected')}',
@@ -138,7 +143,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
               ],
             )
           : AppBar(
-              backgroundColor: Colors.white,
+              backgroundColor: cardColor,
               elevation: 0,
               title: Text(loc.get('messages'), style: AppTextStyles.headingMedium),
             ),
@@ -180,7 +185,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
             children: [
               if (_isSelectionMode)
                 Container(
-                  color: Colors.white,
+                  color: cardColor,
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   child: Align(
                     alignment: Alignment.centerRight,
@@ -207,12 +212,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
                         chat.productName!.isNotEmpty;
                     final isSelected = _selectedIds.contains(chat.id);
 
-                    // ✅ ОҢДОО: buyerName түздөн-түз ChatModel'дан алынат
-                    // Базага кайрадан барбайт — "Жүктөлүүдө..." жазуу чыкпайт
                     final displayName = widget.isSeller
-                        ? (chat.buyerName.isNotEmpty
-                            ? chat.buyerName
-                            : chat.buyerId)
+                        ? (chat.buyerName.isNotEmpty ? chat.buyerName : chat.buyerId)
                         : chat.sellerName;
 
                     return GestureDetector(
@@ -228,7 +229,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                         decoration: BoxDecoration(
                           color: isSelected
                               ? AppColors.primary.withValues(alpha: 0.08)
-                              : Colors.white,
+                              : cardColor,
                           borderRadius: BorderRadius.circular(14),
                           boxShadow: [
                             BoxShadow(
@@ -253,16 +254,12 @@ class _ChatListScreenState extends State<ChatListScreen> {
                                   size: 28,
                                 )
                               : _ChatAvatar(chat: chat, isSeller: widget.isSeller),
-
-                          // ✅ ОҢДОО: _BuyerName виджети жок болду
-                          // displayName дароо чыгат — жүктөө жок
                           title: Text(
                             displayName,
                             style: AppTextStyles.labelLarge,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -276,8 +273,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                                         borderRadius: BorderRadius.circular(6),
                                         child: CachedNetworkImage(
                                           imageUrl: toCloudinaryThumb(
-                                              chat.productImage!,
-                                              width: 80),
+                                              chat.productImage!, width: 80),
                                           width: 24,
                                           height: 24,
                                           fit: BoxFit.cover,
@@ -396,20 +392,23 @@ class _ChatSkeletonListState extends State<_ChatSkeletonList>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+
     return AnimatedBuilder(
       animation: _anim,
       builder: (_, __) {
-        final shimmerColor = Color.lerp(
-            const Color(0xFFE8E8E8), const Color(0xFFF5F5F5), _anim.value)!;
+        final shimmerColor = isDark
+            ? Color.lerp(const Color(0xFF2C2C2C), const Color(0xFF3A3A3A), _anim.value)!
+            : Color.lerp(const Color(0xFFE8E8E8), const Color(0xFFF5F5F5), _anim.value)!;
         return ListView.builder(
           padding: const EdgeInsets.all(12),
           itemCount: 7,
           itemBuilder: (_, i) => Container(
             margin: const EdgeInsets.only(bottom: 10),
-            padding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: cardColor,
               borderRadius: BorderRadius.circular(14),
               boxShadow: [
                 BoxShadow(
@@ -463,7 +462,7 @@ class _ChatSkeletonListState extends State<_ChatSkeletonList>
 }
 
 // ─────────────────────────────────────────────────────────────
-// AVATAR — ✅ initial тамганы buyerName'дан алат
+// AVATAR
 // ─────────────────────────────────────────────────────────────
 class _ChatAvatar extends StatelessWidget {
   final ChatModel chat;
@@ -473,15 +472,9 @@ class _ChatAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final url = isSeller ? chat.buyerAvatar : chat.sellerAvatar;
-
-    // ✅ ОҢДОО: initial тамга buyerName'дан алынат (buyerId эмес)
     final initial = isSeller
-        ? (chat.buyerName.isNotEmpty
-            ? chat.buyerName[0].toUpperCase()
-            : '?')
-        : (chat.sellerName.isNotEmpty
-            ? chat.sellerName[0].toUpperCase()
-            : '?');
+        ? (chat.buyerName.isNotEmpty ? chat.buyerName[0].toUpperCase() : '?')
+        : (chat.sellerName.isNotEmpty ? chat.sellerName[0].toUpperCase() : '?');
 
     if (url.isNotEmpty) {
       return CircleAvatar(
@@ -495,7 +488,7 @@ class _ChatAvatar extends StatelessWidget {
       backgroundColor: AppColors.primary.withValues(alpha: 0.15),
       child: Text(
         initial,
-        style: TextStyle(
+        style: const TextStyle(
             color: AppColors.primary,
             fontWeight: FontWeight.bold,
             fontSize: 16),
@@ -503,9 +496,3 @@ class _ChatAvatar extends StatelessWidget {
     );
   }
 }
-
-// ─────────────────────────────────────────────────────────────
-// _BuyerName виджети ЖОК КЫЛЫНДЫ ✅
-// Анын ордуна chat.buyerName түздөн-түз колдонулат —
-// "Жүктөлүүдө..." жазуусу такыр чыкпайт
-// ─────────────────────────────────────────────────────────────

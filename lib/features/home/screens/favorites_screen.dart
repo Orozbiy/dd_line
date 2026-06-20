@@ -19,19 +19,23 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context);
-    final products = _fav.favorites;
+    final loc    = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor   = isDark ? const Color(0xFF121212) : const Color(0xFFF4F5F7);
+    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final products  = _fav.favorites;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F5F7),
+      backgroundColor: bgColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: cardColor,
         elevation: 0,
         centerTitle: true,
         title: Text(loc.get('favorites'), style: AppTextStyles.headingMedium),
         leading: GestureDetector(
           onTap: () => Navigator.pop(context),
-          child: const Icon(Icons.arrow_back, color: AppColors.black),
+          child: Icon(Icons.arrow_back,
+              color: isDark ? Colors.white : AppColors.black),
         ),
       ),
       body: products.isEmpty
@@ -39,14 +43,17 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.favorite_outline, size: 80, color: AppColors.grey300),
+                  Icon(Icons.favorite_outline, size: 80,
+                      color: isDark ? AppColors.grey600 : AppColors.grey300),
                   const SizedBox(height: 16),
                   Text(
                     loc.get('favorites_empty'),
-                    style: AppTextStyles.headingSmall.copyWith(color: AppColors.grey400),
+                    style: AppTextStyles.headingSmall.copyWith(
+                        color: isDark ? AppColors.grey500 : AppColors.grey400),
                   ),
                   const SizedBox(height: 8),
-                  Text(loc.get('favorites_empty_desc'), style: AppTextStyles.bodyMedium),
+                  Text(loc.get('favorites_empty_desc'),
+                      style: AppTextStyles.bodyMedium),
                 ],
               ),
             )
@@ -55,7 +62,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               onProductTap: (product) {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => ProductDetailScreen(product: product)),
+                  MaterialPageRoute(
+                      builder: (_) => ProductDetailScreen(product: product)),
                 ).then((_) => setState(() {}));
               },
             ),

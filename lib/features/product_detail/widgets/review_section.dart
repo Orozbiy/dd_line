@@ -5,7 +5,6 @@ import '../../../core/app_localizations.dart';
 import '../../../core/utils/review_manager.dart';
 import '../../../core/supabase_client.dart';
 
-/// Жылдыз оценка бөлүмү — комент жок, жылдыз гана
 class ReviewSection extends StatefulWidget {
   final String productId;
   const ReviewSection({super.key, required this.productId});
@@ -50,7 +49,6 @@ class _ReviewSectionState extends State<ReviewSection> {
     }
 
     setState(() { _myRating = star; _isSaving = true; });
-
     await _manager.submitRating(productId: widget.productId, rating: star);
 
     if (mounted) {
@@ -80,7 +78,14 @@ class _ReviewSectionState extends State<ReviewSection> {
 
   @override
   Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context);
+    final loc    = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor     = isDark ? const Color(0xFF2D2040) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF3D3060) : AppColors.grey100;
+    final dividerColor = isDark ? const Color(0xFF3D3060) : AppColors.grey100;
+    final textColor   = isDark ? Colors.white : AppColors.black;
+    final subTextColor = isDark ? AppColors.grey400 : AppColors.grey500;
+    final emptyStarColor = isDark ? AppColors.grey600 : AppColors.grey300;
 
     return StreamBuilder<Map<String, dynamic>>(
       stream: _manager.getRatingStream(widget.productId),
@@ -92,9 +97,9 @@ class _ReviewSectionState extends State<ReviewSection> {
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: bgColor,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.grey100),
+            border: Border.all(color: borderColor),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -127,7 +132,7 @@ class _ReviewSectionState extends State<ReviewSection> {
                         count > 0
                             ? '$count ${loc.get('review_count')}'
                             : loc.get('review_no_ratings'),
-                        style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey500),
+                        style: AppTextStyles.bodySmall.copyWith(color: subTextColor),
                       ),
                     ],
                   ),
@@ -135,11 +140,12 @@ class _ReviewSectionState extends State<ReviewSection> {
               ),
 
               const SizedBox(height: 20),
-              const Divider(height: 1, color: AppColors.grey100),
+              Divider(height: 1, color: dividerColor),
               const SizedBox(height: 20),
 
               // ── Колдонуучунун баасы ──
-              Text(loc.get('your_rating'), style: AppTextStyles.headingSmall),
+              Text(loc.get('your_rating'),
+                  style: AppTextStyles.headingSmall.copyWith(color: textColor)),
               const SizedBox(height: 12),
 
               if (_isLoading)
@@ -157,7 +163,7 @@ class _ReviewSectionState extends State<ReviewSection> {
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
                         child: Icon(
                           filled ? Icons.star_rounded : Icons.star_outline_rounded,
-                          color: filled ? Colors.amber : AppColors.grey300,
+                          color: filled ? Colors.amber : emptyStarColor,
                           size: 40,
                         ),
                       ),

@@ -43,13 +43,13 @@ class ChatScreen extends StatefulWidget {
 
   factory ChatScreen.fromChat(ChatModel chat, {required bool isSeller}) {
     return ChatScreen(
-      chatId:        chat.id,
-      sellerName:    chat.sellerName,
-      productName:   chat.productName ?? '',
-      productImage:  chat.productImage ?? '',
-      isSeller:      isSeller,
-      buyerId:       chat.buyerId,
-      sellerId:      chat.sellerId,
+      chatId:         chat.id,
+      sellerName:     chat.sellerName,
+      productName:    chat.productName ?? '',
+      productImage:   chat.productImage ?? '',
+      isSeller:       isSeller,
+      buyerId:        chat.buyerId,
+      sellerId:       chat.sellerId,
       otherAvatarUrl: isSeller ? chat.buyerAvatar : chat.sellerAvatar,
     );
   }
@@ -62,8 +62,8 @@ class _ChatScreenState extends State<ChatScreen> {
   static const _cloudName    = 'dedwm4krp';
   static const _uploadPreset = 'dd-online';
 
-  final _service   = ChatService();
-  final _msgCtrl   = TextEditingController();
+  final _service    = ChatService();
+  final _msgCtrl    = TextEditingController();
   final _scrollCtrl = ScrollController();
 
   bool _isSendingImage = false;
@@ -109,55 +109,43 @@ class _ChatScreenState extends State<ChatScreen> {
     super.dispose();
   }
 
+  Future<void> _loadMyName() async {
+    try {
+      final myId = _myId;
+      if (myId == null) return;
 
-
-Future<void> _loadMyName() async {
-  try {
-    final myId = _myId;
-    if (myId == null) return;
-
-    if (widget.isSeller) {
-      // ── Сатуучу: өз дүкөн атын stores таблицасынан алат ──
-      final storeRow = await supabase
-          .from('stores')
-          .select('store_name')
-          .eq('owner_id', myId)
-          .maybeSingle();
-
-      if (storeRow != null && mounted) {
-        setState(() => _myDisplayName = storeRow['store_name'] as String? ?? '');
+      if (widget.isSeller) {
+        final storeRow = await supabase
+            .from('stores')
+            .select('store_name')
+            .eq('owner_id', myId)
+            .maybeSingle();
+        if (storeRow != null && mounted) {
+          setState(() => _myDisplayName = storeRow['store_name'] as String? ?? '');
+        }
+        final buyerRow = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', widget.buyerId)
+            .maybeSingle();
+        if (buyerRow != null && mounted) {
+          setState(() => _receiverDisplayName = buyerRow['full_name'] as String? ?? '');
+        }
+      } else {
+        final profileRow = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', myId)
+            .maybeSingle();
+        if (profileRow != null && mounted) {
+          setState(() => _myDisplayName = profileRow['full_name'] as String? ?? '');
+        }
+        if (mounted) setState(() => _receiverDisplayName = widget.sellerName);
       }
-
-      // ── Receiver = buyer: profiles'тен Google аты ──
-      final buyerRow = await supabase
-          .from('profiles')
-          .select('full_name')
-          .eq('id', widget.buyerId)
-          .maybeSingle();
-
-      if (buyerRow != null && mounted) {
-        setState(() =>
-            _receiverDisplayName = buyerRow['full_name'] as String? ?? '');
-      }
-    } else {
-      // ── Кардар: өз атын profiles'тен алат ──
-      final profileRow = await supabase
-          .from('profiles')
-          .select('full_name')
-          .eq('id', myId)
-          .maybeSingle();
-
-      if (profileRow != null && mounted) {
-        setState(() => _myDisplayName = profileRow['full_name'] as String? ?? '');
-      }
-
-      // ── Receiver = сатуучу: widget'тен берилген ат ──
-      if (mounted) setState(() => _receiverDisplayName = widget.sellerName);
+    } catch (e) {
+      debugPrint('⚠️ _loadMyName ката: $e');
     }
-  } catch (e) {
-    debugPrint('⚠️ _loadMyName ката: $e');
   }
-}
 
   Future<void> _markRead() async {
     final myId = _myId;
@@ -179,7 +167,6 @@ Future<void> _loadMyName() async {
       ? (_myDisplayName.isNotEmpty ? _myDisplayName : '')
       : widget.sellerName;
 
-  // ══ ЖӨНӨТҮҮ ══
   void _send() {
     final loc  = AppLocalizations.of(context);
     final text = _msgCtrl.text.trim();
@@ -189,10 +176,10 @@ Future<void> _loadMyName() async {
     final replyTo = _replyingTo;
     if (replyTo != null) setState(() => _replyingTo = null);
     _service.sendMessage(
-      chatId: widget.chatId,
-      senderId: myId,
-      text: text,
-      replyToId: replyTo?.id,
+      chatId:      widget.chatId,
+      senderId:    myId,
+      text:        text,
+      replyToId:   replyTo?.id,
       replyToText: replyTo != null ? (replyTo.text.isNotEmpty ? replyTo.text : '📷 ${loc.get('chat_image')}') : null,
     ).then((_) => NotificationService().sendChatNotification(
       receiverUid: _receiverUid,
@@ -202,12 +189,14 @@ Future<void> _loadMyName() async {
     )).catchError((e) => debugPrint('❌ _send ката: $e'));
   }
 
-  // ══ СҮРӨТ ТАНДОО ══
   Future<ImageSource?> _chooseImageSource() {
     final loc = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final sheetColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+
     return showModalBottomSheet<ImageSource>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: sheetColor,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (context) => SafeArea(
         child: Column(
@@ -283,7 +272,6 @@ Future<void> _loadMyName() async {
     } catch (_) { return null; }
   }
 
-  // ══ ҮН БИЛДИРҮҮ ══
   Future<String?> _uploadAudioToCloudinary(String filePath) async {
     try {
       final uri     = Uri.parse('https://api.cloudinary.com/v1_1/$_cloudName/video/upload');
@@ -328,19 +316,23 @@ Future<void> _loadMyName() async {
     }
   }
 
-  // ══ SELECT РЕЖИМ ══
   void _enterSelectionMode(String msgId) => setState(() { _isSelectionMode = true; _selectedIds.add(msgId); });
   void _exitSelectionMode()              => setState(() { _isSelectionMode = false; _selectedIds.clear(); });
 
   void _toggleSelection(String msgId) {
     if (!_isSelectionMode) return;
     setState(() {
-      if (_selectedIds.contains(msgId)) { _selectedIds.remove(msgId); if (_selectedIds.isEmpty) _isSelectionMode = false; }
-      else _selectedIds.add(msgId);
+      if (_selectedIds.contains(msgId)) {
+        _selectedIds.remove(msgId);
+        if (_selectedIds.isEmpty) _isSelectionMode = false;
+      } else {
+        _selectedIds.add(msgId);
+      }
     });
   }
 
-  void _selectAll(List<MessageModel> messages) => setState(() => _selectedIds..clear()..addAll(messages.map((m) => m.id)));
+  void _selectAll(List<MessageModel> messages) =>
+      setState(() => _selectedIds..clear()..addAll(messages.map((m) => m.id)));
 
   Future<void> _deleteSelected() async {
     final loc     = AppLocalizations.of(context);
@@ -358,7 +350,7 @@ Future<void> _loadMyName() async {
     if (confirm == true) { await _service.deleteMessages(_selectedIds.toList()); _exitSelectionMode(); }
   }
 
-  Future<void> _copyMessage(MessageModel msg) async { /* TODO: clipboard copy */ }
+  Future<void> _copyMessage(MessageModel msg) async {}
 
   Future<void> _deleteSingle(MessageModel msg) async {
     final loc     = AppLocalizations.of(context);
@@ -384,32 +376,50 @@ Future<void> _loadMyName() async {
     final reversedIndex = messages.indexWhere((m) => m.id == replyToId);
     if (reversedIndex == -1) return;
     final offset = (messages.length - 1 - reversedIndex) * 80.0;
-    if (_scrollCtrl.hasClients) _scrollCtrl.animateTo(offset.clamp(0.0, _scrollCtrl.position.maxScrollExtent), duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+    if (_scrollCtrl.hasClients) _scrollCtrl.animateTo(
+      offset.clamp(0.0, _scrollCtrl.position.maxScrollExtent),
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
   }
 
-  // ══ BUILD ══
   @override
   Widget build(BuildContext context) {
-    final loc  = AppLocalizations.of(context);
-    final myId = _myId;
+    final loc   = AppLocalizations.of(context);
+    final myId  = _myId;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final bgColor   = isDark ? const Color(0xFF121212) : const Color(0xFFF4F5F7);
+    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final inputBg   = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF7F7F7);
+    final dividerColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFEEEEEE);
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      backgroundColor: const Color(0xFFF4F5F7),
+      backgroundColor: bgColor,
       appBar: _isSelectionMode
           ? AppBar(
-              backgroundColor: Colors.white,
+              backgroundColor: cardColor,
               elevation: 0,
-              leading: IconButton(icon: const Icon(Icons.close, color: AppColors.black), onPressed: _exitSelectionMode),
+              leading: IconButton(
+                icon: Icon(Icons.close, color: theme.colorScheme.onSurface),
+                onPressed: _exitSelectionMode,
+              ),
               title: Text('${_selectedIds.length} ${loc.get('selected')}', style: AppTextStyles.headingSmall),
               actions: [
-                IconButton(icon: const Icon(Icons.delete_outline, color: AppColors.error), onPressed: _selectedIds.isEmpty ? null : _deleteSelected),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, color: AppColors.error),
+                  onPressed: _selectedIds.isEmpty ? null : _deleteSelected,
+                ),
               ],
             )
           : AppBar(
-              backgroundColor: Colors.white,
+              backgroundColor: cardColor,
               elevation: 0,
-              leading: IconButton(icon: const Icon(Icons.arrow_back, color: AppColors.black), onPressed: () => Navigator.pop(context)),
+              leading: IconButton(
+                icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
+                onPressed: () => Navigator.pop(context),
+              ),
               title: Row(
                 children: [
                   CircleAvatar(
@@ -431,7 +441,9 @@ Future<void> _loadMyName() async {
                           overflow: TextOverflow.ellipsis,
                         ),
                         if (widget.productName.isNotEmpty)
-                          Text(widget.productName, style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey500), overflow: TextOverflow.ellipsis),
+                          Text(widget.productName,
+                              style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey500),
+                              overflow: TextOverflow.ellipsis),
                       ],
                     ),
                   ),
@@ -442,7 +454,11 @@ Future<void> _loadMyName() async {
           ? Center(child: Text(loc.get('chat_login_required')))
           : Column(
               children: [
-                ChatProductBanner(productId: widget.productId, productName: widget.productName, productImage: widget.productImage),
+                ChatProductBanner(
+                  productId:    widget.productId,
+                  productName:  widget.productName,
+                  productImage: widget.productImage,
+                ),
                 Expanded(
                   child: !_initialLoadDone
                       ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
@@ -452,7 +468,7 @@ Future<void> _loadMyName() async {
                               children: [
                                 if (_isSelectionMode)
                                   Container(
-                                    color: Colors.white,
+                                    color: cardColor,
                                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                                     child: Align(
                                       alignment: Alignment.centerRight,
@@ -469,19 +485,19 @@ Future<void> _loadMyName() async {
                                     padding: const EdgeInsets.all(12),
                                     itemCount: _cachedMessages.length,
                                     itemBuilder: (context, i) {
-                                      final msg    = _cachedMessages[_cachedMessages.length - 1 - i];
-                                      final isMe   = msg.senderId == myId;
+                                      final msg  = _cachedMessages[_cachedMessages.length - 1 - i];
+                                      final isMe = msg.senderId == myId;
                                       return MessageBubble(
-                                        message: msg,
-                                        isMe: isMe,
+                                        message:         msg,
+                                        isMe:            isMe,
                                         isSelectionMode: _isSelectionMode,
-                                        isSelected: _selectedIds.contains(msg.id),
-                                        onLongPress: () => _enterSelectionMode(msg.id),
-                                        onTap:       () => _toggleSelection(msg.id),
-                                        onCopy:      () => _copyMessage(msg),
-                                        onDelete:    () => _deleteSingle(msg),
-                                        onReply:     () => _startReply(msg),
-                                        onReplyTap:  () => _scrollToMessage(msg.replyToId, _cachedMessages),
+                                        isSelected:      _selectedIds.contains(msg.id),
+                                        onLongPress:     () => _enterSelectionMode(msg.id),
+                                        onTap:           () => _toggleSelection(msg.id),
+                                        onCopy:          () => _copyMessage(msg),
+                                        onDelete:        () => _deleteSingle(msg),
+                                        onReply:         () => _startReply(msg),
+                                        onReplyTap:      () => _scrollToMessage(msg.replyToId, _cachedMessages),
                                       );
                                     },
                                   ),
@@ -494,7 +510,10 @@ Future<void> _loadMyName() async {
                 if (!_isSelectionMode && _replyingTo != null)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    decoration: const BoxDecoration(color: Colors.white, border: Border(top: BorderSide(color: Color(0xFFEEEEEE)))),
+                    decoration: BoxDecoration(
+                      color: cardColor,
+                      border: Border(top: BorderSide(color: dividerColor)),
+                    ),
                     child: Row(
                       children: [
                         Container(width: 3, height: 36, color: AppColors.primary),
@@ -522,7 +541,7 @@ Future<void> _loadMyName() async {
                   Container(
                     padding: EdgeInsets.fromLTRB(12, 8, 12, MediaQuery.of(context).padding.bottom + 8),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: cardColor,
                       boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, -2))],
                     ),
                     child: Row(
@@ -534,7 +553,7 @@ Future<void> _loadMyName() async {
                                 onTap: _pickAndSendImage,
                                 child: Container(
                                   width: 44, height: 44,
-                                  decoration: BoxDecoration(color: const Color(0xFFF7F7F7), borderRadius: BorderRadius.circular(22)),
+                                  decoration: BoxDecoration(color: inputBg, borderRadius: BorderRadius.circular(22)),
                                   child: const Icon(Icons.image_outlined, color: AppColors.grey500, size: 22),
                                 ),
                               ),
@@ -548,7 +567,7 @@ Future<void> _loadMyName() async {
                             decoration: InputDecoration(
                               hintText: loc.get('chat_hint'),
                               filled: true,
-                              fillColor: const Color(0xFFF7F7F7),
+                              fillColor: inputBg,
                               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none),
                             ),
