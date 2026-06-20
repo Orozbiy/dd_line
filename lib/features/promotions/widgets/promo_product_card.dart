@@ -10,14 +10,13 @@ class PromoProductCard extends StatelessWidget {
 
   const PromoProductCard({super.key, required this.product, this.onTap});
 
-  // _discountPct getter да:
-int get _discountPct {
-  final disc = (product.discountedPrice as num?)?.toDouble();
-  if (disc == null || product.price == 0) return 0;
-  return ((1 - disc / product.price) * 100).round();
-}
+  int get _discountPct {
+    final disc = (product.discountedPrice as num?)?.toDouble();
+    if (disc == null || product.price == 0) return 0;
+    return ((1 - disc / product.price) * 100).round();
+  }
 
- double? get _discountedPrice => (product.discountedPrice as num?)?.toDouble();
+  double? get _discountedPrice => (product.discountedPrice as num?)?.toDouble();
 
   @override
   Widget build(BuildContext context) {
@@ -37,23 +36,25 @@ int get _discountPct {
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
+            // ── Сүрөт ──
             Stack(
               children: [
                 ClipRRect(
-                  borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(16)),
-                  child: Image.network(
-                    product.imageUrl,
-                    height: 150,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      height: 150,
-                      color: AppColors.grey100,
-                      child: const Center(
-                        child: Icon(Icons.image_not_supported_outlined,
-                            color: AppColors.grey400),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                  child: AspectRatio(
+                    aspectRatio: 1.05,
+                    child: Image.network(
+                      product.imageUrl,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        color: AppColors.grey100,
+                        child: const Center(
+                          child: Icon(Icons.image_not_supported_outlined,
+                              color: AppColors.grey400),
+                        ),
                       ),
                     ),
                   ),
@@ -61,10 +62,9 @@ int get _discountPct {
                 if (_discountPct > 0)
                   Positioned(
                     top: 8,
-                    right: 8,
+                    left: 8,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                       decoration: BoxDecoration(
                         color: AppColors.error,
                         borderRadius: BorderRadius.circular(8),
@@ -89,18 +89,27 @@ int get _discountPct {
                   ),
               ],
             ),
+
+            // ── Маалымат ──
             Padding(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.fromLTRB(8, 6, 8, 8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
+                  // Товардын аты
                   Text(
                     product.name,
                     style: AppTextStyles.labelLarge,
-                    maxLines: 2,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 6),
+                  // Акция баасы (кызыл, чоң)
+                  Text(
+                    '${(_discountedPrice ?? product.price).toStringAsFixed(0)} сом',
+                    style: AppTextStyles.headingSmall.copyWith(color: AppColors.error),
+                  ),
+                  // Эски баа (сызылган)
                   Text(
                     '${product.price.toStringAsFixed(0)} сом',
                     style: AppTextStyles.bodySmall.copyWith(
@@ -109,12 +118,6 @@ int get _discountPct {
                       color: AppColors.grey400,
                       decorationThickness: 1.5,
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '${(_discountedPrice ?? product.price).toStringAsFixed(0)} сом',
-                    style: AppTextStyles.headingSmall
-                        .copyWith(color: AppColors.error),
                   ),
                 ],
               ),

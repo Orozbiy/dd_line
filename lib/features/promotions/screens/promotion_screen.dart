@@ -141,12 +141,12 @@ class _PromotionScreenState extends State<PromotionScreen> {
                         onRefresh: _loadPromos,
                         color: AppColors.primary,
                         child: GridView.builder(
-                          padding: const EdgeInsets.fromLTRB(12, 4, 12, 24),
+                          padding: const EdgeInsets.fromLTRB(12, 4, 12, 2),
                           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 2,
                             crossAxisSpacing: 10,
                             mainAxisSpacing: 10,
-                            childAspectRatio: 0.72,
+                            childAspectRatio: 0.68,
                           ),
                           itemCount: filtered.length,
                           itemBuilder: (context, i) => _PromoCard(product: filtered[i]),
