@@ -118,7 +118,7 @@ class CategoryModel {
           SubCategoryModel(id: '7_6',  name: 'Велосипед',  nameRu: 'Велосипед',  icon: '🚴'),
           SubCategoryModel(id: '7_7',  name: 'Бокс',       nameRu: 'Бокс',       icon: '🥊'),
           SubCategoryModel(id: '7_8',  name: 'Йога/Фитнес',nameRu: 'Йога/Фитнес',icon: '🧘'),
-          SubCategoryModel(id: '7_9',  name: 'Жүзүү',      nameRu: 'Плавание',   icon: '🏊'),
+          SubCategoryModel(id: '7_9',  name: 'Сүзүү',      nameRu: 'Плавание',   icon: '🏊'),
           SubCategoryModel(id: '7_10', name: 'Жүгүрүү',    nameRu: 'Бег',        icon: '🏃'),
         ],
       ),

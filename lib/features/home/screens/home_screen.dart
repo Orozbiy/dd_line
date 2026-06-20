@@ -31,7 +31,8 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
   List<ProductModel> allProducts = [];
   List<ProductModel> displayedProducts = [];
   bool _isLoading = true;
@@ -46,6 +47,13 @@ class _HomeScreenState extends State<HomeScreen> {
   DateTime? _lastTapTime;
 
   int _favCount = 0;
+  int _totalUnreadChat = 0;
+  StreamSubscription<List<ChatModel>>? _chatSub;
+
+  // ✅ Камера панели
+  bool _cameraVisible = false;
+  late AnimationController _cameraAnim;
+  late Animation<Offset> _cameraSlide;
 
   int _offset = 0;
   bool _isLoadingMore = false;
@@ -54,7 +62,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   bool _isNearbyMode = false;
   bool _isLocating = false;
-
   bool _isSearchMode = false;
   Timer? _debounce;
 
@@ -80,16 +87,47 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadProducts();
     _favCount = fav.count;
     fav.addListener(_onFavChanged);
+    _subscribeChatUnread();
+
+    _cameraAnim = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _cameraSlide = Tween<Offset>(
+      begin: const Offset(0, 1.5),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _cameraAnim, curve: Curves.easeOut));
+  }
+
+  void _subscribeChatUnread() {
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+    _chatSub = ChatService().buyerChatsStream(user.id).listen((chats) {
+      if (!mounted) return;
+      final total = chats.fold<int>(0, (sum, c) => sum + c.buyerUnread);
+      setState(() => _totalUnreadChat = total);
+    });
   }
 
   void _onFavChanged() {
     if (mounted) setState(() => _favCount = fav.count);
   }
 
+  void _toggleCamera() {
+    setState(() => _cameraVisible = !_cameraVisible);
+    if (_cameraVisible) {
+      _cameraAnim.forward();
+    } else {
+      _cameraAnim.reverse();
+    }
+  }
+
   @override
   void dispose() {
     fav.removeListener(_onFavChanged);
     _debounce?.cancel();
+    _chatSub?.cancel();
+    _cameraAnim.dispose();
     super.dispose();
   }
 
@@ -294,90 +332,222 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Widget _chatBadgeIcon() {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        const Icon(Icons.chat_bubble_outline_rounded, size: 24),
+        if (_totalUnreadChat > 0)
+          Positioned(
+            top: -5, right: -6,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+              constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+              decoration: BoxDecoration(
+                color: AppColors.error,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.white, width: 1.5),
+              ),
+              child: Text(
+                _totalUnreadChat > 99 ? '99+' : '$_totalUnreadChat',
+                style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold, height: 1.2),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  // ✅ ЖАҢЫ BOTTOM NAV
   Widget _buildBottomNav(AppLocalizations loc) {
     return Stack(
       clipBehavior: Clip.none,
-      alignment: Alignment.topCenter,
       children: [
-        BottomNavigationBar(
-          currentIndex: _currentTab,
-          onTap: (i) {
-            if (i == 2) return;
-            if (i == 3) {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const FavoritesScreen()))
-                  .then((_) => setState(() => _favCount = fav.count));
-              return;
-            }
-            if (i == 4) {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
-              return;
-            }
-            setState(() { _currentTab = i; if (i == 1) _mapLoaded = true; });
-          },
-          selectedItemColor: AppColors.primary,
-          unselectedItemColor: AppColors.grey400,
-          backgroundColor: Colors.white,
-          elevation: 12,
-          type: BottomNavigationBarType.fixed,
-          showSelectedLabels: false,
-          showUnselectedLabels: false,
-          items: [
-            const BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home_rounded), label: ''),
-            const BottomNavigationBarItem(icon: Icon(Icons.storefront_outlined), activeIcon: Icon(Icons.storefront_rounded), label: ''),
-            const BottomNavigationBarItem(icon: SizedBox(width: 56), label: ''),
-            BottomNavigationBarItem(label: '', icon: FavBadge(count: _favCount, active: false), activeIcon: FavBadge(count: _favCount, active: true)),
-            const BottomNavigationBarItem(icon: Icon(Icons.settings_outlined), activeIcon: Icon(Icons.settings_rounded), label: ''),
-          ],
-        ),
-        Positioned(
-          top: -24,
-          child: GestureDetector(
-            onTap: () {
-              showDialog(
-                context: context,
-                builder: (_) => AlertDialog(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 64, height: 64,
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(colors: [Color(0xFFD97706), Color(0xFFEF4444)]),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 30),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(loc.get('camera_search'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
-                      const SizedBox(height: 8),
-                      Text(loc.get('camera_soon'), textAlign: TextAlign.center, style: const TextStyle(color: Colors.grey, height: 1.5)),
-                    ],
+        // ── Негизги nav bar ──
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 12,
+                offset: const Offset(0, -2),
+              ),
+            ],
+          ),
+          child: SafeArea(
+            top: false,
+            child: SizedBox(
+              height: 64.0,
+              child: Row(
+                children: [
+                  // 1 — Башкы
+                  _navItem(
+                    icon: Icons.home_outlined,
+                    activeIcon: Icons.home_rounded,
+                    label: 'Башкы',
+                    isActive: _currentTab == 0,
+                    onTap: () => setState(() { _currentTab = 0; }),
                   ),
-                  actions: [
-                    Center(
-                      child: TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: Text(loc.get('ok'), style: const TextStyle(color: Color(0xFFD97706), fontWeight: FontWeight.bold)),
+
+                  // 2 — Чат
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const ChatListScreen(isSeller: false)),
+                      ).then((_) => setState(() {})),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _chatBadgeIcon(),
+                          const SizedBox(height: 4),
+                          const Text('Чат',
+                              style: TextStyle(fontSize: 10, color: AppColors.grey400, fontWeight: FontWeight.w500)),
+                        ],
                       ),
                     ),
-                  ],
-                ),
-              );
-            },
-            child: Container(
-              width: 62, height: 62,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(colors: [Color(0xFFD97706), Color(0xFFEF4444)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 3),
-                boxShadow: [BoxShadow(color: const Color(0xFFD97706).withValues(alpha: 0.45), blurRadius: 14, offset: const Offset(0, 4))],
+                  ),
+
+                  // 3 — Дүкөн (ортодо, стрелка жогорусунда — алыс боштук менен)
+                  Expanded(
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      alignment: Alignment.center,
+                      children: [
+                        // Дүкөн тизмелери баскычы → MapScreen ачат
+                        GestureDetector(
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const MapScreen()),
+                          ).then((_) => setState(() {})),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.storefront_outlined, size: 24, color: AppColors.grey400),
+                              const SizedBox(height: 4),
+                              const Text(
+                                'Дүкөн\nтизмелери',
+                                style: TextStyle(fontSize: 9, color: AppColors.grey400, fontWeight: FontWeight.w500),
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                              ),
+                            ],
+                          ),
+                        ),
+                        // ✅ Стрелка — дүкөндөн 40px жогору (алыс, чалкашпайт)
+                        Positioned(
+                          top: -38,
+                          child: GestureDetector(
+                            onTap: _toggleCamera,
+                            child: Container(
+                              width: 34,
+                              height: 34,
+                              decoration: BoxDecoration(
+                                color: _cameraVisible
+                                    ? AppColors.primary
+                                    : Colors.white,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: _cameraVisible
+                                      ? AppColors.primary
+                                      : AppColors.grey300,
+                                  width: 1.5,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.10),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: AnimatedRotation(
+                                turns: _cameraVisible ? 0.5 : 0,
+                                duration: const Duration(milliseconds: 300),
+                                child: Icon(
+                                  Icons.keyboard_arrow_up_rounded,
+                                  size: 20,
+                                  color: _cameraVisible ? Colors.white : AppColors.grey500,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // 4 — Тандамалар
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const FavoritesScreen()),
+                      ).then((_) => setState(() => _favCount = fav.count)),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          FavBadge(count: _favCount, active: false),
+                          const SizedBox(height: 4),
+                          const Text('Тандамалар',
+                              style: TextStyle(fontSize: 10, color: AppColors.grey400, fontWeight: FontWeight.w500)),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // 5 — Жөндөөлөр
+                  _navItem(
+                    icon: Icons.settings_outlined,
+                    activeIcon: Icons.settings_rounded,
+                    label: 'Жөндөөлөр',
+                    isActive: false,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                    ),
+                  ),
+                ],
               ),
-              child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 28),
             ),
           ),
         ),
       ],
+    );
+  }
+
+  Widget _navItem({
+    required IconData icon,
+    required IconData activeIcon,
+    required String label,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              isActive ? activeIcon : icon,
+              size: 24,
+              color: isActive ? AppColors.primary : AppColors.grey400,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                color: isActive ? AppColors.primary : AppColors.grey400,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -453,39 +623,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       actions: [
-                        StreamBuilder<List<ChatModel>>(
-                          stream: supabase.auth.currentUser != null
-                              ? ChatService().buyerChatsStream(supabase.auth.currentUser!.id)
-                              : const Stream.empty(),
-                          builder: (context, snapshot) {
-                            final chats = snapshot.data ?? [];
-                            final totalUnread = chats.fold<int>(0, (sum, chat) => sum + chat.buyerUnread);
-                            return GestureDetector(
-                              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatListScreen(isSeller: false))).then((_) => setState(() {})),
-                              child: Padding(
-                                padding: const EdgeInsets.only(right: 4),
-                                child: Stack(
-                                  clipBehavior: Clip.none,
-                                  children: [
-                                    const Icon(Icons.chat_bubble_outline, color: AppColors.grey600, size: 26),
-                                    if (totalUnread > 0)
-                                      Positioned(
-                                        top: -6, right: -6,
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                                          decoration: BoxDecoration(color: AppColors.error, borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.white, width: 1.5)),
-                                          child: Text(totalUnread > 100 ? '100+' : '$totalUnread', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
                         GestureDetector(
                           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen())).then((_) => setState(() {})),
-                          child: const Padding(padding: EdgeInsets.only(right: 12, left: 4), child: Icon(Icons.person_outline, color: AppColors.grey600, size: 26)),
+                          child: const Padding(padding: EdgeInsets.only(right: 12), child: Icon(Icons.person_outline, color: AppColors.grey600, size: 26)),
                         ),
                       ],
                     ),
@@ -699,6 +839,79 @@ class _HomeScreenState extends State<HomeScreen> {
             offstage: _currentTab != 1,
             child: _mapLoaded ? const MapScreen() : const SizedBox.shrink(),
           ),
+
+          // ✅ Камера панели — body Stack'та, nav үстүндө ортодо
+          if (_cameraVisible)
+            Positioned(
+              bottom: 64 + MediaQuery.of(context).padding.bottom + 12,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: SlideTransition(
+                  position: _cameraSlide,
+                  child: GestureDetector(
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (_) => AlertDialog(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                          content: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 64, height: 64,
+                                decoration: const BoxDecoration(
+                                  gradient: LinearGradient(colors: [Color(0xFFD97706), Color(0xFFEF4444)]),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 30),
+                              ),
+                              const SizedBox(height: 16),
+                              Text(loc.get('camera_search'),
+                                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                  textAlign: TextAlign.center),
+                              const SizedBox(height: 8),
+                              Text(loc.get('camera_soon'),
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(color: Colors.grey, height: 1.5)),
+                            ],
+                          ),
+                          actions: [
+                            Center(
+                              child: TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: Text(loc.get('ok'),
+                                    style: const TextStyle(color: Color(0xFFD97706), fontWeight: FontWeight.bold)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                    child: Container(
+                      width: 72, height: 72,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFD97706), Color(0xFFEF4444)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 3),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFD97706).withValues(alpha: 0.5),
+                            blurRadius: 16,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 30),
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
