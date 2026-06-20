@@ -106,12 +106,14 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
     {'name': 'Темно-көк',    'hex': 0xFF00008B},
   ];
 
-  @override
-  void initState() {
-    super.initState();
-    _allCategories = CategoryModel.getCategories();
-    _loadProducts();
-  }
+ @override
+void initState() {
+  super.initState();
+  _allCategories = CategoryModel.getCategories();
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (mounted) _loadProducts();
+  });
+}
 
   Future<String> _getOrCreateStoreId() async {
     if (_storeId != null) return _storeId!;
@@ -123,22 +125,30 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
     return _storeId!;
   }
 
-  Future<void> _loadProducts() async {
-    final loc = AppLocalizations.of(context);
-    setState(() => _isLoading = true);
-    try {
-      final storeId = await _getOrCreateStoreId();
-      final rows    = await supabase.from('products').select().eq('store_id', storeId).order('created_at', ascending: false);
-      setState(() {
-        _products  = (rows as List).map((r) => Map<String, dynamic>.from(r as Map)).toList();
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
-      if (mounted) _showSnack('${loc.get('prod_load_error')}: $e', isError: true);
-    }
+Future<void> _loadProducts() async {
+  if (!mounted) return;
+  setState(() => _isLoading = true);
+  try {
+    final storeId = await _getOrCreateStoreId();
+    if (!mounted) return;
+    final rows = await supabase
+        .from('products')
+        .select()
+        .eq('store_id', storeId)
+        .order('created_at', ascending: false);
+    if (!mounted) return;
+    setState(() {
+      _products = (rows as List)
+          .map((r) => Map<String, dynamic>.from(r as Map))
+          .toList();
+      _isLoading = false;
+    });
+  } catch (e) {
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+    _showSnack('Жүктөөдө ката: $e', isError: true);
   }
-
+}
   Future<String?> _uploadToCloudinary(Uint8List bytes) async {
     final loc = AppLocalizations.of(context);
     try {
