@@ -9,7 +9,9 @@ class TermsMenuItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context);
+    final loc    = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : AppColors.grey600;
     return InkWell(
       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TermsScreen())),
       borderRadius: BorderRadius.circular(12),
@@ -19,7 +21,8 @@ class TermsMenuItem extends StatelessWidget {
           children: [
             const Icon(Icons.privacy_tip_outlined, color: AppColors.primary, size: 20),
             const SizedBox(width: 12),
-            Expanded(child: Text(loc.get('terms'), style: AppTextStyles.bodyMedium)),
+            Expanded(child: Text(loc.get('terms'),
+                style: AppTextStyles.bodyMedium.copyWith(color: textColor))),
             const Icon(Icons.chevron_right, color: AppColors.grey300, size: 20),
           ],
         ),

@@ -276,7 +276,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                 decoration: InputDecoration(
                   hintText: 'Жаңы пароль',
                   filled: true,
-                  fillColor: const Color(0xFFF7F7F7),
+                  fillColor: const Color.fromARGB(255, 58, 57, 57),
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none),
@@ -296,7 +296,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                 decoration: InputDecoration(
                   hintText: 'Паролду тастыктаңыз',
                   filled: true,
-                  fillColor: const Color(0xFFF7F7F7),
+                  fillColor: const Color.fromARGB(255, 45, 44, 44),
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none),
@@ -434,7 +434,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
               return Container(
                 height: MediaQuery.of(context).size.height * 0.75,
                 decoration: const BoxDecoration(
-                  color: Colors.white,
+                  color: Color.fromARGB(255, 66, 63, 63),
                   borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
                 ),
                 child: Column(
@@ -490,7 +490,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                           prefixIcon: const Icon(Icons.search,
                               color: AppColors.grey400),
                           filled: true,
-                          fillColor: AppColors.grey100,
+                          fillColor: const Color.fromARGB(255, 83, 109, 162),
                           contentPadding: const EdgeInsets.symmetric(
                               horizontal: 16, vertical: 10),
                           border: OutlineInputBorder(
@@ -592,7 +592,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                                                       .radio_button_unchecked,
                                               color: isSelected
                                                   ? AppColors.primary
-                                                  : AppColors.grey300,
+                                                  : const Color.fromARGB(255, 23, 61, 117),
                                             )
                                           : const Text('📦',
                                               style: TextStyle(fontSize: 24)),
@@ -615,7 +615,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                       Container(
                         padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: const Color.fromARGB(255, 156, 49, 49),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withValues(alpha: 0.06),
@@ -631,7 +631,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                             onPressed: deleteSelected,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.error,
-                              foregroundColor: Colors.white,
+                              foregroundColor: const Color.fromARGB(255, 61, 192, 116),
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14)),
                               elevation: 0,
@@ -639,7 +639,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                             child: Text(
                               '🗑️ Тандалган товарларды өчүрүү (${selectedIds.length})',
                               style: AppTextStyles.labelLarge
-                                  .copyWith(color: Colors.white),
+                                  .copyWith(color: const Color.fromARGB(255, 43, 61, 196)),
                             ),
                           ),
                         ),
@@ -666,7 +666,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: const Color.fromARGB(255, 181, 46, 46),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -707,7 +707,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEEFFF5),
+                    color: const Color.fromARGB(255, 37, 155, 86),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                         color: AppColors.success.withValues(alpha: 0.3)),
@@ -788,7 +788,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                       : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1E40AF),
-                    disabledBackgroundColor: AppColors.grey200,
+                    disabledBackgroundColor: const Color.fromARGB(255, 86, 136, 236),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
                   ),
@@ -797,7 +797,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                         ? '🔄  Картаны алмаштыруу'
                         : '✅  Картаны сактоо',
                     style: const TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.w600),
+                        color: Color.fromARGB(255, 226, 47, 47), fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
@@ -887,7 +887,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F5F7),
+      backgroundColor: const Color.fromARGB(255, 96, 127, 189),
       appBar: AppBar(
         backgroundColor: const Color(0xFF1E40AF),
         elevation: 0,
@@ -898,7 +898,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
             const SizedBox(width: 8),
             Text('Admin панели',
                 style:
-                    AppTextStyles.headingMedium.copyWith(color: Colors.white)),
+                    AppTextStyles.headingMedium.copyWith(color: const Color.fromARGB(255, 196, 133, 133))),
           ],
         ),
         actions: [
@@ -909,18 +909,18 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: _adminCardMasked != null
-                    ? Colors.white.withValues(alpha: 0.2)
+                    ? const Color.fromARGB(255, 192, 159, 159).withValues(alpha: 0.2)
                     : AppColors.error.withValues(alpha: 0.8),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.credit_card, color: Colors.white, size: 16),
+                  const Icon(Icons.credit_card, color: Color.fromARGB(255, 185, 135, 135), size: 16),
                   const SizedBox(width: 4),
                   Text(
                     _adminCardMasked ?? 'Карта жок',
                     style: const TextStyle(
-                        color: Colors.white,
+                        color: Color.fromARGB(255, 102, 183, 172),
                         fontSize: 12,
                         fontWeight: FontWeight.w600),
                   ),
@@ -940,14 +940,14 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
 
   child: const Padding(
     padding: EdgeInsets.only(right: 8),
-    child: Icon(Icons.bar_chart_rounded, color: Colors.white, size: 24),
+    child: Icon(Icons.bar_chart_rounded, color: Color.fromARGB(255, 44, 131, 185), size: 24),
   ),
 ),
         ],
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: Colors.white,
-          labelColor: Colors.white,
+          indicatorColor: const Color.fromARGB(255, 184, 125, 125),
+          labelColor: const Color.fromARGB(255, 222, 137, 137),
           unselectedLabelColor: Colors.white60,
           isScrollable: true,
           tabAlignment: TabAlignment.start,
@@ -975,7 +975,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
       floatingActionButton: FloatingActionButton(
         onPressed: _loadData,
         backgroundColor: const Color(0xFF1E40AF),
-        child: const Icon(Icons.refresh, color: Colors.white),
+        child: const Icon(Icons.refresh, color: Color.fromARGB(255, 212, 108, 108)),
       ),
     );
   }
@@ -1000,7 +1000,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color.fromARGB(255, 210, 171, 171),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -1018,7 +1018,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                 width: 46,
                 height: 46,
                 decoration: BoxDecoration(
-                    color: const Color(0xFFFFF8F0),
+                    color: const Color.fromARGB(255, 200, 173, 143),
                     borderRadius: BorderRadius.circular(12)),
                 child: const Center(
                     child: Text('🏪', style: TextStyle(fontSize: 24))),
@@ -1039,7 +1039,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                    color: const Color(0xFFFFF8F0),
+                    color: const Color.fromARGB(255, 203, 171, 134),
                     borderRadius: BorderRadius.circular(20)),
                 child: const Text('⏳ Жаңы',
                     style: TextStyle(fontSize: 12, color: AppColors.primary)),
@@ -1059,7 +1059,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     decoration: BoxDecoration(
-                        color: const Color(0xFFFFEEEE),
+                        color: const Color.fromARGB(255, 247, 91, 91),
                         borderRadius: BorderRadius.circular(10)),
                     child: Center(
                         child: Text('❌  Четке кагуу',
@@ -1075,7 +1075,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     decoration: BoxDecoration(
-                        color: const Color(0xFFEEFFF5),
+                        color: const Color.fromARGB(255, 50, 221, 122),
                         borderRadius: BorderRadius.circular(10)),
                     child: Center(
                         child: Text('✅  Бекитүү',
@@ -1101,7 +1101,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
       children: [
         // ── Издөө талаасы ──
         Container(
-          color: Colors.white,
+          color: const Color.fromARGB(255, 141, 136, 175),
           padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
           child: TextField(
             controller: _searchCtrl,
@@ -1115,11 +1115,11 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                   ? GestureDetector(
                       onTap: () => _searchCtrl.clear(),
                       child: const Icon(Icons.close,
-                          color: AppColors.grey400, size: 18),
+                          color: Color.fromARGB(255, 5, 13, 28), size: 18),
                     )
                   : null,
               filled: true,
-              fillColor: const Color(0xFFF4F5F7),
+              fillColor: const Color.fromARGB(255, 227, 231, 239),
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               border: OutlineInputBorder(
@@ -1132,14 +1132,14 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
         // ── Натыйжа саны ──
         if (_searchQuery.isNotEmpty)
           Container(
-            color: Colors.white,
+            color: const Color.fromARGB(255, 244, 236, 236),
             padding: const EdgeInsets.only(left: 14, bottom: 8),
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
                 'Табылды: ${list.length} seller',
                 style:
-                    AppTextStyles.labelSmall.copyWith(color: AppColors.grey500),
+                    AppTextStyles.labelSmall.copyWith(color: const Color.fromARGB(255, 47, 99, 201)),
               ),
             ),
           ),
@@ -1172,7 +1172,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: const Color.fromARGB(255, 188, 173, 173),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isBlocked
@@ -1239,8 +1239,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                             horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
                           color: s.autoPayEnabled
-                              ? const Color(0xFFEEFFF5)
-                              : const Color(0xFFF0F0F0),
+                              ? const Color.fromARGB(255, 24, 34, 28)
+                              : const Color.fromARGB(255, 211, 187, 187),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
@@ -1280,20 +1280,20 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                     label: paid ? '❌ Төлөм алып салуу' : '💰 Төлөдү',
                     color: paid ? AppColors.error : AppColors.success,
                     bgColor: paid
-                        ? const Color(0xFFFFEEEE)
+                        ? const Color.fromARGB(255, 255, 253, 253)
                         : const Color(0xFFEEFFF5),
                     onTap: () => _markPayment(s, !paid),
                   ),
                 _actionButton(
                   label: '📞 Номер',
                   color: AppColors.primary,
-                  bgColor: const Color(0xFFFFF8F0),
+                  bgColor: const Color.fromARGB(255, 211, 179, 179),
                   onTap: () => _editPhone(s),
                 ),
                 _actionButton(
                   label: '🏪 Контейнер',
                   color: const Color(0xFF7C3AED),
-                  bgColor: const Color(0xFFF5F3FF),
+                  bgColor: const Color.fromARGB(255, 123, 103, 222),
                   onTap: () => _editContainer(s),
                 ),
                 _actionButton(
@@ -1361,7 +1361,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
           margin: const EdgeInsets.only(bottom: 10),
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: const Color.fromARGB(255, 19, 16, 16),
             borderRadius: BorderRadius.circular(14),
             boxShadow: [
               BoxShadow(
@@ -1426,7 +1426,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
         return Column(
           children: [
             Container(
-              color: Colors.white,
+              color: const Color.fromARGB(255, 81, 70, 70),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               child: Row(
                 children: [
@@ -1462,12 +1462,12 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color.fromARGB(255, 159, 146, 146),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: isBlocked
               ? AppColors.error.withValues(alpha: 0.4)
-              : AppColors.grey200,
+              : const Color.fromARGB(255, 189, 193, 202),
           width: isBlocked ? 1.5 : 1,
         ),
       ),
@@ -1485,7 +1485,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                     width: 46,
                     height: 46,
                     color: isBlocked
-                        ? const Color(0xFFFFEEEE)
+                        ? const Color.fromARGB(255, 40, 212, 192)
                         : const Color(0xFFFFF8F0),
                     child: Center(
                       child: Text(isBlocked ? '🔒' : '📦',
@@ -1518,8 +1518,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
                   color: isBlocked
-                      ? const Color(0xFFEEFFF5)
-                      : const Color(0xFFFFEEEE),
+                      ? const Color.fromARGB(255, 36, 36, 36)
+                      : const Color.fromARGB(255, 156, 214, 234),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -1536,7 +1536,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                    color: const Color(0xFFFFEEEE),
+                    color: const Color.fromARGB(255, 101, 61, 61),
                     borderRadius: BorderRadius.circular(8)),
                 child: Text('🗑️',
                     style: AppTextStyles.labelSmall

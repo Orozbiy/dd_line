@@ -35,7 +35,7 @@ class SettingsHeader extends StatelessWidget {
                 width: 28,
                 height: 28,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1A1A1A),
+                  color: const Color.fromARGB(255, 221, 142, 7),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
                     color: const Color(0xFFD97706),
@@ -55,7 +55,7 @@ class SettingsHeader extends StatelessWidget {
         const Text(
           'DD Online',
           style: TextStyle(
-            color: Color(0xFF1A1A1A),
+            color: Color.fromARGB(255, 239, 96, 12),
             fontSize: 24,
             fontWeight: FontWeight.bold,
           ),

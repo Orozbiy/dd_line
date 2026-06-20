@@ -38,11 +38,11 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
   @override
   void initState() {
     super.initState();
-    _savedLat  = widget.initialLat;
-    _savedLng  = widget.initialLng;
-    _latCtrl   = TextEditingController(text: widget.initialLat?.toString() ?? '');
-    _lngCtrl   = TextEditingController(text: widget.initialLng?.toString() ?? '');
-    _editMode  = !_hasSaved;
+    _savedLat = widget.initialLat;
+    _savedLng = widget.initialLng;
+    _latCtrl  = TextEditingController(text: widget.initialLat?.toString() ?? '');
+    _lngCtrl  = TextEditingController(text: widget.initialLng?.toString() ?? '');
+    _editMode = !_hasSaved;
   }
 
   @override
@@ -68,31 +68,20 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       final uid = supabase.auth.currentUser!.id;
       final lat = double.parse(_latCtrl.text.trim());
       final lng = double.parse(_lngCtrl.text.trim());
-
       await _service.updateLocation(uid, lat, lng);
-
-      setState(() {
-        _savedLat  = lat;
-        _savedLng  = lng;
-        _editMode  = false;
-      });
-
+      setState(() { _savedLat = lat; _savedLng = lng; _editMode = false; });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(loc.get('loc_saved')),
-            backgroundColor: const Color(0xFF16A34A),
-          ),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(loc.get('loc_saved')),
+          backgroundColor: const Color(0xFF16A34A),
+        ));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${AppLocalizations.of(context).get('error')}: $e'),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('${AppLocalizations.of(context).get('error')}: $e'),
+          backgroundColor: AppColors.error,
+        ));
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -102,26 +91,45 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
   @override
   Widget build(BuildContext context) {
     final loc       = AppLocalizations.of(context);
+    final isDark    = Theme.of(context).brightness == Brightness.dark;
     final bottomPad = MediaQuery.of(context).padding.bottom;
 
+    final bgColor      = isDark ? const Color(0xFF121212) : Colors.white;
+    final appBarColor  = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final arrowColor   = isDark ? Colors.white : AppColors.black;
+    final titleColor   = isDark ? Colors.white : AppColors.black;
+    final subColor     = isDark ? const Color(0xFF888888) : AppColors.grey400;
+    final labelColor   = isDark ? const Color(0xFFAAAAAA) : AppColors.grey500;
+    final textColor    = isDark ? Colors.white : AppColors.black;
+    final fieldFill    = isDark ? const Color(0xFF2C2C2C) : Colors.white;
+
+    // Сакталган локация карточкасы
+    final savedBg     = isDark ? const Color(0xFF0D2B1A) : const Color(0xFFF0FFF4);
+    final savedBorder = const Color(0xFF22C55E).withValues(alpha: isDark ? 0.5 : 0.4);
+
+    // Нускамалар карточкасы
+    final instrBg     = AppColors.primary.withValues(alpha: isDark ? 0.12 : 0.08);
+    final instrBorder = AppColors.primary.withValues(alpha: isDark ? 0.3 : 0.2);
+    final instrText   = isDark ? const Color(0xFFCCCCCC) : AppColors.grey600;
+
+    // Longitude label — мурда катуу кара болчу
+    final lngLabelColor = isDark ? const Color(0xFFAAAAAA) : const Color(0xFF2A4264);
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: bgColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: appBarColor,
         elevation: 0,
         leading: GestureDetector(
           onTap: () => Navigator.pop(context),
-          child: const Icon(Icons.arrow_back, color: AppColors.black),
+          child: Icon(Icons.arrow_back, color: arrowColor),
         ),
-        title: Column(
-          children: [
-            Text(widget.shopName, style: AppTextStyles.headingSmall),
-            Text(
-              loc.get('dash_location'),
-              style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey400),
-            ),
-          ],
-        ),
+        title: Column(children: [
+          Text(widget.shopName,
+              style: AppTextStyles.headingSmall.copyWith(color: titleColor)),
+          Text(loc.get('dash_location'),
+              style: AppTextStyles.bodySmall.copyWith(color: subColor)),
+        ]),
         centerTitle: true,
       ),
       body: Padding(
@@ -135,32 +143,23 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF0FFF4),
+                  color: savedBg,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFF22C55E).withValues(alpha: 0.4)),
+                  border: Border.all(color: savedBorder),
                 ),
-                child: Row(
-                  children: [
-                    const Text('✅', style: TextStyle(fontSize: 22)),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            loc.get('loc_saved_label'),
-                            style: AppTextStyles.labelLarge.copyWith(color: const Color(0xFF16A34A)),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Lat: ${_savedLat!.toStringAsFixed(6)}\nLng: ${_savedLng!.toStringAsFixed(6)}',
-                            style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey500),
-                          ),
-                        ],
-                      ),
+                child: Row(children: [
+                  const Text('✅', style: TextStyle(fontSize: 22)),
+                  const SizedBox(width: 12),
+                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(loc.get('loc_saved_label'),
+                        style: AppTextStyles.labelLarge.copyWith(color: const Color(0xFF16A34A))),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Lat: ${_savedLat!.toStringAsFixed(6)}\nLng: ${_savedLng!.toStringAsFixed(6)}',
+                      style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey500),
                     ),
-                  ],
-                ),
+                  ])),
+                ]),
               ),
               const SizedBox(height: 16),
             ],
@@ -170,65 +169,82 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.08),
+                  color: instrBg,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+                  border: Border.all(color: instrBorder),
                 ),
-                child: Text(
-                  loc.get('loc_instructions'),
-                  style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey600, height: 1.6),
-                ),
+                child: Text(loc.get('loc_instructions'),
+                    style: AppTextStyles.bodySmall.copyWith(color: instrText, height: 1.6)),
               ),
               const SizedBox(height: 20),
 
-              Text('Latitude', style: AppTextStyles.labelMedium.copyWith(color: AppColors.grey500)),
+              Text('Latitude', style: AppTextStyles.labelMedium.copyWith(color: labelColor)),
               const SizedBox(height: 8),
               TextField(
                 controller: _latCtrl,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                style: AppTextStyles.bodyMedium.copyWith(color: textColor),
+                onChanged: (_) => setState(() {}),
                 decoration: InputDecoration(
                   hintText: '42.895300',
+                  hintStyle: TextStyle(color: isDark ? const Color(0xFF555555) : AppColors.grey400),
+                  filled: true,
+                  fillColor: fieldFill,
                   prefixIcon: const Icon(Icons.north, color: AppColors.primary),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: isDark ? const Color(0xFF3A3A3A) : AppColors.grey300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: isDark ? const Color(0xFF3A3A3A) : AppColors.grey300),
+                  ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: const BorderSide(color: AppColors.primary, width: 2),
                   ),
                 ),
-                onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: 16),
 
-              Text('Longitude', style: AppTextStyles.labelMedium.copyWith(color: const Color.fromARGB(255, 42, 66, 100))),
+              Text('Longitude', style: AppTextStyles.labelMedium.copyWith(color: lngLabelColor)),
               const SizedBox(height: 8),
               TextField(
                 controller: _lngCtrl,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                style: AppTextStyles.bodyMedium.copyWith(color: textColor),
+                onChanged: (_) => setState(() {}),
                 decoration: InputDecoration(
                   hintText: '74.597500',
+                  hintStyle: TextStyle(color: isDark ? const Color(0xFF555555) : AppColors.grey400),
+                  filled: true,
+                  fillColor: fieldFill,
                   prefixIcon: const Icon(Icons.east, color: AppColors.primary),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: isDark ? const Color(0xFF3A3A3A) : AppColors.grey300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: isDark ? const Color(0xFF3A3A3A) : AppColors.grey300),
+                  ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: const BorderSide(color: AppColors.primary, width: 2),
                   ),
                 ),
-                onChanged: (_) => setState(() {}),
               ),
               const Spacer(),
 
               if (_hasSaved)
                 TextButton(
                   onPressed: () => setState(() => _editMode = false),
-                  child: Text(
-                    loc.get('cancel'),
-                    style: AppTextStyles.labelMedium.copyWith(color: AppColors.grey500),
-                  ),
+                  child: Text(loc.get('cancel'),
+                      style: AppTextStyles.labelMedium.copyWith(color: AppColors.grey500)),
                 ),
 
               SizedBox(
-                width: double.infinity,
-                height: 54,
+                width: double.infinity, height: 54,
                 child: ElevatedButton(
                   onPressed: (_isValid && !_saving) ? _saveLocation : null,
                   style: ElevatedButton.styleFrom(
@@ -239,10 +255,8 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                   ),
                   child: _saving
                       ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
-                      : Text(
-                          '📍  ${loc.get('save')}',
-                          style: AppTextStyles.labelLarge.copyWith(color: Colors.white, fontSize: 16),
-                        ),
+                      : Text('📍  ${loc.get('save')}',
+                          style: AppTextStyles.labelLarge.copyWith(color: Colors.white, fontSize: 16)),
                 ),
               ),
               SizedBox(height: bottomPad + 8),
@@ -252,15 +266,12 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
             if (!_editMode) ...[
               const Spacer(),
               SizedBox(
-                width: double.infinity,
-                height: 52,
+                width: double.infinity, height: 52,
                 child: OutlinedButton.icon(
                   onPressed: () => setState(() => _editMode = true),
                   icon: const Icon(Icons.edit_location_alt_outlined, color: AppColors.primary),
-                  label: Text(
-                    loc.get('loc_edit'),
-                    style: AppTextStyles.labelLarge.copyWith(color: AppColors.primary),
-                  ),
+                  label: Text(loc.get('loc_edit'),
+                      style: AppTextStyles.labelLarge.copyWith(color: AppColors.primary)),
                   style: OutlinedButton.styleFrom(
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     side: const BorderSide(color: AppColors.primary, width: 1.5),

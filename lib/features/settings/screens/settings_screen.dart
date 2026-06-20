@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../core/app_localizations.dart';
 import '../widgets/settings_header.dart';
@@ -14,19 +15,22 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF121212) : const Color(0xFFF4F5F7);
+    final isDark   = Theme.of(context).brightness == Brightness.dark;
+    final loc      = AppLocalizations.of(context);
+    final bgColor  = isDark ? const Color(0xFF121212) : const Color(0xFFF4F5F7);
     final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-    final dividerColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFEEEEEE);
+    final divColor  = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFEEEEEE);
 
     return Scaffold(
       backgroundColor: bgColor,
       appBar: AppBar(
-        backgroundColor: cardColor,
+        backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        foregroundColor: isDark ? Colors.white : AppColors.black,
         elevation: 0,
-        title: Text(loc.get('settings'), style: AppTextStyles.headingSmall),
+        title: Text(loc.get('settings'),
+            style: AppTextStyles.headingSmall.copyWith(
+              color: isDark ? Colors.white : AppColors.black,
+            )),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -42,7 +46,7 @@ class SettingsScreen extends StatelessWidget {
               decoration: BoxDecoration(
                 color: cardColor,
                 borderRadius: BorderRadius.circular(16),
-                boxShadow: [
+                boxShadow: isDark ? [] : [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 8,
@@ -53,13 +57,13 @@ class SettingsScreen extends StatelessWidget {
               child: Column(
                 children: [
                   const NotificationsToggle(),
-                  Divider(height: 1, color: dividerColor),
+                  Divider(height: 1, color: divColor),
                   const DarkModeToggle(),
-                  Divider(height: 1, color: dividerColor),
+                  Divider(height: 1, color: divColor),
                   const CacheMenuItem(),
-                  Divider(height: 1, color: dividerColor),
+                  Divider(height: 1, color: divColor),
                   const SupportMenuItem(),
-                  Divider(height: 1, color: dividerColor),
+                  Divider(height: 1, color: divColor),
                   const TermsMenuItem(),
                 ],
               ),

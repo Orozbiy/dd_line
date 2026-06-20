@@ -17,7 +17,6 @@ import '../widgets/working_hours_sheet.dart';
 
 class SellerDashboardScreen extends StatefulWidget {
   final String uid;
-
   const SellerDashboardScreen({super.key, required this.uid});
 
   @override
@@ -25,8 +24,8 @@ class SellerDashboardScreen extends StatefulWidget {
 }
 
 class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
-  final _service    = SellerService();
-  final _subService = SubscriptionService();
+  final _service     = SellerService();
+  final _subService  = SubscriptionService();
   final _chatService = ChatService();
 
   SellerModel? _seller;
@@ -60,10 +59,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
       } catch (_) {}
     }
     if (mounted) {
-      setState(() {
-        _seller    = seller;
-        _isLoading = false;
-      });
+      setState(() { _seller = seller; _isLoading = false; });
     }
   }
 
@@ -82,10 +78,8 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
         title: Text(loc.get('sign_out'), style: AppTextStyles.headingSmall),
         content: Text(loc.get('dash_logout_confirm'), style: AppTextStyles.bodyMedium),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(loc.get('no'), style: const TextStyle(color: AppColors.grey500)),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context),
+              child: Text(loc.get('no'), style: const TextStyle(color: AppColors.grey500))),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
@@ -117,7 +111,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
   }
 
   void _showSubscriptionSheet() {
-    final loc     = AppLocalizations.of(context);
+    final loc      = AppLocalizations.of(context);
     final cardCtrl = TextEditingController();
     final expCtrl  = TextEditingController();
     final cvvCtrl  = TextEditingController();
@@ -138,24 +132,15 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  const Text('💳', style: TextStyle(fontSize: 28)),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(loc.get('sub_monthly'), style: AppTextStyles.headingSmall),
-                        Text(
-                          loc.get('sub_charge_info'),
-                          style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey500),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+              Row(children: [
+                const Text('💳', style: TextStyle(fontSize: 28)),
+                const SizedBox(width: 10),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(loc.get('sub_monthly'), style: AppTextStyles.headingSmall),
+                  Text(loc.get('sub_charge_info'),
+                      style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey500)),
+                ])),
+              ]),
               if (_seller?.hasCard == true) ...[
                 const SizedBox(height: 16),
                 Container(
@@ -165,17 +150,15 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
                   ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.credit_card, color: AppColors.success, size: 20),
-                      const SizedBox(width: 8),
-                      Text(_seller!.cardMasked ?? '',
-                          style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.success)),
-                      const SizedBox(width: 4),
-                      Text(loc.get('sub_card_linked'),
-                          style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey500)),
-                    ],
-                  ),
+                  child: Row(children: [
+                    const Icon(Icons.credit_card, color: AppColors.success, size: 20),
+                    const SizedBox(width: 8),
+                    Text(_seller!.cardMasked ?? '',
+                        style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.success)),
+                    const SizedBox(width: 4),
+                    Text(loc.get('sub_card_linked'),
+                        style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey500)),
+                  ]),
                 ),
               ],
               const SizedBox(height: 20),
@@ -184,54 +167,38 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                 keyboardType: TextInputType.number,
                 maxLength: 19,
                 decoration: _inputDec(
-                  _seller?.hasCard == true
-                      ? loc.get('sub_new_card')
-                      : loc.get('sub_card_number'),
+                  _seller?.hasCard == true ? loc.get('sub_new_card') : loc.get('sub_card_number'),
                   '0000 0000 0000 0000',
                 ),
                 onChanged: (v) {
-                  final digits = v.replaceAll(' ', '');
-                  final formatted = digits
-                      .replaceAllMapped(RegExp(r'.{1,4}'), (m) => '${m.group(0)} ')
-                      .trim();
-                  cardCtrl.value = TextEditingValue(
-                    text: formatted,
-                    selection: TextSelection.collapsed(offset: formatted.length),
-                  );
+                  final digits    = v.replaceAll(' ', '');
+                  final formatted = digits.replaceAllMapped(RegExp(r'.{1,4}'), (m) => '${m.group(0)} ').trim();
+                  cardCtrl.value  = TextEditingValue(text: formatted, selection: TextSelection.collapsed(offset: formatted.length));
                 },
               ),
               const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(child: TextField(controller: expCtrl, keyboardType: TextInputType.number, maxLength: 5, decoration: _inputDec(loc.get('sub_expiry'), 'MM/YY'))),
-                  const SizedBox(width: 12),
-                  Expanded(child: TextField(controller: cvvCtrl, keyboardType: TextInputType.number, maxLength: 3, obscureText: true, decoration: _inputDec('CVV', '•••'))),
-                ],
-              ),
+              Row(children: [
+                Expanded(child: TextField(controller: expCtrl, keyboardType: TextInputType.number, maxLength: 5, decoration: _inputDec(loc.get('sub_expiry'), 'MM/YY'))),
+                const SizedBox(width: 12),
+                Expanded(child: TextField(controller: cvvCtrl, keyboardType: TextInputType.number, maxLength: 3, obscureText: true, decoration: _inputDec('CVV', '•••'))),
+              ]),
               const SizedBox(height: 12),
               GestureDetector(
                 onTap: () => setS(() => agreed = !agreed),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Checkbox(value: agreed, onChanged: (v) => setS(() => agreed = v ?? false), activeColor: AppColors.primary),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 12),
-                        child: Text(loc.get('sub_agree_text'),
-                            style: const TextStyle(fontSize: 13, color: Color(0xFF374151))),
-                      ),
-                    ),
-                  ],
-                ),
+                child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Checkbox(value: agreed, onChanged: (v) => setS(() => agreed = v ?? false), activeColor: AppColors.primary),
+                  Expanded(child: Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Text(loc.get('sub_agree_text'), style: const TextStyle(fontSize: 13, color: Color(0xFF374151))),
+                  )),
+                ]),
               ),
               const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity, height: 50,
                 child: ElevatedButton(
                   onPressed: agreed && cardCtrl.text.replaceAll(' ', '').length == 16
-                      ? () => _saveCard(cardCtrl.text, ctx)
-                      : null,
+                      ? () => _saveCard(cardCtrl.text, ctx) : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     disabledBackgroundColor: AppColors.grey200,
@@ -260,13 +227,11 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
               ],
               if (_seller?.hasCard == true) ...[
                 const SizedBox(height: 8),
-                Center(
-                  child: TextButton(
-                    onPressed: () => _removeCard(ctx),
-                    child: Text(loc.get('sub_remove_card'),
-                        style: const TextStyle(color: AppColors.grey500, fontSize: 13)),
-                  ),
-                ),
+                Center(child: TextButton(
+                  onPressed: () => _removeCard(ctx),
+                  child: Text(loc.get('sub_remove_card'),
+                      style: const TextStyle(color: AppColors.grey500, fontSize: 13)),
+                )),
               ],
             ],
           ),
@@ -276,9 +241,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
   }
 
   InputDecoration _inputDec(String label, String hint) => InputDecoration(
-        labelText: label,
-        hintText: hint,
-        counterText: '',
+        labelText: label, hintText: hint, counterText: '',
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       );
@@ -312,13 +275,28 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context);
+    final loc    = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // ── Адаптивдүү түстөр ──
+    final bgColor      = isDark ? const Color(0xFF121212) : const Color(0xFFF4F5F7);
+    final appBarColor  = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final arrowColor   = isDark ? Colors.white : AppColors.black;
+    final titleColor   = isDark ? Colors.white : AppColors.black;
+    final cardBg       = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final sectionColor = isDark ? Colors.white : AppColors.black;
+    final contactBg    = isDark ? const Color(0xFF1A2E1A) : const Color(0xFFF0FFF4);
+    final contactBorder= const Color(0xFF22C55E).withValues(alpha: isDark ? 0.4 : 0.3);
+    final contactText  = isDark ? const Color(0xFF86EFAC) : const Color(0xFF374151);
 
     if (_isLoading) {
       return PopScope(
         canPop: false,
         onPopInvokedWithResult: (didPop, _) { if (!didPop) _goBack(); },
-        child: const Scaffold(body: Center(child: CircularProgressIndicator())),
+        child: Scaffold(
+          backgroundColor: bgColor,
+          body: const Center(child: CircularProgressIndicator()),
+        ),
       );
     }
 
@@ -326,7 +304,10 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
       return PopScope(
         canPop: false,
         onPopInvokedWithResult: (didPop, _) { if (!didPop) _goBack(); },
-        child: Scaffold(body: Center(child: Text(loc.get('no_info'), style: AppTextStyles.bodyMedium))),
+        child: Scaffold(
+          backgroundColor: bgColor,
+          body: Center(child: Text(loc.get('no_info'), style: AppTextStyles.bodyMedium)),
+        ),
       );
     }
 
@@ -334,28 +315,27 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
       canPop: false,
       onPopInvokedWithResult: (didPop, _) { if (!didPop) _goBack(); },
       child: Scaffold(
-        backgroundColor: const Color(0xFFF4F5F7),
+        backgroundColor: bgColor,
         appBar: AppBar(
-          backgroundColor: Colors.white,
+          backgroundColor: appBarColor,
           elevation: 0,
           leading: GestureDetector(
             onTap: _goBack,
-            child: const Icon(Icons.arrow_back, color: AppColors.black),
+            child: Icon(Icons.arrow_back, color: arrowColor),
           ),
-          title: Row(
-            children: [
-              const Text('🏪', style: TextStyle(fontSize: 22)),
-              const SizedBox(width: 8),
-              Text(loc.get('dash_title'), style: AppTextStyles.headingMedium),
-            ],
-          ),
+          title: Row(children: [
+            const Text('🏪', style: TextStyle(fontSize: 22)),
+            const SizedBox(width: 8),
+            Text(loc.get('dash_title'),
+                style: AppTextStyles.headingMedium.copyWith(color: titleColor)),
+          ]),
         ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Сатуучу карточкасы ──
+              // ── Сатуучу карточкасы (градиент — өзгөрбөйт) ──
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
@@ -371,83 +351,91 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 52, height: 52,
-                          decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(14)),
-                          child: Center(
-                            child: Text(
-                              _seller!.shopName.isNotEmpty ? _seller!.shopName[0].toUpperCase() : '🏪',
-                              style: const TextStyle(fontSize: 26, color: Colors.white, fontWeight: FontWeight.bold),
-                            ),
-                          ),
+                    Row(children: [
+                      Container(
+                        width: 52, height: 52,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(14),
                         ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(_seller!.shopName, style: AppTextStyles.headingSmall.copyWith(color: Colors.white)),
-                              const SizedBox(height: 4),
-                              Text(_seller!.name, style: AppTextStyles.labelMedium.copyWith(color: Colors.white70)),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+                        child: Center(child: Text(
+                          _seller!.shopName.isNotEmpty ? _seller!.shopName[0].toUpperCase() : '🏪',
+                          style: const TextStyle(fontSize: 26, color: Colors.white, fontWeight: FontWeight.bold),
+                        )),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text(_seller!.shopName, style: AppTextStyles.headingSmall.copyWith(color: Colors.white)),
+                        const SizedBox(height: 4),
+                        Text(_seller!.name, style: AppTextStyles.labelMedium.copyWith(color: Colors.white70)),
+                      ])),
+                    ]),
                     const SizedBox(height: 16),
                     const Divider(color: Colors.white24),
                     const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        const Icon(Icons.phone, color: Colors.white70, size: 16),
-                        const SizedBox(width: 6),
-                        Text(_seller!.phone, style: AppTextStyles.labelMedium.copyWith(color: Colors.white)),
-                      ],
-                    ),
+                    Row(children: [
+                      const Icon(Icons.phone, color: Colors.white70, size: 16),
+                      const SizedBox(width: 6),
+                      Text(_seller!.phone, style: AppTextStyles.labelMedium.copyWith(color: Colors.white)),
+                    ]),
                   ],
                 ),
               ),
               const SizedBox(height: 24),
-              Text(loc.get('dash_manage'), style: AppTextStyles.headingSmall),
+
+              Text(loc.get('dash_manage'),
+                  style: AppTextStyles.headingSmall.copyWith(color: sectionColor)),
               const SizedBox(height: 12),
 
-              _buildMenuItem(icon: '📦', title: loc.get('my_products'), subtitle: loc.get('dash_products_sub'),
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => SellerProductScreen(sellerUid: _seller!.uid, shopName: _seller!.shopName)))),
+              _buildMenuItem(context,
+                icon: '📦', title: loc.get('my_products'), subtitle: loc.get('dash_products_sub'),
+                onTap: () => Navigator.push(context, MaterialPageRoute(
+                    builder: (_) => SellerProductScreen(sellerUid: _seller!.uid, shopName: _seller!.shopName)))),
               const SizedBox(height: 10),
 
-              _buildMenuItem(icon: '📊', title: loc.get('dash_stats'), subtitle: loc.get('dash_stats_sub'),
+              _buildMenuItem(context,
+                icon: '📊', title: loc.get('dash_stats'), subtitle: loc.get('dash_stats_sub'),
                 onTap: () => _showSnack(loc.get('coming_soon'))),
               const SizedBox(height: 10),
 
-              _buildMenuItem(icon: '📍', title: loc.get('dash_location'), subtitle: loc.get('dash_location_sub'),
+              _buildMenuItem(context,
+                icon: '📍', title: loc.get('dash_location'), subtitle: loc.get('dash_location_sub'),
                 onTap: () async {
-                  await Navigator.push(context, MaterialPageRoute(builder: (_) => LocationPickerScreen(shopName: _seller!.shopName, sellerUid: _seller!.uid, initialLat: _seller!.latitude, initialLng: _seller!.longitude)));
+                  await Navigator.push(context, MaterialPageRoute(
+                      builder: (_) => LocationPickerScreen(
+                        shopName: _seller!.shopName, sellerUid: _seller!.uid,
+                        initialLat: _seller!.latitude, initialLng: _seller!.longitude,
+                      )));
                   _loadSeller();
                 }),
               const SizedBox(height: 10),
 
-              _buildMenuItem(icon: '🕐', title: loc.get('dash_hours'), subtitle: '$_workDays  $_workStart — $_workEnd',
+              _buildMenuItem(context,
+                icon: '🕐', title: loc.get('dash_hours'),
+                subtitle: '$_workDays  $_workStart — $_workEnd',
                 onTap: () async {
                   final saved = await showModalBottomSheet<bool>(
                     context: context,
                     isScrollControlled: true,
                     backgroundColor: Colors.transparent,
-                    builder: (_) => WorkingHoursSheet(sellerUid: widget.uid, initialStart: _workStart, initialEnd: _workEnd, initialDays: _workDays),
+                    builder: (_) => WorkingHoursSheet(
+                      sellerUid: widget.uid, initialStart: _workStart,
+                      initialEnd: _workEnd, initialDays: _workDays,
+                    ),
                   );
                   if (saved == true) _loadSeller();
                 }),
               const SizedBox(height: 10),
 
-              _buildChatMenuItem(loc),
+              _buildChatMenuItem(loc, cardBg),
               const SizedBox(height: 10),
 
-              _buildMenuItem(icon: '📞', title: loc.get('dash_change_phone'), subtitle: loc.get('dash_change_phone_sub'),
+              _buildMenuItem(context,
+                icon: '📞', title: loc.get('dash_change_phone'), subtitle: loc.get('dash_change_phone_sub'),
                 onTap: () => _showSnack(loc.get('coming_soon'))),
               const SizedBox(height: 10),
 
-              _buildSubscriptionButton(loc),
+              _buildSubscriptionButton(loc, isDark),
               const SizedBox(height: 24),
 
               // ── Байланыш блогу ──
@@ -455,32 +443,24 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                 margin: const EdgeInsets.only(bottom: 16),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF0FFF4),
+                  color: contactBg,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFF22C55E).withValues(alpha: 0.3)),
+                  border: Border.all(color: contactBorder),
                 ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('💬', style: TextStyle(fontSize: 22)),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(loc.get('dash_contact_title'),
-                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF16A34A))),
-                          const SizedBox(height: 4),
-                          Text(loc.get('dash_contact_desc'),
-                              style: const TextStyle(fontSize: 13, color: Color(0xFF374151))),
-                          const SizedBox(height: 6),
-                          const Text('+996221000330',
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF16A34A))),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Text('💬', style: TextStyle(fontSize: 22)),
+                  const SizedBox(width: 12),
+                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(loc.get('dash_contact_title'),
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF16A34A))),
+                    const SizedBox(height: 4),
+                    Text(loc.get('dash_contact_desc'),
+                        style: TextStyle(fontSize: 13, color: contactText)),
+                    const SizedBox(height: 6),
+                    const Text('+996221000330',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF16A34A))),
+                  ])),
+                ]),
               ),
 
               SizedBox(
@@ -503,7 +483,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
     );
   }
 
-  Widget _buildSubscriptionButton(AppLocalizations loc) {
+  Widget _buildSubscriptionButton(AppLocalizations loc, bool isDark) {
     final hasCard = _seller?.hasCard ?? false;
     final autoOn  = _seller?.autoPayEnabled ?? false;
     final paid    = _seller?.currentMonthPaid ?? false;
@@ -515,22 +495,22 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
 
     if (autoOn && paid) {
       borderColor  = AppColors.success;
-      bgColor      = const Color(0xFFEEFFF5);
+      bgColor      = isDark ? const Color(0xFF0D2B1A) : const Color(0xFFEEFFF5);
       statusText   = loc.get('sub_status_paid');
       subtitleText = '${_seller?.cardMasked ?? ''} · ${loc.get('sub_per_month')}';
     } else if (autoOn && !paid) {
       borderColor  = AppColors.primary;
-      bgColor      = const Color(0xFFFFF8F0);
+      bgColor      = isDark ? const Color(0xFF2B1E0A) : const Color(0xFFFFF8F0);
       statusText   = loc.get('sub_status_active');
       subtitleText = '${_seller?.cardMasked ?? ''} · ${loc.get('sub_charge_day')}';
     } else if (hasCard && !autoOn) {
       borderColor  = AppColors.grey400;
-      bgColor      = Colors.white;
+      bgColor      = isDark ? const Color(0xFF1E1E1E) : Colors.white;
       statusText   = loc.get('sub_status_paused');
       subtitleText = _seller?.cardMasked ?? '';
     } else {
       borderColor  = AppColors.error.withValues(alpha: 0.5);
-      bgColor      = const Color(0xFFFFF1F0);
+      bgColor      = isDark ? const Color(0xFF2B0D0D) : const Color(0xFFFFF1F0);
       statusText   = loc.get('sub_status_none');
       subtitleText = loc.get('sub_link_hint');
     }
@@ -545,134 +525,121 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
           border: Border.all(color: borderColor.withValues(alpha: 0.5)),
           boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
         ),
-        child: Row(
-          children: [
-            const Text('💳', style: TextStyle(fontSize: 26)),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(statusText, style: AppTextStyles.labelLarge),
-                  const SizedBox(height: 2),
-                  Text(subtitleText, style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey500)),
-                ],
-              ),
-            ),
-            const Icon(Icons.arrow_forward_ios, color: AppColors.grey400, size: 16),
-          ],
-        ),
+        child: Row(children: [
+          const Text('💳', style: TextStyle(fontSize: 26)),
+          const SizedBox(width: 12),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(statusText,
+                style: AppTextStyles.labelLarge.copyWith(
+                  color: isDark ? Colors.white : AppColors.black,
+                )),
+            const SizedBox(height: 2),
+            Text(subtitleText, style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey500)),
+          ])),
+          const Icon(Icons.arrow_forward_ios, color: AppColors.grey400, size: 16),
+        ]),
       ),
     );
   }
 
-  Widget _buildChatMenuItem(AppLocalizations loc) {
+  Widget _buildChatMenuItem(AppLocalizations loc, Color cardBg) {
     return StreamBuilder<List>(
       stream: _chatService.sellerChatsStream(_seller!.uid),
       builder: (context, snap) {
-        final chats = snap.data ?? [];
+        final isDark      = Theme.of(context).brightness == Brightness.dark;
+        final chats       = snap.data ?? [];
         final totalUnread = chats.fold<int>(0, (sum, chat) => sum + ((chat as dynamic).sellerUnread as int));
+        final titleColor  = isDark ? Colors.white : AppColors.black;
 
         return GestureDetector(
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ChatListScreen(isSeller: true, sellerId: _seller!.uid))),
+          onTap: () => Navigator.push(context, MaterialPageRoute(
+              builder: (_) => ChatListScreen(isSeller: true, sellerId: _seller!.uid))),
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: cardBg,
               borderRadius: BorderRadius.circular(14),
               boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
             ),
-            child: Row(
-              children: [
-                Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    const Text('💬', style: TextStyle(fontSize: 28)),
-                    if (totalUnread > 0)
-                      Positioned(
-                        top: -6, right: -8,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(color: AppColors.error, borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.white, width: 1.5)),
-                          child: Text(totalUnread > 99 ? '99+' : '$totalUnread',
-                              style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-                        ),
+            child: Row(children: [
+              Stack(clipBehavior: Clip.none, children: [
+                const Text('💬', style: TextStyle(fontSize: 28)),
+                if (totalUnread > 0)
+                  Positioned(
+                    top: -6, right: -8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.error,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.white, width: 1.5),
                       ),
+                      child: Text(totalUnread > 99 ? '99+' : '$totalUnread',
+                          style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+              ]),
+              const SizedBox(width: 14),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Row(children: [
+                  Text(loc.get('dash_messages'),
+                      style: AppTextStyles.labelLarge.copyWith(color: titleColor)),
+                  if (totalUnread > 0) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(color: AppColors.error, borderRadius: BorderRadius.circular(10)),
+                      child: Text('$totalUnread ${loc.get('dash_new')}',
+                          style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                    ),
                   ],
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Text(loc.get('dash_messages'), style: AppTextStyles.labelLarge),
-                          if (totalUnread > 0) ...[
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                              decoration: BoxDecoration(color: AppColors.error, borderRadius: BorderRadius.circular(10)),
-                              child: Text('$totalUnread ${loc.get('dash_new')}',
-                                  style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-                            ),
-                          ],
-                        ],
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        totalUnread > 0
-                            ? '$totalUnread ${loc.get('dash_unread')}'
-                            : loc.get('dash_chat_with_customers'),
-                        style: AppTextStyles.labelSmall.copyWith(
-                          color: totalUnread > 0 ? AppColors.error : AppColors.grey500,
-                          fontWeight: totalUnread > 0 ? FontWeight.w600 : FontWeight.normal,
-                        ),
-                      ),
-                    ],
+                ]),
+                const SizedBox(height: 2),
+                Text(
+                  totalUnread > 0 ? '$totalUnread ${loc.get('dash_unread')}' : loc.get('dash_chat_with_customers'),
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color: totalUnread > 0 ? AppColors.error : AppColors.grey500,
+                    fontWeight: totalUnread > 0 ? FontWeight.w600 : FontWeight.normal,
                   ),
                 ),
-                const Icon(Icons.arrow_forward_ios, color: AppColors.grey400, size: 16),
-              ],
-            ),
+              ])),
+              const Icon(Icons.arrow_forward_ios, color: AppColors.grey400, size: 16),
+            ]),
           ),
         );
       },
     );
   }
 
-  Widget _buildMenuItem({
+  Widget _buildMenuItem(BuildContext context, {
     required String icon,
     required String title,
     required String subtitle,
     required VoidCallback onTap,
   }) {
+    final isDark     = Theme.of(context).brightness == Brightness.dark;
+    final cardBg     = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final titleColor = isDark ? Colors.white : AppColors.black;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: cardBg,
           borderRadius: BorderRadius.circular(14),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
+          boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
         ),
-        child: Row(
-          children: [
-            Text(icon, style: const TextStyle(fontSize: 26)),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: AppTextStyles.labelLarge),
-                  const SizedBox(height: 2),
-                  Text(subtitle, style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey500, fontSize: 12)),
-                ],
-              ),
-            ),
-            const Icon(Icons.arrow_forward_ios, color: AppColors.grey400, size: 16),
-          ],
-        ),
+        child: Row(children: [
+          Text(icon, style: const TextStyle(fontSize: 26)),
+          const SizedBox(width: 14),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(title, style: AppTextStyles.labelLarge.copyWith(color: titleColor)),
+            const SizedBox(height: 2),
+            Text(subtitle, style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey500, fontSize: 12)),
+          ])),
+          const Icon(Icons.arrow_forward_ios, color: AppColors.grey400, size: 16),
+        ]),
       ),
     );
   }

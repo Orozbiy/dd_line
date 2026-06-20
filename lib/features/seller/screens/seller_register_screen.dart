@@ -15,16 +15,16 @@ class SellerRegisterScreen extends StatefulWidget {
 }
 
 class _SellerRegisterScreenState extends State<SellerRegisterScreen> {
-  final _nameCtrl = TextEditingController();
-  final _ageCtrl = TextEditingController();
-  final _shopNameCtrl = TextEditingController();
-  final _containerCtrl = TextEditingController();
-  final _phoneCtrl = TextEditingController();
-  final _passwordCtrl = TextEditingController();
+  final _nameCtrl            = TextEditingController();
+  final _ageCtrl             = TextEditingController();
+  final _shopNameCtrl        = TextEditingController();
+  final _containerCtrl       = TextEditingController();
+  final _phoneCtrl           = TextEditingController();
+  final _passwordCtrl        = TextEditingController();
   final _passwordConfirmCtrl = TextEditingController();
 
-  bool _obscure1 = true;
-  bool _obscure2 = true;
+  bool _obscure1  = true;
+  bool _obscure2  = true;
   bool _isLoading = false;
 
   @override
@@ -52,42 +52,24 @@ class _SellerRegisterScreenState extends State<SellerRegisterScreen> {
   }
 
   Future<void> _register() async {
-    final loc = AppLocalizations.of(context);
-    final name = _nameCtrl.text.trim();
-    final ageText = _ageCtrl.text.trim();
-    final shopName = _shopNameCtrl.text.trim();
+    final loc             = AppLocalizations.of(context);
+    final name            = _nameCtrl.text.trim();
+    final ageText         = _ageCtrl.text.trim();
+    final shopName        = _shopNameCtrl.text.trim();
     final containerNumber = _containerCtrl.text.trim();
-    final localPhone = _phoneCtrl.text.trim();
-    final password = _passwordCtrl.text;
+    final localPhone      = _phoneCtrl.text.trim();
+    final password        = _passwordCtrl.text;
     final passwordConfirm = _passwordConfirmCtrl.text;
 
-    if (name.isEmpty) {
-      _showSnack(loc.get('reg_err_name'));
-      return;
-    }
+    if (name.isEmpty) { _showSnack(loc.get('reg_err_name')); return; }
     final age = int.tryParse(ageText);
-    if (age == null || age < 14 || age > 100) {
-      _showSnack(loc.get('reg_err_age'));
-      return;
-    }
-    if (shopName.isEmpty && containerNumber.isEmpty) {
-      _showSnack(loc.get('reg_err_container'));
-      return;
-    }
-    if (localPhone.length < 9) {
-      _showSnack(loc.get('reg_err_phone'));
-      return;
-    }
+    if (age == null || age < 14 || age > 100) { _showSnack(loc.get('reg_err_age')); return; }
+    if (shopName.isEmpty && containerNumber.isEmpty) { _showSnack(loc.get('reg_err_container')); return; }
+    if (localPhone.length < 9) { _showSnack(loc.get('reg_err_phone')); return; }
 
     final passError = SellerService.validatePassword(password);
-    if (passError != null) {
-      _showSnack(passError);
-      return;
-    }
-    if (password != passwordConfirm) {
-      _showSnack(loc.get('reg_err_pass_mismatch'));
-      return;
-    }
+    if (passError != null) { _showSnack(passError); return; }
+    if (password != passwordConfirm) { _showSnack(loc.get('reg_err_pass_mismatch')); return; }
 
     setState(() => _isLoading = true);
     try {
@@ -100,9 +82,7 @@ class _SellerRegisterScreenState extends State<SellerRegisterScreen> {
         containerNumber: containerNumber,
         shopName: shopName,
       );
-
       if (!mounted) return;
-
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => const SellerPendingScreen()),
@@ -120,45 +100,70 @@ class _SellerRegisterScreenState extends State<SellerRegisterScreen> {
     }
   }
 
-  InputDecoration _decoration({
+  InputDecoration _decoration(BuildContext context, {
     String? hint,
     String? prefixText,
     TextStyle? prefixStyle,
     Widget? suffixIcon,
   }) {
+    final isDark   = Theme.of(context).brightness == Brightness.dark;
+    final fillColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF7F7F7);
     return InputDecoration(
-      hintText: hint,
-      prefixText: prefixText,
+      hintText:    hint,
+      prefixText:  prefixText,
       prefixStyle: prefixStyle,
-      suffixIcon: suffixIcon,
-      filled: true,
-      fillColor: const Color(0xFFF7F7F7),
+      suffixIcon:  suffixIcon,
+      filled:      true,
+      fillColor:   fillColor,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+      ),
     );
   }
 
-  Widget _label(String text) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Text(text,
-            style: AppTextStyles.labelLarge.copyWith(color: AppColors.grey600)),
-      );
+  Widget _label(BuildContext context, String text) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(
+        text,
+        style: AppTextStyles.labelLarge.copyWith(
+          color: isDark ? const Color(0xFFCCCCCC) : AppColors.grey600,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context);
+    final loc    = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final bgColor      = isDark ? const Color(0xFF121212) : Colors.white;
+    final appBarColor  = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final arrowColor   = isDark ? Colors.white : AppColors.black;
+    final titleColor   = isDark ? Colors.white : AppColors.black;
+    final headingColor = isDark ? Colors.white : AppColors.black;
+    final subColor     = isDark ? const Color(0xFFAAAAAA) : AppColors.grey500;
+    final textColor    = isDark ? Colors.white : AppColors.black;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: bgColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: appBarColor,
         elevation: 0,
         leading: GestureDetector(
           onTap: () => Navigator.pop(context),
-          child: const Icon(Icons.arrow_back, color: AppColors.black),
+          child: Icon(Icons.arrow_back, color: arrowColor),
         ),
-        title: Text(loc.get('reg_title'), style: AppTextStyles.headingMedium),
+        title: Text(loc.get('reg_title'),
+            style: AppTextStyles.headingMedium.copyWith(color: titleColor)),
         centerTitle: true,
       ),
       body: SafeArea(
@@ -168,103 +173,107 @@ class _SellerRegisterScreenState extends State<SellerRegisterScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 8),
-              Text(loc.get('reg_heading'), style: AppTextStyles.headingLarge),
+              Text(loc.get('reg_heading'),
+                  style: AppTextStyles.headingLarge.copyWith(color: headingColor)),
               const SizedBox(height: 8),
-              Text(
-                loc.get('reg_subheading'),
-                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey500),
-              ),
+              Text(loc.get('reg_subheading'),
+                  style: AppTextStyles.bodyMedium.copyWith(color: subColor)),
               const SizedBox(height: 28),
 
-              // ── АТЫ-ЖӨНҮ / ФИО ─────────────────────
-              _label(loc.get('reg_label_name')),
+              // ── АТЫ-ЖӨНҮ ──
+              _label(context, loc.get('reg_label_name')),
               TextField(
                 controller: _nameCtrl,
-                style: AppTextStyles.bodyMedium,
-                decoration: _decoration(hint: loc.get('reg_hint_name')),
+                style: AppTextStyles.bodyMedium.copyWith(color: textColor),
+                decoration: _decoration(context, hint: loc.get('reg_hint_name')),
               ),
               const SizedBox(height: 20),
 
-              // ── ЖАШЫ / ВОЗРАСТ ──────────────────────
-              _label(loc.get('reg_label_age')),
+              // ── ЖАШЫ ──
+              _label(context, loc.get('reg_label_age')),
               TextField(
                 controller: _ageCtrl,
                 keyboardType: TextInputType.number,
-                style: AppTextStyles.bodyMedium,
-                decoration: _decoration(hint: loc.get('reg_hint_age')),
+                style: AppTextStyles.bodyMedium.copyWith(color: textColor),
+                decoration: _decoration(context, hint: loc.get('reg_hint_age')),
               ),
               const SizedBox(height: 20),
 
-              // ── КОНТЕЙНЕР ───────────────────────────
-              _label(loc.get('reg_label_container')),
+              // ── КОНТЕЙНЕР ──
+              _label(context, loc.get('reg_label_container')),
               TextField(
                 controller: _containerCtrl,
-                style: AppTextStyles.bodyMedium,
-                decoration: _decoration(hint: loc.get('reg_hint_container')),
+                style: AppTextStyles.bodyMedium.copyWith(color: textColor),
+                decoration: _decoration(context, hint: loc.get('reg_hint_container')),
               ),
               const SizedBox(height: 20),
 
-              // ── ДҮКӨН АТЫ / НАЗВАНИЕ МАГАЗИНА ───────
-              _label(loc.get('reg_label_shop')),
+              // ── ДҮКӨН АТЫ ──
+              _label(context, loc.get('reg_label_shop')),
               TextField(
                 controller: _shopNameCtrl,
-                style: AppTextStyles.bodyMedium,
-                decoration: _decoration(hint: loc.get('reg_hint_shop')),
+                style: AppTextStyles.bodyMedium.copyWith(color: textColor),
+                decoration: _decoration(context, hint: loc.get('reg_hint_shop')),
               ),
               const SizedBox(height: 20),
 
-              // ── ТЕЛЕФОН ─────────────────────────────
-              _label(loc.get('reg_label_phone')),
+              // ── ТЕЛЕФОН ──
+              _label(context, loc.get('reg_label_phone')),
               TextField(
                 controller: _phoneCtrl,
                 keyboardType: TextInputType.phone,
-                style: AppTextStyles.bodyMedium,
-                decoration: _decoration(
+                style: AppTextStyles.bodyMedium.copyWith(color: textColor),
+                decoration: _decoration(context,
                   hint: '700123456',
                   prefixText: '+996  ',
-                  prefixStyle: AppTextStyles.bodyMedium
-                      .copyWith(fontWeight: FontWeight.w700),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // ── ПАРОЛЬ ──────────────────────────────
-              _label(loc.get('reg_label_pass')),
-              TextField(
-                controller: _passwordCtrl,
-                obscureText: _obscure1,
-                style: AppTextStyles.bodyMedium,
-                decoration: _decoration(
-                  hint: loc.get('reg_hint_pass'),
-                  suffixIcon: GestureDetector(
-                    onTap: () => setState(() => _obscure1 = !_obscure1),
-                    child: Icon(
-                        _obscure1 ? Icons.visibility_off : Icons.visibility,
-                        color: AppColors.grey400),
+                  prefixStyle: AppTextStyles.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: textColor,
                   ),
                 ),
               ),
               const SizedBox(height: 20),
 
-              // ── ПАРОЛЬ КАЙТАЛОО / ПОДТВЕРЖДЕНИЕ ─────
-              _label(loc.get('reg_label_pass_confirm')),
+              // ── ПАРОЛЬ ──
+              _label(context, loc.get('reg_label_pass')),
+              TextField(
+                controller: _passwordCtrl,
+                obscureText: _obscure1,
+                style: AppTextStyles.bodyMedium.copyWith(color: textColor),
+                decoration: _decoration(context,
+                  hint: loc.get('reg_hint_pass'),
+                  suffixIcon: GestureDetector(
+                    onTap: () => setState(() => _obscure1 = !_obscure1),
+                    child: Icon(
+                      _obscure1 ? Icons.visibility_off : Icons.visibility,
+                      color: AppColors.grey400,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // ── ПАРОЛЬ КАЙТАЛОО ──
+              _label(context, loc.get('reg_label_pass_confirm')),
               TextField(
                 controller: _passwordConfirmCtrl,
                 obscureText: _obscure2,
-                style: AppTextStyles.bodyMedium,
                 onSubmitted: (_) => _register(),
-                decoration: _decoration(
+                style: AppTextStyles.bodyMedium.copyWith(color: textColor),
+                decoration: _decoration(context,
                   hint: '••••••••',
                   suffixIcon: GestureDetector(
                     onTap: () => setState(() => _obscure2 = !_obscure2),
                     child: Icon(
-                        _obscure2 ? Icons.visibility_off : Icons.visibility,
-                        color: AppColors.grey400),
+                      _obscure2 ? Icons.visibility_off : Icons.visibility,
+                      color: AppColors.grey400,
+                    ),
                   ),
                 ),
               ),
               const SizedBox(height: 32),
 
+              // ── БАСКЫЧ ──
               SizedBox(
                 height: 54,
                 child: ElevatedButton(
@@ -278,8 +287,7 @@ class _SellerRegisterScreenState extends State<SellerRegisterScreen> {
                   ),
                   child: _isLoading
                       ? const SizedBox(
-                          width: 22,
-                          height: 22,
+                          width: 22, height: 22,
                           child: CircularProgressIndicator(
                               color: Colors.white, strokeWidth: 2.5),
                         )
@@ -292,18 +300,19 @@ class _SellerRegisterScreenState extends State<SellerRegisterScreen> {
               ),
               const SizedBox(height: 16),
 
+              // ── КИРҮҮГӨ ӨТҮҮ ──
               Center(
                 child: TextButton(
                   onPressed: () => Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(
-                        builder: (_) => const SellerLoginScreen()),
+                    MaterialPageRoute(builder: (_) => const SellerLoginScreen()),
                   ),
                   child: Text(
                     loc.get('reg_have_account'),
                     style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600),
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),

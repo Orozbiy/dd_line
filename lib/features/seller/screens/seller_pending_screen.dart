@@ -6,17 +6,18 @@ import '../../home/screens/home_screen.dart';
 import 'seller_login_screen.dart';
 import '../../../core/supabase_client.dart';
 
-/// Каттоодон кийин же кирүүдө "pending" статусундагы сатуучуга
-/// көрсөтүлүүчү күтүү экраны.
 class SellerPendingScreen extends StatelessWidget {
   const SellerPendingScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context);
+    final loc    = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor    = isDark ? const Color(0xFF121212) : Colors.white;
+    final titleColor = isDark ? Colors.white : AppColors.black;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: bgColor,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -25,8 +26,7 @@ class SellerPendingScreen extends StatelessWidget {
             children: [
               const Spacer(flex: 2),
               Container(
-                width: 120,
-                height: 120,
+                width: 120, height: 120,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [Color(0xFFD97706), Color(0xFFEF4444)],
@@ -42,27 +42,23 @@ class SellerPendingScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: const Center(
-                  child: Text('⏳', style: TextStyle(fontSize: 56)),
-                ),
+                child: const Center(child: Text('⏳', style: TextStyle(fontSize: 56))),
               ),
               const SizedBox(height: 28),
               Text(
                 loc.get('pending_title'),
-                style: AppTextStyles.headingLarge,
+                style: AppTextStyles.headingLarge.copyWith(color: titleColor),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
               Text(
                 loc.get('pending_desc'),
-                style: AppTextStyles.bodyMedium
-                    .copyWith(color: AppColors.grey500, height: 1.5),
+                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey500, height: 1.5),
                 textAlign: TextAlign.center,
               ),
               const Spacer(flex: 3),
               SizedBox(
-                width: double.infinity,
-                height: 54,
+                width: double.infinity, height: 54,
                 child: OutlinedButton(
                   onPressed: () => Navigator.pushAndRemoveUntil(
                     context,
@@ -71,13 +67,11 @@ class SellerPendingScreen extends StatelessWidget {
                   ),
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: AppColors.primary, width: 1.5),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   ),
                   child: Text(
                     loc.get('pending_btn_home'),
-                    style: AppTextStyles.labelLarge
-                        .copyWith(color: AppColors.primary, fontSize: 16),
+                    style: AppTextStyles.labelLarge.copyWith(color: AppColors.primary, fontSize: 16),
                   ),
                 ),
               ),
@@ -90,7 +84,6 @@ class SellerPendingScreen extends StatelessWidget {
   }
 }
 
-/// "rejected" статусундагы сатуучуга көрсөтүлүүчү экран.
 class SellerRejectedScreen extends StatelessWidget {
   const SellerRejectedScreen({super.key});
 
@@ -105,10 +98,16 @@ class SellerRejectedScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context);
+    final loc    = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor    = isDark ? const Color(0xFF121212) : Colors.white;
+    final titleColor = isDark ? Colors.white : AppColors.black;
+    final iconBg     = isDark
+        ? AppColors.error.withValues(alpha: 0.2)
+        : AppColors.error.withValues(alpha: 0.1);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: bgColor,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -117,44 +116,37 @@ class SellerRejectedScreen extends StatelessWidget {
             children: [
               const Spacer(flex: 2),
               Container(
-                width: 120,
-                height: 120,
+                width: 120, height: 120,
                 decoration: BoxDecoration(
-                  color: AppColors.error.withValues(alpha: 0.1),
+                  color: iconBg,
                   borderRadius: BorderRadius.circular(30),
                 ),
-                child: const Center(
-                  child: Text('❌', style: TextStyle(fontSize: 56)),
-                ),
+                child: const Center(child: Text('❌', style: TextStyle(fontSize: 56))),
               ),
               const SizedBox(height: 28),
               Text(
                 loc.get('rejected_title'),
-                style: AppTextStyles.headingLarge,
+                style: AppTextStyles.headingLarge.copyWith(color: titleColor),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
               Text(
                 loc.get('rejected_desc'),
-                style: AppTextStyles.bodyMedium
-                    .copyWith(color: AppColors.grey500, height: 1.5),
+                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey500, height: 1.5),
                 textAlign: TextAlign.center,
               ),
               const Spacer(flex: 3),
               SizedBox(
-                width: double.infinity,
-                height: 54,
+                width: double.infinity, height: 54,
                 child: OutlinedButton(
                   onPressed: () => _logout(context),
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: AppColors.primary, width: 1.5),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   ),
                   child: Text(
                     loc.get('sign_out'),
-                    style: AppTextStyles.labelLarge
-                        .copyWith(color: AppColors.primary, fontSize: 16),
+                    style: AppTextStyles.labelLarge.copyWith(color: AppColors.primary, fontSize: 16),
                   ),
                 ),
               ),

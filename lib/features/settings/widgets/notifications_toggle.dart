@@ -7,28 +7,22 @@ import '../../../core/app_localizations.dart';
 
 class NotificationsToggle extends StatefulWidget {
   const NotificationsToggle({super.key});
-
   @override
   State<NotificationsToggle> createState() => _NotificationsToggleState();
 }
 
 class _NotificationsToggleState extends State<NotificationsToggle> {
   static const _prefKey = 'notifications_enabled';
-  static const _topic = 'all_users';
-
+  static const _topic   = 'all_users';
   bool _enabled = true;
   bool _loading = true;
 
   @override
-  void initState() {
-    super.initState();
-    _loadPref();
-  }
+  void initState() { super.initState(); _loadPref(); }
 
   Future<void> _loadPref() async {
     final prefs = await SharedPreferences.getInstance();
-    final saved = prefs.getBool(_prefKey) ?? true;
-    if (mounted) setState(() { _enabled = saved; _loading = false; });
+    if (mounted) setState(() { _enabled = prefs.getBool(_prefKey) ?? true; _loading = false; });
   }
 
   Future<void> _onChanged(bool value) async {
@@ -44,14 +38,17 @@ class _NotificationsToggleState extends State<NotificationsToggle> {
 
   @override
   Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context);
+    final loc    = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : AppColors.grey600;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
           const Icon(Icons.notifications_outlined, color: AppColors.primary, size: 20),
           const SizedBox(width: 12),
-          Expanded(child: Text(loc.get('notifications'), style: AppTextStyles.bodyMedium)),
+          Expanded(child: Text(loc.get('notifications'),
+              style: AppTextStyles.bodyMedium.copyWith(color: textColor))),
           if (_loading)
             const SizedBox(width: 36, height: 20,
               child: Center(child: SizedBox(width: 16, height: 16,
