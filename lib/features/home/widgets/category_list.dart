@@ -42,18 +42,22 @@ class _CategoryListState extends State<CategoryList> {
   }
 
   void _onCategoryTap(CategoryModel cat) {
-    setState(() {
-      if (_selectedCategoryId == cat.id) {
-        _selectedCategoryId = null;
-        _selectedSubId = null;
-        widget.onCategorySelected('');
-      } else {
-        _selectedCategoryId = cat.id;
-        _selectedSubId = null;
-        widget.onCategorySelected(cat.id);
-      }
-    });
-  }
+  setState(() {
+    if (_selectedCategoryId == cat.id) {
+      _selectedCategoryId = null;
+      _selectedSubId = null;
+      // Filter mode reset — категория алынганда
+      _filterMode = ProductFilterMode.all;
+      widget.onFilterModeChanged?.call(ProductFilterMode.all);
+      widget.onCategorySelected('');
+    } else {
+      _selectedCategoryId = cat.id;
+      _selectedSubId = null;
+      // Filter mode учурдагыдай калат, бирок HomeScreen кайра жүктөйт
+      widget.onCategorySelected(cat.id);
+    }
+  });
+}
 
   void _onSubCategoryTap(SubCategoryModel sub) {
     setState(() {

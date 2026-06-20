@@ -97,38 +97,43 @@ class ProductRepository {
   // ══════════════════════════════════════════════════════════════════
   // ПЕРСОНАЛИЗАЦИЯЛАНГАН ЛЕНТА
   // ══════════════════════════════════════════════════════════════════
-
-  Future<List<ProductModel>> fetchProducts({
-    int offset = 0,
-    String? categoryId,
-    String? region,
-  }) async {
-    final userId = supabase.auth.currentUser?.id;
-
-    if (userId != null && categoryId == null && region == null) {
-      return await _fetchPersonalized(userId: userId, offset: offset);
-    }
-
-    return await _fetchRandom(
-      offset: offset,
-      categoryId: categoryId,
-      region: region,
-    );
+Future<List<ProductModel>> fetchProducts({
+  int offset = 0,
+  String? categoryId,
+  String? region,
+}) async {
+  // ✅ КОШУУ: категория тандалганда shownIds тазалансын
+  if (categoryId != null && categoryId.isNotEmpty && offset == 0) {
+    _shownIds.clear();
+    debugPrint('🗑️ shownIds тазаланды (категория: $categoryId)');
   }
 
-  Future<List<ProductModel>> _fetchPersonalized({
-    required String userId,
-    int offset = 0,
-  }) async {
-    try {
-      final data = await supabase.rpc(
-        'get_personalized_feed',
-        params: {
-          'p_user_id': userId,
-          'p_offset': offset,
-          'p_limit': pageSize,
-        },
-      );
+  final userId = supabase.auth.currentUser?.id;
+
+  if (userId != null && categoryId == null && region == null) {
+    return await _fetchPersonalized(userId: userId, offset: offset);
+  }
+
+  return await _fetchRandom(
+    offset: offset,
+    categoryId: categoryId,
+    region: region,
+  );
+}
+
+Future<List<ProductModel>> _fetchPersonalized({
+  required String userId,
+  int offset = 0,
+}) async {
+  try {
+    final data = await supabase.rpc(
+      'get_personalized_feed',
+      params: {
+        'p_user_id': userId,
+        'p_offset': offset,
+        'p_limit': pageSize,
+      },
+    );
       final results = _mapAndFilter(data as List);
       final fresh = results.where((p) => !_shownIds.contains(p.id)).toList();
 
@@ -217,20 +222,18 @@ class ProductRepository {
   /// Негизги категория '1' → '1', '1_2', '1_3'... баарын кайтарат
   /// Кичи категория '1_2' → '1_2' гана кайтарат
   List<ProductModel> _filterByCategory(
-      List<ProductModel> products, String categoryId) {
-    if (_isMainCategory(categoryId)) {
-      // Негизги: category_id '1' менен башталган баары
-      return products
-          .where((p) =>
-              p.category != null &&
-              (p.category == categoryId ||
-                  p.category!.startsWith('${categoryId}_')))
-          .toList();
-    } else {
-      // Кичи: так дал келүү
-      return products.where((p) => p.category == categoryId).toList();
-    }
+    List<ProductModel> products, String categoryId) {
+  if (_isMainCategory(categoryId)) {
+    return products
+        .where((p) =>
+            p.category != null &&
+            (p.category == categoryId ||
+                p.category!.startsWith('${categoryId}_'))) // ✅ '1_' менен башталган гана
+        .toList();
+  } else {
+    return products.where((p) => p.category == categoryId).toList();
   }
+}
 
   /// Fallback: RPC жок болсо жөнөкөй Supabase query.
   Future<List<ProductModel>> _fetchFallback({
