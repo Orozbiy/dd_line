@@ -18,6 +18,9 @@ class NotificationService {
   factory NotificationService() => _instance;
   NotificationService._internal();
 
+  // ✅ ЖАҢЫ: terminated state үчүн chatId убактылуу сакталат
+  static String? pendingChatId;
+
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   final FlutterLocalNotificationsPlugin _localNotif =
       FlutterLocalNotificationsPlugin();
@@ -129,10 +132,15 @@ class NotificationService {
     final chatId = message.data['chatId'] as String?;
     debugPrint('🔔 [Terminated→Open] chatId=$chatId');
     if (chatId != null) {
-      await Future.delayed(const Duration(milliseconds: 800));
-      _navigateToChat(chatId);
+      // ✅ navigate жок — SplashRouter бүткөндөн кийин ачат
+      NotificationService.pendingChatId = chatId;
     }
   }
+
+  // ─────────────────────────────────────────────────────────────
+  // NAVIGATE TO CHAT (PUBLIC WRAPPER)
+  // ─────────────────────────────────────────────────────────────
+  Future<void> navigateToChatPublic(String chatId) => _navigateToChat(chatId);
 
   // ─────────────────────────────────────────────────────────────
   // NAVIGATE TO CHAT
@@ -159,7 +167,8 @@ class NotificationService {
 
       final row = await supabase
           .from('chats')
-          .select('id, seller_id, buyer_id, product_id, seller_name, last_message, last_message_at')
+          .select(
+              'id, seller_id, buyer_id, product_id, seller_name, last_message, last_message_at')
           .eq('id', chatId)
           .maybeSingle();
 
@@ -310,8 +319,6 @@ class NotificationService {
 
   // ─────────────────────────────────────────────────────────────
   // SEND CHAT NOTIFICATION — FCM v1 API
-  // ✅ ОҢДОЛДУ: 'notification' поля кошулду — фондо/өчүк учурда
-  //    Android системасы notification'ду автоматтык көрсөтөт
   // ─────────────────────────────────────────────────────────────
   Future<void> sendChatNotification({
     required String receiverUid,
@@ -354,14 +361,10 @@ class NotificationService {
         body: jsonEncode({
           'message': {
             'token': fcmToken,
-
-            // ✅ НЕГИЗГИ ОҢДОО: бул поля болмосо фондо/өчүк учурда
-            // Android notification КӨРСӨТПӨЙТ
             'notification': {
               'title': senderName,
               'body': messageText,
             },
-
             'android': {
               'priority': 'high',
               'notification': {
@@ -428,7 +431,7 @@ class NotificationService {
       ),
     );
   }
-}
+} // ← NotificationService классы бул жерде ЖАБЫЛАТ
 
 // ─────────────────────────────────────────────────────────────
 // Proxy widget — circular import'тан качуу үчүн

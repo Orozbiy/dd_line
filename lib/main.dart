@@ -69,7 +69,7 @@ Future<void> _initFirebase() async {
     debugPrint('🚀 Firebase init болду');
     await NotificationService().init();
     debugPrint('🚀 NotificationService init болду');
-    unawaited(NotificationService().handleInitialMessage());
+  
   } catch (e) {
     debugPrint('⚠️ Firebase init ката: $e');
   }
@@ -175,27 +175,37 @@ class _SplashRouterState extends State<SplashRouter> {
   }
 
   Future<void> _determineScreen() async {
-    _targetScreen = await _getTargetScreen();
-    if (mounted) setState(() => _checking = false);
-  }
+  _targetScreen = await _getTargetScreen();
+  if (mounted) setState(() => _checking = false);
 
-  Future<Widget> _getTargetScreen() async {
-    final user = supabase.auth.currentSession?.user;
-    if (user != null) return const HomeScreen();
-    return const WelcomeScreen();
+  // ✅ ЖАҢЫ: колдонмо өчүк турганда notification басылганда
+  // HomeScreen жүктөлүп бүткөндөн кийин чатка navigate болот
+  final pendingChat = NotificationService.pendingChatId;
+  if (pendingChat != null) {
+    NotificationService.pendingChatId = null;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      NotificationService().navigateToChatPublic(pendingChat);
+    });
   }
+}
 
-  @override
-  Widget build(BuildContext context) {
-    if (_checking) return const _SplashScreen();
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 300),
-      switchInCurve: Curves.easeOut,
-      transitionBuilder: (child, animation) =>
-          FadeTransition(opacity: animation, child: child),
-      child: _targetScreen!,
-    );
-  }
+Future<Widget> _getTargetScreen() async {
+  final user = supabase.auth.currentSession?.user;
+  if (user != null) return const HomeScreen();
+  return const WelcomeScreen();
+}
+
+@override
+Widget build(BuildContext context) {
+  if (_checking) return const _SplashScreen();
+  return AnimatedSwitcher(
+    duration: const Duration(milliseconds: 300),
+    switchInCurve: Curves.easeOut,
+    transitionBuilder: (child, animation) =>
+        FadeTransition(opacity: animation, child: child),
+    child: _targetScreen!,
+  );
+}
 }
 
 // ══════════════════════════════════════════════════════

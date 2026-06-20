@@ -34,6 +34,7 @@ class CategoryModel {
           SubCategoryModel(id: '1_8',  name: 'Спорт кийими',    nameRu: 'Спортивная',       icon: '🏋️'),
           SubCategoryModel(id: '1_9',  name: 'Жумушчу кийим',   nameRu: 'Рабочая одежда',  icon: '🦺'),
           SubCategoryModel(id: '1_10', name: 'Улуттук кийим',   nameRu: 'Национальная',     icon: '🪭'),
+          SubCategoryModel(id: '1_11', name: 'Баш кийим',        nameRu: 'Головные уборы',  icon: '🧢'), 
         ],
       ),
       const CategoryModel(
@@ -60,7 +61,7 @@ class CategoryModel {
           SubCategoryModel(id: '3_6', name: 'Кемер',        nameRu: 'Ремень',       icon: '👒'),
           SubCategoryModel(id: '3_7', name: 'Жоолук/Шарф',  nameRu: 'Платок/Шарф', icon: '🧣'),
           SubCategoryModel(id: '3_8', name: 'Перчатка',     nameRu: 'Перчатки',     icon: '🧤'),
-          SubCategoryModel(id: '3_9', name: 'Баш кийим',    nameRu: 'Головные уборы',icon: '🧢'),
+      
         ],
       ),
       const CategoryModel(
