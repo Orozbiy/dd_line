@@ -1,4 +1,3 @@
-
 class ProductModel {
   final String id;
   final String name;
@@ -21,8 +20,10 @@ class ProductModel {
   final String? region;
   final String? district;
   final double? distanceKm;
-  // ✅ ЖАҢЫ: товар кошулган дата — "Жаңы" badge үчүн
   final DateTime? createdAt;
+  // ✅ ЖАҢЫ: статистика
+  final int viewsCount;
+  final int likesCount;
 
   ProductModel({
     required this.id,
@@ -46,7 +47,9 @@ class ProductModel {
     this.region,
     this.district,
     this.distanceKm,
-    this.createdAt, // ✅ ЖАҢЫ
+    this.createdAt,
+    this.viewsCount = 0, // ✅ ЖАҢЫ
+    this.likesCount = 0, // ✅ ЖАҢЫ
   });
 
   /// Товар 10 күндөн жаш болсо — "Жаңы" badge көрсөтүлөт
@@ -81,10 +84,12 @@ class ProductModel {
       longitude: (data['longitude'] as num?)?.toDouble(),
       region: data['region'] as String?,
       district: data['district'] as String?,
-      // ✅ ЖАҢЫ: created_at Supabase'тен окулат
       createdAt: data['created_at'] != null
           ? DateTime.tryParse(data['created_at'] as String)
           : null,
+      // ✅ ЖАҢЫ
+      viewsCount: (data['views_count'] as num?)?.toInt() ?? 0,
+      likesCount: (data['likes_count'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -111,7 +116,9 @@ class ProductModel {
       if (longitude != null) 'longitude': longitude,
       if (region != null) 'region': region,
       if (district != null) 'district': district,
-      if (createdAt != null) 'created_at': createdAt!.toIso8601String(), // ✅
+      if (createdAt != null) 'created_at': createdAt!.toIso8601String(),
+      'views_count': viewsCount, // ✅ ЖАҢЫ
+      'likes_count': likesCount, // ✅ ЖАҢЫ
     };
   }
 
@@ -145,7 +152,9 @@ class ProductModel {
     String? region,
     String? district,
     double? distanceKm,
-    DateTime? createdAt, // ✅ ЖАҢЫ
+    DateTime? createdAt,
+    int? viewsCount, // ✅ ЖАҢЫ
+    int? likesCount, // ✅ ЖАҢЫ
   }) {
     return ProductModel(
       id: id ?? this.id,
@@ -169,7 +178,9 @@ class ProductModel {
       region: region ?? this.region,
       district: district ?? this.district,
       distanceKm: distanceKm ?? this.distanceKm,
-      createdAt: createdAt ?? this.createdAt, // ✅
+      createdAt: createdAt ?? this.createdAt,
+      viewsCount: viewsCount ?? this.viewsCount, // ✅ ЖАҢЫ
+      likesCount: likesCount ?? this.likesCount, // ✅ ЖАҢЫ
     );
   }
 }

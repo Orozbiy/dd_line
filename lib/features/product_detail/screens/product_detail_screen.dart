@@ -73,6 +73,21 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           }
         }
       }
+
+      // ✅ View +1 жазуу
+      supabase.rpc('increment_product_views', params: {
+        'product_id': widget.product.id,
+      }).then((_) {
+        // views_count экранда жаңыртуу
+        if (mounted) {
+          setState(() {
+            _product = _product.copyWith(viewsCount: _product.viewsCount + 1);
+          });
+        }
+      }).catchError((e) {
+        debugPrint('⚠️ increment_product_views: $e');
+      });
+
     } catch (e) {
       debugPrint('❌ _loadFullProductData: $e');
     } finally {
@@ -204,6 +219,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     return nowMin >= s.hour * 60 + s.minute && nowMin < e.hour * 60 + e.minute;
   }
 
+  // ✅ ЖАҢЫ: санды форматтоо (1200 → 1.2к)
+  String _formatCount(int count) {
+    if (count >= 1000) return '${(count / 1000).toStringAsFixed(1)}к';
+    return count.toString();
+  }
+
   Widget _buildPriceSection(AppLocalizations loc) {
     final cur = loc.get('currency');
     final hasDiscount = _product.discountedPrice != null && _product.discountedPrice! < _product.price;
@@ -323,6 +344,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             Text(_product.name, style: AppTextStyles.headingMedium.copyWith(fontSize: 24)),
                             const SizedBox(height: 8),
                             Row(children: [
+                              // ── Рейтинг ──
                               if ((_product.rating ?? 0) > 0) ...[
                                 const Icon(Icons.star_rounded, color: Colors.amber, size: 16),
                                 const SizedBox(width: 2),
@@ -331,7 +353,27 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   Text(' (${_product.ratingCount})', style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey400)),
                               ],
                               const Spacer(),
-                              if (_product.distanceFormatted.isNotEmpty)
+
+                              // ✅ ЖАҢЫ: Көрүлгөн саны
+                              Icon(Icons.remove_red_eye_outlined, size: 14, color: AppColors.grey400),
+                              const SizedBox(width: 3),
+                              Text(
+                                _formatCount(_product.viewsCount),
+                                style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey400),
+                              ),
+                              const SizedBox(width: 10),
+
+                              // ✅ ЖАҢЫ: Жактырылган саны
+                              Icon(Icons.favorite_outline, size: 14, color: Colors.pinkAccent.withValues(alpha: 0.8)),
+                              const SizedBox(width: 3),
+                              Text(
+                                _formatCount(_product.likesCount),
+                                style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey400),
+                              ),
+
+                              // ── Distance ──
+                              if (_product.distanceFormatted.isNotEmpty) ...[
+                                const SizedBox(width: 10),
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                   decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(8)),
@@ -341,6 +383,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                     Text(_product.distanceFormatted, style: AppTextStyles.labelSmall.copyWith(color: AppColors.primary)),
                                   ]),
                                 ),
+                              ],
                             ]),
                           ],
                         ),
