@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/models/product_model.dart';
+import '../supabase_client.dart';
 
 /// Избранный товарларды башкаруу
 /// ChangeNotifier кошулду — badge реалдуу убакытта жаңырат
@@ -25,7 +26,7 @@ class FavoritesManager extends ChangeNotifier {
       final List decoded = jsonDecode(raw);
       _favorites.clear();
       _favorites.addAll(decoded.map((e) => ProductModel.fromJson(e)));
-      notifyListeners(); // ✅ жүктөлгөндөн кийин UI жаңырат
+      notifyListeners();
     } catch (_) {}
   }
 
@@ -41,13 +42,32 @@ class FavoritesManager extends ChangeNotifier {
   }
 
   void toggle(ProductModel product) {
-    if (isFavorite(product.id)) {
+    final wasLiked = isFavorite(product.id);
+
+    if (wasLiked) {
       _favorites.removeWhere((p) => p.id == product.id);
+      // ✅ likes_count - 1
+      _updateLikesCount(product.id, increment: false);
     } else {
       _favorites.add(product);
+      // ✅ likes_count + 1
+      _updateLikesCount(product.id, increment: true);
     }
+
     _saveToPrefs();
-    notifyListeners(); // ✅ toggle болгондо badge дароо жаңырат
+    notifyListeners();
+  }
+
+  // ✅ ЖАҢЫ: Supabase'де likes_count жаңыртуу
+  Future<void> _updateLikesCount(String productId, {required bool increment}) async {
+    try {
+      await supabase.rpc(
+        increment ? 'increment_product_likes' : 'decrement_product_likes',
+        params: {'product_id': productId},
+      );
+    } catch (e) {
+      debugPrint('⚠️ likes_count жаңыртуу ката: $e');
+    }
   }
 
   int get count => _favorites.length;
