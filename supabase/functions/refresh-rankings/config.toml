@@ -1,0 +1,7 @@
+# supabase/config.toml файлына кошуу:
+# (admin-reset-password блогунун АСТЫНА кой)
+
+[functions.refresh-rankings]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/refresh-rankings/index.ts"
