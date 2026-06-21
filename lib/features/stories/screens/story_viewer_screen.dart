@@ -363,15 +363,16 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
 
     // ── ВИДЕО — кат жок, кэштен жүктөлөт ──
     if (_videoReady && _videoCtrl != null && _videoCtrl!.value.isInitialized) {
-      return Container(
-        color: Colors.black,
-        child: Center(
-          child: AspectRatio(
-            aspectRatio: _videoCtrl!.value.aspectRatio,
-            child: CachedVideoPlayerPlus(_videoCtrl!),
-          ),
-        ),
-      );
+     return SizedBox.expand(
+  child: FittedBox(
+    fit: BoxFit.cover,  // толук экранга масштабтайт, кара жолок жок
+    child: SizedBox(
+      width: _videoCtrl!.value.size.width,
+      height: _videoCtrl!.value.size.height,
+      child: CachedVideoPlayerPlus(_videoCtrl!),
+    ),
+  ),
+);
     }
 
     // Видео жүктөлүп жатканда — spinner
