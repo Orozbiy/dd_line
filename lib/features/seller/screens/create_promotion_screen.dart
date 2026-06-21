@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../core/supabase_client.dart';
+import '../../../services/price_watch_service.dart';
+
 
 class CreatePromotionScreen extends StatefulWidget {
   const CreatePromotionScreen({super.key});
@@ -74,7 +76,20 @@ class _CreatePromotionScreenState extends State<CreatePromotionScreen> {
     if (_selected == null || pct == null || pct <= 0 || pct >= 100) return;
     setState(() => _saving = true);
     try {
-      await supabase.from('products').update({'discount_percent': pct, 'discounted_price': _discountedPrice, 'has_promotion': true}).eq('id', _selected!['id']);
+ await PriceWatchService().notifyWatchers(
+  productId:   _selected!['id'] as String,
+  productName: _selected!['title'] as String? ?? '',
+  oldPrice:    (_selected!['price'] as num).toDouble(),
+  newPrice:    _discountedPrice!,
+);
+     await supabase.from('products').update({'discount_percent': pct, 'discounted_price': _discountedPrice, 'has_promotion': true}).eq('id', _selected!['id']);
+
+await PriceWatchService().notifyWatchers(
+  productId:   _selected!['id'] as String,
+  productName: _selected!['title'] as String,
+  oldPrice:    (_selected!['price'] as num).toDouble(),
+  newPrice:    _discountedPrice!,
+);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Акция ийгилүү кошулду ✅'), backgroundColor: AppColors.success));
         setState(() {

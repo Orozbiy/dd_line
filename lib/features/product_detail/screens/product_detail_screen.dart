@@ -15,6 +15,7 @@ import '../../cart/screens/cart_screen.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/utils/image_utils.dart';
 
+
 class ProductDetailScreen extends StatefulWidget {
   final ProductModel product;
   const ProductDetailScreen({super.key, required this.product});
@@ -339,9 +340,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildPriceSection(loc),
-                            const SizedBox(height: 8),
-                            Text(_product.name, style: AppTextStyles.headingMedium.copyWith(fontSize: 24)),
+
+
+                       _buildPriceSection(loc),
+const SizedBox(height: 8),
+
+const SizedBox(height: 8),
+Text(_product.name, style: AppTextStyles.headingMedium.copyWith(fontSize: 24)),
+
                             const SizedBox(height: 8),
                             Row(children: [
                               // ── Рейтинг ──

@@ -6,6 +6,7 @@ import '../../../core/supabase_client.dart';
 import '../../../data/models/product_model.dart';
 import '../../product_detail/screens/product_detail_screen.dart';
 
+
 class PromotionScreen extends StatefulWidget {
   const PromotionScreen({super.key});
 
