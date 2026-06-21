@@ -7,6 +7,7 @@ import '../../seller/services/seller_service.dart';
 import '../../seller/services/subscription_service.dart';
 import '../../map/screens/admin_map_picker_screen.dart';
 import 'admin_stats_screen.dart';
+import 'admin_story_manager_screen.dart';
 
 class AdminPanelScreen extends StatefulWidget {
   const AdminPanelScreen({super.key});
@@ -931,6 +932,29 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
 
 
           
+
+
+
+GestureDetector(
+  onTap: () => Navigator.push(
+    context,
+    MaterialPageRoute(builder: (_) => const AdminStoryManagerScreen()),
+  ),
+  child: const Padding(
+    padding: EdgeInsets.only(right: 4),
+    child: Icon(Icons.auto_stories_rounded,
+        color: Color(0xFFD97706), size: 24),
+  ),
+),
+
+
+
+
+
+
+
+
+
           GestureDetector(
   onTap: () => Navigator.push(
     context,

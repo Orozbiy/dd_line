@@ -24,6 +24,7 @@ class ProductModel {
   // ✅ ЖАҢЫ: статистика
   final int viewsCount;
   final int likesCount;
+  final bool hasNegotiation;
 
   ProductModel({
     required this.id,
@@ -50,6 +51,7 @@ class ProductModel {
     this.createdAt,
     this.viewsCount = 0, // ✅ ЖАҢЫ
     this.likesCount = 0, // ✅ ЖАҢЫ
+    this.hasNegotiation = false,
   });
 
   /// Товар 10 күндөн жаш болсо — "Жаңы" badge көрсөтүлөт
@@ -79,7 +81,10 @@ class ProductModel {
       shopName: store?['store_name'] as String? ?? data['shop_name'] as String?,
       sellerUid: store?['owner_id'] as String? ?? data['seller_uid'] as String?,
       discountedPrice: (data['discounted_price'] as num?)?.toDouble(),
-      hasPromotion: data['has_promotion'] as bool? ?? false,
+      hasPromotion: data['has_promotion'] as bool? ?? 
+      false,
+      hasNegotiation: (store?['has_negotiation'] as bool?) ?? false,
+
       latitude: (data['latitude'] as num?)?.toDouble(),
       longitude: (data['longitude'] as num?)?.toDouble(),
       region: data['region'] as String?,
@@ -112,6 +117,7 @@ class ProductModel {
       'sizes': sizes,
       'discounted_price': discountedPrice,
       'has_promotion': hasPromotion,
+      'has_negotiation': hasNegotiation,
       if (latitude != null) 'latitude': latitude,
       if (longitude != null) 'longitude': longitude,
       if (region != null) 'region': region,
@@ -155,6 +161,8 @@ class ProductModel {
     DateTime? createdAt,
     int? viewsCount, // ✅ ЖАҢЫ
     int? likesCount, // ✅ ЖАҢЫ
+    bool? hasNegotiation,
+
   }) {
     return ProductModel(
       id: id ?? this.id,
@@ -180,7 +188,9 @@ class ProductModel {
       distanceKm: distanceKm ?? this.distanceKm,
       createdAt: createdAt ?? this.createdAt,
       viewsCount: viewsCount ?? this.viewsCount, // ✅ ЖАҢЫ
-      likesCount: likesCount ?? this.likesCount, // ✅ ЖАҢЫ
+      likesCount: likesCount ?? this.likesCount,
+      hasNegotiation: hasNegotiation ?? this.hasNegotiation,
+       // ✅ ЖАҢЫ
     );
   }
 }

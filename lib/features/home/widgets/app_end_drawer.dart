@@ -1,52 +1,71 @@
 import 'package:flutter/material.dart';
 import '../../promotions/screens/promotion_screen.dart';
+import '../../stories/models/story_model.dart';
+import '../../stories/services/story_service.dart';
+import '../../stories/widgets/story_circle_button.dart';
+import '../../stories/screens/story_viewer_screen.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../core/app_localizations.dart';
 
-class AppEndDrawer extends StatelessWidget {
+class AppEndDrawer extends StatefulWidget {
   const AppEndDrawer({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF1E1E1E) : AppColors.white;
-    final dividerColor =
-        isDark ? const Color(0xFF2C2C2C) : const Color(0xFFEEEEEE);
+  State<AppEndDrawer> createState() => _AppEndDrawerState();
+}
 
-    final stories = [
-      {
-        'label': loc.get('drawer_story_new'),
-        'emoji': '🔥',
-        'color': '0xFFD97706'
-      },
-      {
-        'label': loc.get('drawer_story_light'),
-        'emoji': '👟',
-        'color': '0xFF8B5CF6'
-      },
-      {
-        'label': loc.get('drawer_story_tech'),
-        'emoji': '📱',
-        'color': '0xFF3B82F6'
-      },
-      {
-        'label': loc.get('drawer_story_cloth'),
-        'emoji': '👗',
-        'color': '0xFFEC4899'
-      },
-      {
-        'label': loc.get('drawer_story_food'),
-        'emoji': '🥗',
-        'color': '0xFF10B981'
-      },
-      {
-        'label': loc.get('drawer_story_sale'),
-        'emoji': '🎁',
-        'color': '0xFFF87171'
-      },
-    ];
+class _AppEndDrawerState extends State<AppEndDrawer> {
+  List<StoryModel> _stories = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStories();
+  }
+
+  Future<void> _loadStories() async {
+    final list = await StoryService.instance.fetchActiveStories();
+    if (mounted) {
+      setState(() {
+        _stories = list;
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _openStory(int index) async {
+    // Drawer жабылат
+    Navigator.of(context).pop();
+    await Future.delayed(const Duration(milliseconds: 200));
+    if (!mounted) return;
+
+    final result = await Navigator.push<List<StoryModel>>(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) => StoryViewerScreen(
+          stories:      _stories,
+          initialIndex: index,
+        ),
+        transitionsBuilder: (_, anim, __, child) =>
+            FadeTransition(opacity: anim, child: child),
+        transitionDuration: const Duration(milliseconds: 200),
+      ),
+    );
+
+    // Лайктар өзгөргөн болсо жаңыртуу
+    if (result != null && mounted) {
+      setState(() => _stories = result);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final loc          = AppLocalizations.of(context);
+    final isDark       = Theme.of(context).brightness == Brightness.dark;
+    final bgColor      = isDark ? const Color(0xFF1E1E1E) : AppColors.white;
+    final dividerColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFEEEEEE);
 
     return Drawer(
       width: MediaQuery.of(context).size.width * 0.90,
@@ -63,61 +82,62 @@ class AppEndDrawer extends StatelessWidget {
             Divider(height: 1, color: dividerColor),
             const SizedBox(height: 16),
 
-            // ── Stories ──
+            // ── Жаңылыктар (чыныгы Stories) ──
             Padding(
               padding: const EdgeInsets.only(left: 16, bottom: 10),
-              child: Text(loc.get('drawer_stories_title'),
-                  style: AppTextStyles.labelLarge),
-            ),
-            SizedBox(
-              height: 90,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: stories.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 14),
-                itemBuilder: (context, i) {
-                  final s = stories[i];
-                  final color = Color(int.parse(s['color']!));
-                  return Column(
-                    children: [
-                      Container(
-                        width: 56,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            colors: [color, color.withValues(alpha: 0.6)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          border:
-                              Border.all(color: AppColors.primary, width: 2.5),
-                        ),
-                        child: Center(
-                            child: Text(s['emoji']!,
-                                style: const TextStyle(fontSize: 24))),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(s['label']!, style: AppTextStyles.labelSmall),
-                    ],
-                  );
-                },
+              child: Text(
+                loc.get('drawer_stories_title'),
+                style: AppTextStyles.labelLarge,
               ),
             ),
 
-            const SizedBox(height: 20),
+            SizedBox(
+              height: 100,
+              child: _loading
+                  // Жүктөлүп жатканда — жука spinner
+                  ? const Center(
+                      child: SizedBox(
+                        width: 24, height: 24,
+                        child: CircularProgressIndicator(
+                          color: AppColors.primary, strokeWidth: 2),
+                      ),
+                    )
+                  : _stories.isEmpty
+                      // Жаңылык жок болсо — бош жазуу
+                      ? Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Text(
+                            loc.get('story_empty'),
+                            style: AppTextStyles.bodySmall
+                                .copyWith(color: AppColors.grey400),
+                          ),
+                        )
+                      // Чыныгы тегерек кнопкалар
+                      : ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          physics: const BouncingScrollPhysics(),
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: _stories.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(width: 12),
+                          itemBuilder: (_, i) => StoryCircleButton(
+                            story: _stories[i],
+                            onTap: () => _openStory(i),
+                          ),
+                        ),
+            ),
+
+            const SizedBox(height: 16),
             Divider(height: 1, color: dividerColor),
             const SizedBox(height: 20),
 
-            // ── Promotions Card ──
+            // ── Акциялар Card ──
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: GestureDetector(
                 onTap: () async {
-                  Navigator.of(context).pop(); // drawer жабылат
-                  await Future.delayed(
-                      const Duration(milliseconds: 150)); // анимация бүтсүн
+                  Navigator.of(context).pop();
+                  await Future.delayed(const Duration(milliseconds: 150));
                   if (context.mounted) {
                     Navigator.push(
                       context,
@@ -173,10 +193,12 @@ class AppEndDrawer extends StatelessWidget {
             // ── Footer ──
             Padding(
               padding: const EdgeInsets.all(20),
-              child: Text('Дордой Базары',
-                  style: AppTextStyles.labelSmall.copyWith(
-                    color: isDark ? AppColors.grey500 : null,
-                  )),
+              child: Text(
+                'Дордой Базары',
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: isDark ? AppColors.grey500 : null,
+                ),
+              ),
             ),
           ],
         ),

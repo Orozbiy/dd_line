@@ -4,6 +4,7 @@ import '../../../config/theme/app_colors.dart';
 import '../../../core/utils/favorites_manager.dart';
 import '../../../data/models/product_model.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'negotiation_badge.dart';
 
 class ProductCard extends StatefulWidget {
   final ProductModel product;
@@ -250,6 +251,14 @@ class _ProductCardState extends State<ProductCard>
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
+
+                          // ✅ Соодалашуу белгиси
+                          if (widget.product.hasNegotiation)
+                            const Padding(
+                              padding: EdgeInsets.only(top: 4),
+                              child: NegotiationBadgeSmall(),
+                            ),
+
                           // Rating
                           if (rating > 0) ...[
                             const SizedBox(height: 3),

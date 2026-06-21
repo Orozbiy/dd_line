@@ -244,7 +244,7 @@ Future<List<ProductModel>> _fetchPersonalized({
   }) async {
     var query = supabase
         .from('products')
-        .select('*, stores(store_name, owner_id)')
+       .select('*, stores(store_name, owner_id, has_negotiation)')
         .eq('is_active', true);
 
     // ✅ НЕГИЗГИ ОҢДОО: .eq → .like
@@ -293,7 +293,7 @@ Future<List<ProductModel>> _fetchPersonalized({
     try {
       var query = supabase
           .from('products')
-          .select('*, stores(store_name, owner_id)')
+          .select('*, stores(store_name, owner_id, has_negotiation)')
           .eq('is_active', true);
 
       // ✅ ОҢДОО: .eq → .like
@@ -322,7 +322,7 @@ Future<List<ProductModel>> _fetchPersonalized({
     try {
       var query = supabase
           .from('products')
-          .select('*, stores(store_name, owner_id)')
+          .select('*, stores(store_name, owner_id, has_negotiation)')
           .eq('is_active', true)
           .not('rating', 'is', null);
 
@@ -452,7 +452,7 @@ Future<List<ProductModel>> _fetchPersonalized({
     try {
       var q = supabase
           .from('products')
-          .select('*, stores(store_name, owner_id)')
+          .select('*, stores(store_name, owner_id, has_negotiation)')
           .eq('is_active', true)
           .ilike('title', '%$pattern%');
 
