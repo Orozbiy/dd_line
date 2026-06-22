@@ -405,7 +405,7 @@ class AppLocalizations {
 
 // 🏆 Leaderboard
     'leaderboard_title': 'Топ алуучулар',
-    'leaderboard_my_rank': 'Сениң орнуң',
+    'leaderboard_my_rank': 'Сиздин ордуңуз',
     'leaderboard_orders': 'буюртма',
     'leaderboard_pts': 'балл',
     'fs_search': 'Товар издөө...',
@@ -684,9 +684,53 @@ class AppLocalizations {
     'price_watch_active': 'Күтүүдө 🔔',
     'price_watch_added': '🔔 Баа түшсө кабарлама келет!',
     'price_watch_login': 'Кирүү керек!',
+
+    // 🎰 Рулетка — Drawer баскычы
+    'drawer_roulette_title': 'Күнүмдүк Рулетка',
+    'drawer_roulette_subtitle': '1 күндө 1 жолу — 1-5 упай утуп ал!',
+
+    // 🎰 Рулетка — Экран
+    'roulette_screen_title': '🎰 Күнүмдүк Рулетка',
+    'roulette_spin_btn': '🎰 Айлант!',
+    'roulette_wait_btn': '⏰ Эртең дагы кел',
+    'roulette_used_today': 'Бүгүнкү мүмкүнчүлүк пайдаланылды',
+    'roulette_login_required': 'Кирүү керек!',
+    'roulette_top100': 'Топ 100',
+    'roulette_empty': 'Азырынча эч ким жок',
+    'roulette_my_rank': 'Сиздин ордуңуз',
+    'roulette_pts': 'упай',
+    'roulette_me': 'Сиз',
+    'roulette_win_title': '🎉 Куттуктайбыз!',
+    'roulette_win_body': 'Эртең дагы айлант!',
+    'roulette_win_close': 'Жабуу',
+    'roulette_period': '2 айда 1 жолу жаңыланат',
+    'drawer_footer': 'Дордой базары ',
+    'roulette_coming_soon':
+        'Оюн азыр сынак режиминде. Жакында чыныгы белектер женүүчүлөргө берилет!',
   };
 
   static const _ru = {
+    // 🎰 Рулетка — Drawer кнопка
+    'drawer_roulette_title': 'Ежедневная Рулетка',
+    'drawer_roulette_subtitle': '1 раз в день — выигрывай 1-5 очков!',
+    'roulette_coming_soon':
+        'Игра сейчас в тестовом режиме. Скоро победители получат настоящие призы!',
+    // 🎰 Рулетка — Экран
+    'roulette_screen_title': '🎰 Ежедневная Рулетка',
+    'roulette_spin_btn': '🎰 Крутить!',
+    'roulette_wait_btn': '⏰ Приходи завтра',
+    'roulette_used_today': 'Шанс на сегодня использован',
+    'roulette_login_required': 'Необходимо войти!',
+    'roulette_top100': 'Топ 100',
+    'roulette_empty': 'Пока никого нет',
+    'roulette_my_rank': 'Твоё место',
+    'roulette_pts': 'очков',
+    'roulette_me': 'Ты',
+    'roulette_win_title': '🎉 Поздравляем!',
+    'roulette_win_body': 'Возвращайся завтра!',
+    'roulette_win_close': 'Закрыть',
+    'roulette_period': 'Обновляется раз в 2 месяца',
+
     'price_watch_btn': 'Уведоми о снижении цены',
     'price_watch_active': 'Ожидание 🔔',
     'price_watch_added': '🔔 Уведомим, когда цена снизится!',
@@ -732,6 +776,7 @@ class AppLocalizations {
     'fav_tab_stores': 'Магазины',
     'fav_stores_empty': 'Нет сохранённых магазинов',
     'fav_stores_empty_desc': 'Сохраняйте магазины нажав ❤️',
+    "drawer_footer": "Дордой",
     'fs_time_left': 'Осталось',
     'fs_timer_preview': 'Таймер на главном экране',
     'fs_remove': 'Удалить Flash Sale',

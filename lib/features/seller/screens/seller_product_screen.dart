@@ -990,8 +990,12 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                             String imageUrl = existingImageUrl;
                             if (imageBytes != null) {
                               setD(() { isUploading = true; uploadStatus = loc.get('prod_uploading'); });
-                              final compressed = await compressImage(imageBytes!);
-                              final uploaded   = await _uploadToCloudinary(compressed);
+
+
+                            final compressed  = await compressImage(imageBytes!);
+final watermarked = await addWatermark(compressed);   // ← жаңы сап
+final uploaded    = await _uploadToCloudinary(watermarked);
+
                               if (uploaded == null) { setD(() { isLoading = false; isUploading = false; uploadStatus = ''; }); return; }
                               imageUrl = uploaded;
                               setD(() { isUploading = false; uploadStatus = loc.get('prod_uploaded'); });

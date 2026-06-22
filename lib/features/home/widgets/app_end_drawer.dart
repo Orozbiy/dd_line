@@ -9,6 +9,7 @@ import '../../../config/theme/app_text_styles.dart';
 import '../../../core/app_localizations.dart';
 import '../screens/flash_sale_screen.dart';
 import '../../featured/screens/featured_screen.dart';
+import '../../featured/roulette/screens/roulette_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AppEndDrawer extends StatefulWidget {
@@ -324,6 +325,93 @@ class _AppEndDrawerState extends State<AppEndDrawer> {
                         ],
                       ),
                       const Spacer(),
+                      const Icon(Icons.arrow_forward_ios_rounded,
+                          color: Colors.white, size: 20),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // ── 🎰 Күнүмдүк Рулетка Card ──
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: GestureDetector(
+                onTap: () async {
+                  Navigator.of(context).pop();
+                  await Future.delayed(const Duration(milliseconds: 150));
+                  if (context.mounted) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const RouletteScreen()),
+                    );
+                  }
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF0EA5E9), Color(0xFF38BDF8)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                          color: const Color(0xFF0EA5E9).withValues(alpha: 0.35),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4))
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      const Text('🎰', style: TextStyle(fontSize: 32)),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              loc.get('drawer_roulette_title'),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              loc.get('drawer_roulette_subtitle'),
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // ── "ЖАҢЫ" badge ──
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.25),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Text(
+                          'ЖАҢЫ',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
                       const Icon(Icons.arrow_forward_ios_rounded,
                           color: Colors.white, size: 20),
                     ],
