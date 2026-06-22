@@ -192,7 +192,7 @@ class _BigTimer extends StatelessWidget {
       child: Column(
         children: [
           const Text(
-            'Акция бүтөөгө калган убакыт',
+            'Акция бүтүүгө калган убакыт',
             style: TextStyle(
               color: Colors.white70,
               fontSize: 13,

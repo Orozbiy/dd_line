@@ -8,6 +8,7 @@ import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../core/app_localizations.dart';
 import '../screens/flash_sale_screen.dart'; // ← сатып алуучу үчүн
+import '../../featured/screens/featured_screen.dart'; // ← өзгөчө товарлар
 
 class AppEndDrawer extends StatefulWidget {
   const AppEndDrawer({super.key});
@@ -127,7 +128,7 @@ class _AppEndDrawerState extends State<AppEndDrawer> {
             Divider(height: 1, color: dividerColor),
             const SizedBox(height: 20),
 
-            // ── 🎁 Акциялар Card ── (өзгөртүүсүз)
+            // ── 🎁 Акциялар Card ──
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: GestureDetector(
@@ -184,7 +185,7 @@ class _AppEndDrawerState extends State<AppEndDrawer> {
               ),
             ),
 
-            // ── ⚡ Flash Sale Card ── ЖАҢЫ (сатып алуучу үчүн)
+            // ── ⚡ Flash Sale Card ──
             const SizedBox(height: 12),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -235,6 +236,73 @@ class _AppEndDrawerState extends State<AppEndDrawer> {
                           SizedBox(height: 2),
                           Text(
                             'Убакыт чектелген супер баалар',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Spacer(),
+                      Icon(Icons.arrow_forward_ios_rounded,
+                          color: Colors.white, size: 20),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // ── ⭐ Өзгөчө товарлар Card ── ЖАҢЫ
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: GestureDetector(
+                onTap: () async {
+                  Navigator.of(context).pop();
+                  await Future.delayed(const Duration(milliseconds: 150));
+                  if (context.mounted) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const FeaturedScreen()),
+                    );
+                  }
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF7C3AED), Color(0xFF9F67FA)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                          color: Color(0xFF7C3AED).withValues(alpha: 0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4))
+                    ],
+                  ),
+                  child: const Row(
+                    children: [
+                      Text('⭐', style: TextStyle(fontSize: 32)),
+                      SizedBox(width: 14),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Өзгөчө товарлар',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            'Сатуучулар тарабынан тандалган',
                             style: TextStyle(
                               color: Colors.white70,
                               fontSize: 12,

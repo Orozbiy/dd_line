@@ -398,7 +398,7 @@ class AppLocalizations {
     'flash_sale_subtitle': 'Убакыт чектелген супер баалар',
     'flash_sale_empty': 'Азырынча Flash Sale жок',
     'flash_sale_empty_sub': 'Кийинчерээк кайра кириңиз',
-    'flash_time_left': 'Акция бүтөөгө калган убакыт',
+    'flash_time_left': 'Акция бүтүүгө калган убакыт',
     'flash_hours': 'саат',
     'flash_minutes': 'мүнөт',
     'flash_seconds': 'секунд',
