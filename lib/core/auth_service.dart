@@ -36,7 +36,7 @@ class AuthService {
       await supabase.auth.signInWithOAuth(
         OAuthProvider.google,
         redirectTo: _redirectUrl,
-        authScreenLaunchMode: LaunchMode.externalApplication,
+          authScreenLaunchMode: LaunchMode.inAppWebView,
         queryParams: const {'prompt': 'select_account'},
       );
     } catch (e) {

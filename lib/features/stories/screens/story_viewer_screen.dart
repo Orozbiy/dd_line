@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cached_video_player_plus/cached_video_player_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/story_model.dart';
 import '../services/story_service.dart';
 import '../widgets/story_progress_bar.dart';
@@ -39,6 +40,9 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
   CachedVideoPlayerPlusController? _videoCtrl;
   bool _videoReady = false;
 
+  // ── Viewed IDs ──
+  Set<String> _viewedIds = {};
+
   @override
   void initState() {
     super.initState();
@@ -53,8 +57,22 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
       curve:  Curves.linear,
     );
 
-    _startStory(_currentIndex);
+    
+
+    // Viewed IDлерди жүктөп, андан кийин story баштайбыз
+    _loadViewedIds().then((_) => _startStory(_currentIndex));
+
+WidgetsBinding.instance.addPostFrameCallback((_) async {
+    await _loadViewedIds();
+    if (mounted) _startStory(_currentIndex);
+  });
+
+
   }
+
+
+
+  
 
   @override
   void dispose() {
@@ -63,6 +81,41 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     _disposeVideo();
     super.dispose();
   }
+
+  // ─────────────────────────────────────────────
+  // Viewed IDs — SharedPreferences
+  // ─────────────────────────────────────────────
+  Future<void> _loadViewedIds() async {
+    final prefs = await SharedPreferences.getInstance();
+    final ids = prefs.getStringList('viewed_story_ids') ?? [];
+    _viewedIds = ids.toSet();
+
+    // Жүктөлгөн IDлер боюнча stories'ти белгилейбиз
+    if (mounted) {
+      setState(() {
+        _stories = _stories
+            .map((s) => s.copyWith(isViewed: _viewedIds.contains(s.id)))
+            .toList();
+      });
+    }
+  }
+
+  Future<void> _markViewed(String storyId) async {
+  if (_viewedIds.contains(storyId)) return;
+  _viewedIds.add(storyId);
+
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setStringList('viewed_story_ids', _viewedIds.toList());
+
+  // ✅ ОҢДОО: mounted текшерүү
+  if (!mounted) return;
+  setState(() {
+    final i = _stories.indexWhere((s) => s.id == storyId);
+    if (i != -1) {
+      _stories[i] = _stories[i].copyWith(isViewed: true);
+    }
+  });
+}
 
   // ─────────────────────────────────────────────
   // Video dispose
@@ -83,7 +136,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
       return;
     }
 
-    // Эски видеону өчүрүү
     _disposeVideo();
 
     _progressCtrl.removeStatusListener(_onProgressStatus);
@@ -92,11 +144,12 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
 
     final story = _stories[index];
 
+    // ✅ Viewed белгилөө
+    _markViewed(story.id);
+
     if (story.isVideo) {
-      // ── Видео жүктөө ──
       await _initVideo(story.mediaUrl);
     } else {
-      // ── Сүрөт: 5 сек ──
       _progressCtrl.duration = const Duration(seconds: _imageDuration);
       _progressCtrl.forward();
       _progressCtrl.addStatusListener(_onProgressStatus);
@@ -114,30 +167,26 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
       await ctrl.initialize();
       if (!mounted) return;
 
-      // Видео узундугун прогрессте колдонобуз
       final duration = ctrl.value.duration;
       _progressCtrl.duration =
           duration.inSeconds > 0 ? duration : const Duration(seconds: 15);
 
+       if (mounted) {
       setState(() => _videoReady = true);
-
-      ctrl.play();
+      await ctrl.play();
       _progressCtrl.forward();
       _progressCtrl.addStatusListener(_onProgressStatus);
-
-      // Видео бүтүп калса автоматтык кийинкиге өтүү
-      // progressCtrl listener жетиштүү — видео listener алып салынды
-      // (эки жолу чакырылып кызыл экран болбосун)
-    } catch (e) {
-      debugPrint('❌ Video init error: $e');
-      // Ката болсо сүрөт режимине кайтуу
-      if (mounted) {
-        _progressCtrl.duration = const Duration(seconds: _imageDuration);
-        _progressCtrl.forward();
-        _progressCtrl.addStatusListener(_onProgressStatus);
-      }
+    }
+  } catch (e) {
+    debugPrint('❌ Video init error: $e');
+    if (mounted) {
+      setState(() => _videoReady = false);
+      _progressCtrl.duration = const Duration(seconds: _imageDuration);
+      _progressCtrl.forward();
+      _progressCtrl.addStatusListener(_onProgressStatus);
     }
   }
+}
 
   void _onProgressStatus(AnimationStatus status) {
     if (status == AnimationStatus.completed) {
@@ -149,7 +198,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
   // ─────────────────────────────────────────────
   // Навигация
   // ─────────────────────────────────────────────
-  bool _isNavigating = false; // эки жолу чакырылып кетпесин
+  bool _isNavigating = false;
 
   void _goNext() {
     if (_isNavigating) return;
@@ -164,7 +213,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
       });
       _startStory(_currentIndex);
     } else {
-      // Акыркы story бүтсө — биринчиге кайт (жабылбасын)
+      // Акыркы story бүтсө — биринчиге кайт
       setState(() {
         _currentIndex = 0;
         _isNavigating = false;
@@ -184,6 +233,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
   }
 
   void _close() {
+    // Жаңырган _stories тизмесин (isViewed менен) кайтарабыз
     Navigator.of(context).pop(_stories);
   }
 
@@ -361,18 +411,18 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
       );
     }
 
-    // ── ВИДЕО — кат жок, кэштен жүктөлөт ──
+    // ── ВИДЕО ──
     if (_videoReady && _videoCtrl != null && _videoCtrl!.value.isInitialized) {
-     return SizedBox.expand(
-  child: FittedBox(
-    fit: BoxFit.cover,  // толук экранга масштабтайт, кара жолок жок
-    child: SizedBox(
-      width: _videoCtrl!.value.size.width,
-      height: _videoCtrl!.value.size.height,
-      child: CachedVideoPlayerPlus(_videoCtrl!),
-    ),
-  ),
-);
+      return SizedBox.expand(
+        child: FittedBox(
+          fit: BoxFit.cover,
+          child: SizedBox(
+            width:  _videoCtrl!.value.size.width,
+            height: _videoCtrl!.value.size.height,
+            child:  CachedVideoPlayerPlus(_videoCtrl!),
+          ),
+        ),
+      );
     }
 
     // Видео жүктөлүп жатканда — spinner

@@ -11,7 +11,6 @@ import '../../chat/screens/chat_screen.dart';
 import '../../chat/services/chat_service.dart';
 import '../widgets/review_section.dart';
 import '../widgets/share_widget.dart';
-import '../../cart/screens/cart_screen.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/utils/image_utils.dart';
 
@@ -596,11 +595,44 @@ Text(_product.name, style: AppTextStyles.headingMedium.copyWith(fontSize: 24)),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
             ),
-            child: IconButton(
-              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CartScreen())),
-              icon: const Icon(Icons.shopping_cart_outlined, color: AppColors.primary),
-              tooltip: loc.get('cart'),
+
+
+         child: IconButton(
+  onPressed: () {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Text('🛒', style: TextStyle(fontSize: 18)),
+            const SizedBox(width: 10),
+            Text(
+              loc.locale.languageCode == 'ky'
+                  ? 'Жакында кошулат!'
+                  : 'Скоро появится!',
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
             ),
+          ],
+        ),
+        backgroundColor: AppColors.primary,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  },
+  icon: const Icon(Icons.shopping_cart_outlined, color: AppColors.primary),
+  tooltip: loc.get('cart'),
+),
+
+
+
+
           ),
           const SizedBox(width: 12),
           Expanded(

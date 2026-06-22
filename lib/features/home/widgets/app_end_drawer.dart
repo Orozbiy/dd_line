@@ -7,8 +7,9 @@ import '../../stories/screens/story_viewer_screen.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../core/app_localizations.dart';
-import '../screens/flash_sale_screen.dart'; // ← сатып алуучу үчүн
-import '../../featured/screens/featured_screen.dart'; // ← өзгөчө товарлар
+import '../screens/flash_sale_screen.dart';
+import '../../featured/screens/featured_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AppEndDrawer extends StatefulWidget {
   const AppEndDrawer({super.key});
@@ -20,6 +21,7 @@ class AppEndDrawer extends StatefulWidget {
 class _AppEndDrawerState extends State<AppEndDrawer> {
   List<StoryModel> _stories = [];
   bool _loading = true;
+  Set<String> _viewedIds = {};
 
   @override
   void initState() {
@@ -28,10 +30,15 @@ class _AppEndDrawerState extends State<AppEndDrawer> {
   }
 
   Future<void> _loadStories() async {
+    final prefs = await SharedPreferences.getInstance();
+    final ids = prefs.getStringList('viewed_story_ids') ?? [];
     final list = await StoryService.instance.fetchActiveStories();
     if (mounted) {
       setState(() {
-        _stories = list;
+        _viewedIds = ids.toSet();
+        _stories = list
+            .map((s) => s.copyWith(isViewed: _viewedIds.contains(s.id)))
+            .toList();
         _loading = false;
       });
     }
@@ -42,7 +49,7 @@ class _AppEndDrawerState extends State<AppEndDrawer> {
     await Future.delayed(const Duration(milliseconds: 200));
     if (!mounted) return;
 
-    final result = await Navigator.push<List<StoryModel>>(
+    await Navigator.push<List<StoryModel>>(
       context,
       PageRouteBuilder(
         pageBuilder: (_, __, ___) => StoryViewerScreen(
@@ -55,9 +62,15 @@ class _AppEndDrawerState extends State<AppEndDrawer> {
       ),
     );
 
-    if (result != null && mounted) {
-      setState(() => _stories = result);
-    }
+    if (!mounted) return;
+    final prefs = await SharedPreferences.getInstance();
+    final ids = prefs.getStringList('viewed_story_ids') ?? [];
+    setState(() {
+      _viewedIds = ids.toSet();
+      _stories = _stories
+          .map((s) => s.copyWith(isViewed: _viewedIds.contains(s.id)))
+          .toList();
+    });
   }
 
   @override
@@ -218,33 +231,33 @@ class _AppEndDrawerState extends State<AppEndDrawer> {
                           offset: const Offset(0, 4))
                     ],
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
-                      Text('⚡', style: TextStyle(fontSize: 32)),
-                      SizedBox(width: 14),
+                      const Text('⚡', style: TextStyle(fontSize: 32)),
+                      const SizedBox(width: 14),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Тез арада жетишип кал!',
-                            style: TextStyle(
+                            loc.get('drawer_flash_title'),
+                            style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
                               fontSize: 15,
                             ),
                           ),
-                          SizedBox(height: 2),
+                          const SizedBox(height: 2),
                           Text(
-                            'Убакыт чектелген супер баалар',
-                            style: TextStyle(
+                            loc.get('drawer_flash_subtitle'),
+                            style: const TextStyle(
                               color: Colors.white70,
                               fontSize: 12,
                             ),
                           ),
                         ],
                       ),
-                      Spacer(),
-                      Icon(Icons.arrow_forward_ios_rounded,
+                      const Spacer(),
+                      const Icon(Icons.arrow_forward_ios_rounded,
                           color: Colors.white, size: 20),
                     ],
                   ),
@@ -252,7 +265,7 @@ class _AppEndDrawerState extends State<AppEndDrawer> {
               ),
             ),
 
-            // ── ⭐ Өзгөчө товарлар Card ── ЖАҢЫ
+            // ── ⭐ Өзгөчө товарлар Card ──
             const SizedBox(height: 12),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -280,38 +293,38 @@ class _AppEndDrawerState extends State<AppEndDrawer> {
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                          color: Color(0xFF7C3AED).withValues(alpha: 0.3),
+                          color: const Color(0xFF7C3AED).withValues(alpha: 0.3),
                           blurRadius: 12,
                           offset: const Offset(0, 4))
                     ],
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
-                      Text('⭐', style: TextStyle(fontSize: 32)),
-                      SizedBox(width: 14),
+                      const Text('⭐', style: TextStyle(fontSize: 32)),
+                      const SizedBox(width: 14),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Өзгөчө товарлар',
-                            style: TextStyle(
+                            loc.get('drawer_featured_title'),
+                            style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
                               fontSize: 15,
                             ),
                           ),
-                          SizedBox(height: 2),
+                          const SizedBox(height: 2),
                           Text(
-                            'Сатуучулар тарабынан тандалган',
-                            style: TextStyle(
+                            loc.get('drawer_featured_subtitle'),
+                            style: const TextStyle(
                               color: Colors.white70,
                               fontSize: 12,
                             ),
                           ),
                         ],
                       ),
-                      Spacer(),
-                      Icon(Icons.arrow_forward_ios_rounded,
+                      const Spacer(),
+                      const Icon(Icons.arrow_forward_ios_rounded,
                           color: Colors.white, size: 20),
                     ],
                   ),
@@ -325,7 +338,7 @@ class _AppEndDrawerState extends State<AppEndDrawer> {
             Padding(
               padding: const EdgeInsets.all(20),
               child: Text(
-                'Дордой Базары',
+                loc.get('drawer_footer'),
                 style: AppTextStyles.labelSmall.copyWith(
                   color: isDark ? AppColors.grey500 : null,
                 ),
