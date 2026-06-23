@@ -899,109 +899,118 @@ void _showSuggestionSheet() {
                     ),
                     const SliverToBoxAdapter(child: SizedBox(height: 8)),
             
-                    SliverToBoxAdapter(
+
+
+
+
+SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
-                        child:
-                        
-
-
-                         Row(
+                        child: Row(
                           children: [
                             if (_isSearchMode && !_isLoading)
-
-
                               Text(
-                                  '${displayedProducts.length} ${loc.get('results')}',
-                                  style: AppTextStyles.bodyMedium
-                                      .copyWith(color: AppColors.grey500)),
+                                '${displayedProducts.length} ${loc.get('results')}',
+                                style: AppTextStyles.bodyMedium
+                                    .copyWith(color: AppColors.grey500),
+                              ),
                             if (_isNearbyMode && !_isLoading)
                               Text(
-                                  '📍 ${displayedProducts.length} ${loc.get('nearby_count')}',
-                                  style: AppTextStyles.bodyMedium
-                                      .copyWith(color: AppColors.grey500)),
+                                '📍 ${displayedProducts.length} ${loc.get('nearby_count')}',
+                                style: AppTextStyles.bodyMedium
+                                    .copyWith(color: AppColors.grey500),
+                              ),
                             if (_filterMode != ProductFilterMode.all &&
                                 !_isSearchMode &&
                                 !_isNearbyMode &&
                                 !_isLoading)
                               Text(
-                                  '${_filterModeLabel(loc)} · ${displayedProducts.length}',
-                                  style: AppTextStyles.bodyMedium
-                                      .copyWith(color: AppColors.grey500)),
+                                '${_filterModeLabel(loc)} · ${displayedProducts.length}',
+                                style: AppTextStyles.bodyMedium
+                                    .copyWith(color: AppColors.grey500),
+                              ),
+
+                            // ✅ Сурануу — бир жолу, сол жакта
+                            if (!_isSearchMode)
+                              GestureDetector(
+                                onTap: _showSuggestionSheet,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: isDark
+                                        ? AppColors.primary
+                                            .withValues(alpha: 0.15)
+                                        : const Color(0xFFEEF2FF),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                        color: AppColors.primary
+                                            .withValues(alpha: 0.3)),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.chat_bubble_outline,
+                                          color: AppColors.primary, size: 14),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        ' ${loc.get('suggestion')}',
+                                        style: AppTextStyles.labelMedium
+                                            .copyWith(
+                                                color: AppColors.primary),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+
                             const Spacer(),
 
-
-
-
-                            if (!_isSearchMode) ...[
-  GestureDetector(
-    onTap: _showSuggestionSheet,
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: isDark
-            ? AppColors.primary.withValues(alpha: 0.15)
-            : const Color(0xFFEEF2FF),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-            color: AppColors.primary.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.chat_bubble_outline,
-              color: AppColors.primary, size: 14),
-          const SizedBox(width: 4),
-          Text('💬 Сурануу',
-              style: AppTextStyles.labelMedium
-                  .copyWith(color: AppColors.primary)),
-        ],
-      ),
-    ),
-  ),
-  const SizedBox(width: 8),
-  GestureDetector(
-    onTap: _isNearbyMode
-        ? _loadNearbyProducts
-        : () {
-            switch (_filterMode) {
-              case ProductFilterMode.newest:
-                _loadNewest();
-                break;
-              case ProductFilterMode.popular:
-                _loadPopular();
-                break;
-              case ProductFilterMode.all:
-                _loadProducts(refresh: true);
-                break;
-            }
-          },
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: isDark
-            ? AppColors.primary.withValues(alpha: 0.15)
-            : const Color(0xFFEEF2FF),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-            color: AppColors.primary.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.refresh,
-              color: AppColors.primary, size: 14),
-          const SizedBox(width: 4),
-          Text(loc.get('refresh'),
-              style: AppTextStyles.labelMedium
-                  .copyWith(color: AppColors.primary)),
-        ],
-      ),
-    ),
-  ),
-],
-
-
+                            // ✅ Жаңылоо — оң жакта
+                            if (!_isSearchMode)
+                              GestureDetector(
+                                onTap: _isNearbyMode
+                                    ? _loadNearbyProducts
+                                    : () {
+                                        switch (_filterMode) {
+                                          case ProductFilterMode.newest:
+                                            _loadNewest();
+                                            break;
+                                          case ProductFilterMode.popular:
+                                            _loadPopular();
+                                            break;
+                                          case ProductFilterMode.all:
+                                            _loadProducts(refresh: true);
+                                            break;
+                                        }
+                                      },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: isDark
+                                        ? AppColors.primary
+                                            .withValues(alpha: 0.15)
+                                        : const Color(0xFFEEF2FF),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                        color: AppColors.primary
+                                            .withValues(alpha: 0.3)),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.refresh,
+                                          color: AppColors.primary, size: 14),
+                                      const SizedBox(width: 4),
+                                      Text(loc.get('refresh'),
+                                          style: AppTextStyles.labelMedium
+                                              .copyWith(
+                                                  color: AppColors.primary)),
+                                    ],
+                                  ),
+                                ),
+                              ),
 
                             if (_filterCount > 0) ...[
                               const SizedBox(width: 8),
@@ -1037,13 +1046,6 @@ void _showSuggestionSheet() {
                             ],
                           ],
                         ),
-
-
-
-
-
-
-
                       ),
                     ),
                     if (_isLoading)
@@ -1186,8 +1188,8 @@ void _showSuggestionSheet() {
                         border: Border.all(color: Colors.white, width: 3),
                         boxShadow: [
                           BoxShadow(
-                            color:
-                                const Color(0xFFD97706).withValues(alpha: 0.5),
+                            color: const Color(0xFFD97706)
+                                .withValues(alpha: 0.5),
                             blurRadius: 16,
                             offset: const Offset(0, 4),
                           ),

@@ -663,6 +663,7 @@ class AppLocalizations {
     'story_status_inactive': 'Өчүк',
     // ── Тандамалар экраны ──
     'fav_tab_products': 'Товарлар',
+      'suggestion': 'Өтүнүч жиберүү',
     'fav_tab_stores': 'Дүкөндөр',
     'fav_stores_empty': 'Сакталган дүкөн жок',
     'fav_stores_empty_desc': 'Жаккан дүкөнүңүздү ❤️ баскыч менен сактаңыз',
@@ -782,6 +783,7 @@ class AppLocalizations {
 
   static const _ru = {
     // 🎰 Рулетка — Drawer кнопка
+    'suggestion': 'Отправить запрос',
     'rules_btn_title': 'Золотые правила продавца',
     'rules_btn_sub': '6 ключевых правил для успешной торговли',
     'rules_screen_title': '📋  Золотые правила',

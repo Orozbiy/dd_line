@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../core/supabase_client.dart';
@@ -13,7 +14,7 @@ class SuggestionButton extends StatefulWidget {
 
 class _SuggestionButtonState extends State<SuggestionButton> {
   static const _kCount = 'suggestion_count';
-  static const _kDate  = 'suggestion_date';
+  static const _kDate = 'suggestion_date';
   static const _maxPerDay = 3;
 
   int _todayCount = 0;
@@ -54,10 +55,10 @@ class _SuggestionButtonState extends State<SuggestionButton> {
         .maybeSingle();
 
     await supabase.from('buyer_suggestions').insert({
-      'user_id'  : user.id,
+      'user_id': user.id,
       'user_name': profile?['full_name'] ?? 'Белгисиз',
-      'type'     : _selectedType,
-      'message'  : _ctrl.text.trim(),
+      'type': _selectedType ?? 'general', // тип тандалбаса 'general' болот
+      'message': _ctrl.text.trim(),
     });
 
     final prefs = await SharedPreferences.getInstance();
@@ -69,7 +70,10 @@ class _SuggestionButtonState extends State<SuggestionButton> {
   Widget _typeChip(String label, String value) {
     final isSelected = _selectedType == value;
     return GestureDetector(
-      onTap: () => setState(() => _selectedType = value),
+      onTap: () => setState(() {
+        // Эгер эле тандалган болсо — тандоону алып салат (toggle)
+        _selectedType = isSelected ? null : value;
+      }),
       child: Container(
         width: double.infinity,
         margin: const EdgeInsets.only(bottom: 8),
@@ -83,10 +87,14 @@ class _SuggestionButtonState extends State<SuggestionButton> {
             color: isSelected ? AppColors.primary : Colors.transparent,
           ),
         ),
-        child: Text(label,
-            style: AppTextStyles.labelLarge.copyWith(
-              color: isSelected ? AppColors.primary : Colors.black87,
-            )),
+        child: Text(
+          label,
+          style: AppTextStyles.labelLarge.copyWith(
+            color: isSelected
+                ? AppColors.primary
+                : const Color.fromARGB(221, 224, 157, 11),
+          ),
+        ),
       ),
     );
   }
@@ -97,7 +105,9 @@ class _SuggestionButtonState extends State<SuggestionButton> {
 
     return Padding(
       padding: EdgeInsets.only(
-        left: 16, right: 16, top: 20,
+        left: 16,
+        right: 16,
+        top: 20,
         bottom: MediaQuery.of(context).viewInsets.bottom + 20,
       ),
       child: isLocked
@@ -129,14 +139,21 @@ class _SuggestionButtonState extends State<SuggestionButton> {
                     const Spacer(),
                     Text(
                       'Бүгүн: $_todayCount/$_maxPerDay',
-                      style: AppTextStyles.labelSmall
-                          .copyWith(color: Colors.grey),
+                      style:
+                          AppTextStyles.labelSmall.copyWith(color: Colors.grey),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
+                // Кичинекей эскертме — тип тандоо милдеттүү эмес
+                Text(
+                  '💡 Категория тандоо милдеттүү эмес',
+                  style: AppTextStyles.labelSmall.copyWith(color: Colors.grey),
+                ),
+                const SizedBox(height: 12),
                 _typeChip('🆕 Жаңы товар / Новый товар', 'new_feature'),
-                _typeChip('📂 Категория жок / Нет категории', 'missing_category'),
+                _typeChip(
+                    '📂 Категория жок / Нет категории', 'missing_category'),
                 _typeChip('📦 Товар аз / Мало товаров', 'low_stock'),
                 const SizedBox(height: 14),
                 TextField(
@@ -156,11 +173,13 @@ class _SuggestionButtonState extends State<SuggestionButton> {
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
-                      disabledBackgroundColor: Colors.grey.withValues(alpha: 0.3),
+                      disabledBackgroundColor:
+                          Colors.grey.withValues(alpha: 0.3),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
                     ),
-                    onPressed: _selectedType == null || _ctrl.text.trim().isEmpty
+                    // ✅ Эми текст жазылган болсо жетиштүү — тип тандабай жөнөтсө болот
+                    onPressed: _ctrl.text.trim().isEmpty
                         ? null
                         : () async {
                             Navigator.pop(context);
