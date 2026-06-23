@@ -15,6 +15,7 @@ import '../../home/screens/home_screen.dart';
 import 'seller_close_account_screen.dart';
 import '../widgets/working_hours_sheet.dart';
 import 'seller_rules_screen.dart';
+import 'seller_edit_profile_screen.dart';
 
 class SellerDashboardScreen extends StatefulWidget {
   final String uid;
@@ -83,10 +84,12 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
               child: Text(loc.get('no'), style: const TextStyle(color: AppColors.grey500))),
           TextButton(
             onPressed: () {
-              Navigator.pop(context);
-              Navigator.push(context, MaterialPageRoute(
-                builder: (_) => SellerCloseAccountScreen(sellerUid: _seller!.uid),
-              ));
+  Navigator.pop(context);
+  Navigator.push(context, MaterialPageRoute(
+    builder: (_) => SellerCloseAccountScreen(sellerUid: _seller!.uid),
+  ));
+
+
             },
             child: Text(loc.get('dash_close_account'), style: const TextStyle(color: AppColors.error)),
           ),
@@ -370,6 +373,26 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                         const SizedBox(height: 4),
                         Text(_seller!.name, style: AppTextStyles.labelMedium.copyWith(color: Colors.white70)),
                       ])),
+
+IconButton(
+
+
+
+ onPressed: () async {
+  final updated = await Navigator.push<bool>(context, MaterialPageRoute(
+    builder: (_) => SellerEditProfileScreen(
+      currentName:      _seller!.name,
+      currentShopName:  _seller!.shopName,
+      currentContainer: _seller!.containerNumber,
+    ),
+  ));
+  if (updated == true) _loadSeller();
+},
+  icon: const Icon(Icons.edit, color: Colors.white, size: 20),
+  padding: EdgeInsets.zero,
+  constraints: const BoxConstraints(),
+),
+
                     ]),
                     const SizedBox(height: 16),
                     const Divider(color: Colors.white24),
