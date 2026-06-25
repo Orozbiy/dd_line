@@ -85,27 +85,27 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
   static const _allShoesSizes    = ['16','17','18','19','20','21','22','23','24','25','26','27','28','29','30','31','32','33','34','35','36','37','38','39','40','41','42','43','44','45','46','47'];
   static const _fabricSizes      = ['0.5 м','1 м','1.5 м','2 м','2.5 м','3 м','4 м','5 м','10 м','20 м','50 м'];
 
-  final List<Map<String, dynamic>> _allColors = [
-    {'name': 'Кара',         'hex': 0xFF000000},
-    {'name': 'Ак',           'hex': 0xFFFFFFFF},
-    {'name': 'Кызыл',        'hex': 0xFFEF4444},
-    {'name': 'Көк',          'hex': 0xFF3B82F6},
-    {'name': 'Жашыл',        'hex': 0xFF22C55E},
-    {'name': 'Сары',         'hex': 0xFFEAB308},
-    {'name': 'Кызгылт',      'hex': 0xFFEC4899},
-    {'name': 'Күрөң',        'hex': 0xFF92400E},
-    {'name': 'Боз',          'hex': 0xFF6B7280},
-    {'name': 'Күлгүн',       'hex': 0xFF8B5CF6},
-    {'name': 'Кызгылт сары', 'hex': 0xFFF97316},
-    {'name': 'Ачык көк',     'hex': 0xFF06B6D4},
-    {'name': 'Бежевый',      'hex': 0xFFF5F0DC},
-    {'name': 'Кремовый',     'hex': 0xFFFFFDD0},
-    {'name': 'Жыгач',        'hex': 0xFF8B4513},
-    {'name': 'Алтын',        'hex': 0xFFFFD700},
-    {'name': 'Күмүш',        'hex': 0xFFC0C0C0},
-    {'name': 'Кара жашыл',   'hex': 0xFF006400},
-    {'name': 'Темно-көк',    'hex': 0xFF00008B},
-  ];
+final List<Map<String, dynamic>> _allColors = [
+  {'name': 'Кара',         'nameRu': 'Чёрный',       'hex': 0xFF000000},
+  {'name': 'Ак',           'nameRu': 'Белый',         'hex': 0xFFFFFFFF},
+  {'name': 'Кызыл',        'nameRu': 'Красный',       'hex': 0xFFEF4444},
+  {'name': 'Көк',          'nameRu': 'Синий',         'hex': 0xFF3B82F6},
+  {'name': 'Жашыл',        'nameRu': 'Зелёный',       'hex': 0xFF22C55E},
+  {'name': 'Сары',         'nameRu': 'Жёлтый',        'hex': 0xFFEAB308},
+  {'name': 'Кызгылт',      'nameRu': 'Розовый',       'hex': 0xFFEC4899},
+  {'name': 'Күрөң',        'nameRu': 'Коричневый',    'hex': 0xFF92400E},
+  {'name': 'Боз',          'nameRu': 'Серый',         'hex': 0xFF6B7280},
+  {'name': 'Күлгүн',       'nameRu': 'Фиолетовый',   'hex': 0xFF8B5CF6},
+  {'name': 'Кызгылт сары', 'nameRu': 'Оранжевый',    'hex': 0xFFF97316},
+  {'name': 'Ачык көк',     'nameRu': 'Голубой',       'hex': 0xFF06B6D4},
+  {'name': 'Бежевый',      'nameRu': 'Бежевый',       'hex': 0xFFF5F0DC},
+  {'name': 'Кремовый',     'nameRu': 'Кремовый',      'hex': 0xFFFFFDD0},
+  {'name': 'Жыгач',        'nameRu': 'Деревянный',    'hex': 0xFF8B4513},
+  {'name': 'Алтын',        'nameRu': 'Золотой',       'hex': 0xFFFFD700},
+  {'name': 'Күмүш',        'nameRu': 'Серебряный',    'hex': 0xFFC0C0C0},
+  {'name': 'Кара жашыл',   'nameRu': 'Тёмно-зелёный','hex': 0xFF006400},
+  {'name': 'Темно-көк',    'nameRu': 'Тёмно-синий',  'hex': 0xFF00008B},
+];
 
   @override
   void initState() {
@@ -926,7 +926,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                     const SizedBox(height: 14),
                     if (hasColors(selectedMainCatId)) ...[
                       labelW(loc.get('prod_field_colors')),
-                      _colorPicker(selectedColors, setD, isDark),
+                    _colorPicker(selectedColors, setD, isDark, loc),
                       const SizedBox(height: 14),
                     ],
                     if (hasSizes(selectedMainCatId)) ...[
@@ -1073,7 +1073,7 @@ final uploaded    = await _uploadToCloudinary(watermarked);
         ],
       );
 
-  Widget _colorPicker(List<String> selected, StateSetter setD, bool isDark) {
+ Widget _colorPicker(List<String> selected, StateSetter setD, bool isDark, AppLocalizations loc) {
     final unselBg   = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF7F7F7);
     final unselText = isDark ? Colors.white70 : AppColors.grey600;
     return Wrap(
@@ -1092,9 +1092,16 @@ final uploaded    = await _uploadToCloudinary(watermarked);
             child: Row(mainAxisSize: MainAxisSize.min, children: [
               Container(width: 14, height: 14, decoration: BoxDecoration(color: Color(c['hex'] as int), shape: BoxShape.circle, border: Border.all(color: Colors.grey.withValues(alpha: 0.3)))),
               const SizedBox(width: 6),
-              Text(c['name'] as String, style: AppTextStyles.labelSmall.copyWith(
+
+              Text(loc.locale.languageCode == 'ru'
+      ? (c['nameRu'] as String? ?? c['name'] as String)
+      : c['name'] as String,
+      style: AppTextStyles.labelSmall.copyWith(
                   color: isSelected ? AppColors.primary : unselText,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal)),
+
+
+
               if (isSelected) ...[const SizedBox(width: 4), const Icon(Icons.check, size: 12, color: AppColors.primary)],
             ]),
           ),
