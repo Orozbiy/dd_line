@@ -8,6 +8,7 @@ import '../../seller/services/subscription_service.dart';
 import '../../map/screens/admin_map_picker_screen.dart';
 import 'admin_stats_screen.dart';
 import 'admin_story_manager_screen.dart';
+import 'admin_seller_stats_screen.dart';
 
 class AdminPanelScreen extends StatefulWidget {
   const AdminPanelScreen({super.key});
@@ -968,6 +969,19 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                   color: Color.fromARGB(255, 44, 131, 185), size: 24),
             ),
           ),
+// ✅ ЖАҢЫ — ушуну кош (ошол жогорку GestureDetector'дун АЛДЫНА):
+GestureDetector(
+  onTap: () => Navigator.push(
+    context,
+    MaterialPageRoute(builder: (_) => const AdminSellerStatsScreen()),
+  ),
+  child: const Padding(
+    padding: EdgeInsets.only(right: 4),
+    child: Icon(Icons.people_alt_rounded,
+        color: Color(0xFF10B981), size: 24),
+  ),
+),
+
         ],
         bottom: TabBar(
           controller: _tabController,
