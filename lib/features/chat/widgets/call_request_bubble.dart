@@ -26,7 +26,7 @@ class CallRequestBubble extends StatelessWidget {
     try {
       await supabase.rpc('update_call_status', params: {
         'p_message_id': message.id,
-        'p_status':     status,
+        'p_status': status,
       });
       if (status == 'accepted' && myPhone.isNotEmpty) {
         final uri = Uri.parse('tel:$myPhone');
@@ -47,15 +47,15 @@ class CallRequestBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final loc      = AppLocalizations.of(context);
-    final pending  = message.isCallPending;
+    final loc = AppLocalizations.of(context);
+    final pending = message.isCallPending;
     final accepted = message.isCallAccepted;
     final declined = message.isCallDeclined;
 
     return Padding(
       padding: EdgeInsets.only(
-        left:   isMe ? 60 : 12,
-        right:  isMe ? 12 : 60,
+        left: isMe ? 60 : 12,
+        right: isMe ? 12 : 60,
         bottom: 8,
       ),
       child: Align(
@@ -65,9 +65,9 @@ class CallRequestBubble extends StatelessWidget {
           decoration: BoxDecoration(
             color: _bgColor(accepted, declined),
             borderRadius: BorderRadius.only(
-              topLeft:     const Radius.circular(16),
-              topRight:    const Radius.circular(16),
-              bottomLeft:  Radius.circular(isMe ? 16 : 4),
+              topLeft: const Radius.circular(16),
+              topRight: const Radius.circular(16),
+              bottomLeft: Radius.circular(isMe ? 16 : 4),
               bottomRight: Radius.circular(isMe ? 4 : 16),
             ),
             border: Border.all(
@@ -87,7 +87,6 @@ class CallRequestBubble extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-
                 // ── Иконка + аталыш ──
                 Row(
                   children: [
@@ -132,8 +131,8 @@ class CallRequestBubble extends StatelessWidget {
                 if (!pending) ...[
                   const SizedBox(height: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 5),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
                       color: accepted
                           ? AppColors.success.withValues(alpha: 0.1)
@@ -151,6 +150,38 @@ class CallRequestBubble extends StatelessWidget {
                       ),
                     ),
                   ),
+                  // ✅ Кардар жагында + accepted болсо — чалуу баскычы
+                  if (accepted && isMe) ...[
+                    const SizedBox(height: 8),
+                    GestureDetector(
+                      onTap: () async {
+                        if (myPhone.isNotEmpty) {
+                          final uri = Uri.parse('tel:$myPhone');
+                          if (await canLaunchUrl(uri)) {
+                            await launchUrl(uri);
+                          }
+                        }
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          color: AppColors.success,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Center(
+                          child: Text(
+                            '📞 Чалуу',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
 
                 // ── Сатуучунун баскычтары (pending болсо гана) ──
