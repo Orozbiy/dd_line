@@ -85,27 +85,27 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
   static const _allShoesSizes    = ['16','17','18','19','20','21','22','23','24','25','26','27','28','29','30','31','32','33','34','35','36','37','38','39','40','41','42','43','44','45','46','47'];
   static const _fabricSizes      = ['0.5 м','1 м','1.5 м','2 м','2.5 м','3 м','4 м','5 м','10 м','20 м','50 м'];
 
-final List<Map<String, dynamic>> _allColors = [
-  {'name': 'Кара',         'nameRu': 'Чёрный',       'hex': 0xFF000000},
-  {'name': 'Ак',           'nameRu': 'Белый',         'hex': 0xFFFFFFFF},
-  {'name': 'Кызыл',        'nameRu': 'Красный',       'hex': 0xFFEF4444},
-  {'name': 'Көк',          'nameRu': 'Синий',         'hex': 0xFF3B82F6},
-  {'name': 'Жашыл',        'nameRu': 'Зелёный',       'hex': 0xFF22C55E},
-  {'name': 'Сары',         'nameRu': 'Жёлтый',        'hex': 0xFFEAB308},
-  {'name': 'Кызгылт',      'nameRu': 'Розовый',       'hex': 0xFFEC4899},
-  {'name': 'Күрөң',        'nameRu': 'Коричневый',    'hex': 0xFF92400E},
-  {'name': 'Боз',          'nameRu': 'Серый',         'hex': 0xFF6B7280},
-  {'name': 'Күлгүн',       'nameRu': 'Фиолетовый',   'hex': 0xFF8B5CF6},
-  {'name': 'Кызгылт сары', 'nameRu': 'Оранжевый',    'hex': 0xFFF97316},
-  {'name': 'Ачык көк',     'nameRu': 'Голубой',       'hex': 0xFF06B6D4},
-  {'name': 'Бежевый',      'nameRu': 'Бежевый',       'hex': 0xFFF5F0DC},
-  {'name': 'Кремовый',     'nameRu': 'Кремовый',      'hex': 0xFFFFFDD0},
-  {'name': 'Жыгач',        'nameRu': 'Деревянный',    'hex': 0xFF8B4513},
-  {'name': 'Алтын',        'nameRu': 'Золотой',       'hex': 0xFFFFD700},
-  {'name': 'Күмүш',        'nameRu': 'Серебряный',    'hex': 0xFFC0C0C0},
-  {'name': 'Кара жашыл',   'nameRu': 'Тёмно-зелёный','hex': 0xFF006400},
-  {'name': 'Темно-көк',    'nameRu': 'Тёмно-синий',  'hex': 0xFF00008B},
-];
+  final List<Map<String, dynamic>> _allColors = [
+    {'name': 'Кара',         'nameRu': 'Чёрный',       'hex': 0xFF000000},
+    {'name': 'Ак',           'nameRu': 'Белый',         'hex': 0xFFFFFFFF},
+    {'name': 'Кызыл',        'nameRu': 'Красный',       'hex': 0xFFEF4444},
+    {'name': 'Көк',          'nameRu': 'Синий',         'hex': 0xFF3B82F6},
+    {'name': 'Жашыл',        'nameRu': 'Зелёный',       'hex': 0xFF22C55E},
+    {'name': 'Сары',         'nameRu': 'Жёлтый',        'hex': 0xFFEAB308},
+    {'name': 'Кызгылт',      'nameRu': 'Розовый',       'hex': 0xFFEC4899},
+    {'name': 'Күрөң',        'nameRu': 'Коричневый',    'hex': 0xFF92400E},
+    {'name': 'Боз',          'nameRu': 'Серый',         'hex': 0xFF6B7280},
+    {'name': 'Күлгүн',       'nameRu': 'Фиолетовый',   'hex': 0xFF8B5CF6},
+    {'name': 'Кызгылт сары', 'nameRu': 'Оранжевый',    'hex': 0xFFF97316},
+    {'name': 'Ачык көк',     'nameRu': 'Голубой',       'hex': 0xFF06B6D4},
+    {'name': 'Бежевый',      'nameRu': 'Бежевый',       'hex': 0xFFF5F0DC},
+    {'name': 'Кремовый',     'nameRu': 'Кремовый',      'hex': 0xFFFFFDD0},
+    {'name': 'Жыгач',        'nameRu': 'Деревянный',    'hex': 0xFF8B4513},
+    {'name': 'Алтын',        'nameRu': 'Золотой',       'hex': 0xFFFFD700},
+    {'name': 'Күмүш',        'nameRu': 'Серебряный',    'hex': 0xFFC0C0C0},
+    {'name': 'Кара жашыл',   'nameRu': 'Тёмно-зелёный','hex': 0xFF006400},
+    {'name': 'Темно-көк',    'nameRu': 'Тёмно-синий',  'hex': 0xFF00008B},
+  ];
 
   @override
   void initState() {
@@ -139,9 +139,7 @@ final List<Map<String, dynamic>> _allColors = [
           .order('created_at', ascending: false);
       if (!mounted) return;
       setState(() {
-        _products = (rows as List)
-            .map((r) => Map<String, dynamic>.from(r as Map))
-            .toList();
+        _products  = (rows as List).map((r) => Map<String, dynamic>.from(r as Map)).toList();
         _isLoading = false;
       });
     } catch (e) {
@@ -208,40 +206,25 @@ final List<Map<String, dynamic>> _allColors = [
     }
   }
 
-  // ── ⭐ Өзгөчө белгилөө ──
   Future<void> _toggleFeatured(Map<String, dynamic> product) async {
     final id         = product['id'] as String;
     final isFeatured = product['is_featured'] == true;
     final newValue   = !isFeatured;
     try {
-      await supabase
-          .from('products')
-          .update({'is_featured': newValue})
-          .eq('id', id);
+      await supabase.from('products').update({'is_featured': newValue}).eq('id', id);
       setState(() {
         final idx = _products.indexWhere((p) => p['id'] == id);
         if (idx != -1) _products[idx]['is_featured'] = newValue;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(newValue
-                ? '⭐ Өзгөчө товарларга кошулду!'
-                : '✖ Өзгөчө товарлардан алынды'),
-            backgroundColor: newValue ? const Color(0xFF7C3AED) : AppColors.grey500,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(newValue ? '⭐ Өзгөчө товарларга кошулду!' : '✖ Өзгөчө товарлардан алынды'),
+          backgroundColor: newValue ? const Color(0xFF7C3AED) : AppColors.grey500,
+          behavior: SnackBarBehavior.floating,
+        ));
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Ката чыкты: $e'),
-            backgroundColor: AppColors.error,
-          ),
-        );
-      }
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Ката чыкты: $e'), backgroundColor: AppColors.error));
     }
   }
 
@@ -252,7 +235,6 @@ final List<Map<String, dynamic>> _allColors = [
     final ctrl   = TextEditingController(text: (product['discount_percent'] as num?)?.toString() ?? '');
     double? discountedPrice;
     int percent = int.tryParse(ctrl.text) ?? 0;
-
     final sheetBg   = isDark ? const Color(0xFF1E1E1E) : Colors.white;
     final fieldFill = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF7F7F7);
 
@@ -269,127 +251,114 @@ final List<Map<String, dynamic>> _allColors = [
           }
           return Padding(
             padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(ctx).viewInsets.bottom + 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(child: Container(width: 40, height: 4,
-                    decoration: BoxDecoration(color: AppColors.grey300, borderRadius: BorderRadius.circular(2)))),
-                const SizedBox(height: 16),
-                Text(loc.get('discount_title'), style: AppTextStyles.headingSmall),
-                const SizedBox(height: 4),
-                Text('${loc.get('discount_original_price')}: ${price.toStringAsFixed(0)} ${loc.get('currency')}',
-                    style: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey500)),
-                const SizedBox(height: 20),
-                TextField(
-                  controller: ctrl,
-                  keyboardType: TextInputType.number,
-                  onChanged: recalc,
-                  style: TextStyle(color: isDark ? Colors.white : AppColors.black),
-                  decoration: InputDecoration(
-                    labelText: loc.get('discount_percent_label'),
-                    suffixText: '%',
-                    filled: true,
-                    fillColor: fieldFill,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppColors.primary, width: 2)),
-                  ),
+            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.grey300, borderRadius: BorderRadius.circular(2)))),
+              const SizedBox(height: 16),
+              Text(loc.get('discount_title'), style: AppTextStyles.headingSmall),
+              const SizedBox(height: 4),
+              Text('${loc.get('discount_original_price')}: ${price.toStringAsFixed(0)} ${loc.get('currency')}',
+                  style: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey500)),
+              const SizedBox(height: 20),
+              TextField(
+                controller: ctrl, keyboardType: TextInputType.number, onChanged: recalc,
+                style: TextStyle(color: isDark ? Colors.white : AppColors.black),
+                decoration: InputDecoration(
+                  labelText: loc.get('discount_percent_label'), suffixText: '%',
+                  filled: true, fillColor: fieldFill,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
                 ),
-                if (percent > 0 && discountedPrice != null) ...[
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF2B1E0A) : const Color(0xFFFFF7ED),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.primary, width: 1),
-                    ),
-                    child: Row(children: [
-                      const Text('🔥', style: TextStyle(fontSize: 24)),
-                      const SizedBox(width: 12),
-                      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text('$percent% ${loc.get('discount_label')}',
-                            style: AppTextStyles.labelMedium.copyWith(color: AppColors.primary)),
-                        Text('${discountedPrice!.toStringAsFixed(0)} ${loc.get('currency')}',
-                            style: AppTextStyles.headingSmall.copyWith(color: AppColors.error)),
-                        Text('${(price - discountedPrice!).toStringAsFixed(0)} ${loc.get('discount_saved')}',
-                            style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey500)),
-                      ]),
-                    ]),
+              ),
+              if (percent > 0 && discountedPrice != null) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF2B1E0A) : const Color(0xFFFFF7ED),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.primary, width: 1),
                   ),
-                ],
-                const SizedBox(height: 20),
+                  child: Row(children: [
+                    const Text('🔥', style: TextStyle(fontSize: 24)),
+                    const SizedBox(width: 12),
+                    Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text('$percent% ${loc.get('discount_label')}', style: AppTextStyles.labelMedium.copyWith(color: AppColors.primary)),
+                      Text('${discountedPrice!.toStringAsFixed(0)} ${loc.get('currency')}', style: AppTextStyles.headingSmall.copyWith(color: AppColors.error)),
+                      Text('${(price - discountedPrice!).toStringAsFixed(0)} ${loc.get('discount_saved')}', style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey500)),
+                    ]),
+                  ]),
+                ),
+              ],
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity, height: 50,
+                child: ElevatedButton(
+                  onPressed: percent < 1 ? null : () async {
+                    await _saveDiscount(productId: product['id'] as String, product: product, percent: percent, discountedPrice: discountedPrice!);
+                    if (ctx.mounted) Navigator.pop(ctx);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.4),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    elevation: 0,
+                  ),
+                  child: Text(loc.get('discount_add_btn'), style: const TextStyle(color: Colors.white, fontSize: 16)),
+                ),
+              ),
+              if ((product['discount_percent'] as num? ?? 0) > 0) ...[
+                const SizedBox(height: 10),
                 SizedBox(
-                  width: double.infinity, height: 50,
-                  child: ElevatedButton(
-                    onPressed: percent < 1 ? null : () async {
-                      await _saveDiscount(productId: product['id'] as String, product: product, percent: percent, discountedPrice: discountedPrice!);
+                  width: double.infinity, height: 44,
+                  child: OutlinedButton(
+                    onPressed: () async {
+                      await supabase.from('products').update({'discount_percent': null, 'discounted_price': null, 'has_promotion': false}).eq('id', product['id'] as String);
+                      _showSnack(loc.get('discount_removed'));
+                      _loadProducts();
                       if (ctx.mounted) Navigator.pop(ctx);
                     },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.4),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      elevation: 0,
-                    ),
-                    child: Text(loc.get('discount_add_btn'),
-                        style: const TextStyle(color: Colors.white, fontSize: 16)),
+                    style: OutlinedButton.styleFrom(side: const BorderSide(color: AppColors.error), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                    child: Text(loc.get('discount_remove_btn'), style: const TextStyle(color: AppColors.error)),
                   ),
                 ),
-                if ((product['discount_percent'] as num? ?? 0) > 0) ...[
-                  const SizedBox(height: 10),
-                  SizedBox(
-                    width: double.infinity, height: 44,
-                    child: OutlinedButton(
-                      onPressed: () async {
-                        await supabase.from('products').update(
-                            {'discount_percent': null, 'discounted_price': null, 'has_promotion': false})
-                            .eq('id', product['id'] as String);
-                        _showSnack(loc.get('discount_removed'));
-                        _loadProducts();
-                        if (ctx.mounted) Navigator.pop(ctx);
-                      },
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: AppColors.error),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      ),
-                      child: Text(loc.get('discount_remove_btn'),
-                          style: const TextStyle(color: AppColors.error)),
-                    ),
-                  ),
-                ],
               ],
-            ),
+            ]),
           );
         },
       ),
     );
   }
 
-  Future<void> _saveDiscount({
-    required String productId,
-    required Map<String, dynamic> product,
-    required int percent,
-    required double discountedPrice,
-  }) async {
+  Future<void> _saveDiscount({required String productId, required Map<String, dynamic> product, required int percent, required double discountedPrice}) async {
     final loc = AppLocalizations.of(context);
-    await supabase.from('products').update(
-        {'discount_percent': percent, 'discounted_price': discountedPrice, 'has_promotion': true})
-        .eq('id', productId);
+    await supabase.from('products').update({'discount_percent': percent, 'discounted_price': discountedPrice, 'has_promotion': true}).eq('id', productId);
     _showSnack(loc.get('discount_saved_msg'));
     _loadProducts();
   }
 
+  /// category_id боюнча аталышты кайтарат (3-деңгээлди да колдойт)
   String _getCategoryName(String id) {
     if (id.isEmpty) return '📦 Башка';
     final parts  = id.split('_');
     final mainId = parts[0];
     try {
       final cat = _allCategories.firstWhere((c) => c.id == mainId);
-      if (parts.length > 1) {
-        try { final sub = cat.subcategories.firstWhere((s) => s.id == id); return '${cat.icon} ${cat.name} › ${sub.icon} ${sub.name}'; } catch (_) {}
+      // 3-деңгээл: 1_2_1
+      if (parts.length >= 3) {
+        final subId  = '${parts[0]}_${parts[1]}';
+        final itemId = id;
+        try {
+          final sub  = cat.subcategories.firstWhere((s) => s.id == subId);
+          final item = sub.subItems.firstWhere((i) => i.id == itemId);
+          return '${cat.icon} ${cat.name} › ${sub.icon} ${sub.name} › ${item.icon} ${item.name}';
+        } catch (_) {}
+      }
+      // 2-деңгээл: 1_2
+      if (parts.length == 2) {
+        try {
+          final sub = cat.subcategories.firstWhere((s) => s.id == id);
+          return '${cat.icon} ${cat.name} › ${sub.icon} ${sub.name}';
+        } catch (_) {}
       }
       return '${cat.icon} ${cat.name}';
     } catch (_) {}
@@ -399,8 +368,8 @@ final List<Map<String, dynamic>> _allColors = [
 
   @override
   Widget build(BuildContext context) {
-    final loc    = AppLocalizations.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final loc      = AppLocalizations.of(context);
+    final isDark   = Theme.of(context).brightness == Brightness.dark;
     final filtered = _filteredProducts;
     final usedMainCatIds = _products.map((p) => (p['category_id'] as String? ?? '').split('_')[0]).toSet();
 
@@ -419,17 +388,12 @@ final List<Map<String, dynamic>> _allColors = [
         elevation: 0,
         iconTheme: IconThemeData(color: isDark ? Colors.white : AppColors.grey600),
         title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(loc.get('my_products'),
-              style: AppTextStyles.headingSmall.copyWith(color: titleColor)),
-          Text(widget.shopName,
-              style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey500)),
+          Text(loc.get('my_products'), style: AppTextStyles.headingSmall.copyWith(color: titleColor)),
+          Text(widget.shopName, style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey500)),
         ]),
         actions: [
           IconButton(
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const FlashSaleManageScreen()),
-            ),
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FlashSaleManageScreen())),
             icon: const Icon(Icons.bolt_rounded, color: Colors.orange),
             tooltip: 'Flash Sale',
           ),
@@ -483,11 +447,8 @@ final List<Map<String, dynamic>> _allColors = [
                         Text(_selectedCategoryId == null ? loc.get('prod_empty') : loc.get('prod_empty_cat'),
                             style: AppTextStyles.headingSmall.copyWith(color: titleColor)),
                         const SizedBox(height: 8),
-                        Text(
-                          _selectedCategoryId == null ? loc.get('prod_empty_hint') : loc.get('prod_empty_cat_hint'),
-                          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey500),
-                          textAlign: TextAlign.center,
-                        ),
+                        Text(_selectedCategoryId == null ? loc.get('prod_empty_hint') : loc.get('prod_empty_cat_hint'),
+                            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey500), textAlign: TextAlign.center),
                       ]))
                     : RefreshIndicator(
                         onRefresh: _loadProducts,
@@ -510,125 +471,81 @@ final List<Map<String, dynamic>> _allColors = [
                                 borderRadius: BorderRadius.circular(14),
                                 boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2))],
                               ),
-                              // ── Row ТУУРА ЖАБЫЛДЫ ──
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Сүрөт
-                                  GestureDetector(
-                                    onTap: () => _showDiscountSheet(p),
-                                    child: Stack(children: [
-                                      SizedBox(
-                                        width: 80, height: 80,
-                                        child: ClipRRect(
-                                          borderRadius: BorderRadius.circular(10),
-                                          child: imageUrl.isNotEmpty
-                                              ? Image.network(imageUrl, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _noImage(isDark))
-                                              : _noImage(isDark),
-                                        ),
-                                      ),
-                                      if ((p['discount_percent'] as num? ?? 0) > 0)
-                                        Positioned(top: 2, left: 2,
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                                            decoration: BoxDecoration(color: AppColors.error, borderRadius: BorderRadius.circular(6)),
-                                            child: Text('-${p['discount_percent']}%',
-                                                style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-                                          ),
-                                        ),
-                                    ]),
-                                  ),
-                                  const SizedBox(width: 12),
-
-                                  // Маалымат
-                                  Expanded(
-                                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                      Text(p['title'] as String? ?? '',
-                                          style: AppTextStyles.labelLarge.copyWith(color: prodNameColor),
-                                          maxLines: 2, overflow: TextOverflow.ellipsis),
-                                      const SizedBox(height: 4),
-                                      Text('${(p['price'] as num?)?.toStringAsFixed(0) ?? 0} ${loc.get('currency')}',
-                                          style: AppTextStyles.labelMedium.copyWith(color: AppColors.primary)),
-                                      const SizedBox(height: 2),
-                                      Text(_getCategoryName(p['category_id'] as String? ?? ''),
-                                          style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey500)),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        '${loc.get('banner_stock_label')}: ${p['in_stock'] ?? 0} ${loc.get('pcs')}',
-                                        style: AppTextStyles.labelSmall.copyWith(
-                                          color: (p['in_stock'] as int? ?? 0) > 0 ? AppColors.success : AppColors.error,
-                                        ),
-                                      ),
-                                      if (colors.isNotEmpty) ...[
-                                        const SizedBox(height: 4),
-                                        Row(children: colors.take(5).map((name) {
-                                          final c = _allColors.firstWhere((x) => x['name'] == name, orElse: () => {'hex': 0xFF888888});
-                                          return Container(
-                                            width: 14, height: 14,
-                                            margin: const EdgeInsets.only(right: 4),
-                                            decoration: BoxDecoration(color: Color(c['hex'] as int), shape: BoxShape.circle, border: Border.all(color: Colors.grey.withValues(alpha: 0.3))),
-                                          );
-                                        }).toList()),
-                                      ],
-                                      if (sizes.isNotEmpty) ...[
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          '${loc.get('size_label')}: ${sizes.take(3).join(', ')}${sizes.length > 3 ? ' +${sizes.length - 3}' : ''}',
-                                          style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey500),
-                                          maxLines: 1, overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ],
-                                    ]),
-                                  ),
-
-                                  // ── Өзгөртүү / ⭐ / Өчүрүү ──
-                                  Column(children: [
-                                    // ✏️ Өзгөртүү
-                                    GestureDetector(
-                                      onTap: () => _showProductDialog(existing: p),
-                                      child: Container(
-                                        padding: const EdgeInsets.all(8),
-                                        decoration: BoxDecoration(color: const Color(0xFFE0F2FE), borderRadius: BorderRadius.circular(8)),
-                                        child: const Icon(Icons.edit, size: 18, color: Color(0xFF0369A1)),
+                              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                GestureDetector(
+                                  onTap: () => _showDiscountSheet(p),
+                                  child: Stack(children: [
+                                    SizedBox(
+                                      width: 80, height: 80,
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(10),
+                                        child: imageUrl.isNotEmpty
+                                            ? Image.network(imageUrl, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _noImage(isDark))
+                                            : _noImage(isDark),
                                       ),
                                     ),
-                                    const SizedBox(height: 8),
-                                    // ⭐ Өзгөчө белгилөө
-                                    GestureDetector(
-                                      onTap: () => _toggleFeatured(p),
-                                      child: Container(
-                                        padding: const EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          color: p['is_featured'] == true
-                                              ? const Color(0xFFF3E8FF)
-                                              : const Color(0xFFF5F5F5),
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        child: Icon(
-                                          p['is_featured'] == true
-                                              ? Icons.star_rounded
-                                              : Icons.star_outline_rounded,
-                                          size: 18,
-                                          color: p['is_featured'] == true
-                                              ? const Color(0xFF7C3AED)
-                                              : AppColors.grey400,
+                                    if ((p['discount_percent'] as num? ?? 0) > 0)
+                                      Positioned(top: 2, left: 2,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                          decoration: BoxDecoration(color: AppColors.error, borderRadius: BorderRadius.circular(6)),
+                                          child: Text('-${p['discount_percent']}%', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
                                         ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    // 🗑️ Өчүрүү
-                                    GestureDetector(
-                                      onTap: () => _deleteProduct(p['id'] as String? ?? '', p['title'] as String? ?? ''),
-                                      child: Container(
-                                        padding: const EdgeInsets.all(8),
-                                        decoration: BoxDecoration(color: const Color(0xFFFFEEEE), borderRadius: BorderRadius.circular(8)),
-                                        child: const Icon(Icons.delete, size: 18, color: AppColors.error),
-                                      ),
-                                    ),
                                   ]),
-                                  // ── Row children жабылды ──
-                                ],
-                              ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                  Text(p['title'] as String? ?? '', style: AppTextStyles.labelLarge.copyWith(color: prodNameColor), maxLines: 2, overflow: TextOverflow.ellipsis),
+                                  const SizedBox(height: 4),
+                                  Text('${(p['price'] as num?)?.toStringAsFixed(0) ?? 0} ${loc.get('currency')}',
+                                      style: AppTextStyles.labelMedium.copyWith(color: AppColors.primary)),
+                                  const SizedBox(height: 2),
+                                  Text(_getCategoryName(p['category_id'] as String? ?? ''),
+                                      style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey500)),
+                                  const SizedBox(height: 2),
+                                  Text('${loc.get('banner_stock_label')}: ${p['in_stock'] ?? 0} ${loc.get('pcs')}',
+                                      style: AppTextStyles.labelSmall.copyWith(color: (p['in_stock'] as int? ?? 0) > 0 ? AppColors.success : AppColors.error)),
+                                  if (colors.isNotEmpty) ...[
+                                    const SizedBox(height: 4),
+                                    Row(children: colors.take(5).map((name) {
+                                      final c = _allColors.firstWhere((x) => x['name'] == name, orElse: () => {'hex': 0xFF888888});
+                                      return Container(width: 14, height: 14, margin: const EdgeInsets.only(right: 4),
+                                          decoration: BoxDecoration(color: Color(c['hex'] as int), shape: BoxShape.circle, border: Border.all(color: Colors.grey.withValues(alpha: 0.3))));
+                                    }).toList()),
+                                  ],
+                                  if (sizes.isNotEmpty) ...[
+                                    const SizedBox(height: 4),
+                                    Text('${loc.get('size_label')}: ${sizes.take(3).join(', ')}${sizes.length > 3 ? ' +${sizes.length - 3}' : ''}',
+                                        style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey500), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                  ],
+                                ])),
+                                Column(children: [
+                                  GestureDetector(
+                                    onTap: () => _showProductDialog(existing: p),
+                                    child: Container(padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(color: const Color(0xFFE0F2FE), borderRadius: BorderRadius.circular(8)),
+                                        child: const Icon(Icons.edit, size: 18, color: Color(0xFF0369A1))),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  GestureDetector(
+                                    onTap: () => _toggleFeatured(p),
+                                    child: Container(padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                            color: p['is_featured'] == true ? const Color(0xFFF3E8FF) : const Color(0xFFF5F5F5),
+                                            borderRadius: BorderRadius.circular(8)),
+                                        child: Icon(p['is_featured'] == true ? Icons.star_rounded : Icons.star_outline_rounded,
+                                            size: 18, color: p['is_featured'] == true ? const Color(0xFF7C3AED) : AppColors.grey400)),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  GestureDetector(
+                                    onTap: () => _deleteProduct(p['id'] as String? ?? '', p['title'] as String? ?? ''),
+                                    child: Container(padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(color: const Color(0xFFFFEEEE), borderRadius: BorderRadius.circular(8)),
+                                        child: const Icon(Icons.delete, size: 18, color: AppColors.error)),
+                                  ),
+                                ]),
+                              ]),
                             );
                           },
                         ),
@@ -655,28 +572,16 @@ final List<Map<String, dynamic>> _allColors = [
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : unselBg,
-          borderRadius: BorderRadius.circular(20),
-        ),
+        decoration: BoxDecoration(color: isSelected ? AppColors.primary : unselBg, borderRadius: BorderRadius.circular(20)),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           Text(icon, style: const TextStyle(fontSize: 14)),
           const SizedBox(width: 6),
-          Text(name, style: AppTextStyles.labelMedium.copyWith(
-            color: isSelected ? Colors.white : unselText,
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.normal,
-          )),
+          Text(name, style: AppTextStyles.labelMedium.copyWith(color: isSelected ? Colors.white : unselText, fontWeight: isSelected ? FontWeight.w700 : FontWeight.normal)),
           const SizedBox(width: 6),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: isSelected ? Colors.white.withValues(alpha: 0.25) : AppColors.grey300,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Text('$count', style: TextStyle(
-              fontSize: 11, fontWeight: FontWeight.bold,
-              color: isSelected ? Colors.white : AppColors.grey600,
-            )),
+            decoration: BoxDecoration(color: isSelected ? Colors.white.withValues(alpha: 0.25) : AppColors.grey300, borderRadius: BorderRadius.circular(10)),
+            child: Text('$count', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: isSelected ? Colors.white : AppColors.grey600)),
           ),
         ]),
       ),
@@ -695,14 +600,24 @@ final List<Map<String, dynamic>> _allColors = [
     final extra2Ctrl = TextEditingController(text: existing?['extra2'] ?? '');
     final extra3Ctrl = TextEditingController(text: existing?['extra3'] ?? '');
 
-    final existingCatId      = existing?['category_id'] as String? ?? '1';
-    final existingParts      = existingCatId.split('_');
-    String selectedMainCatId = existingParts[0];
-    String? selectedSubCatId = existingParts.length > 1 ? existingCatId : null;
+    // ── Учурдагы category_id'ди бөлүп алуу ──
+    final existingCatId = existing?['category_id'] as String? ?? '1';
+    final existingParts = existingCatId.split('_');
+
+    String  selectedMainCatId  = existingParts[0];
+    String? selectedSubCatId;   // 2-деңгээл: '1_2'
+    String? selectedSubItemId;  // 3-деңгээл: '1_2_3'
 
     bool mainCatExists = false;
     try { _allCategories.firstWhere((c) => c.id == selectedMainCatId); mainCatExists = true; } catch (_) {}
-    if (!mainCatExists) { selectedMainCatId = '1'; selectedSubCatId = null; }
+    if (!mainCatExists) { selectedMainCatId = '1'; }
+
+    if (existingParts.length >= 3) {
+      selectedSubCatId  = '${existingParts[0]}_${existingParts[1]}';
+      selectedSubItemId = existingCatId;
+    } else if (existingParts.length == 2) {
+      selectedSubCatId = existingCatId;
+    }
 
     List<String> selectedColors = List<String>.from(existing?['colors'] ?? []);
     List<String> selectedSizes  = List<String>.from(existing?['sizes']  ?? []);
@@ -721,7 +636,9 @@ final List<Map<String, dynamic>> _allColors = [
     final hintClr   = isDark ? const Color(0xFF666666) : AppColors.grey400;
     final dropBg    = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF7F7F7);
 
-    List<String> sizesForCategory(String mainId, [String? subId]) {
+    // ── Размер тизмесин кайтарат (3-деңгээлди эске алат) ──
+    List<String> sizesForCategory(String mainId, [String? subId, String? subItemId]) {
+      // SubItem IDине жараша (1_2_X = эркектер + мезгил, бирок размер бирдей)
       if (subId != null) {
         switch (subId) {
           case '1_2': return _menClothSizes;
@@ -739,7 +656,8 @@ final List<Map<String, dynamic>> _allColors = [
       }
     }
 
-    String sizeLabelForCategory(String mainId, [String? subId]) {
+    // ── Размер Label кайтарат ──
+    String sizeLabelForCategory(String mainId, [String? subId, String? subItemId]) {
       if (subId != null) {
         switch (subId) {
           case '1_2': return loc.get('prod_size_men');
@@ -798,8 +716,12 @@ final List<Map<String, dynamic>> _allColors = [
       barrierDismissible: false,
       builder: (_) => StatefulBuilder(
         builder: (ctx, setD) {
-          CategoryModel mainCat = _allCategories.firstWhere((c) => c.id == selectedMainCatId, orElse: () => _allCategories.first);
-          final effectiveCatId  = selectedSubCatId ?? selectedMainCatId;
+          final mainCat      = _allCategories.firstWhere((c) => c.id == selectedMainCatId, orElse: () => _allCategories.first);
+          final selectedSub  = selectedSubCatId != null
+              ? mainCat.subcategories.where((s) => s.id == selectedSubCatId).firstOrNull
+              : null;
+          // Эффективдүү category_id: 3-деңгээл > 2-деңгээл > 1-деңгээл
+          final effectiveCatId = selectedSubItemId ?? selectedSubCatId ?? selectedMainCatId;
 
           Widget labelW(String text) => Padding(
             padding: const EdgeInsets.only(bottom: 6),
@@ -811,13 +733,26 @@ final List<Map<String, dynamic>> _allColors = [
                 controller: ctrl, keyboardType: type,
                 style: AppTextStyles.bodyMedium.copyWith(color: textColor),
                 decoration: InputDecoration(
-                  hintText: hint,
-                  hintStyle: AppTextStyles.bodyMedium.copyWith(color: hintClr),
+                  hintText: hint, hintStyle: AppTextStyles.bodyMedium.copyWith(color: hintClr),
                   filled: true, fillColor: fieldFill,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                   focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
                 ),
+              );
+
+          // ── Dropdown жардамчы функциясы ──
+          Widget dropdownW({required String? value, required List<DropdownMenuItem<String?>> items, required ValueChanged<String?> onChanged, required String hint}) =>
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                decoration: BoxDecoration(color: dropBg, borderRadius: BorderRadius.circular(12)),
+                child: DropdownButtonHideUnderline(child: DropdownButton<String?>(
+                  value: value, isExpanded: true, dropdownColor: dropBg,
+                  style: AppTextStyles.bodyMedium.copyWith(color: textColor),
+                  hint: Text(hint, style: AppTextStyles.bodyMedium.copyWith(color: hintClr)),
+                  items: items,
+                  onChanged: onChanged,
+                )),
               );
 
           return Dialog(
@@ -826,6 +761,7 @@ final List<Map<String, dynamic>> _allColors = [
             child: Container(
               constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.92, maxWidth: 520),
               child: Column(mainAxisSize: MainAxisSize.min, children: [
+                // ── Баш ──
                 Container(
                   padding: const EdgeInsets.all(18),
                   decoration: const BoxDecoration(
@@ -841,21 +777,20 @@ final List<Map<String, dynamic>> _allColors = [
                     GestureDetector(onTap: () { if (!isLoading) Navigator.pop(ctx); }, child: const Icon(Icons.close, color: Colors.white)),
                   ]),
                 ),
+
                 Flexible(child: SingleChildScrollView(
                   padding: const EdgeInsets.all(18),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+
+                    // ── Сүрөт ──
                     labelW(loc.get('prod_field_image')),
                     GestureDetector(
                       onTap: () => pickImage(setD),
                       child: Container(
                         width: double.infinity, height: 160,
                         decoration: BoxDecoration(
-                          color: fieldFill,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                            color: imageBytes != null || existingImageUrl.isNotEmpty ? AppColors.primary : AppColors.grey300,
-                            width: 1.5,
-                          ),
+                          color: fieldFill, borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: imageBytes != null || existingImageUrl.isNotEmpty ? AppColors.primary : AppColors.grey300, width: 1.5),
                         ),
                         child: imageBytes != null
                             ? ClipRRect(borderRadius: BorderRadius.circular(13), child: Image.memory(imageBytes!, fit: BoxFit.cover))
@@ -871,48 +806,106 @@ final List<Map<String, dynamic>> _allColors = [
                       Text(uploadStatus, style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey500)),
                     ],
                     const SizedBox(height: 14),
+
+                    // ── Товар аты ──
                     labelW(loc.get('prod_field_name')),
                     fieldW(nameCtrl, loc.get('prod_hint_name')),
                     const SizedBox(height: 14),
+
+                    // ── Баасы ──
                     labelW(loc.get('prod_field_price')),
                     fieldW(priceCtrl, loc.get('prod_hint_price'), type: TextInputType.number),
                     const SizedBox(height: 14),
+
+                    // ══════════════════════════════════════════
+                    // 1-ДЕҢГЭЭЛ: Негизги категория
+                    // ══════════════════════════════════════════
                     labelW(loc.get('prod_field_main_cat')),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                      decoration: BoxDecoration(color: dropBg, borderRadius: BorderRadius.circular(12)),
-                      child: DropdownButtonHideUnderline(child: DropdownButton<String>(
-                        value: selectedMainCatId, isExpanded: true,
-                        dropdownColor: dropBg,
-                        style: AppTextStyles.bodyMedium.copyWith(color: textColor),
-                        items: _allCategories.map((c) => DropdownMenuItem(value: c.id,
-                            child: Text('${c.icon}  ${c.name}', style: AppTextStyles.bodyMedium.copyWith(color: textColor)))).toList(),
-                        onChanged: (val) {
-                          if (val != null) setD(() { selectedMainCatId = val; selectedSubCatId = null; selectedColors = []; selectedSizes = []; });
-                        },
-                      )),
+                    dropdownW(
+                      value: selectedMainCatId,
+                      hint: '— ${loc.get('cat_label')} —',
+                      items: _allCategories.map((c) => DropdownMenuItem<String?>(
+                        value: c.id,
+                        child: Text('${c.icon}  ${c.name}', style: AppTextStyles.bodyMedium.copyWith(color: textColor)),
+                      )).toList(),
+                      onChanged: (val) {
+                        if (val != null) setD(() {
+                          selectedMainCatId = val;
+                          selectedSubCatId  = null;
+                          selectedSubItemId = null;
+                          selectedColors    = [];
+                          selectedSizes     = [];
+                        });
+                      },
                     ),
                     const SizedBox(height: 14),
-                    labelW(loc.get('prod_field_sub_cat')),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                      decoration: BoxDecoration(color: dropBg, borderRadius: BorderRadius.circular(12)),
-                      child: DropdownButtonHideUnderline(child: DropdownButton<String?>(
-                        value: selectedSubCatId, isExpanded: true,
-                        dropdownColor: dropBg,
-                        style: AppTextStyles.bodyMedium.copyWith(color: textColor),
-                        hint: Text('— ${loc.get('prod_sub_cat_general')} (${mainCat.name}) —',
-                            style: AppTextStyles.bodyMedium.copyWith(color: hintClr)),
+
+                    // ══════════════════════════════════════════
+                    // 2-ДЕҢГЭЭЛ: Орто категория (Эркектер / Аялдар / Балдар ...)
+                    // ══════════════════════════════════════════
+                    if (mainCat.subcategories.isNotEmpty) ...[
+                      labelW(loc.get('prod_field_sub_cat')),
+                      dropdownW(
+                        value: selectedSubCatId,
+                        hint: '— ${loc.get('prod_sub_cat_general')} (${mainCat.name}) —',
                         items: [
-                          DropdownMenuItem<String?>(value: null, child: Text('— ${loc.get('prod_sub_cat_general')} (${mainCat.name}) —',
-                              style: AppTextStyles.bodyMedium.copyWith(color: hintClr))),
-                          ...mainCat.subcategories.map((sub) => DropdownMenuItem<String?>(value: sub.id,
-                              child: Text('${sub.icon}  ${sub.name}', style: AppTextStyles.bodyMedium.copyWith(color: textColor)))),
+                          DropdownMenuItem<String?>(
+                            value: null,
+                            child: Text('— ${loc.get('prod_sub_cat_general')} (${mainCat.name}) —',
+                                style: AppTextStyles.bodyMedium.copyWith(color: hintClr)),
+                          ),
+                          ...mainCat.subcategories.map((sub) => DropdownMenuItem<String?>(
+                            value: sub.id,
+                            child: Row(children: [
+                              Text(sub.icon, style: const TextStyle(fontSize: 16)),
+                              const SizedBox(width: 8),
+                              Text(sub.name, style: AppTextStyles.bodyMedium.copyWith(color: textColor)),
+                              if (sub.hasSubItems) ...[
+                                const SizedBox(width: 4),
+                                Icon(Icons.chevron_right, size: 16, color: AppColors.grey400),
+                              ],
+                            ]),
+                          )),
                         ],
-                        onChanged: (val) => setD(() => selectedSubCatId = val),
-                      )),
-                    ),
-                    const SizedBox(height: 6),
+                        onChanged: (val) => setD(() {
+                          selectedSubCatId  = val;
+                          selectedSubItemId = null;
+                          selectedSizes     = [];
+                        }),
+                      ),
+                      const SizedBox(height: 14),
+                    ],
+
+                    // ══════════════════════════════════════════
+                    // 3-ДЕҢГЭЭЛ: Кичи категория (Жазкы / Жайкы / Күзгү ...)
+                    // Subcategory тандалганда жана subItems бар болсо гана чыгат
+                    // ══════════════════════════════════════════
+                    if (selectedSub != null && selectedSub.hasSubItems) ...[
+                      labelW('${selectedSub.icon} ${selectedSub.name} — ${loc.locale.languageCode == 'ru' ? 'Раздел' : 'Бөлүм'}'),
+                      dropdownW(
+                        value: selectedSubItemId,
+                        hint: '— ${loc.get('prod_sub_cat_general')} (${selectedSub.name}) —',
+                        items: [
+                          DropdownMenuItem<String?>(
+                            value: null,
+                            child: Text('— ${loc.get('prod_sub_cat_general')} (${selectedSub.name}) —',
+                                style: AppTextStyles.bodyMedium.copyWith(color: hintClr)),
+                          ),
+                          ...selectedSub.subItems.map((item) => DropdownMenuItem<String?>(
+                            value: item.id,
+                            child: Row(children: [
+                              Text(item.icon, style: const TextStyle(fontSize: 16)),
+                              const SizedBox(width: 8),
+                              Text(item.name, style: AppTextStyles.bodyMedium.copyWith(color: textColor)),
+                            ]),
+                          )),
+                        ],
+                        onChanged: (val) => setD(() => selectedSubItemId = val),
+                      ),
+                      const SizedBox(height: 14),
+                    ],
+
+                    // ── Тандалган категория жолу (breadcrumb) ──
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(10)),
@@ -924,58 +917,71 @@ final List<Map<String, dynamic>> _allColors = [
                       ]),
                     ),
                     const SizedBox(height: 14),
+
+                    // ── Түстөр ──
                     if (hasColors(selectedMainCatId)) ...[
                       labelW(loc.get('prod_field_colors')),
-                    _colorPicker(selectedColors, setD, isDark, loc),
+                      _colorPicker(selectedColors, setD, isDark, loc),
                       const SizedBox(height: 14),
                     ],
+
+                    // ── Размерлер ──
                     if (hasSizes(selectedMainCatId)) ...[
-                      labelW(sizeLabelForCategory(selectedMainCatId, selectedSubCatId)),
-                      _sizePicker(sizesForCategory(selectedMainCatId, selectedSubCatId), selectedSizes, setD, isDark),
+                      labelW(sizeLabelForCategory(selectedMainCatId, selectedSubCatId, selectedSubItemId)),
+                      _sizePicker(sizesForCategory(selectedMainCatId, selectedSubCatId, selectedSubItemId), selectedSizes, setD, isDark),
                       const SizedBox(height: 14),
                     ],
+
+                    // ── Техника талаалары ──
                     if (hasTechFields(selectedMainCatId)) ...[
                       labelW(loc.get('prod_field_brand')), fieldW(extra1Ctrl, loc.get('prod_hint_brand_tech')), const SizedBox(height: 14),
-                      labelW(loc.get('prod_field_model')), fieldW(extra2Ctrl, loc.get('prod_hint_model')), const SizedBox(height: 14),
-                      labelW(loc.get('prod_field_spec')),  fieldW(extra3Ctrl, loc.get('prod_hint_spec')),  const SizedBox(height: 14),
+                      labelW(loc.get('prod_field_model')), fieldW(extra2Ctrl, loc.get('prod_hint_model')),      const SizedBox(height: 14),
+                      labelW(loc.get('prod_field_spec')),  fieldW(extra3Ctrl, loc.get('prod_hint_spec')),       const SizedBox(height: 14),
                     ],
+
+                    // ── Сулуулук талаалары ──
                     if (hasBeautyFields(selectedMainCatId)) ...[
                       labelW(loc.get('prod_field_brand')),  fieldW(extra1Ctrl, loc.get('prod_hint_brand_beauty')), const SizedBox(height: 14),
                       labelW(loc.get('prod_field_volume')), fieldW(extra2Ctrl, loc.get('prod_hint_volume')),       const SizedBox(height: 14),
                     ],
+
+                    // ── Авто талаалары ──
                     if (hasAutoFields(selectedMainCatId)) ...[
                       labelW(loc.get('prod_field_brand')),      fieldW(extra1Ctrl, loc.get('prod_hint_brand_auto')),  const SizedBox(height: 14),
                       labelW(loc.get('prod_field_car_compat')), fieldW(extra2Ctrl, loc.get('prod_hint_car_compat')), const SizedBox(height: 14),
                     ],
+
+                    // ── Склад ──
                     labelW(loc.get('prod_field_stock')),
                     fieldW(stockCtrl, loc.get('prod_hint_stock'), type: TextInputType.number),
                     const SizedBox(height: 14),
+
+                    // ── Сүрөттөмө ──
                     labelW(loc.get('prod_field_desc')),
-                    TextField(controller: descCtrl, maxLines: 3,
-                        style: AppTextStyles.bodyMedium.copyWith(color: textColor),
-                        decoration: InputDecoration(
-                          hintText: loc.get('prod_hint_desc'),
-                          hintStyle: AppTextStyles.bodyMedium.copyWith(color: hintClr),
-                          filled: true, fillColor: fieldFill,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
-                        )),
+                    TextField(
+                      controller: descCtrl, maxLines: 3,
+                      style: AppTextStyles.bodyMedium.copyWith(color: textColor),
+                      decoration: InputDecoration(
+                        hintText: loc.get('prod_hint_desc'), hintStyle: AppTextStyles.bodyMedium.copyWith(color: hintClr),
+                        filled: true, fillColor: fieldFill,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
+                      ),
+                    ),
                     const SizedBox(height: 10),
                     Container(
                       padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF2B1E0A) : const Color(0xFFFFF8F0),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+                      decoration: BoxDecoration(color: isDark ? const Color(0xFF2B1E0A) : const Color(0xFFFFF8F0), borderRadius: BorderRadius.circular(8)),
                       child: Row(children: [
                         const Text('ℹ️', style: TextStyle(fontSize: 16)),
                         const SizedBox(width: 8),
-                        Expanded(child: Text(loc.get('prod_required_note'),
-                            style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey500))),
+                        Expanded(child: Text(loc.get('prod_required_note'), style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey500))),
                       ]),
                     ),
                     const SizedBox(height: 18),
+
+                    // ── Сактоо баскычы ──
                     SizedBox(
                       width: double.infinity, height: 52,
                       child: ElevatedButton(
@@ -990,19 +996,17 @@ final List<Map<String, dynamic>> _allColors = [
                             String imageUrl = existingImageUrl;
                             if (imageBytes != null) {
                               setD(() { isUploading = true; uploadStatus = loc.get('prod_uploading'); });
-
-
-                            final compressed  = await compressImage(imageBytes!);
-final watermarked = await addWatermark(compressed);   // ← жаңы сап
-final uploaded    = await _uploadToCloudinary(watermarked);
-
+                              final compressed  = await compressImage(imageBytes!);
+                              final watermarked = await addWatermark(compressed);
+                              final uploaded    = await _uploadToCloudinary(watermarked);
                               if (uploaded == null) { setD(() { isLoading = false; isUploading = false; uploadStatus = ''; }); return; }
                               imageUrl = uploaded;
                               setD(() { isUploading = false; uploadStatus = loc.get('prod_uploaded'); });
                             }
                             setD(() => uploadStatus = loc.get('prod_saving'));
                             final storeId    = await _getOrCreateStoreId();
-                            final finalCatId = selectedSubCatId ?? selectedMainCatId;
+                            // Эффективдүү категория ID сактайт (3-деңгээл болсо ошол)
+                            final finalCatId = selectedSubItemId ?? selectedSubCatId ?? selectedMainCatId;
                             final data = {
                               'title': name, 'price': price, 'category_id': finalCatId, 'store_id': storeId,
                               'images': [imageUrl], 'in_stock': int.tryParse(stockCtrl.text.trim()) ?? 0,
@@ -1047,33 +1051,27 @@ final uploaded    = await _uploadToCloudinary(watermarked);
 
   Widget _noImage(bool isDark) => Container(
         width: 80, height: 80,
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF7F7F7),
-          borderRadius: BorderRadius.circular(10),
-        ),
+        decoration: BoxDecoration(color: isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF7F7F7), borderRadius: BorderRadius.circular(10)),
         child: const Center(child: Text('📦', style: TextStyle(fontSize: 28))),
       );
 
-  Widget _uploadPlaceholder(AppLocalizations loc) => Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.add_photo_alternate_outlined, size: 40, color: AppColors.grey400),
-          const SizedBox(height: 8),
-          Text(loc.get('prod_img_tap'), style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey400)),
-          const SizedBox(height: 4),
-          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            const Icon(Icons.camera_alt_outlined, size: 14, color: AppColors.grey300),
-            const SizedBox(width: 4),
-            Text(loc.get('prod_img_camera'), style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey300)),
-            const SizedBox(width: 10),
-            const Icon(Icons.photo_library_outlined, size: 14, color: AppColors.grey300),
-            const SizedBox(width: 4),
-            Text(loc.get('prod_img_gallery'), style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey300)),
-          ]),
-        ],
-      );
+  Widget _uploadPlaceholder(AppLocalizations loc) => Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+        const Icon(Icons.add_photo_alternate_outlined, size: 40, color: AppColors.grey400),
+        const SizedBox(height: 8),
+        Text(loc.get('prod_img_tap'), style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey400)),
+        const SizedBox(height: 4),
+        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          const Icon(Icons.camera_alt_outlined, size: 14, color: AppColors.grey300),
+          const SizedBox(width: 4),
+          Text(loc.get('prod_img_camera'), style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey300)),
+          const SizedBox(width: 10),
+          const Icon(Icons.photo_library_outlined, size: 14, color: AppColors.grey300),
+          const SizedBox(width: 4),
+          Text(loc.get('prod_img_gallery'), style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey300)),
+        ]),
+      ]);
 
- Widget _colorPicker(List<String> selected, StateSetter setD, bool isDark, AppLocalizations loc) {
+  Widget _colorPicker(List<String> selected, StateSetter setD, bool isDark, AppLocalizations loc) {
     final unselBg   = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF7F7F7);
     final unselText = isDark ? Colors.white70 : AppColors.grey600;
     return Wrap(
@@ -1090,18 +1088,13 @@ final uploaded    = await _uploadToCloudinary(watermarked);
               border: Border.all(color: isSelected ? AppColors.primary : Colors.transparent),
             ),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Container(width: 14, height: 14, decoration: BoxDecoration(color: Color(c['hex'] as int), shape: BoxShape.circle, border: Border.all(color: Colors.grey.withValues(alpha: 0.3)))),
+              Container(width: 14, height: 14,
+                  decoration: BoxDecoration(color: Color(c['hex'] as int), shape: BoxShape.circle, border: Border.all(color: Colors.grey.withValues(alpha: 0.3)))),
               const SizedBox(width: 6),
-
-              Text(loc.locale.languageCode == 'ru'
-      ? (c['nameRu'] as String? ?? c['name'] as String)
-      : c['name'] as String,
-      style: AppTextStyles.labelSmall.copyWith(
-                  color: isSelected ? AppColors.primary : unselText,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal)),
-
-
-
+              Text(
+                loc.locale.languageCode == 'ru' ? (c['nameRu'] as String? ?? c['name'] as String) : c['name'] as String,
+                style: AppTextStyles.labelSmall.copyWith(color: isSelected ? AppColors.primary : unselText, fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal),
+              ),
               if (isSelected) ...[const SizedBox(width: 4), const Icon(Icons.check, size: 12, color: AppColors.primary)],
             ]),
           ),
@@ -1126,9 +1119,7 @@ final uploaded    = await _uploadToCloudinary(watermarked);
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: isSelected ? AppColors.primary : Colors.transparent),
             ),
-            child: Text(s, style: AppTextStyles.labelMedium.copyWith(
-                color: isSelected ? Colors.white : unselText,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal)),
+            child: Text(s, style: AppTextStyles.labelMedium.copyWith(color: isSelected ? Colors.white : unselText, fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal)),
           ),
         );
       }).toList(),
