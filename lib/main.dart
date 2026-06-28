@@ -41,6 +41,12 @@ Future<void> main() async {
   debugPrint('🚀 Firebase init...');
   await _initFirebase();
 
+  // ✅ МААНИЛҮҮ: Terminated state — колдонмо ТОЛУК жабык турганда
+  // notification басылганда chatId'ди Firebase'тен алабыз.
+  // Бул runApp() ЧЕЙИН болушу ШАРТ!
+  debugPrint('🚀 handleInitialMessage...');
+  await NotificationService().handleInitialMessage();
+
   debugPrint('🚀 Cart & Favorites...');
   await CartManager.instance.loadFromPrefs();
   await FavoritesManager().loadFromPrefs();
@@ -189,17 +195,16 @@ class _SplashRouterState extends State<SplashRouter> {
   bool    _checking     = true;
   Widget? _targetScreen;
 
-  // ✅ app_links — deep link угуучу
   final _appLinks = AppLinks();
 
   @override
   void initState() {
     super.initState();
     _determineScreen();
-    _listenDeepLinks(); // ✅ deep link угуучуну баштат
+    _listenDeepLinks();
   }
 
-  // ✅ Deep link угуучу (app_links пакети менен)
+  // Deep link угуучу (колдонмо ачык турганда келген linkтер)
   void _listenDeepLinks() {
     _appLinks.uriLinkStream.listen((uri) {
       debugPrint('🔗 Deep link келди: $uri');
@@ -207,9 +212,7 @@ class _SplashRouterState extends State<SplashRouter> {
     });
   }
 
-  // ✅ Deep link иштетүүчү
   void _handleDeepLink(Uri uri) {
-    // https://dd-online-web.web.app/product/PRODUCT_ID
     if (uri.pathSegments.length >= 2 && uri.pathSegments[0] == 'product') {
       final productId = uri.pathSegments[1];
       debugPrint('🔗 Product deep link: $productId');
@@ -220,23 +223,22 @@ class _SplashRouterState extends State<SplashRouter> {
   }
 
   Future<void> _determineScreen() async {
-    // ✅ Terminated state: initial deep link текшер
+    // Terminated state: initial deep link текшер
     try {
       final initialUri = await _appLinks.getInitialLink();
       if (initialUri != null) {
         debugPrint('🔗 Initial deep link: $initialUri');
-        NotificationService.pendingProductId =
-            (initialUri.pathSegments.length >= 2 &&
-                    initialUri.pathSegments[0] == 'product')
-                ? initialUri.pathSegments[1]
-                : null;
+        if (initialUri.pathSegments.length >= 2 &&
+            initialUri.pathSegments[0] == 'product') {
+          NotificationService.pendingProductId = initialUri.pathSegments[1];
+        }
       }
     } catch (_) {}
 
     _targetScreen = await _getTargetScreen();
     if (mounted) setState(() => _checking = false);
 
-    // ── Pending chat (terminated notification) ──
+    // ── Pending chat (terminated notification tap) ──
     final pendingChat = NotificationService.pendingChatId;
     if (pendingChat != null) {
       NotificationService.pendingChatId = null;
@@ -369,9 +371,9 @@ class _SplashScreenState extends State<_SplashScreen>
                 const Text(
                   'DD Online',
                   style: TextStyle(
-                    color:        Colors.white,
-                    fontSize:     28,
-                    fontWeight:   FontWeight.w800,
+                    color:         Colors.white,
+                    fontSize:      28,
+                    fontWeight:    FontWeight.w800,
                     letterSpacing: 0.5,
                   ),
                 ),
