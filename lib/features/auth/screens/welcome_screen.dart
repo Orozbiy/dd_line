@@ -29,37 +29,46 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 900));
-    _fadeAnim  = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
+    _controller = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 900));
+    _fadeAnim = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
     _slideAnim = Tween<Offset>(begin: const Offset(0, 0.12), end: Offset.zero)
         .animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
     _controller.forward();
 
     _authSub = AuthService.instance.authStateChanges.listen((data) async {
       if (data.event == AuthChangeEvent.signedIn) {
-        await AuthService.instance.syncProfile();
+
+        // ✅ ТЕЗДЕТҮҮ: syncProfile() күтпөй дароо HomeScreen'ге өт
+        if (!mounted) return;
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+          (route) => false,
+        );
+
+        // ✅ Фондо: profile sync + role текшерүү (экранды ТОКТОТПОЙТ)
         final user = AuthService.instance.currentUser;
         if (user != null) {
+          // await жок — фондо иштейт
+          AuthService.instance.syncProfile();
+
           try {
             final profile = await supabase
                 .from('profiles')
                 .select('role, seller_status')
                 .eq('id', user.id)
                 .maybeSingle();
-            final role         = profile?['role'] as String?;
+            final role = profile?['role'] as String?;
             final sellerStatus = profile?['seller_status'] as String?;
             if (role != 'seller' && sellerStatus != null) {
-              await supabase.from('profiles').update({'seller_status': null}).eq('id', user.id);
+              await supabase
+                  .from('profiles')
+                  .update({'seller_status': null}).eq('id', user.id);
             }
           } catch (_) {}
         }
-        if (mounted) {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (_) => const HomeScreen()),
-            (route) => false,
-          );
-        }
+
       } else if (data.event == AuthChangeEvent.signedOut && mounted) {
         setState(() => _isLoading = false);
       }
@@ -128,9 +137,14 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(24),
-                      boxShadow: [BoxShadow(color: const Color(0xFFD97706).withValues(alpha: 0.35), blurRadius: 20, offset: const Offset(0, 8))],
+                      boxShadow: [BoxShadow(
+                        color: const Color(0xFFD97706).withValues(alpha: 0.35),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      )],
                     ),
-                    child: const Icon(Icons.storefront_rounded, color: Colors.white, size: 44),
+                    child: const Icon(Icons.storefront_rounded,
+                        color: Colors.white, size: 44),
                   ),
 
                   const SizedBox(height: 24),
@@ -142,7 +156,12 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                     ).createShader(bounds),
                     child: const Text(
                       'DD Online',
-                      style: TextStyle(fontSize: 38, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 0.5),
+                      style: TextStyle(
+                        fontSize: 38,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        letterSpacing: 0.5,
+                      ),
                     ),
                   ),
 
@@ -150,7 +169,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
                   Text(
                     loc.get('welcome_title'),
-                    style: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey500),
+                    style: AppTextStyles.bodyMedium
+                        .copyWith(color: AppColors.grey500),
                     textAlign: TextAlign.center,
                   ),
 
@@ -163,7 +183,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
                   Text(
                     loc.get('sign_in_terms'),
-                    style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey400),
+                    style: AppTextStyles.bodySmall
+                        .copyWith(color: AppColors.grey400),
                     textAlign: TextAlign.center,
                   ),
 
@@ -180,7 +201,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   Widget _buildGoogleButton(AppLocalizations loc, bool isDark) {
     if (defaultTargetPlatform == TargetPlatform.windows) {
       return GestureDetector(
-        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SellerLoginScreen())),
+        onTap: () => Navigator.push(context,
+            MaterialPageRoute(builder: (_) => const SellerLoginScreen())),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           width: double.infinity,
@@ -188,14 +210,21 @@ class _WelcomeScreenState extends State<WelcomeScreen>
           decoration: BoxDecoration(
             color: AppColors.primary,
             borderRadius: BorderRadius.circular(14),
-            boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.35), blurRadius: 12, offset: const Offset(0, 4))],
+            boxShadow: [BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.35),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            )],
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.storefront_rounded, color: Colors.white, size: 22),
+              const Icon(Icons.storefront_rounded,
+                  color: Colors.white, size: 22),
               const SizedBox(width: 12),
-              Text(loc.get('seller_login'), style: AppTextStyles.headingSmall.copyWith(color: Colors.white)),
+              Text(loc.get('seller_login'),
+                  style: AppTextStyles.headingSmall
+                      .copyWith(color: Colors.white)),
             ],
           ),
         ),
@@ -216,16 +245,31 @@ class _WelcomeScreenState extends State<WelcomeScreen>
           color: btnColor,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: btnBorder, width: 1.5),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 12, offset: const Offset(0, 4))],
+          boxShadow: [BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          )],
         ),
         child: _isLoading
-            ? const Center(child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2.5)))
+            ? const Center(
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    color: AppColors.primary,
+                    strokeWidth: 2.5,
+                  ),
+                ),
+              )
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const _GoogleLogo(),
                   const SizedBox(width: 12),
-                  Text(loc.get('sign_in_google'), style: AppTextStyles.headingSmall.copyWith(color: textColor)),
+                  Text(loc.get('sign_in_google'),
+                      style: AppTextStyles.headingSmall
+                          .copyWith(color: textColor)),
                 ],
               ),
       ),
@@ -238,7 +282,11 @@ class _GoogleLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(width: 22, height: 22, child: CustomPaint(painter: _GoogleGPainter()));
+    return SizedBox(
+      width: 22,
+      height: 22,
+      child: CustomPaint(painter: _GoogleGPainter()),
+    );
   }
 }
 
@@ -248,7 +296,8 @@ class _GoogleGPainter extends CustomPainter {
     final radius = size.width / 2;
     final center = Offset(size.width / 2, size.height / 2);
     const strokeWidth = 4.0;
-    final rect = Rect.fromCircle(center: center, radius: radius - strokeWidth / 2);
+    final rect =
+        Rect.fromCircle(center: center, radius: radius - strokeWidth / 2);
 
     void drawArc(double startDeg, double sweepDeg, Color color) {
       canvas.drawArc(
@@ -256,7 +305,11 @@ class _GoogleGPainter extends CustomPainter {
         startDeg * 3.1415926535 / 180,
         sweepDeg * 3.1415926535 / 180,
         false,
-        Paint()..color = color..style = PaintingStyle.stroke..strokeWidth = strokeWidth..strokeCap = StrokeCap.butt,
+        Paint()
+          ..color = color
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = strokeWidth
+          ..strokeCap = StrokeCap.butt,
       );
     }
 
