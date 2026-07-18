@@ -26,6 +26,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String  _phone     = '';
   String? _avatarUrl;
 
+  // Сатуучу экенин белгилөө үчүн — email '@dd-online-seller.local' болсо чын
+  bool _isSeller = false;
+
   final _fullNameController = TextEditingController();
 
   @override
@@ -49,10 +52,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
       final data = await supabase.from('profiles').select().eq('id', user.id).single();
       if (mounted) {
+        final rawEmail = data['email'] as String? ?? user.email ?? '';
+
+        // '@dd-online-seller.local' — сатуучунун жасалма emailи, көрсөтпөйбүз
+        final isSellerEmail = rawEmail.endsWith('@dd-online-seller.local');
+
         setState(() {
-          _fullName  = data['full_name']  as String? ?? '';
-          _email     = data['email']      as String? ?? user.email ?? '';
-          _phone     = data['phone']      as String? ?? '';
+          _fullName  = data['full_name'] as String? ?? '';
+          _email     = isSellerEmail ? '' : rawEmail;
+          _isSeller  = isSellerEmail;
+          _phone     = data['phone']     as String? ?? '';
           _avatarUrl = data['avatar_url'] as String?;
           _fullNameController.text = _fullName;
         });
@@ -67,7 +76,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _pickAndUploadAvatar() async {
     final loc    = AppLocalizations.of(context);
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70, maxWidth: 512);
+    final picked = await picker.pickImage(
+        source: ImageSource.gallery, imageQuality: 70, maxWidth: 512);
     if (picked == null) return;
 
     setState(() => _isUploadingPhoto = true);
@@ -76,13 +86,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (user == null) return;
       final file        = File(picked.path);
       final storagePath = 'avatars/${user.id}.jpg';
-      await supabase.storage.from('product-images').upload(storagePath, file, fileOptions: const FileOptions(upsert: true));
-      final url = supabase.storage.from('product-images').getPublicUrl(storagePath);
+      await supabase.storage
+          .from('product-images')
+          .upload(storagePath, file, fileOptions: const FileOptions(upsert: true));
+      final url =
+          supabase.storage.from('product-images').getPublicUrl(storagePath);
       await supabase.from('profiles').update({'avatar_url': url}).eq('id', user.id);
       setState(() => _avatarUrl = url);
       if (mounted) _showSnack(loc.get('profile_photo_updated'), success: true);
     } catch (e) {
-      if (mounted) _showSnack('${AppLocalizations.of(context).get('error')}: $e');
+      if (mounted)
+        _showSnack('${AppLocalizations.of(context).get('error')}: $e');
     } finally {
       if (mounted) setState(() => _isUploadingPhoto = false);
     }
@@ -99,21 +113,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       final user = supabase.auth.currentUser;
       if (user == null) return;
-      await supabase.from('profiles').update({'full_name': fullName}).eq('id', user.id);
+      await supabase
+          .from('profiles')
+          .update({'full_name': fullName}).eq('id', user.id);
       setState(() => _fullName = fullName);
       if (mounted) {
         _showSnack(loc.get('profile_saved'), success: true);
         Navigator.pop(context);
       }
     } catch (e) {
-      if (mounted) _showSnack('${AppLocalizations.of(context).get('error')}: $e');
+      if (mounted)
+        _showSnack('${AppLocalizations.of(context).get('error')}: $e');
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
   }
 
   void _showEditSheet() {
-    final loc = AppLocalizations.of(context);
+    final loc    = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final sheetColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
 
@@ -124,7 +141,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (_) => Padding(
-        padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(context).viewInsets.bottom + 20),
+        padding: EdgeInsets.fromLTRB(
+            20, 20, 20, MediaQuery.of(context).viewInsets.bottom + 20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -132,7 +150,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Center(
               child: Container(
                 width: 40, height: 4,
-                decoration: BoxDecoration(color: AppColors.grey300, borderRadius: BorderRadius.circular(2)),
+                decoration: BoxDecoration(
+                    color: AppColors.grey300,
+                    borderRadius: BorderRadius.circular(2)),
               ),
             ),
             const SizedBox(height: 16),
@@ -146,8 +166,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               decoration: InputDecoration(
                 hintText: loc.get('profile_hint_name'),
                 filled: true,
-                fillColor: isDark ? const Color(0xFF2C2C2C) : AppColors.grey50,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                fillColor:
+                    isDark ? const Color(0xFF2C2C2C) : AppColors.grey50,
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none),
               ),
             ),
             const SizedBox(height: 20),
@@ -158,11 +181,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
                 ),
                 child: _isSaving
-                    ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : Text(loc.get('save'), style: AppTextStyles.labelLarge.copyWith(color: Colors.white)),
+                    ? const SizedBox(
+                        width: 22, height: 22,
+                        child: CircularProgressIndicator(
+                            color: Colors.white, strokeWidth: 2))
+                    : Text(loc.get('save'),
+                        style: AppTextStyles.labelLarge
+                            .copyWith(color: Colors.white)),
               ),
             ),
           ],
@@ -186,21 +215,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(loc.get('sign_out'), style: AppTextStyles.headingSmall),
-        content: Text(loc.get('profile_signout_confirm'), style: AppTextStyles.bodyMedium),
+        content:
+            Text(loc.get('profile_signout_confirm'), style: AppTextStyles.bodyMedium),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(loc.get('no'), style: const TextStyle(color: AppColors.grey500)),
+            child: Text(loc.get('no'),
+                style: const TextStyle(color: AppColors.grey500)),
           ),
           TextButton(
             onPressed: () async {
               await AuthService.instance.signOut();
               if (mounted) {
-                Navigator.pushAndRemoveUntil(context,
-                    MaterialPageRoute(builder: (_) => const WelcomeScreen()), (route) => false);
+                Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+                    (route) => false);
               }
             },
-            child: Text(loc.get('yes'), style: const TextStyle(color: AppColors.error)),
+            child: Text(loc.get('yes'),
+                style: const TextStyle(color: AppColors.error)),
           ),
         ],
       ),
@@ -209,12 +243,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF121212) : const Color(0xFFF4F5F7);
+    final loc      = AppLocalizations.of(context);
+    final theme    = Theme.of(context);
+    final isDark   = theme.brightness == Brightness.dark;
+    final bgColor  = isDark ? const Color(0xFF121212) : const Color(0xFFF4F5F7);
     final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
     final dividerColor = isDark ? const Color(0xFF2C2C2C) : null;
+
+    // Аватар астында email орнуна көрсөтүлүүчү текст
+    // Сатуучу болсо → 'Сатуучу', Google колдонуучу болсо → email, болбосо → '—'
+    final subtitleText = _isSeller
+        ? 'Сатуучу'
+        : (_email.isNotEmpty ? _email : '—');
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -235,7 +275,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary))
           : SingleChildScrollView(
               child: Column(
                 children: [
@@ -252,17 +293,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               gradient: _avatarUrl == null
-                                  ? const LinearGradient(colors: [Color(0xFFD97706), Color(0xFFEF4444)])
+                                  ? const LinearGradient(colors: [
+                                      Color(0xFFD97706),
+                                      Color(0xFFEF4444)
+                                    ])
                                   : null,
                               image: _avatarUrl != null
-                                  ? DecorationImage(image: NetworkImage(_avatarUrl!), fit: BoxFit.cover)
+                                  ? DecorationImage(
+                                      image: NetworkImage(_avatarUrl!),
+                                      fit: BoxFit.cover)
                                   : null,
                             ),
                             child: _avatarUrl == null
                                 ? Center(
                                     child: Text(
-                                      _fullName.isNotEmpty ? _fullName[0].toUpperCase() : '?',
-                                      style: const TextStyle(fontSize: 38, fontWeight: FontWeight.bold, color: Colors.white),
+                                      _fullName.isNotEmpty
+                                          ? _fullName[0].toUpperCase()
+                                          : '?',
+                                      style: const TextStyle(
+                                          fontSize: 38,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white),
                                     ),
                                   )
                                 : null,
@@ -280,8 +331,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 border: Border.all(color: cardColor, width: 2),
                               ),
                               child: _isUploadingPhoto
-                                  ? const Padding(padding: EdgeInsets.all(6), child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                                  : const Icon(Icons.camera_alt, color: Colors.white, size: 16),
+                                  ? const Padding(
+                                      padding: EdgeInsets.all(6),
+                                      child: CircularProgressIndicator(
+                                          color: Colors.white, strokeWidth: 2))
+                                  : const Icon(Icons.camera_alt,
+                                      color: Colors.white, size: 16),
                             ),
                           ),
                         ),
@@ -290,14 +345,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
 
                   const SizedBox(height: 14),
+
+                  // ── АТЫ ──
                   Text(
-                    _fullName.trim().isEmpty ? loc.get('profile_no_name') : _fullName.trim(),
+                    _fullName.trim().isEmpty
+                        ? loc.get('profile_no_name')
+                        : _fullName.trim(),
                     style: AppTextStyles.headingMedium,
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    _email.isNotEmpty ? _email : '—',
-                    style: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey500),
+
+                  // ── Email / Сатуучу белгиси ──
+                  // Сатуучу: 'Сатуучу' деп чыгат (жасалма email жашырылат)
+                  // Google: реалдуу email чыгат
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (_isSeller) ...[
+                        const Icon(Icons.store_rounded,
+                            size: 14, color: AppColors.primary),
+                        const SizedBox(width: 4),
+                      ],
+                      Text(
+                        subtitleText,
+                        style: AppTextStyles.bodyMedium
+                            .copyWith(color: AppColors.grey500),
+                      ),
+                    ],
                   ),
 
                   const SizedBox(height: 28),
@@ -305,14 +379,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   // ── МААЛЫМАТТАР ──
                   Container(
                     margin: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(14)),
+                    decoration: BoxDecoration(
+                        color: cardColor,
+                        borderRadius: BorderRadius.circular(14)),
                     child: Column(
                       children: [
-                        _profileItem(Icons.person_outline, loc.get('profile_label_name'), _fullName),
+                        _profileItem(
+                          Icons.person_outline,
+                          loc.get('profile_label_name'),
+                          _fullName,
+                        ),
                         Divider(height: 1, indent: 54, color: dividerColor),
-                        _profileItem(Icons.email_outlined, 'Email', _email),
+
+                        // Email сабы: сатуучу болсо 'Сатуучу аккаунту' деп чыгат
+                        _profileItem(
+                          _isSeller
+                              ? Icons.store_outlined
+                              : Icons.email_outlined,
+                          _isSeller ? 'Аккаунт' : 'Email',
+                          _isSeller
+                              ? 'Сатуучу аккаунту'
+                              : (_email.isNotEmpty ? _email : '—'),
+                        ),
+
                         Divider(height: 1, indent: 54, color: dividerColor),
-                        _profileItem(Icons.phone_outlined, loc.get('profile_label_phone'), _phone),
+                        _profileItem(
+                          Icons.phone_outlined,
+                          loc.get('profile_label_phone'),
+                          _phone,
+                        ),
                       ],
                     ),
                   ),
@@ -332,7 +427,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ? AppColors.error.withValues(alpha: 0.15)
                               : const Color(0xFFFFEEEE),
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                          border: Border.all(
+                              color: AppColors.error.withValues(alpha: 0.3)),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -341,7 +437,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             const SizedBox(width: 8),
                             Text(
                               loc.get('profile_signout_btn'),
-                              style: AppTextStyles.headingSmall.copyWith(color: AppColors.error),
+                              style: AppTextStyles.headingSmall
+                                  .copyWith(color: AppColors.error),
                             ),
                           ],
                         ),
@@ -367,7 +464,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(label, style: AppTextStyles.bodySmall),
-              Text(value.isNotEmpty ? value : '—', style: AppTextStyles.labelLarge),
+              Text(value.isNotEmpty ? value : '—',
+                  style: AppTextStyles.labelLarge),
             ],
           ),
         ],
