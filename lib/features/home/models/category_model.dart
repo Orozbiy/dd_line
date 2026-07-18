@@ -75,6 +75,62 @@ class CategoryModel {
           SubCategoryModel(id: '1_11', name: 'Жоолук/Шарф', nameRu: 'Платок/Шарф', icon: '🧣'),
           SubCategoryModel(id: '1_12', name: 'Кемер',        nameRu: 'Ремень',       icon: '🪢'),
           SubCategoryModel(id: '1_13', name: 'Перчатка',     nameRu: 'Перчатки',     icon: '🧤'),
+    SubCategoryModel(
+            id: '1_14', name: 'Баш кийим', nameRu: 'Головные уборы', icon: '🎩',
+            subItems: [
+ 
+              // ── Баары ──
+              SubCategoryModel(id: '1_14_1', name: 'Баары', nameRu: 'Все', icon: '🎩'),
+ 
+              // ── Эркектер ──
+              SubCategoryModel(
+                id: '1_14_2', name: 'Эркектер', nameRu: 'Мужские', icon: '🧢',
+                subItems: [
+                  SubCategoryModel(id: '1_14_2_1', name: 'Жазкы',   nameRu: 'Весенние',     icon: '🌸'),
+                  SubCategoryModel(id: '1_14_2_2', name: 'Жайкы',   nameRu: 'Летние',       icon: '☀️'),
+                  SubCategoryModel(id: '1_14_2_3', name: 'Күзгү',   nameRu: 'Осенние',      icon: '🍂'),
+                  SubCategoryModel(id: '1_14_2_4', name: 'Кышкы',   nameRu: 'Зимние',       icon: '❄️'),
+                  SubCategoryModel(id: '1_14_2_5', name: 'Офистик', nameRu: 'Офисные',      icon: '💼'),
+                  SubCategoryModel(id: '1_14_2_6', name: 'Эс алуу', nameRu: 'Повседневные', icon: '🧢'),
+                  SubCategoryModel(id: '1_14_2_7', name: 'Улуттук', nameRu: 'Национальные', icon: '🎭'),
+                ],
+              ),
+ 
+              // ── Аялдар ──
+              SubCategoryModel(
+                id: '1_14_3', name: 'Аялдар', nameRu: 'Женские', icon: '👒',
+                subItems: [
+                  SubCategoryModel(id: '1_14_3_1', name: 'Жазкы',   nameRu: 'Весенние',     icon: '🌸'),
+                  SubCategoryModel(id: '1_14_3_2', name: 'Жайкы',   nameRu: 'Летние',       icon: '☀️'),
+                  SubCategoryModel(id: '1_14_3_3', name: 'Күзгү',   nameRu: 'Осенние',      icon: '🍂'),
+                  SubCategoryModel(id: '1_14_3_4', name: 'Кышкы',   nameRu: 'Зимние',       icon: '❄️'),
+                  SubCategoryModel(id: '1_14_3_5', name: 'Офистик', nameRu: 'Офисные',      icon: '💼'),
+                  SubCategoryModel(id: '1_14_3_6', name: 'Эс алуу', nameRu: 'Повседневные', icon: '👒'),
+                  SubCategoryModel(id: '1_14_3_7', name: 'Улуттук', nameRu: 'Национальные', icon: '🎭'),
+                ],
+              ),
+ 
+              // ── Балдар ──
+              SubCategoryModel(
+                id: '1_14_4', name: 'Балдар', nameRu: 'Детские', icon: '🧒',
+                subItems: [
+                  SubCategoryModel(id: '1_14_4_1', name: 'Жазкы', nameRu: 'Весенние', icon: '🌸'),
+                  SubCategoryModel(id: '1_14_4_2', name: 'Жайкы', nameRu: 'Летние',   icon: '☀️'),
+                  SubCategoryModel(id: '1_14_4_3', name: 'Күзгү', nameRu: 'Осенние',  icon: '🍂'),
+                  SubCategoryModel(id: '1_14_4_4', name: 'Кышкы', nameRu: 'Зимние',   icon: '❄️'),
+                ],
+              ),
+ 
+              // ── Бөбөктөр ──
+              SubCategoryModel(
+                id: '1_14_5', name: 'Бөбөктөр', nameRu: 'Для малышей', icon: '👶',
+                subItems: [
+                  SubCategoryModel(id: '1_14_5_1', name: 'Жазкы/Жайкы', nameRu: 'Весна/Лето', icon: '🌤️'),
+                  SubCategoryModel(id: '1_14_5_2', name: 'Кышкы',        nameRu: 'Зимние',     icon: '❄️'),
+                ],
+              ),
+            ],
+          ), 
         ],
       ),
 
