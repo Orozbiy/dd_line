@@ -48,7 +48,7 @@ class _ProductCardState extends State<ProductCard>
 
   String _thumbUrl(String url) {
     if (url.contains('res.cloudinary.com') && url.contains('/upload/')) {
-      return url.replaceFirst('/upload/', '/upload/w_400,q_auto,f_auto/');
+      return url.replaceFirst('/upload/', '/upload/w_300,q_auto,f_auto/'); // ✅ 400 → 300
     }
     return url;
   }
@@ -114,7 +114,8 @@ class _ProductCardState extends State<ProductCard>
                           CachedNetworkImage(
                             imageUrl: _thumbUrl(widget.product.imageUrl),
                             fit: BoxFit.cover,
-                            fadeInDuration: const Duration(milliseconds: 250),
+                            fadeInDuration: const Duration(milliseconds: 100), // ✅ 250 → 100
+                            memCacheWidth: 300, // ✅ Flutter кэшинде да кичирейтет
                             placeholder: (_, __) => const SizedBox.shrink(),
                             errorWidget: (_, __, ___) => Container(
                               color: shimmerColor,

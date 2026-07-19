@@ -116,6 +116,7 @@ class _SellerRegisterScreenState extends State<SellerRegisterScreen> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+    
   }
 
   InputDecoration _decoration(BuildContext context, {

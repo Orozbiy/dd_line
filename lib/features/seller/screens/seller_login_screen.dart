@@ -36,39 +36,28 @@ class _SellerLoginScreenState extends State<SellerLoginScreen> {
   Future<void> _checkSavedSession() async {
     final user = supabase.auth.currentUser;
 
-    // Кирген колдонуучу жок — кирүү формасын көрсөт
     if (user == null) {
       if (mounted) setState(() => _checkingSession = false);
       return;
     }
 
-    // ── Google колдонуучусун аныктоо ──
-    // Сатуучулар '@dd-online-seller.local' email менен кирет.
-    // Google колдонуучулары '@gmail.com' же башка реалдуу email менен.
-    // Эгер Google колдонуучусу болсо — кирүү формасын жөн гана көрсөт,
-    // автоматтык redirect жасоо туура эмес.
     final isSellerAccount =
         user.email?.endsWith('@dd-online-seller.local') ?? false;
 
     if (!isSellerAccount) {
-      // Google (же башка OAuth) колдонуучусу —
-      // сатуучу эмес, кирүү формасын көрсөт
       if (mounted) setState(() => _checkingSession = false);
       return;
     }
 
-    // ── Сатуучунун сакталган сессиясын текшер ──
     final seller = await _sellerService.getSellerByUid(user.id);
     if (!mounted) return;
 
     if (seller == null) {
-      // Профиль табылбады — сессияны тазала
       await supabase.auth.signOut();
       setState(() => _checkingSession = false);
       return;
     }
 
-    // Сатуучунун статусуна жараша тиешелүү экранга өт
     if (seller.status == SellerStatus.pending) {
       Navigator.pushAndRemoveUntil(context,
           MaterialPageRoute(builder: (_) => const SellerPendingScreen()),
@@ -117,27 +106,46 @@ class _SellerLoginScreenState extends State<SellerLoginScreen> {
     setState(() => _isLoading = true);
     try {
       final phone  = SellerAuthService.formatPhone(localPhone);
-      final seller = await SellerAuthService.instance.login(phone: phone, password: password);
+      final seller = await SellerAuthService.instance.login(
+        phone: phone,
+        password: password,
+      );
       if (!mounted) return;
 
       if (seller.status == SellerStatus.pending) {
-        Navigator.pushAndRemoveUntil(context,
-            MaterialPageRoute(builder: (_) => const SellerPendingScreen()),
-            (route) => false);
+        // ✅ Заявка каралууда — pending экранга өт
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const SellerPendingScreen()),
+          (route) => false,
+        );
       } else if (seller.status == SellerStatus.rejected) {
-        Navigator.pushAndRemoveUntil(context,
-            MaterialPageRoute(builder: (_) => const SellerRejectedScreen()),
-            (route) => false);
+        // ✅ Заявка четке кагылды — rejected экранга өт
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const SellerRejectedScreen()),
+          (route) => false,
+        );
       } else if (seller.status == SellerStatus.blocked) {
+        // ✅ Бөгөттөлгөн — чыгарып жибер
         await supabase.auth.signOut();
         _showSnack(loc.get('login_blocked'));
       } else {
-        Navigator.pushAndRemoveUntil(context,
-            MaterialPageRoute(builder: (_) => SellerDashboardScreen(uid: seller.uid)),
-            (route) => false);
+        // ✅ Active — dashboard га өт
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => SellerDashboardScreen(uid: seller.uid)),
+          (route) => false,
+        );
       }
+    } on SellerBlockedException catch (e) {
+      if (mounted) _showSnack(e.toString());
+    } on SellerInvalidCredentialsException catch (e) {
+      if (mounted) _showSnack(e.toString());
+    } on SellerPhoneTakenException catch (e) {
+      if (mounted) _showSnack(e.toString());
     } catch (e) {
-      if (mounted) _showSnack('${AppLocalizations.of(context).get('error')}: $e');
+      if (mounted) _showSnack('${loc.get('error')}: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -320,4 +328,9 @@ class _SellerLoginScreenState extends State<SellerLoginScreen> {
       ),
     );
   }
+}
+class SellerBlockedException implements Exception {
+  const SellerBlockedException();
+  @override
+  String toString() => 'Сиздин аккаунтуңуз бөгөттөлгөн.';
 }

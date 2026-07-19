@@ -28,10 +28,11 @@ class VoiceRecordButton extends StatefulWidget {
 class _VoiceRecordButtonState extends State<VoiceRecordButton> {
   final _recorder = AudioRecorder();
 
-  bool _isRecording = false;
-  bool _isCancelling = false;
-  bool _permissionDenied = false; // ← жаңы: permission жок болсо UI кармабайт
-  Duration _elapsed = Duration.zero;
+  bool _isRecording   = false;
+  bool _isCancelling  = false;
+  // ← бул флаг: уруксат диалогу ачык турганда onLongPressEnd игнорланат
+  bool _awaitingPermission = false;
+  Duration _elapsed   = Duration.zero;
   Timer? _timer;
 
   double _dragX = 0;
@@ -44,35 +45,31 @@ class _VoiceRecordButtonState extends State<VoiceRecordButton> {
     super.dispose();
   }
 
-  // ── УРУКСАТ ТЕКШЕРҮҮ — permission_handler аркылуу ──
+  // ── Уруксат текшерүү ──
   Future<bool> _checkAndRequestPermission() async {
     var status = await Permission.microphone.status;
-
     if (status.isGranted) return true;
 
     if (status.isPermanentlyDenied) {
-      // Системалык диалог чыкпайт — Жөндөөлөргө жиберебиз
-      if (mounted) {
-        _showPermissionDialog();
-      }
+      if (mounted) _showPermissionDialog();
       return false;
     }
 
-    // Биринчи жолу же denied — суранабыз
     status = await Permission.microphone.request();
-
     if (status.isGranted) return true;
 
-    if (status.isPermanentlyDenied && mounted) {
-      _showPermissionDialog();
-    } else if (!status.isGranted && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Үн жаздыруу үчүн микрофонго уруксат бериңиз'),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+    if (mounted) {
+      if (status.isPermanentlyDenied) {
+        _showPermissionDialog();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Үн жаздыруу үчүн микрофонго уруксат бериңиз'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
     return false;
   }
@@ -94,7 +91,7 @@ class _VoiceRecordButtonState extends State<VoiceRecordButton> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              openAppSettings(); // permission_handler
+              openAppSettings();
             },
             child: const Text('Жөндөөлөргө өтүү'),
           ),
@@ -104,16 +101,19 @@ class _VoiceRecordButtonState extends State<VoiceRecordButton> {
   }
 
   Future<void> _startRecording() async {
-    // ── МАСЕЛЕ 1 ЖЕТИШТИРилди: уруксат жок болсо _permissionDenied = true ──
-    // Ошондо onLongPressEnd _stopRecording чакырбайт
-    final granted = await _checkAndRequestPermission();
-    if (!granted) {
-      setState(() => _permissionDenied = true);
-      return;
-    }
-    setState(() => _permissionDenied = false);
+    // Уруксат диалогу ачылып жатканын белгилейбиз
+    setState(() => _awaitingPermission = true);
 
-    final dir = await getTemporaryDirectory();
+    final granted = await _checkAndRequestPermission();
+
+    // Диалог бүттү — флагды жок кылабыз
+    if (!mounted) return;
+    setState(() => _awaitingPermission = false);
+
+    if (!granted) return; // уруксат жок — жаздырбайбыз
+
+    // Уруксат бар — жаздырууну баштайбыз
+    final dir  = await getTemporaryDirectory();
     final path = '${dir.path}/voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
 
     await _recorder.start(
@@ -125,11 +125,12 @@ class _VoiceRecordButtonState extends State<VoiceRecordButton> {
       path: path,
     );
 
+    if (!mounted) return;
     setState(() {
-      _isRecording = true;
+      _isRecording  = true;
       _isCancelling = false;
-      _elapsed = Duration.zero;
-      _dragX = 0;
+      _elapsed      = Duration.zero;
+      _dragX        = 0;
     });
 
     widget.onRecordingStart?.call();
@@ -140,23 +141,19 @@ class _VoiceRecordButtonState extends State<VoiceRecordButton> {
   }
 
   Future<void> _stopRecording({required bool cancelled}) async {
-    // ── МАСЕЛЕ 2 ЖЕТИШТИРилди: уруксат жок болсо токто ──
-    if (_permissionDenied) {
-      setState(() => _permissionDenied = false);
-      return;
-    }
     if (!_isRecording) return;
 
     _timer?.cancel();
     _timer = null;
 
-    final path = await _recorder.stop();
+    final path     = await _recorder.stop();
     final duration = _elapsed.inSeconds;
 
+    if (!mounted) return;
     setState(() {
-      _isRecording = false;
+      _isRecording  = false;
       _isCancelling = false;
-      _dragX = 0;
+      _dragX        = 0;
     });
 
     widget.onRecordingEnd?.call();
@@ -179,20 +176,17 @@ class _VoiceRecordButtonState extends State<VoiceRecordButton> {
   Widget build(BuildContext context) {
     if (!_isRecording) {
       return GestureDetector(
-        onLongPressStart: (_) {
-          setState(() => _permissionDenied = false);
-          _startRecording();
-        },
+        onLongPressStart: (_) => _startRecording(),
         onLongPressEnd: (_) {
-          if (!_permissionDenied) {
-            _stopRecording(cancelled: _isCancelling);
-          }
-          setState(() => _permissionDenied = false);
+          // ← МАСЕЛЕНИН ЧЕЧИМИ:
+          // Уруксат диалогу ачык турса же жаздыруу жок болсо — эч нерсе кылбайбыз
+          if (_awaitingPermission || !_isRecording) return;
+          _stopRecording(cancelled: _isCancelling);
         },
         onLongPressMoveUpdate: (details) {
           if (_isRecording) {
             setState(() {
-              _dragX = details.offsetFromOrigin.dx;
+              _dragX        = details.offsetFromOrigin.dx;
               _isCancelling = _dragX < _cancelThreshold;
             });
           }
@@ -213,7 +207,7 @@ class _VoiceRecordButtonState extends State<VoiceRecordButton> {
       onLongPressEnd: (_) => _stopRecording(cancelled: _isCancelling),
       onLongPressMoveUpdate: (details) {
         setState(() {
-          _dragX = details.offsetFromOrigin.dx;
+          _dragX        = details.offsetFromOrigin.dx;
           _isCancelling = _dragX < _cancelThreshold;
         });
       },
@@ -258,6 +252,7 @@ class _VoiceRecordButtonState extends State<VoiceRecordButton> {
   }
 }
 
+// ── Жыпылдаган чекит ──
 class _BlinkingDot extends StatefulWidget {
   final bool active;
   const _BlinkingDot({required this.active});
@@ -268,32 +263,42 @@ class _BlinkingDot extends StatefulWidget {
 
 class _BlinkingDotState extends State<_BlinkingDot>
     with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
+  late final AnimationController _ctrl;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
+    _ctrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 600),
     )..repeat(reverse: true);
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _ctrl.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    if (!widget.active) {
+      return Container(
+        width: 10,
+        height: 10,
+        decoration: const BoxDecoration(
+          color: AppColors.error,
+          shape: BoxShape.circle,
+        ),
+      );
+    }
     return FadeTransition(
-      opacity: _controller,
+      opacity: _ctrl,
       child: Container(
         width: 10,
         height: 10,
-        decoration: BoxDecoration(
-          color: widget.active ? AppColors.error : AppColors.grey400,
+        decoration: const BoxDecoration(
+          color: AppColors.error,
           shape: BoxShape.circle,
         ),
       ),

@@ -926,41 +926,44 @@ class _NavigationGuideSheet extends StatefulWidget {
 
 class _NavigationGuideSheetState extends State<_NavigationGuideSheet> {
   Future<void> _open2GIS() async {
-    final loc = AppLocalizations.of(context);
-    final appUri       = Uri.parse('dgis://2gis.ru/routeSearch/rsType/pedestrian/to/${widget.sellerLng},${widget.sellerLat}');
-    final webUri       = Uri.parse('https://2gis.kg/bishkek/geo/${widget.sellerLng},${widget.sellerLat}');
-    final playStoreUri = Uri.parse('https://play.google.com/store/apps/details?id=ru.dublgis.dgismobile');
-    final appStoreUri  = Uri.parse('https://apps.apple.com/app/id481627348');
+  final loc = AppLocalizations.of(context);
+  final appUri       = Uri.parse('dgis://2gis.ru/routeSearch/rsType/pedestrian/to/${widget.sellerLng},${widget.sellerLat}');
+  final playStoreUri = Uri.parse('https://play.google.com/store/apps/details?id=ru.dublgis.dgismobile');
+  final appStoreUri  = Uri.parse('https://apps.apple.com/app/id481627348');
 
-    if (await canLaunchUrl(appUri)) {
-      await launchUrl(appUri);
-    } else if (await canLaunchUrl(webUri)) {
-      await launchUrl(webUri, mode: LaunchMode.externalApplication);
-    } else {
-      if (!mounted) return;
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Text(loc.get('2gis_not_installed')),
-          content: Text(loc.get('2gis_download_hint')),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(loc.get('no'))),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), elevation: 0),
-              onPressed: () async {
-                Navigator.pop(ctx);
-                final isIOS    = Theme.of(context).platform == TargetPlatform.iOS;
-                final storeUri = isIOS ? appStoreUri : playStoreUri;
-                if (await canLaunchUrl(storeUri)) await launchUrl(storeUri, mode: LaunchMode.externalApplication);
-              },
-              child: Text(loc.get('download'), style: const TextStyle(color: Colors.white)),
+  if (await canLaunchUrl(appUri)) {
+    await launchUrl(appUri);
+  } else {
+    if (!mounted) return;
+    final isIOS    = Theme.of(context).platform == TargetPlatform.iOS;
+    final storeUri = isIOS ? appStoreUri : playStoreUri;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(loc.get('2gis_not_installed')),
+        content: Text(loc.get('2gis_download_hint')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(loc.get('no'))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              elevation: 0,
             ),
-          ],
-        ),
-      );
-    }
+            onPressed: () async {
+              Navigator.pop(ctx);
+              if (await canLaunchUrl(storeUri)) {
+                await launchUrl(storeUri, mode: LaunchMode.externalApplication);
+              }
+            },
+            child: Text(loc.get('download'), style: const TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
   }
+}
 
   @override
   Widget build(BuildContext context) {

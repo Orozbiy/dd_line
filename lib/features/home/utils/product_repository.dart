@@ -11,7 +11,7 @@ class ProductRepository {
   ProductRepository._();
   static final ProductRepository instance = ProductRepository._();
 
-  static const int pageSize = 20;
+  static const int pageSize = 40;
 
   double _randomSeed =
       DateTime.now().millisecondsSinceEpoch % 1000000 / 1000000;

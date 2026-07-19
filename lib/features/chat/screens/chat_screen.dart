@@ -46,6 +46,7 @@ class ChatScreen extends StatefulWidget {
     return ChatScreen(
       chatId: chat.id,
       sellerName: chat.sellerName,
+      productId: chat.productId,  
       productName: chat.productName ?? '',
       productImage: chat.productImage ?? '',
       isSeller: isSeller,
@@ -241,38 +242,64 @@ Future<void> _sendCallRequest() async {
   String get _receiverUid => widget.isSeller ? widget.buyerId : widget.sellerId;
 
   String get _senderDisplayName => widget.isSeller
-      ? (_myDisplayName.isNotEmpty ? _myDisplayName : '')
-      : widget.sellerName;
+    ? (_myDisplayName.isNotEmpty ? _myDisplayName : 'Сатуучу')  // Сатуучу жазса → дүкөн аты
+    : (_myDisplayName.isNotEmpty ? _myDisplayName : 'Кардар');  // Кардар жазса → кардардын аты
 
-  void _send() {
-    final loc = AppLocalizations.of(context);
-    final text = _msgCtrl.text.trim();
-    final myId = _myId;
-    if (text.isEmpty || myId == null) return;
-    _msgCtrl.clear();
-    final replyTo = _replyingTo;
-    if (replyTo != null) setState(() => _replyingTo = null);
-    _service
-        .sendMessage(
+void _send() {
+  final loc = AppLocalizations.of(context);
+  final text = _msgCtrl.text.trim();
+  final myId = _myId;
+  if (text.isEmpty || myId == null) return;
+  _msgCtrl.clear();
+  final replyTo = _replyingTo;
+  if (replyTo != null) setState(() => _replyingTo = null);
+
+  _service
+      .sendMessage(
+        chatId: widget.chatId,
+        senderId: myId,
+        text: text,
+        replyToId: replyTo?.id,
+        replyToText: replyTo != null
+            ? (replyTo.text.isNotEmpty
+                ? replyTo.text
+                : '📷 ${loc.get('chat_image')}')
+            : null,
+      )
+      .then((_) async {
+        String receiverLocale = 'ky';
+        try {
+          final receiverProfile = await supabase
+              .from('profiles')
+              .select('locale')
+              .eq('id', _receiverUid)
+              .maybeSingle();
+          receiverLocale = receiverProfile?['locale'] as String? ?? 'ky';
+        } catch (_) {}
+
+        String senderName;
+        if (widget.isSeller) {
+          senderName = _myDisplayName.isNotEmpty
+              ? _myDisplayName
+              : (receiverLocale == 'ru' ? 'Продавец' : 'Сатуучу');
+        } else {
+          senderName = _myDisplayName.isNotEmpty
+              ? _myDisplayName
+              : (receiverLocale == 'ru' ? 'Покупатель' : 'Кардар');
+        }
+
+        await NotificationService().sendChatNotification(
+          receiverUid: _receiverUid,
+          senderName: senderName,
+          messageText: text,
           chatId: widget.chatId,
-          senderId: myId,
-          text: text,
-          replyToId: replyTo?.id,
-          replyToText: replyTo != null
-              ? (replyTo.text.isNotEmpty
-                  ? replyTo.text
-                  : '📷 ${loc.get('chat_image')}')
-              : null,
-        )
-        .then((_) => NotificationService().sendChatNotification(
-              receiverUid: _receiverUid,
-              senderName: _senderDisplayName,
-              messageText: text,
-              chatId: widget.chatId,
-            ))
-        .catchError((e) => debugPrint('❌ _send ката: $e'));
-  }
-
+        );
+      })
+      .onError((e, stack) {
+        debugPrint('❌ _send ката: $e');
+        return null;
+      });
+}
   Future<ImageSource?> _chooseImageSource() {
     final loc = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
