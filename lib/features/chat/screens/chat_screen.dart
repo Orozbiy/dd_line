@@ -46,7 +46,7 @@ class ChatScreen extends StatefulWidget {
     return ChatScreen(
       chatId: chat.id,
       sellerName: chat.sellerName,
-      productId: chat.productId,  
+      productId: chat.productId,
       productName: chat.productName ?? '',
       productImage: chat.productImage ?? '',
       isSeller: isSeller,
@@ -182,124 +182,124 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-Future<void> _sendCallRequest() async {
-  final loc  = AppLocalizations.of(context);
-  final myId = _myId;
-  if (myId == null) return;
+  Future<void> _sendCallRequest() async {
+    final loc = AppLocalizations.of(context);
+    final myId = _myId;
+    if (myId == null) return;
 
-  final confirm = await showDialog<bool>(
-    context: context,
-    builder: (_) => AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: const Row(children: [
-        Text('📞', style: TextStyle(fontSize: 24)),
-        SizedBox(width: 8),
-        Text('Чалуу өтүнүчү', style: AppTextStyles.headingSmall),
-      ]),
-      content: const Text(
-        'Сатуучуга чалуу өтүнүчү жиберилет.\nАл кабыл алганда телефон чалынат.',
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(children: [
+          Text('📞', style: TextStyle(fontSize: 24)),
+          SizedBox(width: 8),
+          Text('Чалуу өтүнүчү', style: AppTextStyles.headingSmall),
+        ]),
+        content: const Text(
+          'Сатуучуга чалуу өтүнүчү жиберилет.\nАл кабыл алганда телефон чалынат.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(loc.get('no'),
+                style: const TextStyle(color: AppColors.grey500)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            child: const Text('Жиберүү', style: TextStyle(color: Colors.white)),
+          ),
+        ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: Text(loc.get('no'),
-              style: const TextStyle(color: AppColors.grey500)),
-        ),
-        ElevatedButton(
-          onPressed: () => Navigator.pop(context, true),
-          style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary),
-          child: const Text('Жиберүү',
-              style: TextStyle(color: Colors.white)),
-        ),
-      ],
-    ),
-  );
+    );
 
-  if (confirm != true) return;
+    if (confirm != true) return;
 
-  await supabase.from('messages').insert({
-    'chat_id':      widget.chatId,
-    'sender_id':    myId,
-    'text':         '📞 Чалуу өтүнүчү',
-    'message_type': 'call_request',
-    'call_status':  'pending',
-    'is_read':      false,
-  });
+    await supabase.from('messages').insert({
+      'chat_id': widget.chatId,
+      'sender_id': myId,
+      'text': '📞 Чалуу өтүнүчү',
+      'message_type': 'call_request',
+      'call_status': 'pending',
+      'is_read': false,
+    });
 
-  NotificationService().sendChatNotification(
-    receiverUid: _receiverUid,
-    senderName:  _senderDisplayName,
-    messageText: '📞 Сизге чалуу өтүнүчү жиберди',
-    chatId:      widget.chatId,
-  );
+    NotificationService().sendChatNotification(
+      receiverUid: _receiverUid,
+      senderName: _senderDisplayName,
+      messageText: '📞 Сизге чалуу өтүнүчү жиберди',
+      chatId: widget.chatId,
+    );
 
-  _scrollToBottom();
-}
-
-
+    _scrollToBottom();
+  }
 
   String get _receiverUid => widget.isSeller ? widget.buyerId : widget.sellerId;
 
   String get _senderDisplayName => widget.isSeller
-    ? (_myDisplayName.isNotEmpty ? _myDisplayName : 'Сатуучу')  // Сатуучу жазса → дүкөн аты
-    : (_myDisplayName.isNotEmpty ? _myDisplayName : 'Кардар');  // Кардар жазса → кардардын аты
+      ? (_myDisplayName.isNotEmpty
+          ? _myDisplayName
+          : 'Сатуучу') // Сатуучу жазса → дүкөн аты
+      : (_myDisplayName.isNotEmpty
+          ? _myDisplayName
+          : 'Кардар'); // Кардар жазса → кардардын аты
 
-void _send() {
-  final loc = AppLocalizations.of(context);
-  final text = _msgCtrl.text.trim();
-  final myId = _myId;
-  if (text.isEmpty || myId == null) return;
-  _msgCtrl.clear();
-  final replyTo = _replyingTo;
-  if (replyTo != null) setState(() => _replyingTo = null);
+  void _send() {
+    final loc = AppLocalizations.of(context);
+    final text = _msgCtrl.text.trim();
+    final myId = _myId;
+    if (text.isEmpty || myId == null) return;
+    _msgCtrl.clear();
+    final replyTo = _replyingTo;
+    if (replyTo != null) setState(() => _replyingTo = null);
 
-  _service
-      .sendMessage(
+    _service
+        .sendMessage(
+      chatId: widget.chatId,
+      senderId: myId,
+      text: text,
+      replyToId: replyTo?.id,
+      replyToText: replyTo != null
+          ? (replyTo.text.isNotEmpty
+              ? replyTo.text
+              : '📷 ${loc.get('chat_image')}')
+          : null,
+    )
+        .then((_) async {
+      String receiverLocale = 'ky';
+      try {
+        final receiverProfile = await supabase
+            .from('profiles')
+            .select('locale')
+            .eq('id', _receiverUid)
+            .maybeSingle();
+        receiverLocale = receiverProfile?['locale'] as String? ?? 'ky';
+      } catch (_) {}
+
+      String senderName;
+      if (widget.isSeller) {
+        senderName = _myDisplayName.isNotEmpty
+            ? _myDisplayName
+            : (receiverLocale == 'ru' ? 'Продавец' : 'Сатуучу');
+      } else {
+        senderName = _myDisplayName.isNotEmpty
+            ? _myDisplayName
+            : (receiverLocale == 'ru' ? 'Покупатель' : 'Кардар');
+      }
+
+      await NotificationService().sendChatNotification(
+        receiverUid: _receiverUid,
+        senderName: senderName,
+        messageText: text,
         chatId: widget.chatId,
-        senderId: myId,
-        text: text,
-        replyToId: replyTo?.id,
-        replyToText: replyTo != null
-            ? (replyTo.text.isNotEmpty
-                ? replyTo.text
-                : '📷 ${loc.get('chat_image')}')
-            : null,
-      )
-      .then((_) async {
-        String receiverLocale = 'ky';
-        try {
-          final receiverProfile = await supabase
-              .from('profiles')
-              .select('locale')
-              .eq('id', _receiverUid)
-              .maybeSingle();
-          receiverLocale = receiverProfile?['locale'] as String? ?? 'ky';
-        } catch (_) {}
+      );
+    }).onError((e, stack) {
+      debugPrint('❌ _send ката: $e');
+      return null;
+    });
+  }
 
-        String senderName;
-        if (widget.isSeller) {
-          senderName = _myDisplayName.isNotEmpty
-              ? _myDisplayName
-              : (receiverLocale == 'ru' ? 'Продавец' : 'Сатуучу');
-        } else {
-          senderName = _myDisplayName.isNotEmpty
-              ? _myDisplayName
-              : (receiverLocale == 'ru' ? 'Покупатель' : 'Кардар');
-        }
-
-        await NotificationService().sendChatNotification(
-          receiverUid: _receiverUid,
-          senderName: senderName,
-          messageText: text,
-          chatId: widget.chatId,
-        );
-      })
-      .onError((e, stack) {
-        debugPrint('❌ _send ката: $e');
-        return null;
-      });
-}
   Future<ImageSource?> _chooseImageSource() {
     final loc = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -539,6 +539,70 @@ void _send() {
     if (confirm == true) await _service.deleteMessages([msg.id]);
   }
 
+  void _editMessage(MessageModel msg) {
+    // ✅ 5 мүнөт текшерүү
+    final diff = DateTime.now().difference(msg.timestamp);
+    if (diff.inMinutes >= 5) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('5 мүнөттөн өтүп кетти, өзгөртүүгө болбойт'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
+    final ctrl = TextEditingController(text: msg.text);
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Билдирүүнү өзгөртүү',
+            style: AppTextStyles.headingSmall),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          maxLines: null,
+          decoration: InputDecoration(
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppColors.primary, width: 2),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child:
+                const Text('Жок', style: TextStyle(color: AppColors.grey500)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final newText = ctrl.text.trim();
+              if (newText.isEmpty || newText == msg.text) {
+                Navigator.pop(context);
+                return;
+              }
+              Navigator.pop(context);
+              await _service.editMessage(
+                messageId: msg.id,
+                newText: newText,
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Text('Сактоо', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _startReply(MessageModel msg) => setState(() => _replyingTo = msg);
   void _cancelReply() => setState(() => _replyingTo = null);
 
@@ -588,7 +652,7 @@ void _send() {
                 ),
               ],
             )
-          :AppBar(
+          : AppBar(
               backgroundColor: cardColor,
               elevation: 0,
               leading: IconButton(
@@ -694,10 +758,10 @@ void _send() {
                                       // ✅ Чалуу өтүнүчү — атайын bubble
                                       if (msg.isCallRequest) {
                                         return CallRequestBubble(
-                                          message:  msg,
-                                          isMe:     isMe,
+                                          message: msg,
+                                          isMe: isMe,
                                           isSeller: widget.isSeller,
-                                          myPhone:  _sellerPhone,
+                                          myPhone: _sellerPhone,
                                         );
                                       }
 
@@ -713,6 +777,7 @@ void _send() {
                                         onCopy: () => _copyMessage(msg),
                                         onDelete: () => _deleteSingle(msg),
                                         onReply: () => _startReply(msg),
+                                        onEdit: () => _editMessage(msg),
                                         onReplyTap: () => _scrollToMessage(
                                             msg.replyToId, _cachedMessages),
                                       );
@@ -809,8 +874,6 @@ void _send() {
                             minLines: 1,
                             maxLines: 4,
                             textInputAction: TextInputAction.send,
-
-
                             onSubmitted: (_) => _send(),
                             decoration: InputDecoration(
                               hintText: loc.get('chat_hint'),

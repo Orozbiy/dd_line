@@ -250,9 +250,15 @@ Future<List<ProductModel>> _fetchPersonalized({
     // ✅ НЕГИЗГИ ОҢДОО: .eq → .like
     // '1'   → LIKE '1%'   → '1', '1_2', '1_3' баары табылат
     // '1_2' → LIKE '1_2%' → '1_2' гана табылат
-    if (categoryId != null && categoryId.isNotEmpty) {
-      query = query.like('category_id', '$categoryId%');
-    }
+ if (categoryId != null && categoryId.isNotEmpty) {
+  if (_isMainCategory(categoryId)) {
+    query = query.or(
+      'category_id.eq.$categoryId,category_id.like.${categoryId}_%'
+    );
+  } else {
+    query = query.like('category_id', '$categoryId%');
+  }
+}
 
     if (region != null && region.isNotEmpty) {
       query = query.eq('region', region);
