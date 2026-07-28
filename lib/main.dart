@@ -17,6 +17,8 @@ import 'package:flutter/foundation.dart';
 import 'core/locale_provider.dart';
 import 'core/app_localizations.dart';
 import 'core/theme_provider.dart';
+import 'core/update_checker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -237,6 +239,14 @@ class _SplashRouterState extends State<SplashRouter> {
 
     _targetScreen = await _getTargetScreen();
     if (mounted) setState(() => _checking = false);
+
+    // ✅ ЖАҢЫ: версия текшерүү
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final prefs = await SharedPreferences.getInstance();
+      final langCode = prefs.getString('app_locale') ?? 'ky';
+      if (mounted) await UpdateChecker.check(context, langCode);
+    });
 
     // ── Pending chat (terminated notification tap) ──
     final pendingChat = NotificationService.pendingChatId;

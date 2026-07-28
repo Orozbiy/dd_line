@@ -393,18 +393,16 @@ class _HomeScreenState extends State<HomeScreen>
     });
   }
 
-
-void _showSuggestionSheet() {
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
-    builder: (_) => SuggestionButton(),
-  );
-}
-
+  void _showSuggestionSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => SuggestionButton(),
+    );
+  }
 
   void _onTitleTap() {
     final now = DateTime.now();
@@ -682,528 +680,541 @@ void _showSuggestionSheet() {
 
     return Scaffold(
       backgroundColor: bgColor,
-      endDrawer: const AppEndDrawer(),
-      floatingActionButton: _currentTab == 0
-          ? Builder(
-              builder: (context) => FloatingActionButton(
-                onPressed: () => Scaffold.of(context).openEndDrawer(),
-                backgroundColor: AppColors.primary,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16)),
-                child: const Icon(Icons.arrow_forward_ios_rounded,
-                    color: Colors.white, size: 28),
-              ),
-            )
-          : null,
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+
+  
+
       bottomNavigationBar: _buildBottomNav(loc),
-      body: Stack(
-        children: [
-          Offstage(
-            offstage: _currentTab != 0,
-            child: SafeArea(
-              child: NotificationListener<ScrollNotification>(
-                onNotification: (n) {
-                  if (n.metrics.pixels >= n.metrics.maxScrollExtent - 300)
-                    _loadMoreProducts();
-                  return false;
-                },
-                child: CustomScrollView(
-                  slivers: [
-                    SliverAppBar(
-                      pinned: true,
-                      backgroundColor: cardColor,
-                      elevation: 0,
-                      centerTitle: true,
-                      leadingWidth: 90,
-                      leading: GestureDetector(
-                        onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (_) =>
-                                        const SellerEntranceScreen()))
-                            .then((_) => setState(() {})),
-                        child: Container(
-                          margin: const EdgeInsets.all(4),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? const Color(0xFF2C1A00)
-                                : const Color(0xFFFFF8F0),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                                color: const Color(0xFFD97706)
-                                    .withValues(alpha: 0.35)),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Text('🏪', style: TextStyle(fontSize: 15)),
-                              const SizedBox(width: 2),
-                              Text(
-                                loc.get('shop'),
-                                style: AppTextStyles.labelSmall.copyWith(
-                                    color: AppColors.primary,
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 11),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      title: GestureDetector(
-                        onTap: _onTitleTap,
-                        child: ShaderMask(
-                          shaderCallback: (bounds) => const LinearGradient(
-                            colors: [Color(0xFFD97706), Color(0xFFEF4444)],
-                            begin: Alignment.centerLeft,
-                            end: Alignment.centerRight,
-                          ).createShader(bounds),
-                          child: const Text('DD Online',
-                              style: TextStyle(
-                                  fontSize: 26,
-                                  fontWeight: FontWeight.w900,
-                                  color: Colors.white,
-                                  letterSpacing: 1.0)),
-                        ),
-                      ),
-                      actions: [
-                        GestureDetector(
+
+      body: GestureDetector(
+        onHorizontalDragEnd: (details) {
+          if (details.primaryVelocity != null &&
+              details.primaryVelocity! < -300) {
+            openSidePanel(context);
+          }
+        },
+        behavior: HitTestBehavior.translucent,
+        child: Stack(
+          children: [
+            Offstage(
+              offstage: _currentTab != 0,
+              child: SafeArea(
+                child: NotificationListener<ScrollNotification>(
+                  onNotification: (n) {
+                    if (n.metrics.pixels >= n.metrics.maxScrollExtent - 300)
+                      _loadMoreProducts();
+                    return false;
+                  },
+                  child: CustomScrollView(
+                    slivers: [
+                      SliverAppBar(
+                        pinned: true,
+                        backgroundColor: cardColor,
+                        elevation: 0,
+                        centerTitle: true,
+                        leadingWidth: 90,
+                        leading: GestureDetector(
                           onTap: () => Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                      builder: (_) => const ProfileScreen()))
+                                      builder: (_) =>
+                                          const SellerEntranceScreen()))
                               .then((_) => setState(() {})),
-                          child: Padding(
-                              padding: const EdgeInsets.only(right: 12),
-                              child: Icon(Icons.person_outline,
-                                  color: theme.colorScheme.onSurface
-                                      .withValues(alpha: 0.7),
-                                  size: 26)),
-                        ),
-                      ],
-                    ),
-                    SliverToBoxAdapter(
-                      child: Container(
-                        color: cardColor,
-                        padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-                        child: Row(
-                          children: [
-                            Expanded(
-                                child: SearchBarWidget(
-                                    onChanged: _onSearchChanged,
-                                    onClear: _onSearchClear)),
-                            const SizedBox(width: 8),
-                            GestureDetector(
-                              onTap: _isLocating
-                                  ? null
-                                  : (_isNearbyMode
-                                      ? () => _loadProducts(refresh: true)
-                                      : _loadNearbyProducts),
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                padding: const EdgeInsets.all(13),
-                                decoration: BoxDecoration(
-                                  color: _isNearbyMode
-                                      ? AppColors.primary
-                                      : filterInactiveColor,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: _isLocating
-                                    ? const SizedBox(
-                                        width: 22,
-                                        height: 22,
-                                        child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: AppColors.primary))
-                                    : Icon(Icons.near_me_rounded,
-                                        color: _isNearbyMode
-                                            ? Colors.white
-                                            : filterIconColor,
-                                        size: 22),
-                              ),
+                          child: Container(
+                            margin: const EdgeInsets.all(4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? const Color(0xFF2C1A00)
+                                  : const Color(0xFFFFF8F0),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                  color: const Color(0xFFD97706)
+                                      .withValues(alpha: 0.35)),
                             ),
-                            const SizedBox(width: 8),
-                            GestureDetector(
-                              onTap: _openFilter,
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                padding: const EdgeInsets.all(13),
-                                decoration: BoxDecoration(
-                                  color: _filterCount > 0
-                                      ? AppColors.primary
-                                      : filterInactiveColor,
-                                  borderRadius: BorderRadius.circular(12),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Text('🏪',
+                                    style: TextStyle(fontSize: 15)),
+                                const SizedBox(width: 2),
+                                Text(
+                                  loc.get('shop'),
+                                  style: AppTextStyles.labelSmall.copyWith(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 11),
                                 ),
-                                child: Stack(
-                                  clipBehavior: Clip.none,
-                                  children: [
-                                    Icon(Icons.tune_rounded,
-                                        color: _filterCount > 0
-                                            ? Colors.white
-                                            : filterIconColor,
-                                        size: 22),
-                                    if (_filterCount > 0)
-                                      Positioned(
-                                        top: -6,
-                                        right: -6,
-                                        child: Container(
-                                          width: 15,
-                                          height: 15,
-                                          decoration: const BoxDecoration(
-                                              color: AppColors.error,
-                                              shape: BoxShape.circle),
-                                          child: Center(
-                                              child: Text('$_filterCount',
-                                                  style: const TextStyle(
-                                                      color: Colors.white,
-                                                      fontSize: 9,
-                                                      fontWeight:
-                                                          FontWeight.bold))),
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
+                        title: GestureDetector(
+                          onTap: _onTitleTap,
+                          child: ShaderMask(
+                            shaderCallback: (bounds) => const LinearGradient(
+                              colors: [Color(0xFFD97706), Color(0xFFEF4444)],
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                            ).createShader(bounds),
+                            child: const Text('DD Online',
+                                style: TextStyle(
+                                    fontSize: 26,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.white,
+                                    letterSpacing: 1.0)),
+                          ),
+                        ),
+                        actions: [
+                          GestureDetector(
+                            onTap: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (_) => const ProfileScreen()))
+                                .then((_) => setState(() {})),
+                            child: Padding(
+                                padding: const EdgeInsets.only(right: 12),
+                                child: Icon(Icons.person_outline,
+                                    color: theme.colorScheme.onSurface
+                                        .withValues(alpha: 0.7),
+                                    size: 26)),
+                          ),
+                        ],
                       ),
-                    ),
-                    SliverToBoxAdapter(
-                      child: Container(
-                        color: cardColor,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Divider(height: 1, color: dividerColor),
-                            CategoryList(
-                              onCategorySelected: (id) {
-                                setState(() => _selectedCategoryId = id);
-                                if (_isSearchMode && _searchQuery.isNotEmpty) {
-                                  _onSearchChanged(_searchQuery);
-                                } else if (_isNearbyMode) {
-                                  _loadNearbyProducts();
-                                } else {
-                                  _onFilterModeChanged(_filterMode);
-                                }
-                              },
-                              onFilterModeChanged: _onFilterModeChanged,
-                            ),
-                            const SizedBox(height: 12),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SliverToBoxAdapter(child: SizedBox(height: 8)),
-            
-
-
-
-
-SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
-                        child: Row(
-                          children: [
-                            if (_isSearchMode && !_isLoading)
-                              Text(
-                                '${displayedProducts.length} ${loc.get('results')}',
-                                style: AppTextStyles.bodyMedium
-                                    .copyWith(color: AppColors.grey500),
-                              ),
-                            if (_isNearbyMode && !_isLoading)
-                              Text(
-                                '📍 ${displayedProducts.length} ${loc.get('nearby_count')}',
-                                style: AppTextStyles.bodyMedium
-                                    .copyWith(color: AppColors.grey500),
-                              ),
-                            if (_filterMode != ProductFilterMode.all &&
-                                !_isSearchMode &&
-                                !_isNearbyMode &&
-                                !_isLoading)
-                              Text(
-                                '${_filterModeLabel(loc)} · ${displayedProducts.length}',
-                                style: AppTextStyles.bodyMedium
-                                    .copyWith(color: AppColors.grey500),
-                              ),
-
-                            // ✅ Сурануу — бир жолу, сол жакта
-                            if (!_isSearchMode)
-                              GestureDetector(
-                                onTap: _showSuggestionSheet,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 10, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: isDark
-                                        ? AppColors.primary
-                                            .withValues(alpha: 0.15)
-                                        : const Color(0xFFEEF2FF),
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(
-                                        color: AppColors.primary
-                                            .withValues(alpha: 0.3)),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(Icons.chat_bubble_outline,
-                                          color: AppColors.primary, size: 14),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        ' ${loc.get('suggestion')}',
-                                        style: AppTextStyles.labelMedium
-                                            .copyWith(
-                                                color: AppColors.primary),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-
-                            const Spacer(),
-
-                            // ✅ Жаңылоо — оң жакта
-                            if (!_isSearchMode)
-                              GestureDetector(
-                                onTap: _isNearbyMode
-                                    ? _loadNearbyProducts
-                                    : () {
-                                        switch (_filterMode) {
-                                          case ProductFilterMode.newest:
-                                            _loadNewest();
-                                            break;
-                                          case ProductFilterMode.popular:
-                                            _loadPopular();
-                                            break;
-                                          case ProductFilterMode.all:
-                                            _loadProducts(refresh: true);
-                                            break;
-                                        }
-                                      },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 10, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: isDark
-                                        ? AppColors.primary
-                                            .withValues(alpha: 0.15)
-                                        : const Color(0xFFEEF2FF),
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(
-                                        color: AppColors.primary
-                                            .withValues(alpha: 0.3)),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(Icons.refresh,
-                                          color: AppColors.primary, size: 14),
-                                      const SizedBox(width: 4),
-                                      Text(loc.get('refresh'),
-                                          style: AppTextStyles.labelMedium
-                                              .copyWith(
-                                                  color: AppColors.primary)),
-                                    ],
-                                  ),
-                                ),
-                              ),
-
-                            if (_filterCount > 0) ...[
+                      SliverToBoxAdapter(
+                        child: Container(
+                          color: cardColor,
+                          padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                  child: SearchBarWidget(
+                                      onChanged: _onSearchChanged,
+                                      onClear: _onSearchClear)),
                               const SizedBox(width: 8),
                               GestureDetector(
-                                onTap: _resetFilters,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 6),
+                                onTap: _isLocating
+                                    ? null
+                                    : (_isNearbyMode
+                                        ? () => _loadProducts(refresh: true)
+                                        : _loadNearbyProducts),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  padding: const EdgeInsets.all(13),
                                   decoration: BoxDecoration(
-                                    color: isDark
-                                        ? AppColors.error
-                                            .withValues(alpha: 0.15)
-                                        : const Color(0xFFFFEEEE),
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(
-                                        color: AppColors.error
-                                            .withValues(alpha: 0.3)),
+                                    color: _isNearbyMode
+                                        ? AppColors.primary
+                                        : filterInactiveColor,
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
+                                  child: _isLocating
+                                      ? const SizedBox(
+                                          width: 22,
+                                          height: 22,
+                                          child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: AppColors.primary))
+                                      : Icon(Icons.near_me_rounded,
+                                          color: _isNearbyMode
+                                              ? Colors.white
+                                              : filterIconColor,
+                                          size: 22),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              GestureDetector(
+                                onTap: _openFilter,
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  padding: const EdgeInsets.all(13),
+                                  decoration: BoxDecoration(
+                                    color: _filterCount > 0
+                                        ? AppColors.primary
+                                        : filterInactiveColor,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Stack(
+                                    clipBehavior: Clip.none,
                                     children: [
-                                      const Icon(Icons.close,
-                                          color: AppColors.error, size: 14),
-                                      const SizedBox(width: 4),
-                                      Text(loc.get('filter_reset'),
-                                          style: AppTextStyles.labelMedium
-                                              .copyWith(
-                                                  color: AppColors.error)),
+                                      Icon(Icons.tune_rounded,
+                                          color: _filterCount > 0
+                                              ? Colors.white
+                                              : filterIconColor,
+                                          size: 22),
+                                      if (_filterCount > 0)
+                                        Positioned(
+                                          top: -6,
+                                          right: -6,
+                                          child: Container(
+                                            width: 15,
+                                            height: 15,
+                                            decoration: const BoxDecoration(
+                                                color: AppColors.error,
+                                                shape: BoxShape.circle),
+                                            child: Center(
+                                                child: Text('$_filterCount',
+                                                    style: const TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 9,
+                                                        fontWeight:
+                                                            FontWeight.bold))),
+                                          ),
+                                        ),
                                     ],
                                   ),
                                 ),
                               ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ),
-                    if (_isLoading)
-                      SliverFillRemaining(
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const CircularProgressIndicator(
-                                  color: AppColors.primary, strokeWidth: 3),
-                              const SizedBox(height: 16),
-                              Text(loc.get('loading'),
-                                  style: const TextStyle(
-                                      color: AppColors.grey500, fontSize: 14)),
                             ],
                           ),
                         ),
-                      )
-                    else if (displayedProducts.isEmpty)
-                      SliverFillRemaining(
-                        child: Center(
+                      ),
+                      SliverToBoxAdapter(
+                        child: Container(
+                          color: cardColor,
                           child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('🔍', style: TextStyle(fontSize: 48)),
-                              const SizedBox(height: 12),
-                              Text(
-                                _isSearchMode
-                                    ? '"$_searchQuery" — ${loc.get('no_products')}'
-                                    : loc.get('no_products'),
-                                style: AppTextStyles.bodyMedium
-                                    .copyWith(color: AppColors.grey500),
-                                textAlign: TextAlign.center,
+                              Divider(height: 1, color: dividerColor),
+                              CategoryList(
+                                onCategorySelected: (id) {
+                                  setState(() => _selectedCategoryId = id);
+                                  if (_isSearchMode &&
+                                      _searchQuery.isNotEmpty) {
+                                    _onSearchChanged(_searchQuery);
+                                  } else if (_isNearbyMode) {
+                                    _loadNearbyProducts();
+                                  } else {
+                                    _onFilterModeChanged(_filterMode);
+                                  }
+                                },
+                                onFilterModeChanged: _onFilterModeChanged,
                               ),
-                              if (_isSearchMode) ...[
-                                const SizedBox(height: 8),
-                                Text(loc.get('search_empty'),
-                                    style: AppTextStyles.bodySmall
-                                        .copyWith(color: AppColors.grey400)),
+                              const SizedBox(height: 12),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SliverToBoxAdapter(child: SizedBox(height: 8)),
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
+                          child: Row(
+                            children: [
+                              if (_isSearchMode && !_isLoading)
+                                Flexible(
+                                  child: Text(
+                                    '${displayedProducts.length} ${loc.get('results')}',
+                                    style: AppTextStyles.bodyMedium
+                                        .copyWith(color: AppColors.grey500),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+
+                              // ── ОҢДОЛГОН ──
+                              if (_isNearbyMode && !_isLoading)
+                                Flexible(
+                                  child: Text(
+                                    '📍 ${displayedProducts.length} ${loc.get('nearby_count')}',
+                                    style: AppTextStyles.bodyMedium
+                                        .copyWith(color: AppColors.grey500),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+
+// ── ОҢДОЛГОН КОД ──
+                              if (_filterMode != ProductFilterMode.all &&
+                                  !_isSearchMode &&
+                                  !_isNearbyMode &&
+                                  !_isLoading)
+                                Flexible(
+                                  child: Text(
+                                    '${_filterModeLabel(loc)} · ${displayedProducts.length} шт',
+                                    style: AppTextStyles.bodyMedium
+                                        .copyWith(color: AppColors.grey500),
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                  ),
+                                ),
+
+                              // ✅ Сурануу — бир жолу, сол жакта
+                              if (!_isSearchMode)
+                                GestureDetector(
+                                  onTap: _showSuggestionSheet,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 10, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: isDark
+                                          ? AppColors.primary
+                                              .withValues(alpha: 0.15)
+                                          : const Color(0xFFEEF2FF),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                          color: AppColors.primary
+                                              .withValues(alpha: 0.3)),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.chat_bubble_outline,
+                                            color: AppColors.primary, size: 14),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          ' ${loc.get('suggestion')}',
+                                          style: AppTextStyles.labelMedium
+                                              .copyWith(
+                                                  color: AppColors.primary),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+
+                              const Spacer(),
+
+                              // ✅ Жаңылоо — оң жакта
+                              if (!_isSearchMode)
+                                GestureDetector(
+                                  onTap: _isNearbyMode
+                                      ? _loadNearbyProducts
+                                      : () {
+                                          switch (_filterMode) {
+                                            case ProductFilterMode.newest:
+                                              _loadNewest();
+                                              break;
+                                            case ProductFilterMode.popular:
+                                              _loadPopular();
+                                              break;
+                                            case ProductFilterMode.all:
+                                              _loadProducts(refresh: true);
+                                              break;
+                                          }
+                                        },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 10, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: isDark
+                                          ? AppColors.primary
+                                              .withValues(alpha: 0.15)
+                                          : const Color(0xFFEEF2FF),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                          color: AppColors.primary
+                                              .withValues(alpha: 0.3)),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.refresh,
+                                            color: AppColors.primary, size: 14),
+                                        const SizedBox(width: 4),
+                                        Text(loc.get('refresh'),
+                                            style: AppTextStyles.labelMedium
+                                                .copyWith(
+                                                    color: AppColors.primary)),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+
+                              if (_filterCount > 0) ...[
+                                const SizedBox(width: 8),
+                                GestureDetector(
+                                  onTap: _resetFilters,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: isDark
+                                          ? AppColors.error
+                                              .withValues(alpha: 0.15)
+                                          : const Color(0xFFFFEEEE),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                          color: AppColors.error
+                                              .withValues(alpha: 0.3)),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.close,
+                                            color: AppColors.error, size: 14),
+                                        const SizedBox(width: 4),
+                                        Text(loc.get('filter_reset'),
+                                            style: AppTextStyles.labelMedium
+                                                .copyWith(
+                                                    color: AppColors.error)),
+                                      ],
+                                    ),
+                                  ),
+                                ),
                               ],
                             ],
                           ),
                         ),
-                      )
-                    else
-                      SliverFillRemaining(
-                        child: Column(
-                          children: [
-                            Expanded(
-                              child: ProductGrid(
-                                products: displayedProducts,
-                                onProductTap: (product) => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (_) => ProductDetailScreen(
-                                          product: product)),
-                                ).then((_) => setState(() {})),
-                              ),
-                            ),
-                          ],
-                        ),
                       ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Offstage(
-            offstage: _currentTab != 1,
-            child: _mapLoaded ? const MapScreen() : const SizedBox.shrink(),
-          ),
-          if (_cameraVisible)
-            Positioned(
-              bottom: 64 + MediaQuery.of(context).padding.bottom + 12,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: SlideTransition(
-                  position: _cameraSlide,
-                  child: GestureDetector(
-                    onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (_) => AlertDialog(
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20)),
-                          content: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 64,
-                                height: 64,
-                                decoration: const BoxDecoration(
-                                  gradient: LinearGradient(colors: [
-                                    Color(0xFFD97706),
-                                    Color(0xFFEF4444)
-                                  ]),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(Icons.camera_alt_rounded,
-                                    color: Colors.white, size: 30),
-                              ),
-                              const SizedBox(height: 16),
-                              Text(loc.get('camera_search'),
-                                  style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold),
-                                  textAlign: TextAlign.center),
-                              const SizedBox(height: 8),
-                              Text(loc.get('camera_soon'),
+                      if (_isLoading)
+                        SliverFillRemaining(
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const CircularProgressIndicator(
+                                    color: AppColors.primary, strokeWidth: 3),
+                                const SizedBox(height: 16),
+                                Text(loc.get('loading'),
+                                    style: const TextStyle(
+                                        color: AppColors.grey500,
+                                        fontSize: 14)),
+                              ],
+                            ),
+                          ),
+                        )
+                      else if (displayedProducts.isEmpty)
+                        SliverFillRemaining(
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Text('🔍',
+                                    style: TextStyle(fontSize: 48)),
+                                const SizedBox(height: 12),
+                                Text(
+                                  _isSearchMode
+                                      ? '"$_searchQuery" — ${loc.get('no_products')}'
+                                      : loc.get('no_products'),
+                                  style: AppTextStyles.bodyMedium
+                                      .copyWith(color: AppColors.grey500),
                                   textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                      color: Colors.grey, height: 1.5)),
+                                ),
+                                if (_isSearchMode) ...[
+                                  const SizedBox(height: 8),
+                                  Text(loc.get('search_empty'),
+                                      style: AppTextStyles.bodySmall
+                                          .copyWith(color: AppColors.grey400)),
+                                ],
+                              ],
+                            ),
+                          ),
+                        )
+                      else
+                        SliverFillRemaining(
+                          child: Column(
+                            children: [
+                              Expanded(
+                                child: ProductGrid(
+                                  products: displayedProducts,
+                                  onProductTap: (product) => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (_) => ProductDetailScreen(
+                                            product: product)),
+                                  ).then((_) => setState(() {})),
+                                ),
+                              ),
                             ],
                           ),
-                          actions: [
-                            Center(
-                              child: TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: Text(loc.get('ok'),
-                                    style: const TextStyle(
-                                        color: Color(0xFFD97706),
-                                        fontWeight: FontWeight.bold)),
-                              ),
-                            ),
-                          ],
                         ),
-                      );
-                    },
-                    child: Container(
-                      width: 72,
-                      height: 72,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFD97706), Color(0xFFEF4444)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 3),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFFD97706)
-                                .withValues(alpha: 0.5),
-                            blurRadius: 16,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(Icons.camera_alt_rounded,
-                          color: Colors.white, size: 30),
-                    ),
+                    ],
                   ),
                 ),
               ),
             ),
-        ],
-      ),
+            Offstage(
+              offstage: _currentTab != 1,
+              child: _mapLoaded ? const MapScreen() : const SizedBox.shrink(),
+            ),
+            if (_cameraVisible)
+              Positioned(
+                bottom: 64 + MediaQuery.of(context).padding.bottom + 12,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: SlideTransition(
+                    position: _cameraSlide,
+                    child: GestureDetector(
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (_) => AlertDialog(
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20)),
+                            content: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 64,
+                                  height: 64,
+                                  decoration: const BoxDecoration(
+                                    gradient: LinearGradient(colors: [
+                                      Color(0xFFD97706),
+                                      Color(0xFFEF4444)
+                                    ]),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.camera_alt_rounded,
+                                      color: Colors.white, size: 30),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(loc.get('camera_search'),
+                                    style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold),
+                                    textAlign: TextAlign.center),
+                                const SizedBox(height: 8),
+                                Text(loc.get('camera_soon'),
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                        color: Colors.grey, height: 1.5)),
+                              ],
+                            ),
+                            actions: [
+                              Center(
+                                child: TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: Text(loc.get('ok'),
+                                      style: const TextStyle(
+                                          color: Color(0xFFD97706),
+                                          fontWeight: FontWeight.bold)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                      child: Container(
+                        width: 72,
+                        height: 72,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFD97706), Color(0xFFEF4444)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 3),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFD97706)
+                                  .withValues(alpha: 0.5),
+                              blurRadius: 16,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(Icons.camera_alt_rounded,
+                            color: Colors.white, size: 30),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ), // ← Stack жабылат
+      ), // ← GestureDetector жабылат
     );
   }
 }
+
