@@ -167,30 +167,32 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
-  Future<void> _loadNewest() async {
-    setState(() {
-      _isLoading = true;
-      _isNearbyMode = false;
-      _isSearchMode = false;
-      _offset = 0;
-      _hasMore = false;
-    });
-    try {
-      final products = await ProductRepository.instance.fetchNewest(
-        categoryId: _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
-        limit: 40,
-      );
-      if (mounted)
-        setState(() {
-          allProducts = products;
-          displayedProducts = List.from(products);
-          _isLoading = false;
-        });
-    } catch (e) {
-      debugPrint('❌ loadNewest: $e');
-      if (mounted) setState(() => _isLoading = false);
-    }
+ Future<void> _loadNewest() async {
+  setState(() {
+    _isLoading = true;
+    _isNearbyMode = false;
+    _isSearchMode = false;
+    _offset = 0;
+    _hasMore = true;   // ← өзгөрдү
+  });
+  try {
+    final products = await ProductRepository.instance.fetchNewest(
+      categoryId: _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
+      limit: _pageSize,
+      offset: 0,
+    );
+    _hasMore = products.length == _pageSize;  // ← КОШУЛДУ
+    _offset = products.length;                // ← КОШУЛДУ
+    if (mounted)
+      setState(() {
+        allProducts = products;
+        displayedProducts = List.from(products);
+        _isLoading = false;
+      });
+  } catch (e) {
+    if (mounted) setState(() => _isLoading = false);
   }
+}
 
   Future<void> _loadPopular() async {
     setState(() {
@@ -203,7 +205,7 @@ class _HomeScreenState extends State<HomeScreen>
     try {
       final products = await ProductRepository.instance.fetchPopular(
         categoryId: _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
-        limit: 40,
+       limit: _pageSize,
       );
       if (mounted)
         setState(() {
@@ -232,32 +234,47 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
-  Future<void> _loadMoreProducts() async {
-    if (_isLoadingMore ||
-        !_hasMore ||
-        _isLoading ||
-        _isNearbyMode ||
-        _isSearchMode ||
-        _filterMode != ProductFilterMode.all) return;
-    _isLoadingMore = true;
-    try {
-      final newProducts = await ProductRepository.instance.fetchProducts(
+ Future<void> _loadMoreProducts() async {
+  if (_isLoadingMore || !_hasMore || _isLoading ||
+      _isNearbyMode || _isSearchMode) return;
+
+  _isLoadingMore = true;
+  try {
+    List<ProductModel> newProducts;
+
+    if (_filterMode == ProductFilterMode.newest) {
+      newProducts = await ProductRepository.instance.fetchNewest(
+        categoryId: _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
+        limit: _pageSize,
+        offset: _offset,
+      );
+    } else if (_filterMode == ProductFilterMode.popular) {
+      newProducts = await ProductRepository.instance.fetchPopular(
+        categoryId: _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
+        limit: _pageSize,
+        offset: _offset,
+      );
+    } else {
+      newProducts = await ProductRepository.instance.fetchProducts(
         offset: _offset,
         categoryId: _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
       );
       newProducts.shuffle();
-      _hasMore = newProducts.length == _pageSize;
-      _offset += newProducts.length;
-      if (newProducts.isNotEmpty && mounted) {
-        allProducts.addAll(newProducts);
-        _applyFilters();
-      }
-    } catch (e) {
-      debugPrint('loadMore KATA: $e');
-    } finally {
-      _isLoadingMore = false;
     }
+
+    _hasMore = newProducts.length == _pageSize;
+    _offset += newProducts.length;
+
+    if (newProducts.isNotEmpty && mounted) {
+      allProducts.addAll(newProducts);
+      _applyFilters();
+    }
+  } catch (e) {
+    debugPrint('loadMore KATA: $e');
+  } finally {
+    _isLoadingMore = false;
   }
+}
 
   Future<void> _loadNearbyProducts() async {
     setState(() => _isLocating = true);

@@ -9,6 +9,7 @@ import '../../map/screens/admin_map_picker_screen.dart';
 import 'admin_stats_screen.dart';
 import 'admin_story_manager_screen.dart';
 import 'admin_seller_stats_screen.dart';
+import 'admin_phone_requests_screen.dart';
 
 class AdminPanelScreen extends StatefulWidget {
   const AdminPanelScreen({super.key});
@@ -26,6 +27,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
   List<SellerModel> _pendingSellers = [];
   List<SellerModel> _approvedSellers = [];
   List<SellerModel> _allSellers = [];
+  List<Map<String, dynamic>> _phoneRequests = []; 
   bool _isLoading = true;
 
   final _searchCtrl = TextEditingController();
@@ -38,7 +40,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
+    _tabController = TabController(length: 6, vsync: this);
     _loadData();
     _loadAdminCard();
     _searchCtrl.addListener(() {
@@ -67,21 +69,26 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
   // ══════════════════════════════════════════════════════
   // МААЛЫМАТ ЖҮКТӨӨ
   // ══════════════════════════════════════════════════════
+Future<void> _loadData() async {
+  setState(() => _isLoading = true);
+  final all = await _service.getAllSellers();
 
-  Future<void> _loadData() async {
-    setState(() => _isLoading = true);
-    final all = await _service.getAllSellers();
-    setState(() {
-      _allSellers = all;
-      _pendingSellers = all.where((s) => s.status == SellerStatus.pending).toList();
-      _approvedSellers = all
-          .where((s) =>
-              s.status == SellerStatus.approved ||
-              s.status == SellerStatus.blocked)
-          .toList();
-      _isLoading = false;
-    });
-  }
+  // ── Номер өзгөртүү өтүнүчтөрү ──
+  final phoneReqs = await supabase
+      .from('phone_change_requests')
+      .select()
+      .order('created_at', ascending: false);
+
+  setState(() {
+    _allSellers      = all;
+    _pendingSellers  = all.where((s) => s.status == SellerStatus.pending).toList();
+    _approvedSellers = all.where((s) =>
+        s.status == SellerStatus.approved ||
+        s.status == SellerStatus.blocked).toList();
+    _phoneRequests   = (phoneReqs as List).cast<Map<String, dynamic>>();
+    _isLoading       = false;
+  });
+}
 
   Future<void> _loadAdminCard() async {
     try {
@@ -882,14 +889,19 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
         backgroundColor: const Color(0xFF1E40AF),
         elevation: 0,
         automaticallyImplyLeading: false,
-        title: Row(
-          children: [
-            const Text('🛡️', style: TextStyle(fontSize: 22)),
-            const SizedBox(width: 8),
-            Text('Admin панели',
-                style: AppTextStyles.headingMedium.copyWith(color: Colors.white)),
-          ],
-        ),
+       title: Row(
+  children: [
+    const Text('🛡️', style: TextStyle(fontSize: 22)),
+    const SizedBox(width: 8),
+    Expanded(
+      child: Text(
+        'Admin панели',
+        style: AppTextStyles.headingMedium.copyWith(color: Colors.white),
+        overflow: TextOverflow.ellipsis,
+      ),
+    ),
+  ],
+),
         actions: [
           GestureDetector(
             onTap: _showAdminCardSheet,
@@ -926,13 +938,21 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
             ),
           ),
           GestureDetector(
-            onTap: () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const AdminStatsScreen())),
-            child: const Padding(
-              padding: EdgeInsets.only(right: 8),
-              child: Icon(Icons.bar_chart_rounded, color: Colors.white70, size: 24),
-            ),
-          ),
+  onTap: () => Navigator.push(context,
+      MaterialPageRoute(builder: (_) => const AdminPhoneRequestsScreen())),
+  child: const Padding(
+    padding: EdgeInsets.only(right: 8),
+    child: Icon(Icons.phone_callback_rounded, color: Colors.white70, size: 24),
+  ),
+),
+GestureDetector(
+  onTap: () => Navigator.push(context,
+      MaterialPageRoute(builder: (_) => const AdminStatsScreen())),
+  child: const Padding(
+    padding: EdgeInsets.only(right: 8),
+    child: Icon(Icons.bar_chart_rounded, color: Colors.white70, size: 24),
+  ),
+),
           GestureDetector(
             onTap: () => Navigator.push(context,
                 MaterialPageRoute(builder: (_) => const AdminSellerStatsScreen())),
@@ -955,6 +975,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
             Tab(text: '👥 Баары (${_allSellers.length})'),
             const Tab(text: '📦 Товарлар'),
             const Tab(text: '💳 Төлөмдөр'),
+            Tab(text: '📞 Номер (${_phoneRequests.where((r) => r['status'] == 'pending').length})'),
           ],
         ),
       ),

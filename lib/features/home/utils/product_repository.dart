@@ -11,7 +11,7 @@ class ProductRepository {
   ProductRepository._();
   static final ProductRepository instance = ProductRepository._();
 
-  static const int pageSize = 40;
+  static const int pageSize = 25;
 
   double _randomSeed =
       DateTime.now().millisecondsSinceEpoch % 1000000 / 1000000;
@@ -293,62 +293,58 @@ Future<List<ProductModel>> _fetchPersonalized({
   // ══════════════════════════════════════════════════════════════════
 
   Future<List<ProductModel>> fetchNewest({
-    String? categoryId,
-    int limit = 40,
-  }) async {
-    try {
-      var query = supabase
-          .from('products')
-          .select('*, stores(store_name, owner_id, has_negotiation)')
-          .eq('is_active', true);
+  String? categoryId,
+  int limit = 40,
+  int offset = 0,          // ← КОШУЛДУ
+}) async {
+  try {
+    var query = supabase
+        .from('products')
+        .select('*, stores(store_name, owner_id, has_negotiation)')
+        .eq('is_active', true);
 
-      // ✅ ОҢДОО: .eq → .like
-      if (categoryId != null && categoryId.isNotEmpty) {
-        query = query.like('category_id', '$categoryId%');
-      }
-
-      final data =
-          await query.order('created_at', ascending: false).limit(limit);
-
-      return _mapAndFilter(data as List);
-    } catch (e) {
-      debugPrint('⚠️ fetchNewest ката: $e');
-      return [];
+    if (categoryId != null && categoryId.isNotEmpty) {
+      query = query.like('category_id', '$categoryId%');
     }
+
+    final data = await query
+        .order('created_at', ascending: false)
+        .range(offset, offset + limit - 1);  // ← .limit → .range
+
+    return _mapAndFilter(data as List);
+  } catch (e) {
+    debugPrint('⚠️ fetchNewest ката: $e');
+    return [];
   }
+}
 
-  // ══════════════════════════════════════════════════════════════════
-  // ✅ ТААНЫМАЛ ТОВАРЛАР
-  // ══════════════════════════════════════════════════════════════════
+Future<List<ProductModel>> fetchPopular({
+  String? categoryId,
+  int limit = 40,
+  int offset = 0,          // ← КОШУЛДУ
+}) async {
+  try {
+    var query = supabase
+        .from('products')
+        .select('*, stores(store_name, owner_id, has_negotiation)')
+        .eq('is_active', true)
+        .not('rating', 'is', null);
 
-  Future<List<ProductModel>> fetchPopular({
-    String? categoryId,
-    int limit = 40,
-  }) async {
-    try {
-      var query = supabase
-          .from('products')
-          .select('*, stores(store_name, owner_id, has_negotiation)')
-          .eq('is_active', true)
-          .not('rating', 'is', null);
-
-      // ✅ ОҢДОО: .eq → .like
-      if (categoryId != null && categoryId.isNotEmpty) {
-        query = query.like('category_id', '$categoryId%');
-      }
-
-      final data = await query
-          .order('rating', ascending: false)
-          .order('rating_count', ascending: false)
-          .limit(limit);
-
-      return _mapAndFilter(data as List);
-    } catch (e) {
-      debugPrint('⚠️ fetchPopular ката: $e');
-      return [];
+    if (categoryId != null && categoryId.isNotEmpty) {
+      query = query.like('category_id', '$categoryId%');
     }
-  }
 
+    final data = await query
+        .order('rating', ascending: false)
+        .order('rating_count', ascending: false)
+        .range(offset, offset + limit - 1);  // ← .limit → .range
+
+    return _mapAndFilter(data as List);
+  } catch (e) {
+    debugPrint('⚠️ fetchPopular ката: $e');
+    return [];
+  }
+}
   // ══════════════════════════════════════════════════════════════════
   // НОРМАЛИЗАЦИЯ
   // ══════════════════════════════════════════════════════════════════
