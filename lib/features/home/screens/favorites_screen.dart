@@ -110,11 +110,10 @@ class _FavoritesScreenState extends State<FavoritesScreen>
   Widget build(BuildContext context) {
     final loc       = AppLocalizations.of(context);
     final isDark    = Theme.of(context).brightness == Brightness.dark;
-    final bgColor   = isDark ? const Color(0xFF121212) : const Color(0xFFF4F5F7);
-    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
 
-    return Scaffold(
-      backgroundColor: bgColor,
+return Scaffold(
+  backgroundColor: Colors.transparent,
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) => [
           SliverAppBar(
@@ -127,7 +126,12 @@ class _FavoritesScreenState extends State<FavoritesScreen>
               child: Icon(Icons.arrow_back,
                   color: isDark ? Colors.white : AppColors.black),
             ),
-            title: Text(loc.get('favorites'), style: AppTextStyles.headingMedium),
+           title: Text(
+  loc.get('favorites'),
+  style: AppTextStyles.headingMedium.copyWith(
+    color: isDark ? Colors.white : AppColors.black,
+  ),
+),
             bottom: PreferredSize(
               preferredSize: const Size.fromHeight(48),
               child: _buildTabBar(loc, cardColor, isDark),

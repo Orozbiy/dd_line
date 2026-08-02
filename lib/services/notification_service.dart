@@ -203,7 +203,7 @@ class NotificationService {
   debugPrint('🧭 _navigateToChat chatId=$chatId');
 
   BuildContext? context;
-  for (int i = 0; i < 15; i++) {
+  for (int i = 0; i < 20; i++) {
     context = navigatorKey.currentContext;
     if (context != null) break;
     await Future.delayed(const Duration(milliseconds: 200));
@@ -216,32 +216,23 @@ class NotificationService {
   }
 
   try {
-    // ✅ Учурдагы колдонуучуну алабыз
     final user = supabase.auth.currentUser;
     if (user == null) {
-      debugPrint('⚠️ Колдонуучу кирген эмес');
       NotificationService.pendingChatId = chatId;
       return;
     }
 
-    // Chat маалыматтарын алабыз
     final row = await supabase
         .from('chats')
-        .select('id, seller_id, buyer_id, product_id, seller_name, last_message, last_message_at')
+        .select('id, seller_id, buyer_id, product_id, seller_name')
         .eq('id', chatId)
         .maybeSingle();
 
-    if (row == null) {
-      debugPrint('⚠️ Chat табылбады: chatId=$chatId');
-      return;
-    }
+    if (row == null) return;
 
-    // ✅ НЕГИЗГИ ОӊДОО: учурдагы колдонуучу seller_id менен дал келсе — сатуучу
     final isSeller = row['seller_id'] == user.id;
-    debugPrint('👤 user=${user.id}, seller_id=${row['seller_id']}, isSeller=$isSeller');
 
-    // Товар маалыматтарын алабыз
-    String productName  = '';
+    String productName = '';
     String productImage = '';
     final productId = row['product_id'] as String?;
     if (productId != null) {
@@ -252,20 +243,16 @@ class NotificationService {
             .eq('id', productId)
             .maybeSingle();
         if (product != null) {
-          productName  = product['title'] as String? ?? '';
+          productName = product['title'] as String? ?? '';
           final images = product['images'] as List?;
-          productImage = (images != null && images.isNotEmpty)
-              ? images.first as String
-              : '';
+          productImage = (images != null && images.isNotEmpty) ? images.first as String : '';
         }
       } catch (_) {}
     }
 
-    // Башка колдонуучунун аватарын алабыз
     String otherAvatarUrl = '';
-    // ✅ isSeller туура болсо: сатуучу үчүн → buyer аватары, кардар үчүн → seller аватары
     final otherUserId = isSeller
-        ? row['buyer_id']  as String? ?? ''
+        ? row['buyer_id'] as String? ?? ''
         : row['seller_id'] as String? ?? '';
     try {
       final profile = await supabase
@@ -276,17 +263,19 @@ class NotificationService {
       otherAvatarUrl = profile?['avatar_url'] as String? ?? '';
     } catch (_) {}
 
+    // ✅ НЕГИЗГИ ОҢДОО: context жаңыртабыз
     context = navigatorKey.currentContext;
     if (context == null || !context.mounted) return;
 
-    Navigator.of(context).push(
+    // ✅ pushAndRemoveUntil эмес, жөн push — учурдагы экрандын үстүнө чат ачабыз
+    Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute(
         builder: (_) => _ChatScreenProxy(
           chatId:        chatId,
           sellerName:    row['seller_name'] as String? ?? 'Сатуучу',
           productName:   productName,
           productImage:  productImage,
-          isSeller:      isSeller,   // ✅ туура маани
+          isSeller:      isSeller,
           buyerId:       row['buyer_id']  as String? ?? '',
           sellerId:      row['seller_id'] as String? ?? '',
           otherAvatarUrl: otherAvatarUrl,
@@ -294,7 +283,7 @@ class NotificationService {
       ),
     );
 
-    debugPrint('✅ ChatScreen\'ге navigate болду → chatId=$chatId, isSeller=$isSeller');
+    debugPrint('✅ ChatScreen navigate болду → isSeller=$isSeller');
   } catch (e) {
     debugPrint('❌ _navigateToChat катасы: $e');
   }

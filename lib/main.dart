@@ -248,23 +248,17 @@ class _SplashRouterState extends State<SplashRouter> {
       if (mounted) await UpdateChecker.check(context, langCode);
     });
 
-    // ── Pending chat (terminated notification tap) ──
-    final pendingChat = NotificationService.pendingChatId;
-    if (pendingChat != null) {
-      NotificationService.pendingChatId = null;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        NotificationService().navigateToChatPublic(pendingChat);
-      });
-    }
+  
 
-    // ── Pending product (terminated deep link) ──
-    final pendingProduct = NotificationService.pendingProductId;
-    if (pendingProduct != null) {
-      NotificationService.pendingProductId = null;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        NotificationService().navigateToProductPublic(pendingProduct);
-      });
-    }
+    // ── Pending chat (terminated notification tap) ──
+final pendingChat = NotificationService.pendingChatId;
+if (pendingChat != null) {
+  NotificationService.pendingChatId = null;
+  WidgetsBinding.instance.addPostFrameCallback((_) async {
+    await Future.delayed(const Duration(milliseconds: 600));
+    NotificationService().navigateToChatPublic(pendingChat);
+  });
+}
   }
 
   Future<Widget> _getTargetScreen() async {

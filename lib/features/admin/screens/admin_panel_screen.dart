@@ -10,6 +10,7 @@ import 'admin_stats_screen.dart';
 import 'admin_story_manager_screen.dart';
 import 'admin_seller_stats_screen.dart';
 import 'admin_phone_requests_screen.dart';
+import '../widgets/admin_notification_sender.dart';
 
 class AdminPanelScreen extends StatefulWidget {
   const AdminPanelScreen({super.key});
@@ -17,6 +18,7 @@ class AdminPanelScreen extends StatefulWidget {
   @override
   State<AdminPanelScreen> createState() => _AdminPanelScreenState();
 }
+
 
 class _AdminPanelScreenState extends State<AdminPanelScreen>
     with SingleTickerProviderStateMixin {
@@ -36,11 +38,12 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
   String? _adminCardMasked;
   // ignore: unused_field
   String? _adminCardToken;
+  
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 6, vsync: this);
+    _tabController = TabController(length: 7, vsync: this);
     _loadData();
     _loadAdminCard();
     _searchCtrl.addListener(() {
@@ -969,27 +972,31 @@ GestureDetector(
           unselectedLabelColor: Colors.white60,
           isScrollable: true,
           tabAlignment: TabAlignment.start,
-          tabs: [
-            Tab(text: '⏳ Өтүнүчтөр (${_pendingSellers.length})'),
-            Tab(text: '✅ Sellerлер (${_approvedSellers.length})'),
-            Tab(text: '👥 Баары (${_allSellers.length})'),
-            const Tab(text: '📦 Товарлар'),
-            const Tab(text: '💳 Төлөмдөр'),
-            Tab(text: '📞 Номер (${_phoneRequests.where((r) => r['status'] == 'pending').length})'),
-          ],
+         tabs: [
+  Tab(text: '⏳ Өтүнүчтөр (${_pendingSellers.length})'),
+  Tab(text: '✅ Sellerлер (${_approvedSellers.length})'),
+  Tab(text: '👥 Баары (${_allSellers.length})'),
+  const Tab(text: '📦 Товарлар'),
+  const Tab(text: '💳 Төлөмдөр'),
+  Tab(text: '📞 Номер (${_phoneRequests.where((r) => r['status'] == 'pending').length})'),
+  const Tab(text: '🔔 Билдирүү'),  // ← ЖАҢ
+],
         ),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : TabBarView(
               controller: _tabController,
-              children: [
-                _buildPendingTab(),
-                _buildApprovedTab(),
-                _buildAllTab(),
-                _buildProductsTab(),
-                _buildPaymentsTab(),
-              ],
+             children: [
+  _buildPendingTab(),
+  _buildApprovedTab(),
+  _buildAllTab(),
+  _buildProductsTab(),
+  _buildPaymentsTab(),
+ const AdminPhoneRequestsScreen(), 
+  _buildNotificationsTab(),   // ← ЖАҢ
+ 
+],
             ),
       floatingActionButton: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1016,6 +1023,14 @@ GestureDetector(
   // ══════════════════════════════════════════════════════
   // ⏳ ӨТҮНҮЧТӨР TAB
   // ══════════════════════════════════════════════════════
+
+Widget _buildNotificationsTab() {
+  return const SingleChildScrollView(
+    padding: EdgeInsets.only(top: 12, bottom: 32),
+    child: AdminNotificationSender(),
+  );
+}
+
 
   Widget _buildPendingTab() {
     if (_pendingSellers.isEmpty) return _buildEmpty('⏳', 'Күтүүдөгү өтүнүч жок');

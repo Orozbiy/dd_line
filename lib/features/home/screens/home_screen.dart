@@ -1,14 +1,15 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../core/app_localizations.dart';
 import '../../../core/utils/favorites_manager.dart';
 import '../../../data/models/product_model.dart';
 import '../../admin/screens/admin_login_screen.dart';
-import '../../auth/screens/profile_screen.dart';
 import '../../chat/screens/chat_list_screen.dart';
 import '../../seller/screens/seller_entrance_screen.dart';
+import '../../notifications/screens/notifications_screen.dart';
 import '../utils/product_repository.dart';
 import '../widgets/category_list.dart';
 import '../widgets/filter_bottom_sheet.dart';
@@ -19,15 +20,41 @@ import '../../settings/screens/settings_screen.dart';
 import '../../chat/services/chat_service.dart';
 import '../../chat/models/chat_model.dart';
 import '../../../core/supabase_client.dart';
-import '../widgets/product_grid.dart';
 import '../../product_detail/screens/product_detail_screen.dart';
 import '../widgets/fav_badge.dart';
 import '../screens/favorites_screen.dart';
 import '../widgets/suggestion_button.dart';
+import '../widgets/product_card.dart';
+
+// ══════════════════════════════════════════════════════
+// TAB индекстери
+// ══════════════════════════════════════════════════════
+const int _tabHome      = 0;
+const int _tabChat      = 1;
+const int _tabMap       = 2;
+const int _tabFavorites = 3;
+const int _tabSettings  = 4;
+
+// ══════════════════════════════════════════════════════
+// COSMIC DARK — түс константалары
+// ══════════════════════════════════════════════════════
+class _C {
+  static const bgGrad1    = Color(0xFF0D0F1A);
+  static const bgGrad2    = Color(0xFF12103A);
+  static const bgGrad3    = Color(0xFF0D1525);
+  static const card       = Color(0xFF14162A);
+  static const cardBorder = Color(0xFF2A2560);
+  static const btnBg      = Color(0xFF1C1E38);
+  static const btnBorder  = Color(0xFF3A3870);
+  static const navBg      = Color(0xFF10121F);
+  static const navBorder  = Color(0xFF252545);
+  static const glow1      = Color(0xFF3D2080);
+  static const glow2      = Color(0xFF1A3060);
+  static const glow3      = Color(0xFF2D1060);
+}
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
-
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
@@ -43,8 +70,7 @@ class _HomeScreenState extends State<HomeScreen>
   final fav = FavoritesManager();
 
   int _adminTapCount = 0;
-  int _currentTab = 0;
-  bool _mapLoaded = false;
+  int _currentTab = _tabHome;
   DateTime? _lastTapTime;
 
   int _favCount = 0;
@@ -53,7 +79,6 @@ class _HomeScreenState extends State<HomeScreen>
 
   bool _cameraVisible = false;
   late AnimationController _cameraAnim;
-  late Animation<Offset> _cameraSlide;
 
   int _offset = 0;
   bool _isLoadingMore = false;
@@ -61,6 +86,7 @@ class _HomeScreenState extends State<HomeScreen>
   static const int _pageSize = ProductRepository.pageSize;
 
   bool _isNearbyMode = false;
+  bool _hasUnread = false;
   bool _isLocating = false;
   bool _isSearchMode = false;
   Timer? _debounce;
@@ -86,6 +112,7 @@ class _HomeScreenState extends State<HomeScreen>
     super.initState();
     _loadProducts();
     _favCount = fav.count;
+    _checkUnread();
     fav.addListener(_onFavChanged);
     _subscribeChatUnread();
 
@@ -93,10 +120,6 @@ class _HomeScreenState extends State<HomeScreen>
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
-    _cameraSlide = Tween<Offset>(
-      begin: const Offset(0, 1.5),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _cameraAnim, curve: Curves.easeOut));
   }
 
   void _subscribeChatUnread() {
@@ -115,11 +138,26 @@ class _HomeScreenState extends State<HomeScreen>
 
   void _toggleCamera() {
     setState(() => _cameraVisible = !_cameraVisible);
-    if (_cameraVisible) {
-      _cameraAnim.forward();
-    } else {
-      _cameraAnim.reverse();
-    }
+    if (_cameraVisible) _cameraAnim.forward();
+    else _cameraAnim.reverse();
+  }
+
+  Future<void> _checkUnread() async {
+    try {
+      final userId = supabase.auth.currentUser?.id;
+      if (userId == null) return;
+      final all = await supabase.from('admin_notifications').select('id');
+      if ((all as List).isEmpty) return;
+      final allIds = all.map((r) => r['id'] as String).toSet();
+      final reads = await supabase
+          .from('notification_reads')
+          .select('notification_id')
+          .eq('user_id', userId);
+      final readIds =
+          (reads as List).map((r) => r['notification_id'] as String).toSet();
+      final hasUnread = allIds.any((id) => !readIds.contains(id));
+      if (mounted) setState(() => _hasUnread = hasUnread);
+    } catch (_) {}
   }
 
   @override
@@ -129,6 +167,12 @@ class _HomeScreenState extends State<HomeScreen>
     _chatSub?.cancel();
     _cameraAnim.dispose();
     super.dispose();
+  }
+
+  // ── Tab которуу ──
+  void _switchTab(int tab) {
+    if (_currentTab == tab) return;
+    setState(() => _currentTab = tab);
   }
 
   Future<void> _loadProducts({bool refresh = false}) async {
@@ -167,32 +211,32 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
- Future<void> _loadNewest() async {
-  setState(() {
-    _isLoading = true;
-    _isNearbyMode = false;
-    _isSearchMode = false;
-    _offset = 0;
-    _hasMore = true;   // ← өзгөрдү
-  });
-  try {
-    final products = await ProductRepository.instance.fetchNewest(
-      categoryId: _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
-      limit: _pageSize,
-      offset: 0,
-    );
-    _hasMore = products.length == _pageSize;  // ← КОШУЛДУ
-    _offset = products.length;                // ← КОШУЛДУ
-    if (mounted)
-      setState(() {
-        allProducts = products;
-        displayedProducts = List.from(products);
-        _isLoading = false;
-      });
-  } catch (e) {
-    if (mounted) setState(() => _isLoading = false);
+  Future<void> _loadNewest() async {
+    setState(() {
+      _isLoading = true;
+      _isNearbyMode = false;
+      _isSearchMode = false;
+      _offset = 0;
+      _hasMore = true;
+    });
+    try {
+      final products = await ProductRepository.instance.fetchNewest(
+        categoryId: _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
+        limit: _pageSize,
+        offset: 0,
+      );
+      _hasMore = products.length == _pageSize;
+      _offset = products.length;
+      if (mounted)
+        setState(() {
+          allProducts = products;
+          displayedProducts = List.from(products);
+          _isLoading = false;
+        });
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
-}
 
   Future<void> _loadPopular() async {
     setState(() {
@@ -205,7 +249,7 @@ class _HomeScreenState extends State<HomeScreen>
     try {
       final products = await ProductRepository.instance.fetchPopular(
         categoryId: _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
-       limit: _pageSize,
+        limit: _pageSize,
       );
       if (mounted)
         setState(() {
@@ -222,59 +266,47 @@ class _HomeScreenState extends State<HomeScreen>
   void _onFilterModeChanged(ProductFilterMode mode) {
     setState(() => _filterMode = mode);
     switch (mode) {
-      case ProductFilterMode.newest:
-        _loadNewest();
-        break;
-      case ProductFilterMode.popular:
-        _loadPopular();
-        break;
-      case ProductFilterMode.all:
-        _loadProducts(refresh: true);
-        break;
+      case ProductFilterMode.newest:  _loadNewest(); break;
+      case ProductFilterMode.popular: _loadPopular(); break;
+      case ProductFilterMode.all:     _loadProducts(refresh: true); break;
     }
   }
 
- Future<void> _loadMoreProducts() async {
-  if (_isLoadingMore || !_hasMore || _isLoading ||
-      _isNearbyMode || _isSearchMode) return;
-
-  _isLoadingMore = true;
-  try {
-    List<ProductModel> newProducts;
-
-    if (_filterMode == ProductFilterMode.newest) {
-      newProducts = await ProductRepository.instance.fetchNewest(
-        categoryId: _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
-        limit: _pageSize,
-        offset: _offset,
-      );
-    } else if (_filterMode == ProductFilterMode.popular) {
-      newProducts = await ProductRepository.instance.fetchPopular(
-        categoryId: _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
-        limit: _pageSize,
-        offset: _offset,
-      );
-    } else {
-      newProducts = await ProductRepository.instance.fetchProducts(
-        offset: _offset,
-        categoryId: _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
-      );
-      newProducts.shuffle();
+  Future<void> _loadMoreProducts() async {
+    if (_isLoadingMore || !_hasMore || _isLoading ||
+        _isNearbyMode || _isSearchMode) return;
+    _isLoadingMore = true;
+    try {
+      List<ProductModel> newProducts;
+      if (_filterMode == ProductFilterMode.newest) {
+        newProducts = await ProductRepository.instance.fetchNewest(
+          categoryId: _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
+          limit: _pageSize, offset: _offset,
+        );
+      } else if (_filterMode == ProductFilterMode.popular) {
+        newProducts = await ProductRepository.instance.fetchPopular(
+          categoryId: _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
+          limit: _pageSize, offset: _offset,
+        );
+      } else {
+        newProducts = await ProductRepository.instance.fetchProducts(
+          offset: _offset,
+          categoryId: _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
+        );
+        newProducts.shuffle();
+      }
+      _hasMore = newProducts.length == _pageSize;
+      _offset += newProducts.length;
+      if (newProducts.isNotEmpty && mounted) {
+        allProducts.addAll(newProducts);
+        _applyFilters();
+      }
+    } catch (e) {
+      debugPrint('loadMore KATA: $e');
+    } finally {
+      _isLoadingMore = false;
     }
-
-    _hasMore = newProducts.length == _pageSize;
-    _offset += newProducts.length;
-
-    if (newProducts.isNotEmpty && mounted) {
-      allProducts.addAll(newProducts);
-      _applyFilters();
-    }
-  } catch (e) {
-    debugPrint('loadMore KATA: $e');
-  } finally {
-    _isLoadingMore = false;
   }
-}
 
   Future<void> _loadNearbyProducts() async {
     setState(() => _isLocating = true);
@@ -313,10 +345,7 @@ class _HomeScreenState extends State<HomeScreen>
       _applyFilters();
     } catch (e) {
       debugPrint('❌ loadNearbyProducts: $e');
-      setState(() {
-        _isLoading = false;
-        _isLocating = false;
-      });
+      setState(() { _isLoading = false; _isLocating = false; });
     }
   }
 
@@ -340,21 +369,14 @@ class _HomeScreenState extends State<HomeScreen>
       try {
         final results = await ProductRepository.instance.searchProducts(
           query: q,
-          categoryId:
-              _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
+          categoryId: _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
         );
         if (!mounted) return;
-        setState(() {
-          displayedProducts = results;
-          _isLoading = false;
-        });
+        setState(() { displayedProducts = results; _isLoading = false; });
       } catch (e) {
         debugPrint('❌ searchProducts: $e');
         if (!mounted) return;
-        setState(() {
-          displayedProducts = [];
-          _isLoading = false;
-        });
+        setState(() { displayedProducts = []; _isLoading = false; });
       }
     });
   }
@@ -369,21 +391,13 @@ class _HomeScreenState extends State<HomeScreen>
   void _applyFilters() {
     if (_isSearchMode) return;
     List<ProductModel> result = List.from(allProducts);
-    result = result
-        .where((p) =>
-            p.price >= _filter.priceRange.start &&
-            p.price <= _filter.priceRange.end)
-        .toList();
+    result = result.where((p) =>
+        p.price >= _filter.priceRange.start &&
+        p.price <= _filter.priceRange.end).toList();
     switch (_filter.sortBy) {
-      case 'price_asc':
-        result.sort((a, b) => a.price.compareTo(b.price));
-        break;
-      case 'price_desc':
-        result.sort((a, b) => b.price.compareTo(a.price));
-        break;
-      case 'rating':
-        result.sort((a, b) => (b.rating ?? 0).compareTo(a.rating ?? 0));
-        break;
+      case 'price_asc':  result.sort((a, b) => a.price.compareTo(b.price)); break;
+      case 'price_desc': result.sort((a, b) => b.price.compareTo(a.price)); break;
+      case 'rating':     result.sort((a, b) => (b.rating ?? 0).compareTo(a.rating ?? 0)); break;
       default:
         if (_isNearbyMode)
           result.sort((a, b) => (a.distanceKm ?? double.infinity)
@@ -397,8 +411,7 @@ class _HomeScreenState extends State<HomeScreen>
     setState(() {
       _filter = FilterOptions(
           priceRange: const RangeValues(0, 1000000),
-          selectedSizes: [],
-          sortBy: 'default');
+          selectedSizes: [], sortBy: 'default');
     });
     _applyFilters();
   }
@@ -432,31 +445,28 @@ class _HomeScreenState extends State<HomeScreen>
     _lastTapTime = now;
     if (_adminTapCount >= 15) {
       _adminTapCount = 0;
-      Navigator.push(
-          context, MaterialPageRoute(builder: (_) => const AdminLoginScreen()));
+      Navigator.push(context,
+          MaterialPageRoute(builder: (_) => const AdminLoginScreen()));
     }
   }
 
   String _filterModeLabel(AppLocalizations loc) {
     switch (_filterMode) {
-      case ProductFilterMode.newest:
-        return loc.get('newest');
-      case ProductFilterMode.popular:
-        return loc.get('popular');
-      case ProductFilterMode.all:
-        return '';
+      case ProductFilterMode.newest:  return loc.get('newest');
+      case ProductFilterMode.popular: return loc.get('popular');
+      case ProductFilterMode.all:     return '';
     }
   }
 
-  Widget _chatBadgeIcon() {
+  // ── Chat badge иконка ──
+  Widget _chatBadgeIcon({Color color = AppColors.grey400}) {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        const Icon(Icons.chat_bubble_outline_rounded, size: 24),
+        Icon(Icons.chat_bubble_outline_rounded, size: 24, color: color),
         if (_totalUnreadChat > 0)
           Positioned(
-            top: -5,
-            right: -6,
+            top: -5, right: -6,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
               constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
@@ -471,10 +481,8 @@ class _HomeScreenState extends State<HomeScreen>
               child: Text(
                 _totalUnreadChat > 99 ? '99+' : '$_totalUnreadChat',
                 style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 9,
-                    fontWeight: FontWeight.bold,
-                    height: 1.2),
+                    color: Colors.white, fontSize: 9,
+                    fontWeight: FontWeight.bold, height: 1.2),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -483,168 +491,176 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildBottomNav(AppLocalizations loc) {
-    final theme = Theme.of(context);
-    final surface = theme.colorScheme.surface;
+  Widget _glassButton({
+    required Widget child,
+    required VoidCallback onTap,
+    bool active = false,
+    Color? activeColor,
+    double padding = 13,
+    double radius = 14,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final color = activeColor ?? AppColors.primary;
+    return _IosBtn(
+      onTap: onTap, active: active, activeColor: color,
+      padding: EdgeInsets.all(padding), radius: radius,
+      isDark: isDark, child: child,
+    );
+  }
 
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Container(
-          decoration: BoxDecoration(
-            color: surface,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
-                blurRadius: 12,
-                offset: const Offset(0, -2),
+  // ══════════════════════════════════════════════════════
+  // NAVBAR
+  // ══════════════════════════════════════════════════════
+  Widget _buildBottomNav(AppLocalizations loc) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // активдүү болсо мандарин, болбосо боз
+    Color _ic(int tab) =>
+        _currentTab == tab ? AppColors.primary : AppColors.grey400;
+
+    TextStyle _ts(int tab) => TextStyle(
+      fontSize: 10,
+      fontWeight: FontWeight.w500,
+      color: _currentTab == tab ? AppColors.primary : AppColors.grey400,
+    );
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? _C.navBg : Colors.white,
+        border: Border(
+          top: BorderSide(
+            color: isDark ? _C.navBorder : const Color(0xFFEEEEEE),
+            width: 0.8,
+          ),
+        ),
+        boxShadow: isDark
+            ? []
+            : [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.06),
+                  blurRadius: 16,
+                  offset: const Offset(0, -3),
+                ),
+              ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 64.0,
+          child: Row(
+            children: [
+              // 0 — Башкы
+              _navItem(
+                icon: Icons.home_outlined,
+                activeIcon: Icons.home_rounded,
+                label: loc.get('home'),
+                isActive: _currentTab == _tabHome,
+                onTap: () => _switchTab(_tabHome),
+              ),
+
+              // 1 — Chat
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => _switchTab(_tabChat),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _chatBadgeIcon(color: _ic(_tabChat)),
+                      const SizedBox(height: 4),
+                      Text(loc.get('chat'), style: _ts(_tabChat)),
+                    ],
+                  ),
+                ),
+              ),
+
+              // 2 — Map (дүкөндөр)
+              Expanded(
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  alignment: Alignment.center,
+                  children: [
+                    GestureDetector(
+                      onTap: () => _switchTab(_tabMap),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.storefront_outlined,
+                              size: 24, color: _ic(_tabMap)),
+                          const SizedBox(height: 4),
+                          Text(loc.get('map_title'),
+                              style: _ts(_tabMap).copyWith(fontSize: 9),
+                              textAlign: TextAlign.center,
+                              maxLines: 2),
+                        ],
+                      ),
+                    ),
+                    // Камера баскычы жогоруда
+                    // Positioned(
+                    //   top: -38,
+                    //   child: GestureDetector(
+                    //     onTap: _toggleCamera,
+                    //     child: AnimatedContainer(
+                    //       duration: const Duration(milliseconds: 300),
+                    //       width: 34, height: 34,
+                    //       decoration: BoxDecoration(
+                    //         color: _cameraVisible ? AppColors.primary : Colors.white,
+                    //         shape: BoxShape.circle,
+                    //         boxShadow: [
+                    //           BoxShadow(
+                    //             color: Colors.black.withOpacity(0.12),
+                    //             blurRadius: 10,
+                    //             offset: const Offset(0, 3),
+                    //             spreadRadius: -2,
+                    //           ),
+                    //         ],
+                    //       ),
+                    //       child: AnimatedRotation(
+                    //         turns: _cameraVisible ? 0.5 : 0,
+                    //         duration: const Duration(milliseconds: 300),
+                    //         child: Icon(Icons.keyboard_arrow_up_rounded,
+                    //             size: 20,
+                    //             color: _cameraVisible
+                    //                 ? Colors.white
+                    //                 : AppColors.grey500),
+                    //       ),
+                    //     ),
+                    //   ),
+                    // ),
+                  ],
+                ),
+              ),
+
+              // 3 — Тандамалар
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    _switchTab(_tabFavorites);
+                    setState(() => _favCount = fav.count);
+                  },
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      FavBadge(count: _favCount,
+                          active: _currentTab == _tabFavorites),
+                      const SizedBox(height: 4),
+                      Text(loc.get('favorites'), style: _ts(_tabFavorites)),
+                    ],
+                  ),
+                ),
+              ),
+
+              // 4 — Жөндөөлөр
+              _navItem(
+                icon: Icons.settings_outlined,
+                activeIcon: Icons.settings_rounded,
+                label: loc.get('settings'),
+                isActive: _currentTab == _tabSettings,
+                onTap: () => _switchTab(_tabSettings),
               ),
             ],
           ),
-          child: SafeArea(
-            top: false,
-            child: SizedBox(
-              height: 64.0,
-              child: Row(
-                children: [
-                  _navItem(
-                    icon: Icons.home_outlined,
-                    activeIcon: Icons.home_rounded,
-                    label: loc.get('home'),
-                    isActive: _currentTab == 0,
-                    onTap: () => setState(() => _currentTab = 0),
-                  ),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) =>
-                                const ChatListScreen(isSeller: false)),
-                      ).then((_) => setState(() {})),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          _chatBadgeIcon(),
-                          const SizedBox(height: 4),
-                          Text(loc.get('chat'),
-                              style: TextStyle(
-                                  fontSize: 10,
-                                  color: AppColors.grey400,
-                                  fontWeight: FontWeight.w500)),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      alignment: Alignment.center,
-                      children: [
-                        GestureDetector(
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => const MapScreen()),
-                          ).then((_) => setState(() {})),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.storefront_outlined,
-                                  size: 24, color: AppColors.grey400),
-                              const SizedBox(height: 4),
-                              Text(
-                                loc.get('map_title'),
-                                style: const TextStyle(
-                                    fontSize: 9,
-                                    color: AppColors.grey400,
-                                    fontWeight: FontWeight.w500),
-                                textAlign: TextAlign.center,
-                                maxLines: 2,
-                              ),
-                            ],
-                          ),
-                        ),
-                        Positioned(
-                          top: -38,
-                          child: GestureDetector(
-                            onTap: _toggleCamera,
-                            child: Container(
-                              width: 34,
-                              height: 34,
-                              decoration: BoxDecoration(
-                                color: _cameraVisible
-                                    ? AppColors.primary
-                                    : surface,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: _cameraVisible
-                                      ? AppColors.primary
-                                      : AppColors.grey300,
-                                  width: 1.5,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.10),
-                                    blurRadius: 6,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: AnimatedRotation(
-                                turns: _cameraVisible ? 0.5 : 0,
-                                duration: const Duration(milliseconds: 300),
-                                child: Icon(
-                                  Icons.keyboard_arrow_up_rounded,
-                                  size: 20,
-                                  color: _cameraVisible
-                                      ? Colors.white
-                                      : AppColors.grey500,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const FavoritesScreen()),
-                      ).then((_) => setState(() => _favCount = fav.count)),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          FavBadge(count: _favCount, active: false),
-                          const SizedBox(height: 4),
-                          Text(loc.get('favorites'),
-                              style: const TextStyle(
-                                  fontSize: 10,
-                                  color: AppColors.grey400,
-                                  fontWeight: FontWeight.w500)),
-                        ],
-                      ),
-                    ),
-                  ),
-                  _navItem(
-                    icon: Icons.settings_outlined,
-                    activeIcon: Icons.settings_rounded,
-                    label: loc.get('settings'),
-                    isActive: false,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const SettingsScreen()),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
         ),
-      ],
+      ),
     );
   }
 
@@ -661,148 +677,153 @@ class _HomeScreenState extends State<HomeScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              isActive ? activeIcon : icon,
-              size: 24,
-              color: isActive ? AppColors.primary : AppColors.grey400,
-            ),
+            Icon(isActive ? activeIcon : icon,
+                size: 24,
+                color: isActive ? AppColors.primary : AppColors.grey400),
             const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 10,
-                color: isActive ? AppColors.primary : AppColors.grey400,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+            Text(label, style: TextStyle(
+              fontSize: 10,
+              color: isActive ? AppColors.primary : AppColors.grey400,
+              fontWeight: FontWeight.w500,
+            )),
           ],
         ),
       ),
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-
-    final isDark = theme.brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF121212) : const Color(0xFFF4F5F7);
-    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-    final filterInactiveColor =
-        isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF0F0F0);
+  // ══════════════════════════════════════════════════════
+  // HOME TAB мазмуну
+  // ══════════════════════════════════════════════════════
+  Widget _buildHomeTab(AppLocalizations loc, bool isDark) {
     final filterIconColor = isDark ? AppColors.grey400 : AppColors.grey600;
-    final dividerColor =
-        isDark ? const Color(0xFF2C2C2C) : const Color(0xFFEEEEEE);
+    final dividerColor    = isDark ? _C.cardBorder : const Color(0xFFEEEEEE);
+    final appBarColor     = isDark ? _C.card : Colors.white;
 
-    return Scaffold(
-      backgroundColor: bgColor,
-
-  
-
-      bottomNavigationBar: _buildBottomNav(loc),
-
-      body: GestureDetector(
-        onHorizontalDragEnd: (details) {
-          if (details.primaryVelocity != null &&
-              details.primaryVelocity! < -300) {
-            openSidePanel(context);
-          }
+    return _HomeBodySlider(
+      onOpenPanel: () => openSidePanel(context),
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (n) {
+          if (n.metrics.pixels >= n.metrics.maxScrollExtent - 300)
+            _loadMoreProducts();
+          return false;
         },
-        behavior: HitTestBehavior.translucent,
-        child: Stack(
-          children: [
-            Offstage(
-              offstage: _currentTab != 0,
-              child: SafeArea(
-                child: NotificationListener<ScrollNotification>(
-                  onNotification: (n) {
-                    if (n.metrics.pixels >= n.metrics.maxScrollExtent - 300)
-                      _loadMoreProducts();
-                    return false;
-                  },
-                  child: CustomScrollView(
-                    slivers: [
-                      SliverAppBar(
-                        pinned: true,
-                        backgroundColor: cardColor,
-                        elevation: 0,
-                        centerTitle: true,
-                        leadingWidth: 90,
-                        leading: GestureDetector(
-                          onTap: () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (_) =>
-                                          const SellerEntranceScreen()))
-                              .then((_) => setState(() {})),
-                          child: Container(
-                            margin: const EdgeInsets.all(4),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? const Color(0xFF2C1A00)
-                                  : const Color(0xFFFFF8F0),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                  color: const Color(0xFFD97706)
-                                      .withValues(alpha: 0.35)),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Text('🏪',
-                                    style: TextStyle(fontSize: 15)),
-                                const SizedBox(width: 2),
-                                Text(
-                                  loc.get('shop'),
-                                  style: AppTextStyles.labelSmall.copyWith(
-                                      color: AppColors.primary,
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 11),
-                                ),
-                              ],
-                            ),
-                          ),
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+              // ══════════════════════════════════════════
+              // БИР APPBAR: туруктуу + жылуучу (floating+snap)
+              // ══════════════════════════════════════════
+              SliverAppBar(
+                pinned: true,
+                floating: true,
+                snap: true,
+                elevation: 0,
+                backgroundColor: appBarColor,
+                toolbarHeight: 44,
+                titleSpacing: 0,
+                centerTitle: true,
+                automaticallyImplyLeading: false,
+                primary: true,
+                // ── Дүкөн баскычы (leading орнуна) ──
+                leading: GestureDetector(
+                  onTap: () => Navigator.push(context,
+                      MaterialPageRoute(
+                          builder: (_) => const SellerEntranceScreen()))
+                      .then((_) => setState(() {})),
+                  child: Container(
+                    margin: const EdgeInsets.fromLTRB(8, 6, 4, 6),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? const Color(0xFF2C1A00)
+                          : Colors.white.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                          color: const Color(0xFFD97706).withOpacity(0.55),
+                          width: 1.2),
+                      boxShadow: isDark ? [] : [
+                        BoxShadow(
+                          color: const Color(0xFFD97706).withOpacity(0.15),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
                         ),
-                        title: GestureDetector(
-                          onTap: _onTitleTap,
-                          child: ShaderMask(
-                            shaderCallback: (bounds) => const LinearGradient(
-                              colors: [Color(0xFFD97706), Color(0xFFEF4444)],
-                              begin: Alignment.centerLeft,
-                              end: Alignment.centerRight,
-                            ).createShader(bounds),
-                            child: const Text('DD Online',
-                                style: TextStyle(
-                                    fontSize: 26,
-                                    fontWeight: FontWeight.w900,
-                                    color: Colors.white,
-                                    letterSpacing: 1.0)),
-                          ),
-                        ),
-                        actions: [
-                          GestureDetector(
-                            onTap: () => Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (_) => const ProfileScreen()))
-                                .then((_) => setState(() {})),
-                            child: Padding(
-                                padding: const EdgeInsets.only(right: 12),
-                                child: Icon(Icons.person_outline,
-                                    color: theme.colorScheme.onSurface
-                                        .withValues(alpha: 0.7),
-                                    size: 26)),
-                          ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(loc.get('shop'),
+                            style: const TextStyle(
+                                color: Color(0xFFD97706),
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13)),
+                      ],
+                    ),
+                  ),
+                ),
+                leadingWidth: 90,
+                // ── DD Online — борборго ──
+                title: GestureDetector(
+                  onTap: _onTitleTap,
+                  child: ShaderMask(
+                    shaderCallback: (bounds) => const LinearGradient(
+                      colors: [Color(0xFFD97706), Color(0xFFEF4444)],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    ).createShader(bounds),
+                    child: const Text('DD Online',
+                        style: TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                            letterSpacing: 1.0)),
+                  ),
+                ),
+                // ── Коңгуроо ──
+                actions: [
+                  GestureDetector(
+                    onTap: () => Navigator.push(context,
+                        MaterialPageRoute(
+                            builder: (_) => const NotificationsScreen()))
+                        .then((_) => _checkUnread()),
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Icon(Icons.notifications_outlined,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withOpacity(0.8),
+                              size: 26),
+                          if (_hasUnread)
+                            Positioned(
+                              top: 0, right: 0,
+                              child: Container(
+                                width: 8, height: 8,
+                                decoration: const BoxDecoration(
+                                    color: AppColors.error,
+                                    shape: BoxShape.circle),
+                              ),
+                            ),
                         ],
                       ),
-                      SliverToBoxAdapter(
-                        child: Container(
-                          color: cardColor,
-                          padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                    ),
+                  ),
+                ],
+                bottom: PreferredSize(
+                  preferredSize: const Size.fromHeight(121),
+                  child: Container(
+                    color: appBarColor,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
                           child: Row(
                             children: [
                               Expanded(
@@ -810,428 +831,667 @@ class _HomeScreenState extends State<HomeScreen>
                                       onChanged: _onSearchChanged,
                                       onClear: _onSearchClear)),
                               const SizedBox(width: 8),
-                              GestureDetector(
+                              _glassButton(
+                                active: _isNearbyMode,
                                 onTap: _isLocating
-                                    ? null
+                                    ? () {}
                                     : (_isNearbyMode
                                         ? () => _loadProducts(refresh: true)
                                         : _loadNearbyProducts),
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 200),
-                                  padding: const EdgeInsets.all(13),
-                                  decoration: BoxDecoration(
-                                    color: _isNearbyMode
-                                        ? AppColors.primary
-                                        : filterInactiveColor,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: _isLocating
-                                      ? const SizedBox(
-                                          width: 22,
-                                          height: 22,
-                                          child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              color: AppColors.primary))
-                                      : Icon(Icons.near_me_rounded,
-                                          color: _isNearbyMode
-                                              ? Colors.white
-                                              : filterIconColor,
-                                          size: 22),
-                                ),
+                                child: _isLocating
+                                    ? const SizedBox(
+                                        width: 22, height: 22,
+                                        child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: AppColors.primary))
+                                    : Icon(Icons.near_me_rounded,
+                                        color: _isNearbyMode
+                                            ? Colors.white
+                                            : filterIconColor,
+                                        size: 22),
                               ),
                               const SizedBox(width: 8),
-                              GestureDetector(
+                              _glassButton(
+                                active: _filterCount > 0,
                                 onTap: _openFilter,
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 200),
-                                  padding: const EdgeInsets.all(13),
-                                  decoration: BoxDecoration(
-                                    color: _filterCount > 0
-                                        ? AppColors.primary
-                                        : filterInactiveColor,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Stack(
-                                    clipBehavior: Clip.none,
-                                    children: [
-                                      Icon(Icons.tune_rounded,
-                                          color: _filterCount > 0
-                                              ? Colors.white
-                                              : filterIconColor,
-                                          size: 22),
-                                      if (_filterCount > 0)
-                                        Positioned(
-                                          top: -6,
-                                          right: -6,
-                                          child: Container(
-                                            width: 15,
-                                            height: 15,
-                                            decoration: const BoxDecoration(
-                                                color: AppColors.error,
-                                                shape: BoxShape.circle),
-                                            child: Center(
-                                                child: Text('$_filterCount',
-                                                    style: const TextStyle(
-                                                        color: Colors.white,
-                                                        fontSize: 9,
-                                                        fontWeight:
-                                                            FontWeight.bold))),
-                                          ),
+                                child: Stack(
+                                  clipBehavior: Clip.none,
+                                  children: [
+                                    Icon(Icons.tune_rounded,
+                                        color: _filterCount > 0
+                                            ? Colors.white
+                                            : filterIconColor,
+                                        size: 22),
+                                    if (_filterCount > 0)
+                                      Positioned(
+                                        top: -6, right: -6,
+                                        child: Container(
+                                          width: 15, height: 15,
+                                          decoration: const BoxDecoration(
+                                              color: AppColors.error,
+                                              shape: BoxShape.circle),
+                                          child: Center(
+                                              child: Text('$_filterCount',
+                                                  style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 9,
+                                                      fontWeight: FontWeight.bold))),
                                         ),
-                                    ],
-                                  ),
+                                      ),
+                                  ],
                                 ),
                               ),
                             ],
                           ),
                         ),
-                      ),
-                      SliverToBoxAdapter(
-                        child: Container(
-                          color: cardColor,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Divider(height: 1, color: dividerColor),
-                              CategoryList(
-                                onCategorySelected: (id) {
-                                  setState(() => _selectedCategoryId = id);
-                                  if (_isSearchMode &&
-                                      _searchQuery.isNotEmpty) {
-                                    _onSearchChanged(_searchQuery);
-                                  } else if (_isNearbyMode) {
-                                    _loadNearbyProducts();
-                                  } else {
-                                    _onFilterModeChanged(_filterMode);
-                                  }
-                                },
-                                onFilterModeChanged: _onFilterModeChanged,
-                              ),
-                              const SizedBox(height: 12),
-                            ],
-                          ),
+                        Divider(height: 1, color: dividerColor),
+                        CategoryList(
+                          onCategorySelected: (id) {
+                            setState(() => _selectedCategoryId = id);
+                            if (_isSearchMode && _searchQuery.isNotEmpty) {
+                              _onSearchChanged(_searchQuery);
+                            } else if (_isNearbyMode) {
+                              _loadNearbyProducts();
+                            } else {
+                              _onFilterModeChanged(_filterMode);
+                            }
+                          },
+                          onFilterModeChanged: _onFilterModeChanged,
                         ),
-                      ),
-                      const SliverToBoxAdapter(child: SizedBox(height: 8)),
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
-                          child: Row(
-                            children: [
-                              if (_isSearchMode && !_isLoading)
-                                Flexible(
-                                  child: Text(
-                                    '${displayedProducts.length} ${loc.get('results')}',
-                                    style: AppTextStyles.bodyMedium
-                                        .copyWith(color: AppColors.grey500),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-
-                              // ── ОҢДОЛГОН ──
-                              if (_isNearbyMode && !_isLoading)
-                                Flexible(
-                                  child: Text(
-                                    '📍 ${displayedProducts.length} ${loc.get('nearby_count')}',
-                                    style: AppTextStyles.bodyMedium
-                                        .copyWith(color: AppColors.grey500),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-
-// ── ОҢДОЛГОН КОД ──
-                              if (_filterMode != ProductFilterMode.all &&
-                                  !_isSearchMode &&
-                                  !_isNearbyMode &&
-                                  !_isLoading)
-                                Flexible(
-                                  child: Text(
-                                    '${_filterModeLabel(loc)} · ${displayedProducts.length} шт',
-                                    style: AppTextStyles.bodyMedium
-                                        .copyWith(color: AppColors.grey500),
-                                    overflow: TextOverflow.ellipsis,
-                                    maxLines: 1,
-                                  ),
-                                ),
-
-                              // ✅ Сурануу — бир жолу, сол жакта
-                              if (!_isSearchMode)
-                                GestureDetector(
-                                  onTap: _showSuggestionSheet,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 10, vertical: 6),
-                                    decoration: BoxDecoration(
-                                      color: isDark
-                                          ? AppColors.primary
-                                              .withValues(alpha: 0.15)
-                                          : const Color(0xFFEEF2FF),
-                                      borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(
-                                          color: AppColors.primary
-                                              .withValues(alpha: 0.3)),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        const Icon(Icons.chat_bubble_outline,
-                                            color: AppColors.primary, size: 14),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          ' ${loc.get('suggestion')}',
-                                          style: AppTextStyles.labelMedium
-                                              .copyWith(
-                                                  color: AppColors.primary),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-
-                              const Spacer(),
-
-                              // ✅ Жаңылоо — оң жакта
-                              if (!_isSearchMode)
-                                GestureDetector(
-                                  onTap: _isNearbyMode
-                                      ? _loadNearbyProducts
-                                      : () {
-                                          switch (_filterMode) {
-                                            case ProductFilterMode.newest:
-                                              _loadNewest();
-                                              break;
-                                            case ProductFilterMode.popular:
-                                              _loadPopular();
-                                              break;
-                                            case ProductFilterMode.all:
-                                              _loadProducts(refresh: true);
-                                              break;
-                                          }
-                                        },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 10, vertical: 6),
-                                    decoration: BoxDecoration(
-                                      color: isDark
-                                          ? AppColors.primary
-                                              .withValues(alpha: 0.15)
-                                          : const Color(0xFFEEF2FF),
-                                      borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(
-                                          color: AppColors.primary
-                                              .withValues(alpha: 0.3)),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        const Icon(Icons.refresh,
-                                            color: AppColors.primary, size: 14),
-                                        const SizedBox(width: 4),
-                                        Text(loc.get('refresh'),
-                                            style: AppTextStyles.labelMedium
-                                                .copyWith(
-                                                    color: AppColors.primary)),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-
-                              if (_filterCount > 0) ...[
-                                const SizedBox(width: 8),
-                                GestureDetector(
-                                  onTap: _resetFilters,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 12, vertical: 6),
-                                    decoration: BoxDecoration(
-                                      color: isDark
-                                          ? AppColors.error
-                                              .withValues(alpha: 0.15)
-                                          : const Color(0xFFFFEEEE),
-                                      borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(
-                                          color: AppColors.error
-                                              .withValues(alpha: 0.3)),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        const Icon(Icons.close,
-                                            color: AppColors.error, size: 14),
-                                        const SizedBox(width: 4),
-                                        Text(loc.get('filter_reset'),
-                                            style: AppTextStyles.labelMedium
-                                                .copyWith(
-                                                    color: AppColors.error)),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ),
-                      if (_isLoading)
-                        SliverFillRemaining(
-                          child: Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const CircularProgressIndicator(
-                                    color: AppColors.primary, strokeWidth: 3),
-                                const SizedBox(height: 16),
-                                Text(loc.get('loading'),
-                                    style: const TextStyle(
-                                        color: AppColors.grey500,
-                                        fontSize: 14)),
-                              ],
-                            ),
-                          ),
-                        )
-                      else if (displayedProducts.isEmpty)
-                        SliverFillRemaining(
-                          child: Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Text('🔍',
-                                    style: TextStyle(fontSize: 48)),
-                                const SizedBox(height: 12),
-                                Text(
-                                  _isSearchMode
-                                      ? '"$_searchQuery" — ${loc.get('no_products')}'
-                                      : loc.get('no_products'),
-                                  style: AppTextStyles.bodyMedium
-                                      .copyWith(color: AppColors.grey500),
-                                  textAlign: TextAlign.center,
-                                ),
-                                if (_isSearchMode) ...[
-                                  const SizedBox(height: 8),
-                                  Text(loc.get('search_empty'),
-                                      style: AppTextStyles.bodySmall
-                                          .copyWith(color: AppColors.grey400)),
-                                ],
-                              ],
-                            ),
-                          ),
-                        )
-                      else
-                        SliverFillRemaining(
-                          child: Column(
-                            children: [
-                              Expanded(
-                                child: ProductGrid(
-                                  products: displayedProducts,
-                                  onProductTap: (product) => Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (_) => ProductDetailScreen(
-                                            product: product)),
-                                  ).then((_) => setState(() {})),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            Offstage(
-              offstage: _currentTab != 1,
-              child: _mapLoaded ? const MapScreen() : const SizedBox.shrink(),
-            ),
-            if (_cameraVisible)
-              Positioned(
-                bottom: 64 + MediaQuery.of(context).padding.bottom + 12,
-                left: 0,
-                right: 0,
-                child: Center(
-                  child: SlideTransition(
-                    position: _cameraSlide,
-                    child: GestureDetector(
-                      onTap: () {
-                        showDialog(
-                          context: context,
-                          builder: (_) => AlertDialog(
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20)),
-                            content: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  width: 64,
-                                  height: 64,
-                                  decoration: const BoxDecoration(
-                                    gradient: LinearGradient(colors: [
-                                      Color(0xFFD97706),
-                                      Color(0xFFEF4444)
-                                    ]),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(Icons.camera_alt_rounded,
-                                      color: Colors.white, size: 30),
-                                ),
-                                const SizedBox(height: 16),
-                                Text(loc.get('camera_search'),
-                                    style: const TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold),
-                                    textAlign: TextAlign.center),
-                                const SizedBox(height: 8),
-                                Text(loc.get('camera_soon'),
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(
-                                        color: Colors.grey, height: 1.5)),
-                              ],
-                            ),
-                            actions: [
-                              Center(
-                                child: TextButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  child: Text(loc.get('ok'),
-                                      style: const TextStyle(
-                                          color: Color(0xFFD97706),
-                                          fontWeight: FontWeight.bold)),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                      child: Container(
-                        width: 72,
-                        height: 72,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFD97706), Color(0xFFEF4444)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 3),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFFD97706)
-                                  .withValues(alpha: 0.5),
-                              blurRadius: 16,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(Icons.camera_alt_rounded,
-                            color: Colors.white, size: 30),
-                      ),
+                        const SizedBox(height: 2),
+                      ],
                     ),
                   ),
                 ),
               ),
+
+              // ── Баскычтар сабы ──
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
+                  child: Row(
+                    children: [
+                      if (_isSearchMode && !_isLoading)
+                        Flexible(
+                          child: Text(
+                            '${displayedProducts.length} ${loc.get('results')}',
+                            style: AppTextStyles.bodyMedium.copyWith(
+                                color: isDark
+                                    ? Colors.white70
+                                    : Colors.black54),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      if (_isNearbyMode && !_isLoading)
+                        Flexible(
+                          child: Text(
+                            '📍 ${displayedProducts.length} ${loc.get('nearby_count')}',
+                            style: AppTextStyles.bodyMedium.copyWith(
+                                color: isDark
+                                    ? Colors.white70
+                                    : Colors.black54),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      if (_filterMode != ProductFilterMode.all &&
+                          !_isSearchMode && !_isNearbyMode && !_isLoading)
+                        Flexible(
+                          child: Text(
+                            '${_filterModeLabel(loc)} · ${displayedProducts.length} шт',
+                            style: AppTextStyles.bodyMedium.copyWith(
+                                color: isDark
+                                    ? Colors.white70
+                                    : Colors.black54),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
+                      if (!_isSearchMode)
+                        _IosLabelBtn(
+                          onTap: _showSuggestionSheet,
+                          icon: Icons.chat_bubble_outline,
+                          label: loc.get('suggestion'),
+                          color: AppColors.primary,
+                          isDark: isDark,
+                        ),
+                      const Spacer(),
+                      if (!_isSearchMode)
+                        _IosLabelBtn(
+                          onTap: _isNearbyMode
+                              ? _loadNearbyProducts
+                              : () {
+                                  switch (_filterMode) {
+                                    case ProductFilterMode.newest:
+                                      _loadNewest(); break;
+                                    case ProductFilterMode.popular:
+                                      _loadPopular(); break;
+                                    case ProductFilterMode.all:
+                                      _loadProducts(refresh: true); break;
+                                  }
+                                },
+                          icon: Icons.refresh,
+                          label: loc.get('refresh'),
+                          color: AppColors.primary,
+                          isDark: isDark,
+                        ),
+                      if (_filterCount > 0) ...[
+                        const SizedBox(width: 8),
+                        _IosLabelBtn(
+                          onTap: _resetFilters,
+                          icon: Icons.close,
+                          label: loc.get('filter_reset'),
+                          color: AppColors.error,
+                          isDark: isDark,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+
+              // ── Товарлар ──
+              if (_isLoading)
+                SliverFillRemaining(
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const CircularProgressIndicator(
+                            color: AppColors.primary, strokeWidth: 3),
+                        const SizedBox(height: 16),
+                        Text(loc.get('loading'),
+                            style: const TextStyle(
+                                color: AppColors.grey500, fontSize: 14)),
+                      ],
+                    ),
+                  ),
+                )
+              else if (displayedProducts.isEmpty)
+                SliverFillRemaining(
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text('🔍', style: TextStyle(fontSize: 48)),
+                        const SizedBox(height: 12),
+                        Text(
+                          _isSearchMode
+                              ? '"$_searchQuery" — ${loc.get('no_products')}'
+                              : loc.get('no_products'),
+                          style: AppTextStyles.bodyMedium
+                              .copyWith(color: AppColors.grey500),
+                          textAlign: TextAlign.center,
+                        ),
+                        if (_isSearchMode) ...[
+                          const SizedBox(height: 8),
+                          Text(loc.get('search_empty'),
+                              style: AppTextStyles.bodySmall
+                                  .copyWith(color: AppColors.grey400)),
+                        ],
+                      ],
+                    ),
+                  ),
+                )
+              else ...[
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(8, 4, 8, 12),
+                  sliver: SliverGrid(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      childAspectRatio: 0.62,
+                      crossAxisSpacing: 5,
+                      mainAxisSpacing: 5,
+                    ),
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final product = displayedProducts[index];
+                        return RepaintBoundary(
+                          key: ValueKey(product.id),
+                          child: Padding(
+                            padding: const EdgeInsets.all(2),
+                            child: GestureDetector(
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) =>
+                                        ProductDetailScreen(product: product)),
+                              ).then((_) => setState(() {})),
+                              child: ProductCard(
+                                product: product,
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) =>
+                                          ProductDetailScreen(product: product)),
+                                ).then((_) => setState(() {})),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                      childCount: displayedProducts.length,
+                    ),
+                  ),
+                ),
+              ],
           ],
-        ), // ← Stack жабылат
-      ), // ← GestureDetector жабылат
+        ),
+      ),
+    );
+  }
+
+
+
+
+  // ══════════════════════════════════════════════════════
+  // BUILD
+  // ══════════════════════════════════════════════════════
+  @override
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final navbarTotal = 64.0 + MediaQuery.of(context).padding.bottom;
+
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (_currentTab != _tabHome) {
+          // Башка табта болсо — башкы экранга кайт
+          setState(() => _currentTab = _tabHome);
+        } else {
+          // Башкы экранда болсо — тиркемеден чык
+          SystemNavigator.pop();
+        }
+      },
+      child: Scaffold(
+      backgroundColor: Colors.transparent,
+      body: Stack(
+        children: [
+          // ── Фон градиент ──
+          Positioned.fill(
+            child: isDark
+                ? Container(
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [_C.bgGrad1, _C.bgGrad2, _C.bgGrad3],
+                        stops: [0.0, 0.5, 1.0],
+                      ),
+                    ),
+                  )
+                : Container(
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Color(0xFFDCEBFF), Color(0xFFEEE0FF),
+                          Color(0xFFFFE0F0), Color(0xFFFFEDD5),
+                        ],
+                        stops: [0.0, 0.35, 0.7, 1.0],
+                      ),
+                    ),
+                  ),
+          ),
+
+          // ── Декоративдик тегеректер ──
+          if (isDark) ...[
+            Positioned(top: -120, right: -80, child: Container(width: 300, height: 300,
+                decoration: BoxDecoration(shape: BoxShape.circle, color: _C.glow1.withOpacity(0.25)))),
+            Positioned(top: 300, left: -100, child: Container(width: 250, height: 250,
+                decoration: BoxDecoration(shape: BoxShape.circle, color: _C.glow2.withOpacity(0.20)))),
+            Positioned(bottom: 200, right: -60, child: Container(width: 200, height: 200,
+                decoration: BoxDecoration(shape: BoxShape.circle, color: _C.glow3.withOpacity(0.18)))),
+          ],
+          if (!isDark) ...[
+            Positioned(top: -120, left: -80, child: Container(width: 350, height: 350,
+                decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xFFADD0FF).withOpacity(0.45)))),
+            Positioned(top: 80, right: -100, child: Container(width: 280, height: 280,
+                decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xFFCEB4FF).withOpacity(0.38)))),
+            Positioned(top: 420, left: -60, child: Container(width: 220, height: 220,
+                decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xFFFFB3D9).withOpacity(0.32)))),
+            Positioned(bottom: 250, right: -50, child: Container(width: 200, height: 200,
+                decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xFFFFD4A8).withOpacity(0.35)))),
+          ],
+
+          // ══════════════════════════════════════════
+          // МАЗМУН — Offstage менен баары бир жерде
+          // ══════════════════════════════════════════
+          Positioned(
+            top: 0, left: 0, right: 0,
+            bottom: navbarTotal,
+            child: Stack(
+              children: [
+                // 0 — Башкы экран
+                Offstage(
+                  offstage: _currentTab != _tabHome,
+                  child: _buildHomeTab(loc, isDark),
+                ),
+
+                // 1 — Chat
+                Offstage(
+                  offstage: _currentTab != _tabChat,
+                  child: const ChatListScreen(isSeller: false),
+                ),
+
+                // 2 — Карта (дүкөндөр)
+                Offstage(
+                  offstage: _currentTab != _tabMap,
+                  child: const MapScreen(),
+                ),
+
+                // 3 — Тандамалар
+                Offstage(
+                  offstage: _currentTab != _tabFavorites,
+                  child: const FavoritesScreen(),
+                ),
+
+                // 4 — Жөндөөлөр
+                Offstage(
+                  offstage: _currentTab != _tabSettings,
+                  child: const SettingsScreen(),
+                ),
+              ],
+            ),
+          ),
+
+          // ══════════════════════════════════════════
+          // КАЛКЫП ТУРГАН МЕНЮ БАСКЫЧЫ
+          // Башкы экранда гана көрүнөт
+          // ══════════════════════════════════════════
+          if (_currentTab == _tabHome)
+            Positioned(
+              right: 16,
+              bottom: navbarTotal + 16,
+              child: _MenuFab(onTap: () => openSidePanel(context)),
+            ),
+
+          // ══════════════════════════════════════════
+          // NAVBAR — туруктуу
+          // ══════════════════════════════════════════
+          Positioned(
+            left: 0, right: 0, bottom: 0,
+            child: _buildBottomNav(loc),
+          ),
+        ],
+      ),
+    ),
+  );
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// _HomeBodySlider
+// ══════════════════════════════════════════════════════
+class _HomeBodySlider extends StatefulWidget {
+  final Widget child;
+  final VoidCallback onOpenPanel;
+  const _HomeBodySlider({required this.child, required this.onOpenPanel});
+
+  @override
+  State<_HomeBodySlider> createState() => _HomeBodySliderState();
+}
+
+class _HomeBodySliderState extends State<_HomeBodySlider>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  double _progress = 0.0;
+  bool _isDragging = false;
+  static const double _openThreshold = 0.3;
+  static const double _velocityThreshold = 500.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 300));
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  void _onDragStart(DragStartDetails _) {
+    _isDragging = true;
+    _ctrl.stop();
+  }
+
+  void _onDragUpdate(DragUpdateDetails details) {
+    if (!_isDragging) return;
+    final sw = MediaQuery.of(context).size.width;
+    if (details.delta.dx < 0) {
+      setState(() {
+        _progress = (_progress - details.delta.dx / sw).clamp(0.0, 1.0);
+        _ctrl.value = _progress;
+      });
+    }
+  }
+
+  void _onDragEnd(DragEndDetails details) {
+    _isDragging = false;
+    final velocity = details.primaryVelocity ?? 0;
+    if (_progress > _openThreshold || velocity < -_velocityThreshold) {
+      _ctrl.animateTo(1.0,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic).then((_) {
+        if (!mounted) return;
+        setState(() => _progress = 0.0);
+        _ctrl.value = 0.0;
+        widget.onOpenPanel();
+      });
+    } else {
+      _ctrl.animateTo(0.0,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic).then((_) {
+        if (!mounted) return;
+        setState(() => _progress = 0.0);
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onHorizontalDragStart: _onDragStart,
+      onHorizontalDragUpdate: _onDragUpdate,
+      onHorizontalDragEnd: _onDragEnd,
+      behavior: HitTestBehavior.translucent,
+      child: widget.child,
     );
   }
 }
 
+class RouteAwareSlide extends StatelessWidget {
+  final Widget child;
+  const RouteAwareSlide({super.key, required this.child});
+  @override
+  Widget build(BuildContext context) => child;
+}
+
+// ══════════════════════════════════════════════════════
+// КАЛКЫП ТУРГАН МАБ БАСКЫЧ
+// ══════════════════════════════════════════════════════
+class _MenuFab extends StatefulWidget {
+  final VoidCallback onTap;
+  const _MenuFab({required this.onTap});
+
+  @override
+  State<_MenuFab> createState() => _MenuFabState();
+}
+
+class _MenuFabState extends State<_MenuFab> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: widget.onTap,
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedScale(
+        scale: _pressed ? 0.88 : 1.0,
+        duration: const Duration(milliseconds: 80),
+        child: Container(
+          width: 52, height: 52,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFFD97706), Color(0xFFEF4444)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFD97706).withOpacity(0.45),
+                blurRadius: 14,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: const Icon(Icons.chevron_right_rounded,
+              color: Colors.white, size: 32),
+        ),
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// iOS стил баскычтары
+// ══════════════════════════════════════════════════════
+class _IosBtn extends StatefulWidget {
+  final Widget child;
+  final VoidCallback? onTap;
+  final bool active;
+  final Color activeColor;
+  final EdgeInsets padding;
+  final double radius;
+  final bool isDark;
+
+  const _IosBtn({
+    required this.child, required this.onTap,
+    required this.active, required this.activeColor,
+    required this.padding, required this.radius, required this.isDark,
+  });
+
+  @override
+  State<_IosBtn> createState() => _IosBtnState();
+}
+
+class _IosBtnState extends State<_IosBtn> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = widget.active
+        ? widget.activeColor
+        : (widget.isDark ? _C.btnBg : Colors.white);
+
+    return GestureDetector(
+      onTap: widget.onTap,
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedScale(
+        scale: _pressed ? 0.93 : 1.0,
+        duration: const Duration(milliseconds: 80),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: widget.padding,
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(widget.radius),
+            boxShadow: widget.active
+                ? [BoxShadow(
+                    color: widget.activeColor.withOpacity(0.35),
+                    blurRadius: 12, offset: const Offset(0, 4),
+                    spreadRadius: -2)]
+                : widget.isDark
+                    ? []
+                    : [
+                        BoxShadow(color: Colors.black.withOpacity(0.09),
+                            blurRadius: 12, offset: const Offset(0, 4),
+                            spreadRadius: -2),
+                        BoxShadow(color: Colors.black.withOpacity(0.04),
+                            blurRadius: 3, offset: const Offset(0, 1)),
+                      ],
+          ),
+          child: widget.child,
+        ),
+      ),
+    );
+  }
+}
+
+class _IosLabelBtn extends StatefulWidget {
+  final VoidCallback? onTap;
+  final IconData icon;
+  final String label;
+  final Color color;
+  final bool isDark;
+
+  const _IosLabelBtn({
+    required this.onTap, required this.icon,
+    required this.label, required this.color, required this.isDark,
+  });
+
+  @override
+  State<_IosLabelBtn> createState() => _IosLabelBtnState();
+}
+
+class _IosLabelBtnState extends State<_IosLabelBtn> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = widget.isDark ? _C.btnBg : Colors.white;
+
+    return GestureDetector(
+      onTap: widget.onTap,
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedScale(
+        scale: _pressed ? 0.94 : 1.0,
+        duration: const Duration(milliseconds: 80),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(45),
+            boxShadow: widget.isDark
+                ? [BoxShadow(color: _C.glow1.withOpacity(0.12),
+                    blurRadius: 8, offset: const Offset(0, 2))]
+                : [
+                    BoxShadow(color: Colors.black.withOpacity(0.09),
+                        blurRadius: 12, offset: const Offset(0, 4),
+                        spreadRadius: -2),
+                    BoxShadow(color: Colors.black.withOpacity(0.04),
+                        blurRadius: 3, offset: const Offset(0, 1)),
+                  ],
+            border: widget.isDark
+                ? Border.all(color: _C.btnBorder, width: 0.8)
+                : null,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(widget.icon, color: widget.color, size: 14),
+              const SizedBox(width: 5),
+              Text(widget.label,
+                  style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: widget.color)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
