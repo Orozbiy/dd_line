@@ -46,17 +46,22 @@ class ChatService {
   // БИЛДИРҮҮ ЖӨНӨТҮҮ
   // ════════════════════════════════════════════════════
 
-  Future<void> sendMessage({
-    required String chatId,
-    required String senderId,
-    String? text,
-    String? imageUrl,
-    String? audioUrl,
-    int?    audioDuration,
-    String? replyToId,
-    String? replyToText,
-  }) async {
-    await supabase.from('messages').insert({
+ Future<void> sendMessage({
+  required String chatId,
+  required String senderId,
+  String? text,
+  String? imageUrl,
+  String? audioUrl,
+  int?    audioDuration,
+  String? replyToId,
+  String? replyToText,
+  required bool senderIsBuyer,
+}) async {
+  final messageText = text ?? (imageUrl != null ? '🖼️ Сүрөт' : '🎵 Үн');
+  final unreadCol   = senderIsBuyer ? 'seller_unread' : 'buyer_unread';
+
+  await Future.wait([
+    supabase.from('messages').insert({
       'chat_id':        chatId,
       'sender_id':      senderId,
       'text':           text,
@@ -66,8 +71,17 @@ class ChatService {
       'is_read':        false,
       if (replyToId   != null) 'reply_to_id':   replyToId,
       if (replyToText != null) 'reply_to_text': replyToText,
-    });
-  }
+    }),
+    supabase.from('chats').update({
+      'last_message':    messageText,
+      'last_message_at': DateTime.now().toUtc().toIso8601String(),
+    }).eq('id', chatId),
+    supabase.rpc('increment_chat_unread', params: {
+      'p_chat_id': chatId,
+      'p_column':  unreadCol,
+    }),
+  ]);
+}
 
   // ════════════════════════════════════════════════════
   // ОКУЛДУ ДЕГЕН БЕЛГИЛӨӨ

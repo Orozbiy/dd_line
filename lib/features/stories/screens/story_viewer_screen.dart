@@ -16,6 +16,7 @@ class StoryViewerScreen extends StatefulWidget {
   const StoryViewerScreen({
     super.key,
     required this.stories,
+
     this.initialIndex = 0,
   });
 
@@ -40,6 +41,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
   CachedVideoPlayerPlusController? _videoCtrl;
   bool _videoReady = false;
   bool _isVideoStory = false;
+  
 
   // ── Сүрөт жүктөлдүбү ──
   bool _imageReady = false;

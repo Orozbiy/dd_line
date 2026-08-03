@@ -265,6 +265,7 @@ class _ChatScreenState extends State<ChatScreen> {
               ? replyTo.text
               : '📷 ${loc.get('chat_image')}')
           : null,
+           senderIsBuyer: !widget.isSeller, 
     )
         .then((_) async {
       String receiverLocale = 'ky';
@@ -375,6 +376,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 ? replyTo.text
                 : '📷 ${loc.get('chat_image')}')
             : null,
+             senderIsBuyer: !widget.isSeller, 
       );
       NotificationService().sendChatNotification(
           receiverUid: _receiverUid,
@@ -450,10 +452,12 @@ class _ChatScreenState extends State<ChatScreen> {
         audioDuration: durationSeconds,
         replyToId: replyTo?.id,
         replyToText: replyTo != null
+        
             ? (replyTo.text.isNotEmpty
                 ? replyTo.text
                 : '📷 ${loc.get('chat_image')}')
             : null,
+              senderIsBuyer: !widget.isSeller, 
       );
       NotificationService().sendChatNotification(
           receiverUid: _receiverUid,
