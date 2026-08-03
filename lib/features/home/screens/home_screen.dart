@@ -94,14 +94,28 @@ class _HomeScreenState extends State<HomeScreen>
   ProductFilterMode _filterMode = ProductFilterMode.all;
 
   FilterOptions _filter = FilterOptions(
-    priceRange: const RangeValues(0, 1000000),
+  priceRange: const RangeValues(0, 100000),
     selectedSizes: [],
     sortBy: 'default',
   );
 
+  // ── Lalafo-стиль скролл ──
+  // Логотип (DD Online) жашынат/чыгат
+  // Search+CategoryList дайыма туруктуу
+  final ScrollController _scrollController = ScrollController();
+  double _lastScrollOffset = 0;
+  bool _titleVisible = true;
+  bool _navVisible = true; 
+  double _navBottomPadding = 12;
+double get _navbarTotal => 64.0 + _navBottomPadding;
+  // DD Online блогу көрүнөбү
+
+  // DD Online блогунун бийиктиги: toolbar(52px)
+  static const double _titleBarHeight = 75.0;
+
   int get _filterCount {
     int c = 0;
-    if (_filter.priceRange.start > 0 || _filter.priceRange.end < 1000000) c++;
+    if (_filter.priceRange.start > 0 || _filter.priceRange.end < 100000) c++;
     if (_filter.selectedSizes.isNotEmpty) c++;
     if (_filter.sortBy != 'default') c++;
     return c;
@@ -120,6 +134,38 @@ class _HomeScreenState extends State<HomeScreen>
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
+
+    _scrollController.addListener(_onScroll);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+  final bottom = MediaQuery.of(context).padding.bottom;
+  setState(() => _navBottomPadding = bottom > 0 ? bottom : 12);
+});
+  }
+
+  // ══════════════════════════════════════════════════════
+  // LALAFO SCROLL ЛОГИКАСЫ
+  // Ылдый скролл → DD Online жашынат
+  // Жогору скролл → DD Online кайтат
+  // ══════════════════════════════════════════════════════
+  void _onScroll() {
+    final current = _scrollController.offset;
+    final delta = current - _lastScrollOffset;
+    _lastScrollOffset = current;
+
+    // Эгер эң жогоруда болсо — логотип дайыма көрүнсүн
+    if (current <= 0) {
+  if (!_titleVisible) setState(() => _titleVisible = true);
+  if (!_navVisible) setState(() => _navVisible = true);
+  return;
+}
+
+   if (delta > 2) {
+  if (_titleVisible) setState(() => _titleVisible = false);
+  if (_navVisible) setState(() => _navVisible = false);
+} else if (delta < -2) {
+  if (!_titleVisible) setState(() => _titleVisible = true);
+  if (!_navVisible) setState(() => _navVisible = true);
+}
   }
 
   void _subscribeChatUnread() {
@@ -166,14 +212,19 @@ class _HomeScreenState extends State<HomeScreen>
     _debounce?.cancel();
     _chatSub?.cancel();
     _cameraAnim.dispose();
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
     super.dispose();
   }
 
-  // ── Tab которуу ──
   void _switchTab(int tab) {
-    if (_currentTab == tab) return;
-    setState(() => _currentTab = tab);
-  }
+  if (_currentTab == tab) return;
+  setState(() {
+    _currentTab = tab;
+    _navVisible = true;
+    _titleVisible = true;
+  });
+}
 
   Future<void> _loadProducts({bool refresh = false}) async {
     if (refresh) ProductRepository.instance.refreshSeed();
@@ -410,7 +461,7 @@ class _HomeScreenState extends State<HomeScreen>
   void _resetFilters() {
     setState(() {
       _filter = FilterOptions(
-          priceRange: const RangeValues(0, 1000000),
+           priceRange: const RangeValues(0, 100000),
           selectedSizes: [], sortBy: 'default');
     });
     _applyFilters();
@@ -458,7 +509,6 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
-  // ── Chat badge иконка ──
   Widget _chatBadgeIcon({Color color = AppColors.grey400}) {
     return Stack(
       clipBehavior: Clip.none,
@@ -514,7 +564,6 @@ class _HomeScreenState extends State<HomeScreen>
   Widget _buildBottomNav(AppLocalizations loc) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // активдүү болсо мандарин, болбосо боз
     Color _ic(int tab) =>
         _currentTab == tab ? AppColors.primary : AppColors.grey400;
 
@@ -524,146 +573,103 @@ class _HomeScreenState extends State<HomeScreen>
       color: _currentTab == tab ? AppColors.primary : AppColors.grey400,
     );
 
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? _C.navBg : Colors.white,
-        border: Border(
-          top: BorderSide(
-            color: isDark ? _C.navBorder : const Color(0xFFEEEEEE),
-            width: 0.8,
-          ),
+
+
+
+
+
+return Container(
+  margin: EdgeInsets.fromLTRB(12, 0, 12, _navBottomPadding),
+  decoration: BoxDecoration(
+    color: isDark ? _C.navBg : Colors.white,
+    borderRadius: BorderRadius.circular(24),
+    border: Border.all(
+      color: isDark ? _C.navBorder : const Color(0xFFEEEEEE),
+      width: 0.8,
+    ),
+    boxShadow: isDark
+        ? []
+        : [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.12),
+              blurRadius: 20,
+              offset: const Offset(0, 4),
+              spreadRadius: -2,
+            ),
+          ],
+  ),
+  child: SizedBox(
+    height: 64.0,
+    child: Row(
+      children: [
+        _navItem(
+          icon: Icons.home_outlined,
+          activeIcon: Icons.home_rounded,
+          label: loc.get('home'),
+          isActive: _currentTab == _tabHome,
+          onTap: () => _switchTab(_tabHome),
         ),
-        boxShadow: isDark
-            ? []
-            : [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
-                  blurRadius: 16,
-                  offset: const Offset(0, -3),
-                ),
+        Expanded(
+          child: GestureDetector(
+            onTap: () => _switchTab(_tabChat),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _chatBadgeIcon(color: _ic(_tabChat)),
+                const SizedBox(height: 4),
+                Text(loc.get('chat'), style: _ts(_tabChat)),
               ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          height: 64.0,
-          child: Row(
-            children: [
-              // 0 — Башкы
-              _navItem(
-                icon: Icons.home_outlined,
-                activeIcon: Icons.home_rounded,
-                label: loc.get('home'),
-                isActive: _currentTab == _tabHome,
-                onTap: () => _switchTab(_tabHome),
-              ),
-
-              // 1 — Chat
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => _switchTab(_tabChat),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _chatBadgeIcon(color: _ic(_tabChat)),
-                      const SizedBox(height: 4),
-                      Text(loc.get('chat'), style: _ts(_tabChat)),
-                    ],
-                  ),
-                ),
-              ),
-
-              // 2 — Map (дүкөндөр)
-              Expanded(
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  alignment: Alignment.center,
-                  children: [
-                    GestureDetector(
-                      onTap: () => _switchTab(_tabMap),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.storefront_outlined,
-                              size: 24, color: _ic(_tabMap)),
-                          const SizedBox(height: 4),
-                          Text(loc.get('map_title'),
-                              style: _ts(_tabMap).copyWith(fontSize: 9),
-                              textAlign: TextAlign.center,
-                              maxLines: 2),
-                        ],
-                      ),
-                    ),
-                    // Камера баскычы жогоруда
-                    // Positioned(
-                    //   top: -38,
-                    //   child: GestureDetector(
-                    //     onTap: _toggleCamera,
-                    //     child: AnimatedContainer(
-                    //       duration: const Duration(milliseconds: 300),
-                    //       width: 34, height: 34,
-                    //       decoration: BoxDecoration(
-                    //         color: _cameraVisible ? AppColors.primary : Colors.white,
-                    //         shape: BoxShape.circle,
-                    //         boxShadow: [
-                    //           BoxShadow(
-                    //             color: Colors.black.withOpacity(0.12),
-                    //             blurRadius: 10,
-                    //             offset: const Offset(0, 3),
-                    //             spreadRadius: -2,
-                    //           ),
-                    //         ],
-                    //       ),
-                    //       child: AnimatedRotation(
-                    //         turns: _cameraVisible ? 0.5 : 0,
-                    //         duration: const Duration(milliseconds: 300),
-                    //         child: Icon(Icons.keyboard_arrow_up_rounded,
-                    //             size: 20,
-                    //             color: _cameraVisible
-                    //                 ? Colors.white
-                    //                 : AppColors.grey500),
-                    //       ),
-                    //     ),
-                    //   ),
-                    // ),
-                  ],
-                ),
-              ),
-
-              // 3 — Тандамалар
-              Expanded(
-                child: GestureDetector(
-                  onTap: () {
-                    _switchTab(_tabFavorites);
-                    setState(() => _favCount = fav.count);
-                  },
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      FavBadge(count: _favCount,
-                          active: _currentTab == _tabFavorites),
-                      const SizedBox(height: 4),
-                      Text(loc.get('favorites'), style: _ts(_tabFavorites)),
-                    ],
-                  ),
-                ),
-              ),
-
-              // 4 — Жөндөөлөр
-              _navItem(
-                icon: Icons.settings_outlined,
-                activeIcon: Icons.settings_rounded,
-                label: loc.get('settings'),
-                isActive: _currentTab == _tabSettings,
-                onTap: () => _switchTab(_tabSettings),
-              ),
-            ],
+            ),
           ),
         ),
-      ),
-    );
-  }
+        Expanded(
+          child: GestureDetector(
+            onTap: () => _switchTab(_tabMap),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.storefront_outlined,
+                    size: 24, color: _ic(_tabMap)),
+                const SizedBox(height: 4),
+                Text(loc.get('map_title'),
+                    style: _ts(_tabMap).copyWith(fontSize: 9),
+                    textAlign: TextAlign.center,
+                    maxLines: 2),
+              ],
+            ),
+          ),
+        ),
+        Expanded(
+          child: GestureDetector(
+            onTap: () {
+              _switchTab(_tabFavorites);
+              setState(() => _favCount = fav.count);
+            },
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                FavBadge(count: _favCount,
+                    active: _currentTab == _tabFavorites),
+                const SizedBox(height: 4),
+                Text(loc.get('favorites'), style: _ts(_tabFavorites)),
+              ],
+            ),
+          ),
+        ),
+        _navItem(
+          icon: Icons.settings_outlined,
+          activeIcon: Icons.settings_rounded,
+          label: loc.get('settings'),
+          isActive: _currentTab == _tabSettings,
+          onTap: () => _switchTab(_tabSettings),
+        ),
+      ],
+    ),
+  ),
+);
 
+
+  }
   Widget _navItem({
     required IconData icon,
     required IconData activeIcon,
@@ -700,388 +706,423 @@ class _HomeScreenState extends State<HomeScreen>
     final dividerColor    = isDark ? _C.cardBorder : const Color(0xFFEEEEEE);
     final appBarColor     = isDark ? _C.card : Colors.white;
 
+    // ── Search + CategoryList бийиктиги (туруктуу sticky блок) ──
+    // search(44+8padding) + divider(1) + pills(44) = ~97
+    const double _searchCatH = 97.0;
+
     return _HomeBodySlider(
       onOpenPanel: () => openSidePanel(context),
-      child: NotificationListener<ScrollNotification>(
-        onNotification: (n) {
-          if (n.metrics.pixels >= n.metrics.maxScrollExtent - 300)
-            _loadMoreProducts();
-          return false;
-        },
-        child: CustomScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          slivers: [
-              // ══════════════════════════════════════════
-              // БИР APPBAR: туруктуу + жылуучу (floating+snap)
-              // ══════════════════════════════════════════
-              SliverAppBar(
-                pinned: true,
-                floating: true,
-                snap: true,
-                elevation: 0,
-                backgroundColor: appBarColor,
-                toolbarHeight: 44,
-                titleSpacing: 0,
-                centerTitle: true,
-                automaticallyImplyLeading: false,
-                primary: true,
-                // ── Дүкөн баскычы (leading орнуна) ──
-                leading: GestureDetector(
-                  onTap: () => Navigator.push(context,
-                      MaterialPageRoute(
-                          builder: (_) => const SellerEntranceScreen()))
-                      .then((_) => setState(() {})),
-                  child: Container(
-                    margin: const EdgeInsets.fromLTRB(8, 6, 4, 6),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? const Color(0xFF2C1A00)
-                          : Colors.white.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                          color: const Color(0xFFD97706).withOpacity(0.55),
-                          width: 1.2),
-                      boxShadow: isDark ? [] : [
-                        BoxShadow(
-                          color: const Color(0xFFD97706).withOpacity(0.15),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
+      child: Stack(
+        children: [
+          // ════════════════════════════════════════════
+          // СКРОЛЛ МАЗМУН — CustomScrollView
+          // ════════════════════════════════════════════
+          NotificationListener<ScrollNotification>(
+            onNotification: (n) {
+              if (n.metrics.pixels >= n.metrics.maxScrollExtent - 300)
+                _loadMoreProducts();
+              return false;
+            },
+            child: CustomScrollView(
+              controller: _scrollController,
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                // ── Жогоруда бош орун (sticky header бийиктиги) ──
+                // DD Online жашынганда: _searchCatH
+                // DD Online көрүнгөндө: _titleBarHeight + _searchCatH
+                SliverToBoxAdapter(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeInOut,
+                    height: _titleVisible
+                        ? _titleBarHeight + _searchCatH
+                        : _searchCatH,
+                  ),
+                ),
+
+                // ── Баскычтар сабы ──
+                SliverToBoxAdapter(
+                  child: Padding(
+                 padding: const EdgeInsets.fromLTRB(14, 25, 14, 8),
                     child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(loc.get('shop'),
-                            style: const TextStyle(
-                                color: Color(0xFFD97706),
-                                fontWeight: FontWeight.w700,
-                                fontSize: 13)),
+                        if (_isSearchMode && !_isLoading)
+                          Flexible(
+                            child: Text(
+                              '${displayedProducts.length} ${loc.get('results')}',
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                  color: isDark ? Colors.white70 : Colors.black54),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        if (_isNearbyMode && !_isLoading)
+                          Flexible(
+                            child: Text(
+                              '📍 ${displayedProducts.length} ${loc.get('nearby_count')}',
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                  color: isDark ? Colors.white70 : Colors.black54),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        if (_filterMode != ProductFilterMode.all &&
+                            !_isSearchMode && !_isNearbyMode && !_isLoading)
+                          Flexible(
+                            child: Text(
+                              '${_filterModeLabel(loc)} · ${displayedProducts.length} шт',
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                  color: isDark ? Colors.white70 : Colors.black54),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                          ),
+                        if (!_isSearchMode)
+                          _IosLabelBtn(
+                            onTap: _showSuggestionSheet,
+                            icon: Icons.chat_bubble_outline,
+                            label: loc.get('suggestion'),
+                            color: AppColors.primary,
+                            isDark: isDark,
+                          ),
+                        const Spacer(),
+                        if (!_isSearchMode)
+                          _IosLabelBtn(
+                            onTap: _isNearbyMode
+                                ? _loadNearbyProducts
+                                : () {
+                                    switch (_filterMode) {
+                                      case ProductFilterMode.newest:
+                                        _loadNewest(); break;
+                                      case ProductFilterMode.popular:
+                                        _loadPopular(); break;
+                                      case ProductFilterMode.all:
+                                        _loadProducts(refresh: true); break;
+                                    }
+                                  },
+                            icon: Icons.refresh,
+                            label: loc.get('refresh'),
+                            color: AppColors.primary,
+                            isDark: isDark,
+                          ),
+                        if (_filterCount > 0) ...[
+                          const SizedBox(width: 8),
+                          _IosLabelBtn(
+                            onTap: _resetFilters,
+                            icon: Icons.close,
+                            label: loc.get('filter_reset'),
+                            color: AppColors.error,
+                            isDark: isDark,
+                          ),
+                        ],
                       ],
                     ),
                   ),
                 ),
-                leadingWidth: 90,
-                // ── DD Online — борборго ──
-                title: GestureDetector(
-                  onTap: _onTitleTap,
-                  child: ShaderMask(
-                    shaderCallback: (bounds) => const LinearGradient(
-                      colors: [Color(0xFFD97706), Color(0xFFEF4444)],
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                    ).createShader(bounds),
-                    child: const Text('DD Online',
-                        style: TextStyle(
-                            fontSize: 26,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
-                            letterSpacing: 1.0)),
-                  ),
-                ),
-                // ── Коңгуроо ──
-                actions: [
-                  GestureDetector(
-                    onTap: () => Navigator.push(context,
-                        MaterialPageRoute(
-                            builder: (_) => const NotificationsScreen()))
-                        .then((_) => _checkUnread()),
-                    child: Padding(
-                      padding: const EdgeInsets.only(right: 12),
-                      child: Stack(
-                        clipBehavior: Clip.none,
+
+                // ── Товарлар ──
+                if (_isLoading)
+                  SliverFillRemaining(
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.notifications_outlined,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurface
-                                  .withOpacity(0.8),
-                              size: 26),
-                          if (_hasUnread)
-                            Positioned(
-                              top: 0, right: 0,
-                              child: Container(
-                                width: 8, height: 8,
-                                decoration: const BoxDecoration(
-                                    color: AppColors.error,
-                                    shape: BoxShape.circle),
+                          const CircularProgressIndicator(
+                              color: AppColors.primary, strokeWidth: 3),
+                          const SizedBox(height: 16),
+                          Text(loc.get('loading'),
+                              style: const TextStyle(
+                                  color: AppColors.grey500, fontSize: 14)),
+                        ],
+                      ),
+                    ),
+                  )
+                else if (displayedProducts.isEmpty)
+                  SliverFillRemaining(
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text('🔍', style: TextStyle(fontSize: 48)),
+                          const SizedBox(height: 12),
+                          Text(
+                            _isSearchMode
+                                ? '"$_searchQuery" — ${loc.get('no_products')}'
+                                : loc.get('no_products'),
+                            style: AppTextStyles.bodyMedium
+                                .copyWith(color: AppColors.grey500),
+                            textAlign: TextAlign.center,
+                          ),
+                          if (_isSearchMode) ...[
+                            const SizedBox(height: 8),
+                            Text(loc.get('search_empty'),
+                                style: AppTextStyles.bodySmall
+                                    .copyWith(color: AppColors.grey400)),
+                          ],
+                        ],
+                      ),
+                    ),
+                  )
+                else ...[
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(8, 4, 8, 12),
+                    sliver: SliverGrid(
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        childAspectRatio: 0.62,
+                        crossAxisSpacing: 5,
+                        mainAxisSpacing: 5,
+                      ),
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          final product = displayedProducts[index];
+                          return RepaintBoundary(
+                            key: ValueKey(product.id),
+                            child: Padding(
+                              padding: const EdgeInsets.all(2),
+                              child: GestureDetector(
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) => ProductDetailScreen(
+                                          product: product)),
+                                ).then((_) => setState(() {})),
+                                child: ProductCard(
+                                  product: product,
+                                  onTap: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (_) => ProductDetailScreen(
+                                            product: product)),
+                                  ).then((_) => setState(() {})),
+                                ),
                               ),
                             ),
-                        ],
+                          );
+                        },
+                        childCount: displayedProducts.length,
                       ),
                     ),
                   ),
                 ],
-                bottom: PreferredSize(
-                  preferredSize: const Size.fromHeight(121),
-                  child: Container(
-                    color: appBarColor,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                  child: SearchBarWidget(
-                                      onChanged: _onSearchChanged,
-                                      onClear: _onSearchClear)),
-                              const SizedBox(width: 8),
-                              _glassButton(
-                                active: _isNearbyMode,
-                                onTap: _isLocating
-                                    ? () {}
-                                    : (_isNearbyMode
-                                        ? () => _loadProducts(refresh: true)
-                                        : _loadNearbyProducts),
-                                child: _isLocating
-                                    ? const SizedBox(
-                                        width: 22, height: 22,
-                                        child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: AppColors.primary))
-                                    : Icon(Icons.near_me_rounded,
-                                        color: _isNearbyMode
-                                            ? Colors.white
-                                            : filterIconColor,
-                                        size: 22),
-                              ),
-                              const SizedBox(width: 8),
-                              _glassButton(
-                                active: _filterCount > 0,
-                                onTap: _openFilter,
-                                child: Stack(
-                                  clipBehavior: Clip.none,
-                                  children: [
-                                    Icon(Icons.tune_rounded,
-                                        color: _filterCount > 0
-                                            ? Colors.white
-                                            : filterIconColor,
-                                        size: 22),
-                                    if (_filterCount > 0)
-                                      Positioned(
-                                        top: -6, right: -6,
-                                        child: Container(
-                                          width: 15, height: 15,
-                                          decoration: const BoxDecoration(
-                                              color: AppColors.error,
-                                              shape: BoxShape.circle),
-                                          child: Center(
-                                              child: Text('$_filterCount',
-                                                  style: const TextStyle(
-                                                      color: Colors.white,
-                                                      fontSize: 9,
-                                                      fontWeight: FontWeight.bold))),
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Divider(height: 1, color: dividerColor),
-                        CategoryList(
-                          onCategorySelected: (id) {
-                            setState(() => _selectedCategoryId = id);
-                            if (_isSearchMode && _searchQuery.isNotEmpty) {
-                              _onSearchChanged(_searchQuery);
-                            } else if (_isNearbyMode) {
-                              _loadNearbyProducts();
-                            } else {
-                              _onFilterModeChanged(_filterMode);
-                            }
-                          },
-                          onFilterModeChanged: _onFilterModeChanged,
-                        ),
-                        const SizedBox(height: 2),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+              ],
+            ),
+          ),
 
-              // ── Баскычтар сабы ──
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
-                  child: Row(
-                    children: [
-                      if (_isSearchMode && !_isLoading)
-                        Flexible(
-                          child: Text(
-                            '${displayedProducts.length} ${loc.get('results')}',
-                            style: AppTextStyles.bodyMedium.copyWith(
-                                color: isDark
-                                    ? Colors.white70
-                                    : Colors.black54),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      if (_isNearbyMode && !_isLoading)
-                        Flexible(
-                          child: Text(
-                            '📍 ${displayedProducts.length} ${loc.get('nearby_count')}',
-                            style: AppTextStyles.bodyMedium.copyWith(
-                                color: isDark
-                                    ? Colors.white70
-                                    : Colors.black54),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      if (_filterMode != ProductFilterMode.all &&
-                          !_isSearchMode && !_isNearbyMode && !_isLoading)
-                        Flexible(
-                          child: Text(
-                            '${_filterModeLabel(loc)} · ${displayedProducts.length} шт',
-                            style: AppTextStyles.bodyMedium.copyWith(
-                                color: isDark
-                                    ? Colors.white70
-                                    : Colors.black54),
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                        ),
-                      if (!_isSearchMode)
-                        _IosLabelBtn(
-                          onTap: _showSuggestionSheet,
-                          icon: Icons.chat_bubble_outline,
-                          label: loc.get('suggestion'),
-                          color: AppColors.primary,
-                          isDark: isDark,
-                        ),
-                      const Spacer(),
-                      if (!_isSearchMode)
-                        _IosLabelBtn(
-                          onTap: _isNearbyMode
-                              ? _loadNearbyProducts
-                              : () {
-                                  switch (_filterMode) {
-                                    case ProductFilterMode.newest:
-                                      _loadNewest(); break;
-                                    case ProductFilterMode.popular:
-                                      _loadPopular(); break;
-                                    case ProductFilterMode.all:
-                                      _loadProducts(refresh: true); break;
-                                  }
-                                },
-                          icon: Icons.refresh,
-                          label: loc.get('refresh'),
-                          color: AppColors.primary,
-                          isDark: isDark,
-                        ),
-                      if (_filterCount > 0) ...[
-                        const SizedBox(width: 8),
-                        _IosLabelBtn(
-                          onTap: _resetFilters,
-                          icon: Icons.close,
-                          label: loc.get('filter_reset'),
-                          color: AppColors.error,
-                          isDark: isDark,
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-
-              // ── Товарлар ──
-              if (_isLoading)
-                SliverFillRemaining(
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const CircularProgressIndicator(
-                            color: AppColors.primary, strokeWidth: 3),
-                        const SizedBox(height: 16),
-                        Text(loc.get('loading'),
-                            style: const TextStyle(
-                                color: AppColors.grey500, fontSize: 14)),
-                      ],
-                    ),
-                  ),
-                )
-              else if (displayedProducts.isEmpty)
-                SliverFillRemaining(
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text('🔍', style: TextStyle(fontSize: 48)),
-                        const SizedBox(height: 12),
-                        Text(
-                          _isSearchMode
-                              ? '"$_searchQuery" — ${loc.get('no_products')}'
-                              : loc.get('no_products'),
-                          style: AppTextStyles.bodyMedium
-                              .copyWith(color: AppColors.grey500),
-                          textAlign: TextAlign.center,
-                        ),
-                        if (_isSearchMode) ...[
-                          const SizedBox(height: 8),
-                          Text(loc.get('search_empty'),
-                              style: AppTextStyles.bodySmall
-                                  .copyWith(color: AppColors.grey400)),
-                        ],
-                      ],
-                    ),
-                  ),
-                )
-              else ...[
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(8, 4, 8, 12),
-                  sliver: SliverGrid(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 0.62,
-                      crossAxisSpacing: 5,
-                      mainAxisSpacing: 5,
-                    ),
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final product = displayedProducts[index];
-                        return RepaintBoundary(
-                          key: ValueKey(product.id),
-                          child: Padding(
-                            padding: const EdgeInsets.all(2),
-                            child: GestureDetector(
-                              onTap: () => Navigator.push(
-                                context,
+          // ════════════════════════════════════════════
+          // STICKY HEADER — экрандын жогору жагында туруктуу
+          // ════════════════════════════════════════════
+          Positioned(
+            top: 0, left: 0, right: 0,
+            child: Container(
+              color: appBarColor,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // ── DD Online блогу — анимация менен жашынат/чыгат ──
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeInOut,
+                    height: _titleVisible ? _titleBarHeight : 0,
+                    clipBehavior: Clip.hardEdge,
+                    decoration: const BoxDecoration(),
+                    child: SizedBox(
+                      height: _titleBarHeight,
+                      child: Padding(
+  padding: const EdgeInsets.only(top: 20),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          // Дүкөн баскычы
+                          GestureDetector(
+                            onTap: () => Navigator.push(context,
                                 MaterialPageRoute(
                                     builder: (_) =>
-                                        ProductDetailScreen(product: product)),
-                              ).then((_) => setState(() {})),
-                              child: ProductCard(
-                                product: product,
-                                onTap: () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (_) =>
-                                          ProductDetailScreen(product: product)),
-                                ).then((_) => setState(() {})),
+                                        const SellerEntranceScreen()))
+                                .then((_) => setState(() {})),
+                            child: Container(
+                            margin: const EdgeInsets.fromLTRB(8, 6, 4, 6),
+                              padding: const EdgeInsets.symmetric(
+    horizontal: 14, vertical: 9),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? const Color(0xFF2C1A00)
+                                    : Colors.white.withOpacity(0.9),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                    color: const Color(0xFFD97706)
+                                        .withOpacity(0.55),
+                                    width: 1.2),
+                                boxShadow: isDark
+                                    ? []
+                                    : [
+                                        BoxShadow(
+                                          color: const Color(0xFFD97706)
+                                              .withOpacity(0.15),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                              ),
+                              child: Text(loc.get('shop'),
+                                  style: const TextStyle(
+                                      color: Color(0xFFD97706),
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 13)),
+                            ),
+                          ),
+                          // DD Online логотипи
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: _onTitleTap,
+                              child: Center(
+                                child: ShaderMask(
+                                  shaderCallback: (bounds) =>
+                                      const LinearGradient(
+                                    colors: [
+                                      Color(0xFFD97706),
+                                      Color(0xFFEF4444)
+                                    ],
+                                    begin: Alignment.centerLeft,
+                                    end: Alignment.centerRight,
+                                  ).createShader(bounds),
+                                  child: const Text('DD Online',
+                                      style: TextStyle(
+                                          fontSize: 26,
+                                          fontWeight: FontWeight.w900,
+                                          color: Colors.white,
+                                          letterSpacing: 1.0)),
+                                ),
                               ),
                             ),
                           ),
-                        );
-                      },
-                      childCount: displayedProducts.length,
+                          // Коңгуроо
+                          GestureDetector(
+                            onTap: () => Navigator.push(context,
+                                MaterialPageRoute(
+                                    builder: (_) =>
+                                        const NotificationsScreen()))
+                                .then((_) => _checkUnread()),
+                            child: Padding(
+                              padding: const EdgeInsets.only(right: 12),
+                              child: Stack(
+                                clipBehavior: Clip.none,
+                                children: [
+                                  Icon(Icons.notifications_outlined,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withOpacity(0.8),
+                                      size: 26),
+                                  if (_hasUnread)
+                                    Positioned(
+                                      top: 0, right: 0,
+                                      child: Container(
+                                        width: 8, height: 8,
+                                        decoration: const BoxDecoration(
+                                            color: AppColors.error,
+                                            shape: BoxShape.circle),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
-          ],
-        ),
+                    ),
+
+                  // ── Search + баскычтар (дайыма туруктуу) ──
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+                    child: Row(
+                      children: [
+                        Expanded(
+                            child: SearchBarWidget(
+                                onChanged: _onSearchChanged,
+                                onClear: _onSearchClear)),
+                        const SizedBox(width: 8),
+                        _glassButton(
+                          active: _isNearbyMode,
+                          onTap: _isLocating
+                              ? () {}
+                              : (_isNearbyMode
+                                  ? () => _loadProducts(refresh: true)
+                                  : _loadNearbyProducts),
+                          child: _isLocating
+                              ? const SizedBox(
+                                  width: 22, height: 22,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: AppColors.primary))
+                              : Icon(Icons.near_me_rounded,
+                                  color: _isNearbyMode
+                                      ? Colors.white
+                                      : filterIconColor,
+                                  size: 22),
+                        ),
+                        const SizedBox(width: 8),
+                        _glassButton(
+                          active: _filterCount > 0,
+                          onTap: _openFilter,
+                          child: Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              Icon(Icons.tune_rounded,
+                                  color: _filterCount > 0
+                                      ? Colors.white
+                                      : filterIconColor,
+                                  size: 22),
+                              if (_filterCount > 0)
+                                Positioned(
+                                  top: -6, right: -6,
+                                  child: Container(
+                                    width: 15, height: 15,
+                                    decoration: const BoxDecoration(
+                                        color: AppColors.error,
+                                        shape: BoxShape.circle),
+                                    child: Center(
+                                        child: Text('$_filterCount',
+                                            style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 9,
+                                                fontWeight:
+                                                    FontWeight.bold))),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Divider(height: 1, color: dividerColor),
+                  const SizedBox(height: 6),
+
+
+                  // ── CategoryList (дайыма туруктуу) ──
+                  CategoryList(
+                    onCategorySelected: (id) {
+                      setState(() => _selectedCategoryId = id);
+                      if (_isSearchMode && _searchQuery.isNotEmpty) {
+                        _onSearchChanged(_searchQuery);
+                      } else if (_isNearbyMode) {
+                        _loadNearbyProducts();
+                      } else {
+                        _onFilterModeChanged(_filterMode);
+                      }
+                    },
+                    onFilterModeChanged: _onFilterModeChanged,
+                  ),const SizedBox(height: 6),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
-
-
-
 
   // ══════════════════════════════════════════════════════
   // BUILD
@@ -1090,134 +1131,124 @@ class _HomeScreenState extends State<HomeScreen>
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final navbarTotal = 64.0 + MediaQuery.of(context).padding.bottom;
+  final navbarTotal = _navbarTotal;
 
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (_currentTab != _tabHome) {
-          // Башка табта болсо — башкы экранга кайт
           setState(() => _currentTab = _tabHome);
         } else {
-          // Башкы экранда болсо — тиркемеден чык
           SystemNavigator.pop();
         }
       },
       child: Scaffold(
-      backgroundColor: Colors.transparent,
-      body: Stack(
-        children: [
-          // ── Фон градиент ──
-          Positioned.fill(
-            child: isDark
-                ? Container(
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [_C.bgGrad1, _C.bgGrad2, _C.bgGrad3],
-                        stops: [0.0, 0.5, 1.0],
+        backgroundColor: Colors.transparent,
+        body: Stack(
+          children: [
+            // ── Фон градиент ──
+            Positioned.fill(
+              child: isDark
+                  ? Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [_C.bgGrad1, _C.bgGrad2, _C.bgGrad3],
+                          stops: [0.0, 0.5, 1.0],
+                        ),
+                      ),
+                    )
+                  : Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Color(0xFFDCEBFF), Color(0xFFEEE0FF),
+                            Color(0xFFFFE0F0), Color(0xFFFFEDD5),
+                          ],
+                          stops: [0.0, 0.35, 0.7, 1.0],
+                        ),
                       ),
                     ),
-                  )
-                : Container(
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          Color(0xFFDCEBFF), Color(0xFFEEE0FF),
-                          Color(0xFFFFE0F0), Color(0xFFFFEDD5),
-                        ],
-                        stops: [0.0, 0.35, 0.7, 1.0],
-                      ),
-                    ),
-                  ),
-          ),
-
-          // ── Декоративдик тегеректер ──
-          if (isDark) ...[
-            Positioned(top: -120, right: -80, child: Container(width: 300, height: 300,
-                decoration: BoxDecoration(shape: BoxShape.circle, color: _C.glow1.withOpacity(0.25)))),
-            Positioned(top: 300, left: -100, child: Container(width: 250, height: 250,
-                decoration: BoxDecoration(shape: BoxShape.circle, color: _C.glow2.withOpacity(0.20)))),
-            Positioned(bottom: 200, right: -60, child: Container(width: 200, height: 200,
-                decoration: BoxDecoration(shape: BoxShape.circle, color: _C.glow3.withOpacity(0.18)))),
-          ],
-          if (!isDark) ...[
-            Positioned(top: -120, left: -80, child: Container(width: 350, height: 350,
-                decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xFFADD0FF).withOpacity(0.45)))),
-            Positioned(top: 80, right: -100, child: Container(width: 280, height: 280,
-                decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xFFCEB4FF).withOpacity(0.38)))),
-            Positioned(top: 420, left: -60, child: Container(width: 220, height: 220,
-                decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xFFFFB3D9).withOpacity(0.32)))),
-            Positioned(bottom: 250, right: -50, child: Container(width: 200, height: 200,
-                decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xFFFFD4A8).withOpacity(0.35)))),
-          ],
-
-          // ══════════════════════════════════════════
-          // МАЗМУН — Offstage менен баары бир жерде
-          // ══════════════════════════════════════════
-          Positioned(
-            top: 0, left: 0, right: 0,
-            bottom: navbarTotal,
-            child: Stack(
-              children: [
-                // 0 — Башкы экран
-                Offstage(
-                  offstage: _currentTab != _tabHome,
-                  child: _buildHomeTab(loc, isDark),
-                ),
-
-                // 1 — Chat
-                Offstage(
-                  offstage: _currentTab != _tabChat,
-                  child: const ChatListScreen(isSeller: false),
-                ),
-
-                // 2 — Карта (дүкөндөр)
-                Offstage(
-                  offstage: _currentTab != _tabMap,
-                  child: const MapScreen(),
-                ),
-
-                // 3 — Тандамалар
-                Offstage(
-                  offstage: _currentTab != _tabFavorites,
-                  child: const FavoritesScreen(),
-                ),
-
-                // 4 — Жөндөөлөр
-                Offstage(
-                  offstage: _currentTab != _tabSettings,
-                  child: const SettingsScreen(),
-                ),
-              ],
             ),
-          ),
 
-          // ══════════════════════════════════════════
-          // КАЛКЫП ТУРГАН МЕНЮ БАСКЫЧЫ
-          // Башкы экранда гана көрүнөт
-          // ══════════════════════════════════════════
-          if (_currentTab == _tabHome)
+            // ── Декоративдик тегеректер ──
+            if (isDark) ...[
+              Positioned(top: -120, right: -80, child: Container(width: 300, height: 300,
+                  decoration: BoxDecoration(shape: BoxShape.circle, color: _C.glow1.withOpacity(0.25)))),
+              Positioned(top: 300, left: -100, child: Container(width: 250, height: 250,
+                  decoration: BoxDecoration(shape: BoxShape.circle, color: _C.glow2.withOpacity(0.20)))),
+              Positioned(bottom: 200, right: -60, child: Container(width: 200, height: 200,
+                  decoration: BoxDecoration(shape: BoxShape.circle, color: _C.glow3.withOpacity(0.18)))),
+            ],
+            if (!isDark) ...[
+              Positioned(top: -120, left: -80, child: Container(width: 350, height: 350,
+                  decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xFFADD0FF).withOpacity(0.45)))),
+              Positioned(top: 80, right: -100, child: Container(width: 280, height: 280,
+                  decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xFFCEB4FF).withOpacity(0.38)))),
+              Positioned(top: 420, left: -60, child: Container(width: 220, height: 220,
+                  decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xFFFFB3D9).withOpacity(0.32)))),
+              Positioned(bottom: 250, right: -50, child: Container(width: 200, height: 200,
+                  decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xFFFFD4A8).withOpacity(0.35)))),
+            ],
+
+            // ── Мазмун ──
             Positioned(
-              right: 16,
-              bottom: navbarTotal + 16,
-              child: _MenuFab(onTap: () => openSidePanel(context)),
+              top: 0, left: 0, right: 0,
+              bottom: 0,
+              child: Stack(
+                children: [
+                  Offstage(
+                    offstage: _currentTab != _tabHome,
+                    child: _buildHomeTab(loc, isDark),
+                  ),
+                  Offstage(
+                    offstage: _currentTab != _tabChat,
+                    child: const ChatListScreen(isSeller: false),
+                  ),
+                  Offstage(
+                    offstage: _currentTab != _tabMap,
+                    child: const MapScreen(),
+                  ),
+                  Offstage(
+                    offstage: _currentTab != _tabFavorites,
+                    child: const FavoritesScreen(),
+                  ),
+                  Offstage(
+                    offstage: _currentTab != _tabSettings,
+                    child: const SettingsScreen(),
+                  ),
+                ],
+              ),
             ),
 
-          // ══════════════════════════════════════════
-          // NAVBAR — туруктуу
-          // ══════════════════════════════════════════
-          Positioned(
-            left: 0, right: 0, bottom: 0,
-            child: _buildBottomNav(loc),
-          ),
-        ],
+            // ── Калкып турган меню баскычы ──
+           if (_currentTab == _tabHome)
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeInOut,
+                right: 16,
+                bottom: _navVisible ? navbarTotal + 16 : 32,
+                child: _MenuFab(onTap: () => openSidePanel(context)),
+              ),
+
+            // ── Navbar ──
+
+         AnimatedPositioned(
+  duration: _navVisible
+      ? const Duration(milliseconds: 300)
+      : const Duration(milliseconds: 200),
+  curve: Curves.easeOut,
+  left: 0, right: 0,
+  bottom: _navVisible ? 0 : -(64 + _navBottomPadding),
+  child: _buildBottomNav(loc),
+),
+          ],
+        ),
       ),
-    ),
-  );
+    );
   }
 }
 

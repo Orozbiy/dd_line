@@ -106,7 +106,7 @@ class _LeaderboardSectionState extends State<LeaderboardSection> {
       children: [
         // ── Блок аталышы ──
         Padding(
-          padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
           child: Row(
             children: [
               const Text('🏆', style: TextStyle(fontSize: 18)),
