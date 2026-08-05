@@ -9,6 +9,7 @@ import '../../../core/auth_service.dart';
 import '../../home/screens/home_screen.dart';
 import '../../seller/screens/seller_login_screen.dart';
 import '../../../core/supabase_client.dart';
+import '../../../services/notification_service.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -48,10 +49,11 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         );
 
         // ✅ Фондо: profile sync + role текшерүү (экранды ТОКТОТПОЙТ)
-        final user = AuthService.instance.currentUser;
-        if (user != null) {
-          // await жок — фондо иштейт
-          AuthService.instance.syncProfile();
+      final user = AuthService.instance.currentUser;
+if (user != null) {
+  // ✅ syncProfile фондо, бирок токен ДАРОО сакталсын
+  NotificationService().saveMyToken(); // await жок — фондо, бирок HomeScreen'ден мурун башталат
+  AuthService.instance.syncProfile();  // await жок — фондо
 
           try {
             final profile = await supabase

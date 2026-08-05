@@ -17,6 +17,7 @@ import '../widgets/message_bubble.dart';
 import '../widgets/voice_record_button.dart';
 import '../widgets/chat_product_banner.dart';
 import '../widgets/call_request_bubble.dart';
+import '../../../core/services/yandex_storage_service.dart';
 
 class ChatScreen extends StatefulWidget {
   final String chatId;
@@ -355,9 +356,12 @@ class _ChatScreenState extends State<ChatScreen> {
     if (picked == null) return;
     setState(() => _isSendingImage = true);
     try {
-      final bytes = await picked.readAsBytes();
-      final compressed = await compressImage(bytes);
-      final url = await _uploadToCloudinary(compressed);
+     final bytes = await picked.readAsBytes();
+final compressed = await compressImage(bytes);
+final url = await YandexStorageService.instance.uploadImage(
+  compressed,
+  folder: 'chat',
+);
       if (url == null) {
         if (mounted)
           ScaffoldMessenger.of(context)

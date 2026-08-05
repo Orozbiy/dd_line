@@ -83,19 +83,23 @@ class NotificationService {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       debugPrint('🔔 onMessage келди: ${message.data}');
 
-      final chatId    = message.data['chatId']    as String?;
+      final chatId = message.data['chatId'] as String?;
       final productId = message.data['productId'] as String?;
-      final type      = message.data['type'] as String? ?? 'chat_message';
+      final type = message.data['type'] as String? ?? 'chat_message';
 
       final notification = message.notification;
-      final title = notification?.title ?? message.data['senderName'] ?? 'DD Online';
-      final body  = notification?.body  ?? message.data['body']       ?? 'Жаңы билдирүү';
+      final title =
+          notification?.title ?? message.data['senderName'] ?? 'DD Online';
+      final body =
+          notification?.body ?? message.data['body'] ?? 'Жаңы билдирүү';
 
       // payload: navigate үчүн
       String payload = '';
       if (type == 'chat_message' && chatId != null && chatId.isNotEmpty) {
         payload = 'chat:$chatId';
-      } else if (type == 'price_drop' && productId != null && productId.isNotEmpty) {
+      } else if (type == 'price_drop' &&
+          productId != null &&
+          productId.isNotEmpty) {
         payload = 'product:$productId';
       } else if (chatId != null && chatId.isNotEmpty) {
         payload = 'chat:$chatId';
@@ -111,10 +115,10 @@ class NotificationService {
             _channel.name,
             channelDescription: _channel.description,
             importance: Importance.max,
-            priority:   Priority.max,
-            icon:       '@mipmap/ic_launcher',
-            playSound:        true,
-            enableVibration:  true,
+            priority: Priority.max,
+            icon: '@mipmap/ic_launcher',
+            playSound: true,
+            enableVibration: true,
             channelShowBadge: true,
             styleInformation: BigTextStyleInformation(body),
           ),
@@ -124,7 +128,8 @@ class NotificationService {
             presentSound: true,
           ),
         ),
-        payload: payload, // ✅ tap болгондо onDidReceiveNotificationResponse чакырылат
+        payload:
+            payload, // ✅ tap болгондо onDidReceiveNotificationResponse чакырылат
       );
     });
 
@@ -132,16 +137,18 @@ class NotificationService {
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) async {
       debugPrint('🔔 [Background→Foreground tap] data=${message.data}');
 
-      final chatId    = message.data['chatId']    as String?;
+      final chatId = message.data['chatId'] as String?;
       final productId = message.data['productId'] as String?;
-      final type      = message.data['type'] as String? ?? 'chat_message';
+      final type = message.data['type'] as String? ?? 'chat_message';
 
       // Колдонмо жүктөлүп бүтө электе болушу мүмкүн
       await Future.delayed(const Duration(milliseconds: 800));
 
       if (type == 'chat_message' && chatId != null && chatId.isNotEmpty) {
         await _navigateToChat(chatId);
-      } else if (type == 'price_drop' && productId != null && productId.isNotEmpty) {
+      } else if (type == 'price_drop' &&
+          productId != null &&
+          productId.isNotEmpty) {
         await navigateToProductPublic(productId);
       } else if (chatId != null && chatId.isNotEmpty) {
         await _navigateToChat(chatId);
@@ -167,19 +174,23 @@ class NotificationService {
     try {
       final message = await _messaging.getInitialMessage();
       if (message == null) {
-        debugPrint('🔔 [Terminated] getInitialMessage: null (колдонмо notification менен эмес ачылды)');
+        debugPrint(
+            '🔔 [Terminated] getInitialMessage: null (колдонмо notification менен эмес ачылды)');
         return;
       }
 
-      final chatId    = message.data['chatId']    as String?;
+      final chatId = message.data['chatId'] as String?;
       final productId = message.data['productId'] as String?;
-      final type      = message.data['type'] as String? ?? 'chat_message';
+      final type = message.data['type'] as String? ?? 'chat_message';
 
-      debugPrint('🔔 [Terminated→Open] type=$type chatId=$chatId productId=$productId');
+      debugPrint(
+          '🔔 [Terminated→Open] type=$type chatId=$chatId productId=$productId');
 
       if (type == 'chat_message' && chatId != null && chatId.isNotEmpty) {
         NotificationService.pendingChatId = chatId;
-      } else if (type == 'price_drop' && productId != null && productId.isNotEmpty) {
+      } else if (type == 'price_drop' &&
+          productId != null &&
+          productId.isNotEmpty) {
         NotificationService.pendingProductId = productId;
       } else if (chatId != null && chatId.isNotEmpty) {
         // type жок болсо да chatId бар болсо чатка өт
@@ -194,100 +205,103 @@ class NotificationService {
   // PUBLIC WRAPPERS
   // ─────────────────────────────────────────────────────────────
   Future<void> navigateToChatPublic(String chatId) => _navigateToChat(chatId);
-  Future<void> navigateToProductPublic(String productId) => _navigateToProduct(productId);
+  Future<void> navigateToProductPublic(String productId) =>
+      _navigateToProduct(productId);
 
   // ─────────────────────────────────────────────────────────────
   // NAVIGATE TO CHAT
   // ─────────────────────────────────────────────────────────────
- Future<void> _navigateToChat(String chatId) async {
-  debugPrint('🧭 _navigateToChat chatId=$chatId');
+  Future<void> _navigateToChat(String chatId) async {
+    debugPrint('🧭 _navigateToChat chatId=$chatId');
 
-  BuildContext? context;
-  for (int i = 0; i < 20; i++) {
-    context = navigatorKey.currentContext;
-    if (context != null) break;
-    await Future.delayed(const Duration(milliseconds: 200));
-  }
+    BuildContext? context;
+    for (int i = 0; i < 20; i++) {
+      context = navigatorKey.currentContext;
+      if (context != null) break;
+      await Future.delayed(const Duration(milliseconds: 200));
+    }
 
-  if (context == null) {
-    debugPrint('⚠️ navigatorKey null — pendingChatId катары сактайбыз');
-    NotificationService.pendingChatId = chatId;
-    return;
-  }
-
-  try {
-    final user = supabase.auth.currentUser;
-    if (user == null) {
+    if (context == null) {
+      debugPrint('⚠️ navigatorKey null — pendingChatId катары сактайбыз');
       NotificationService.pendingChatId = chatId;
       return;
     }
 
-    final row = await supabase
-        .from('chats')
-        .select('id, seller_id, buyer_id, product_id, seller_name')
-        .eq('id', chatId)
-        .maybeSingle();
-
-    if (row == null) return;
-
-    final isSeller = row['seller_id'] == user.id;
-
-    String productName = '';
-    String productImage = '';
-    final productId = row['product_id'] as String?;
-    if (productId != null) {
-      try {
-        final product = await supabase
-            .from('products')
-            .select('title, images')
-            .eq('id', productId)
-            .maybeSingle();
-        if (product != null) {
-          productName = product['title'] as String? ?? '';
-          final images = product['images'] as List?;
-          productImage = (images != null && images.isNotEmpty) ? images.first as String : '';
-        }
-      } catch (_) {}
-    }
-
-    String otherAvatarUrl = '';
-    final otherUserId = isSeller
-        ? row['buyer_id'] as String? ?? ''
-        : row['seller_id'] as String? ?? '';
     try {
-      final profile = await supabase
-          .from('profiles')
-          .select('avatar_url')
-          .eq('id', otherUserId)
+      final user = supabase.auth.currentUser;
+      if (user == null) {
+        NotificationService.pendingChatId = chatId;
+        return;
+      }
+
+      final row = await supabase
+          .from('chats')
+          .select('id, seller_id, buyer_id, product_id, seller_name')
+          .eq('id', chatId)
           .maybeSingle();
-      otherAvatarUrl = profile?['avatar_url'] as String? ?? '';
-    } catch (_) {}
 
-    // ✅ НЕГИЗГИ ОҢДОО: context жаңыртабыз
-    context = navigatorKey.currentContext;
-    if (context == null || !context.mounted) return;
+      if (row == null) return;
 
-    // ✅ pushAndRemoveUntil эмес, жөн push — учурдагы экрандын үстүнө чат ачабыз
-    Navigator.of(context, rootNavigator: true).push(
-      MaterialPageRoute(
-        builder: (_) => _ChatScreenProxy(
-          chatId:        chatId,
-          sellerName:    row['seller_name'] as String? ?? 'Сатуучу',
-          productName:   productName,
-          productImage:  productImage,
-          isSeller:      isSeller,
-          buyerId:       row['buyer_id']  as String? ?? '',
-          sellerId:      row['seller_id'] as String? ?? '',
-          otherAvatarUrl: otherAvatarUrl,
+      final isSeller = row['seller_id'] == user.id;
+
+      String productName = '';
+      String productImage = '';
+      final productId = row['product_id'] as String?;
+      if (productId != null) {
+        try {
+          final product = await supabase
+              .from('products')
+              .select('title, images')
+              .eq('id', productId)
+              .maybeSingle();
+          if (product != null) {
+            productName = product['title'] as String? ?? '';
+            final images = product['images'] as List?;
+            productImage = (images != null && images.isNotEmpty)
+                ? images.first as String
+                : '';
+          }
+        } catch (_) {}
+      }
+
+      String otherAvatarUrl = '';
+      final otherUserId = isSeller
+          ? row['buyer_id'] as String? ?? ''
+          : row['seller_id'] as String? ?? '';
+      try {
+        final profile = await supabase
+            .from('profiles')
+            .select('avatar_url')
+            .eq('id', otherUserId)
+            .maybeSingle();
+        otherAvatarUrl = profile?['avatar_url'] as String? ?? '';
+      } catch (_) {}
+
+      // ✅ НЕГИЗГИ ОҢДОО: context жаңыртабыз
+      context = navigatorKey.currentContext;
+      if (context == null || !context.mounted) return;
+
+      // ✅ pushAndRemoveUntil эмес, жөн push — учурдагы экрандын үстүнө чат ачабыз
+      Navigator.of(context, rootNavigator: true).push(
+        MaterialPageRoute(
+          builder: (_) => _ChatScreenProxy(
+            chatId: chatId,
+            sellerName: row['seller_name'] as String? ?? 'Сатуучу',
+            productName: productName,
+            productImage: productImage,
+            isSeller: isSeller,
+            buyerId: row['buyer_id'] as String? ?? '',
+            sellerId: row['seller_id'] as String? ?? '',
+            otherAvatarUrl: otherAvatarUrl,
+          ),
         ),
-      ),
-    );
+      );
 
-    debugPrint('✅ ChatScreen navigate болду → isSeller=$isSeller');
-  } catch (e) {
-    debugPrint('❌ _navigateToChat катасы: $e');
+      debugPrint('✅ ChatScreen navigate болду → isSeller=$isSeller');
+    } catch (e) {
+      debugPrint('❌ _navigateToChat катасы: $e');
+    }
   }
-}
 
   // ─────────────────────────────────────────────────────────────
   // NAVIGATE TO PRODUCT
@@ -331,7 +345,8 @@ class NotificationService {
         ),
       );
 
-      debugPrint('✅ ProductDetailScreen\'ге navigate болду → productId=$productId');
+      debugPrint(
+          '✅ ProductDetailScreen\'ге navigate болду → productId=$productId');
     } catch (e) {
       debugPrint('❌ _navigateToProduct катасы: $e');
     }
@@ -369,7 +384,8 @@ class NotificationService {
       }
 
       const projectId = 'dd-online-web';
-      const url = 'https://fcm.googleapis.com/v1/projects/$projectId/messages:send';
+      const url =
+          'https://fcm.googleapis.com/v1/projects/$projectId/messages:send';
 
       final response = await http.post(
         Uri.parse(url),
@@ -382,16 +398,16 @@ class NotificationService {
             'token': fcmToken,
             'notification': {
               'title': senderName,
-              'body':  messageText,
+              'body': messageText,
             },
             'android': {
               'priority': 'high',
               'notification': {
-                'channel_id':              'chat_messages',
-                'sound':                   'default',
+                'channel_id': 'chat_messages',
+                'sound': 'default',
                 'default_vibrate_timings': true,
-                'notification_priority':   'PRIORITY_MAX',
-                'visibility':              'PUBLIC',
+                'notification_priority': 'PRIORITY_MAX',
+                'visibility': 'PUBLIC',
                 // ✅ Android'до tap болгондо колдонмо ачылышы үчүн
                 'click_action': 'FLUTTER_NOTIFICATION_CLICK',
               },
@@ -399,8 +415,8 @@ class NotificationService {
             'apns': {
               'payload': {
                 'aps': {
-                  'sound':             'default',
-                  'badge':             1,
+                  'sound': 'default',
+                  'badge': 1,
                   'content-available': 1,
                 },
               },
@@ -409,11 +425,11 @@ class NotificationService {
               },
             },
             'data': {
-              'chatId':     chatId,         // ✅ navigate үчүн негизгиси
-              'type':       'chat_message',
+              'chatId': chatId, // ✅ navigate үчүн негизгиси
+              'type': 'chat_message',
               'senderName': senderName,
-              'title':      senderName,
-              'body':       messageText,
+              'title': senderName,
+              'body': messageText,
             },
           },
         }),
@@ -441,8 +457,8 @@ class NotificationService {
           _channel.name,
           channelDescription: _channel.description,
           importance: Importance.max,
-          priority:   Priority.max,
-          icon:       '@mipmap/ic_launcher',
+          priority: Priority.max,
+          icon: '@mipmap/ic_launcher',
         ),
         iOS: const DarwinNotificationDetails(
           presentAlert: true,
@@ -456,33 +472,51 @@ class NotificationService {
   // ─────────────────────────────────────────────────────────────
   // FCM TOKEN — Supabase'ка сактоо / өчүрүү
   // ─────────────────────────────────────────────────────────────
-  Future<void> saveMyToken() async {
-    try {
-      final user = supabase.auth.currentUser;
-      if (user == null) return;
-      final token = await _messaging.getToken();
-      if (token == null) return;
-      debugPrint('✅ FCM Token сакталды');
+Future<void> saveMyToken() async {
+  try {
+    final user = supabase.auth.currentUser;
+    if (user == null) {
+      debugPrint('⚠️ saveMyToken: колдонуучу кирген эмес');
+      return;
+    }
+    final token = await _messaging.getToken();
+    if (token == null) {
+      debugPrint('⚠️ saveMyToken: FCM токен алынбады');
+      return;
+    }
+    debugPrint('💾 saveMyToken: сактоо башталды uid=${user.id}');
 
+    await supabase
+        .from('push_tokens')
+        .delete()
+        .eq('token', token)
+        .neq('user_id', user.id);
+
+    await supabase.from('push_tokens').upsert({
+      'user_id':    user.id,
+      'token':      token,
+      'updated_at': DateTime.now().toIso8601String(),
+    }, onConflict: 'user_id');
+
+    debugPrint('✅ FCM Token сакталды uid=${user.id}');
+
+    _messaging.onTokenRefresh.listen((newToken) async {
+      await supabase
+          .from('push_tokens')
+          .delete()
+          .eq('token', newToken)
+          .neq('user_id', user.id);
       await supabase.from('push_tokens').upsert({
         'user_id':    user.id,
-        'token':      token,
+        'token':      newToken,
         'updated_at': DateTime.now().toIso8601String(),
       }, onConflict: 'user_id');
-
-      // Token жаңырса автоматтык жаңыртат
-      _messaging.onTokenRefresh.listen((newToken) async {
-        await supabase.from('push_tokens').upsert({
-          'user_id':    user.id,
-          'token':      newToken,
-          'updated_at': DateTime.now().toIso8601String(),
-        }, onConflict: 'user_id');
-      });
-    } catch (e) {
-      debugPrint('❌ Token сактоо катасы: $e');
-    }
+      debugPrint('✅ FCM Token жаңырды uid=${user.id}');
+    });
+  } catch (e) {
+    debugPrint('❌ Token сактоо катасы: $e');
   }
-
+}
   Future<void> clearMyToken() async {
     try {
       final user = supabase.auth.currentUser;
@@ -499,12 +533,13 @@ class NotificationService {
   // ─────────────────────────────────────────────────────────────
   Future<String?> _getAccessToken() async {
     try {
-      final jsonString = await rootBundle.loadString('assets/service_account.json');
+      final jsonString =
+          await rootBundle.loadString('assets/service_account.json');
       final json = jsonDecode(jsonString);
       final accountCredentials = ServiceAccountCredentials.fromJson(json);
       final scopes = ['https://www.googleapis.com/auth/firebase.messaging'];
       final client = await clientViaServiceAccount(accountCredentials, scopes);
-      final token  = client.credentials.accessToken.data;
+      final token = client.credentials.accessToken.data;
       client.close();
       return token;
     } catch (e) {
@@ -525,7 +560,7 @@ class _ChatScreenProxy extends StatelessWidget {
   final String sellerName;
   final String productName;
   final String productImage;
-  final bool   isSeller;
+  final bool isSeller;
   final String buyerId;
   final String sellerId;
   final String otherAvatarUrl;
@@ -544,13 +579,13 @@ class _ChatScreenProxy extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChatScreen(
-      chatId:        chatId,
-      sellerName:    sellerName,
-      productName:   productName,
-      productImage:  productImage,
-      isSeller:      isSeller,
-      buyerId:       buyerId,
-      sellerId:      sellerId,
+      chatId: chatId,
+      sellerName: sellerName,
+      productName: productName,
+      productImage: productImage,
+      isSeller: isSeller,
+      buyerId: buyerId,
+      sellerId: sellerId,
       otherAvatarUrl: otherAvatarUrl,
     );
   }

@@ -25,32 +25,33 @@ import '../widgets/fav_badge.dart';
 import '../screens/favorites_screen.dart';
 import '../widgets/suggestion_button.dart';
 import '../widgets/product_card.dart';
+import '../../../services/notification_service.dart';
 
 // ══════════════════════════════════════════════════════
 // TAB индекстери
 // ══════════════════════════════════════════════════════
-const int _tabHome      = 0;
-const int _tabChat      = 1;
-const int _tabMap       = 2;
+const int _tabHome = 0;
+const int _tabChat = 1;
+const int _tabMap = 2;
 const int _tabFavorites = 3;
-const int _tabSettings  = 4;
+const int _tabSettings = 4;
 
 // ══════════════════════════════════════════════════════
 // COSMIC DARK — түс константалары
 // ══════════════════════════════════════════════════════
 class _C {
-  static const bgGrad1    = Color(0xFF0D0F1A);
-  static const bgGrad2    = Color(0xFF12103A);
-  static const bgGrad3    = Color(0xFF0D1525);
-  static const card       = Color(0xFF14162A);
+  static const bgGrad1 = Color(0xFF0D0F1A);
+  static const bgGrad2 = Color(0xFF12103A);
+  static const bgGrad3 = Color(0xFF0D1525);
+  static const card = Color(0xFF14162A);
   static const cardBorder = Color(0xFF2A2560);
-  static const btnBg      = Color(0xFF1C1E38);
-  static const btnBorder  = Color(0xFF3A3870);
-  static const navBg      = Color(0xFF10121F);
-  static const navBorder  = Color(0xFF252545);
-  static const glow1      = Color(0xFF3D2080);
-  static const glow2      = Color(0xFF1A3060);
-  static const glow3      = Color(0xFF2D1060);
+  static const btnBg = Color(0xFF1C1E38);
+  static const btnBorder = Color(0xFF3A3870);
+  static const navBg = Color(0xFF10121F);
+  static const navBorder = Color(0xFF252545);
+  static const glow1 = Color(0xFF3D2080);
+  static const glow2 = Color(0xFF1A3060);
+  static const glow3 = Color(0xFF2D1060);
 }
 
 class HomeScreen extends StatefulWidget {
@@ -94,7 +95,7 @@ class _HomeScreenState extends State<HomeScreen>
   ProductFilterMode _filterMode = ProductFilterMode.all;
 
   FilterOptions _filter = FilterOptions(
-  priceRange: const RangeValues(0, 100000),
+    priceRange: const RangeValues(0, 100000),
     selectedSizes: [],
     sortBy: 'default',
   );
@@ -105,9 +106,9 @@ class _HomeScreenState extends State<HomeScreen>
   final ScrollController _scrollController = ScrollController();
   double _lastScrollOffset = 0;
   bool _titleVisible = true;
-  bool _navVisible = true; 
+  bool _navVisible = true;
   double _navBottomPadding = 12;
-double get _navbarTotal => 64.0 + _navBottomPadding;
+  double get _navbarTotal => 64.0 + _navBottomPadding;
   // DD Online блогу көрүнөбү
 
   // DD Online блогунун бийиктиги: toolbar(52px)
@@ -121,26 +122,28 @@ double get _navbarTotal => 64.0 + _navBottomPadding;
     return c;
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _loadProducts();
-    _favCount = fav.count;
-    _checkUnread();
-    fav.addListener(_onFavChanged);
-    _subscribeChatUnread();
+@override
+void initState() {
+  super.initState();
+  _loadProducts();
+  _favCount = fav.count;
+  _checkUnread();
+  fav.addListener(_onFavChanged);
+  _subscribeChatUnread();
 
-    _cameraAnim = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
-    );
+  _cameraAnim = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 300),
+  );
 
-    _scrollController.addListener(_onScroll);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-  final bottom = MediaQuery.of(context).padding.bottom;
-  setState(() => _navBottomPadding = bottom > 0 ? bottom : 12);
-});
-  }
+  _scrollController.addListener(_onScroll);
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    final bottom = MediaQuery.of(context).padding.bottom;
+    setState(() => _navBottomPadding = bottom > 0 ? bottom : 12);
+    // ✅ Токенди дайым жаңырт — каалаган аккаунт менен кирсе да иштейт
+    NotificationService().saveMyToken();
+  });
+}
 
   // ══════════════════════════════════════════════════════
   // LALAFO SCROLL ЛОГИКАСЫ
@@ -154,18 +157,18 @@ double get _navbarTotal => 64.0 + _navBottomPadding;
 
     // Эгер эң жогоруда болсо — логотип дайыма көрүнсүн
     if (current <= 0) {
-  if (!_titleVisible) setState(() => _titleVisible = true);
-  if (!_navVisible) setState(() => _navVisible = true);
-  return;
-}
+      if (!_titleVisible) setState(() => _titleVisible = true);
+      if (!_navVisible) setState(() => _navVisible = true);
+      return;
+    }
 
-   if (delta > 2) {
-  if (_titleVisible) setState(() => _titleVisible = false);
-  if (_navVisible) setState(() => _navVisible = false);
-} else if (delta < -2) {
-  if (!_titleVisible) setState(() => _titleVisible = true);
-  if (!_navVisible) setState(() => _navVisible = true);
-}
+    if (delta > 2) {
+      if (_titleVisible) setState(() => _titleVisible = false);
+      if (_navVisible) setState(() => _navVisible = false);
+    } else if (delta < -2) {
+      if (!_titleVisible) setState(() => _titleVisible = true);
+      if (!_navVisible) setState(() => _navVisible = true);
+    }
   }
 
   void _subscribeChatUnread() {
@@ -184,8 +187,10 @@ double get _navbarTotal => 64.0 + _navBottomPadding;
 
   void _toggleCamera() {
     setState(() => _cameraVisible = !_cameraVisible);
-    if (_cameraVisible) _cameraAnim.forward();
-    else _cameraAnim.reverse();
+    if (_cameraVisible)
+      _cameraAnim.forward();
+    else
+      _cameraAnim.reverse();
   }
 
   Future<void> _checkUnread() async {
@@ -218,13 +223,13 @@ double get _navbarTotal => 64.0 + _navBottomPadding;
   }
 
   void _switchTab(int tab) {
-  if (_currentTab == tab) return;
-  setState(() {
-    _currentTab = tab;
-    _navVisible = true;
-    _titleVisible = true;
-  });
-}
+    if (_currentTab == tab) return;
+    setState(() {
+      _currentTab = tab;
+      _navVisible = true;
+      _titleVisible = true;
+    });
+  }
 
   Future<void> _loadProducts({bool refresh = false}) async {
     if (refresh) ProductRepository.instance.refreshSeed();
@@ -317,32 +322,46 @@ double get _navbarTotal => 64.0 + _navBottomPadding;
   void _onFilterModeChanged(ProductFilterMode mode) {
     setState(() => _filterMode = mode);
     switch (mode) {
-      case ProductFilterMode.newest:  _loadNewest(); break;
-      case ProductFilterMode.popular: _loadPopular(); break;
-      case ProductFilterMode.all:     _loadProducts(refresh: true); break;
+      case ProductFilterMode.newest:
+        _loadNewest();
+        break;
+      case ProductFilterMode.popular:
+        _loadPopular();
+        break;
+      case ProductFilterMode.all:
+        _loadProducts(refresh: true);
+        break;
     }
   }
 
   Future<void> _loadMoreProducts() async {
-    if (_isLoadingMore || !_hasMore || _isLoading ||
-        _isNearbyMode || _isSearchMode) return;
+    if (_isLoadingMore ||
+        !_hasMore ||
+        _isLoading ||
+        _isNearbyMode ||
+        _isSearchMode) return;
     _isLoadingMore = true;
     try {
       List<ProductModel> newProducts;
       if (_filterMode == ProductFilterMode.newest) {
         newProducts = await ProductRepository.instance.fetchNewest(
-          categoryId: _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
-          limit: _pageSize, offset: _offset,
+          categoryId:
+              _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
+          limit: _pageSize,
+          offset: _offset,
         );
       } else if (_filterMode == ProductFilterMode.popular) {
         newProducts = await ProductRepository.instance.fetchPopular(
-          categoryId: _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
-          limit: _pageSize, offset: _offset,
+          categoryId:
+              _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
+          limit: _pageSize,
+          offset: _offset,
         );
       } else {
         newProducts = await ProductRepository.instance.fetchProducts(
           offset: _offset,
-          categoryId: _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
+          categoryId:
+              _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
         );
         newProducts.shuffle();
       }
@@ -396,7 +415,10 @@ double get _navbarTotal => 64.0 + _navBottomPadding;
       _applyFilters();
     } catch (e) {
       debugPrint('❌ loadNearbyProducts: $e');
-      setState(() { _isLoading = false; _isLocating = false; });
+      setState(() {
+        _isLoading = false;
+        _isLocating = false;
+      });
     }
   }
 
@@ -420,14 +442,21 @@ double get _navbarTotal => 64.0 + _navBottomPadding;
       try {
         final results = await ProductRepository.instance.searchProducts(
           query: q,
-          categoryId: _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
+          categoryId:
+              _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
         );
         if (!mounted) return;
-        setState(() { displayedProducts = results; _isLoading = false; });
+        setState(() {
+          displayedProducts = results;
+          _isLoading = false;
+        });
       } catch (e) {
         debugPrint('❌ searchProducts: $e');
         if (!mounted) return;
-        setState(() { displayedProducts = []; _isLoading = false; });
+        setState(() {
+          displayedProducts = [];
+          _isLoading = false;
+        });
       }
     });
   }
@@ -442,13 +471,21 @@ double get _navbarTotal => 64.0 + _navBottomPadding;
   void _applyFilters() {
     if (_isSearchMode) return;
     List<ProductModel> result = List.from(allProducts);
-    result = result.where((p) =>
-        p.price >= _filter.priceRange.start &&
-        p.price <= _filter.priceRange.end).toList();
+    result = result
+        .where((p) =>
+            p.price >= _filter.priceRange.start &&
+            p.price <= _filter.priceRange.end)
+        .toList();
     switch (_filter.sortBy) {
-      case 'price_asc':  result.sort((a, b) => a.price.compareTo(b.price)); break;
-      case 'price_desc': result.sort((a, b) => b.price.compareTo(a.price)); break;
-      case 'rating':     result.sort((a, b) => (b.rating ?? 0).compareTo(a.rating ?? 0)); break;
+      case 'price_asc':
+        result.sort((a, b) => a.price.compareTo(b.price));
+        break;
+      case 'price_desc':
+        result.sort((a, b) => b.price.compareTo(a.price));
+        break;
+      case 'rating':
+        result.sort((a, b) => (b.rating ?? 0).compareTo(a.rating ?? 0));
+        break;
       default:
         if (_isNearbyMode)
           result.sort((a, b) => (a.distanceKm ?? double.infinity)
@@ -461,8 +498,9 @@ double get _navbarTotal => 64.0 + _navBottomPadding;
   void _resetFilters() {
     setState(() {
       _filter = FilterOptions(
-           priceRange: const RangeValues(0, 100000),
-          selectedSizes: [], sortBy: 'default');
+          priceRange: const RangeValues(0, 100000),
+          selectedSizes: [],
+          sortBy: 'default');
     });
     _applyFilters();
   }
@@ -496,16 +534,19 @@ double get _navbarTotal => 64.0 + _navBottomPadding;
     _lastTapTime = now;
     if (_adminTapCount >= 15) {
       _adminTapCount = 0;
-      Navigator.push(context,
-          MaterialPageRoute(builder: (_) => const AdminLoginScreen()));
+      Navigator.push(
+          context, MaterialPageRoute(builder: (_) => const AdminLoginScreen()));
     }
   }
 
   String _filterModeLabel(AppLocalizations loc) {
     switch (_filterMode) {
-      case ProductFilterMode.newest:  return loc.get('newest');
-      case ProductFilterMode.popular: return loc.get('popular');
-      case ProductFilterMode.all:     return '';
+      case ProductFilterMode.newest:
+        return loc.get('newest');
+      case ProductFilterMode.popular:
+        return loc.get('popular');
+      case ProductFilterMode.all:
+        return '';
     }
   }
 
@@ -516,7 +557,8 @@ double get _navbarTotal => 64.0 + _navBottomPadding;
         Icon(Icons.chat_bubble_outline_rounded, size: 24, color: color),
         if (_totalUnreadChat > 0)
           Positioned(
-            top: -5, right: -6,
+            top: -5,
+            right: -6,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
               constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
@@ -531,8 +573,10 @@ double get _navbarTotal => 64.0 + _navBottomPadding;
               child: Text(
                 _totalUnreadChat > 99 ? '99+' : '$_totalUnreadChat',
                 style: const TextStyle(
-                    color: Colors.white, fontSize: 9,
-                    fontWeight: FontWeight.bold, height: 1.2),
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                    height: 1.2),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -552,9 +596,13 @@ double get _navbarTotal => 64.0 + _navBottomPadding;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final color = activeColor ?? AppColors.primary;
     return _IosBtn(
-      onTap: onTap, active: active, activeColor: color,
-      padding: EdgeInsets.all(padding), radius: radius,
-      isDark: isDark, child: child,
+      onTap: onTap,
+      active: active,
+      activeColor: color,
+      padding: EdgeInsets.all(padding),
+      radius: radius,
+      isDark: isDark,
+      child: child,
     );
   }
 
@@ -568,108 +616,102 @@ double get _navbarTotal => 64.0 + _navBottomPadding;
         _currentTab == tab ? AppColors.primary : AppColors.grey400;
 
     TextStyle _ts(int tab) => TextStyle(
-      fontSize: 10,
-      fontWeight: FontWeight.w500,
-      color: _currentTab == tab ? AppColors.primary : AppColors.grey400,
-    );
+          fontSize: 10,
+          fontWeight: FontWeight.w500,
+          color: _currentTab == tab ? AppColors.primary : AppColors.grey400,
+        );
 
-
-
-
-
-
-return Container(
-  margin: EdgeInsets.fromLTRB(12, 0, 12, _navBottomPadding),
-  decoration: BoxDecoration(
-    color: isDark ? _C.navBg : Colors.white,
-    borderRadius: BorderRadius.circular(24),
-    border: Border.all(
-      color: isDark ? _C.navBorder : const Color(0xFFEEEEEE),
-      width: 0.8,
-    ),
-    boxShadow: isDark
-        ? []
-        : [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.12),
-              blurRadius: 20,
-              offset: const Offset(0, 4),
-              spreadRadius: -2,
+    return Container(
+      margin: EdgeInsets.fromLTRB(12, 0, 12, _navBottomPadding),
+      decoration: BoxDecoration(
+        color: isDark ? _C.navBg : Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: isDark ? _C.navBorder : const Color(0xFFEEEEEE),
+          width: 0.8,
+        ),
+        boxShadow: isDark
+            ? []
+            : [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.12),
+                  blurRadius: 20,
+                  offset: const Offset(0, 4),
+                  spreadRadius: -2,
+                ),
+              ],
+      ),
+      child: SizedBox(
+        height: 64.0,
+        child: Row(
+          children: [
+            _navItem(
+              icon: Icons.home_outlined,
+              activeIcon: Icons.home_rounded,
+              label: loc.get('home'),
+              isActive: _currentTab == _tabHome,
+              onTap: () => _switchTab(_tabHome),
+            ),
+            Expanded(
+              child: GestureDetector(
+                onTap: () => _switchTab(_tabChat),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _chatBadgeIcon(color: _ic(_tabChat)),
+                    const SizedBox(height: 4),
+                    Text(loc.get('chat'), style: _ts(_tabChat)),
+                  ],
+                ),
+              ),
+            ),
+            Expanded(
+              child: GestureDetector(
+                onTap: () => _switchTab(_tabMap),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.storefront_outlined,
+                        size: 24, color: _ic(_tabMap)),
+                    const SizedBox(height: 4),
+                    Text(loc.get('map_title'),
+                        style: _ts(_tabMap).copyWith(fontSize: 9),
+                        textAlign: TextAlign.center,
+                        maxLines: 2),
+                  ],
+                ),
+              ),
+            ),
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  _switchTab(_tabFavorites);
+                  setState(() => _favCount = fav.count);
+                },
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    FavBadge(
+                        count: _favCount, active: _currentTab == _tabFavorites),
+                    const SizedBox(height: 4),
+                    Text(loc.get('favorites'), style: _ts(_tabFavorites)),
+                  ],
+                ),
+              ),
+            ),
+            _navItem(
+              icon: Icons.settings_outlined,
+              activeIcon: Icons.settings_rounded,
+              label: loc.get('settings'),
+              isActive: _currentTab == _tabSettings,
+              onTap: () => _switchTab(_tabSettings),
             ),
           ],
-  ),
-  child: SizedBox(
-    height: 64.0,
-    child: Row(
-      children: [
-        _navItem(
-          icon: Icons.home_outlined,
-          activeIcon: Icons.home_rounded,
-          label: loc.get('home'),
-          isActive: _currentTab == _tabHome,
-          onTap: () => _switchTab(_tabHome),
         ),
-        Expanded(
-          child: GestureDetector(
-            onTap: () => _switchTab(_tabChat),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _chatBadgeIcon(color: _ic(_tabChat)),
-                const SizedBox(height: 4),
-                Text(loc.get('chat'), style: _ts(_tabChat)),
-              ],
-            ),
-          ),
-        ),
-        Expanded(
-          child: GestureDetector(
-            onTap: () => _switchTab(_tabMap),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.storefront_outlined,
-                    size: 24, color: _ic(_tabMap)),
-                const SizedBox(height: 4),
-                Text(loc.get('map_title'),
-                    style: _ts(_tabMap).copyWith(fontSize: 9),
-                    textAlign: TextAlign.center,
-                    maxLines: 2),
-              ],
-            ),
-          ),
-        ),
-        Expanded(
-          child: GestureDetector(
-            onTap: () {
-              _switchTab(_tabFavorites);
-              setState(() => _favCount = fav.count);
-            },
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                FavBadge(count: _favCount,
-                    active: _currentTab == _tabFavorites),
-                const SizedBox(height: 4),
-                Text(loc.get('favorites'), style: _ts(_tabFavorites)),
-              ],
-            ),
-          ),
-        ),
-        _navItem(
-          icon: Icons.settings_outlined,
-          activeIcon: Icons.settings_rounded,
-          label: loc.get('settings'),
-          isActive: _currentTab == _tabSettings,
-          onTap: () => _switchTab(_tabSettings),
-        ),
-      ],
-    ),
-  ),
-);
-
-
+      ),
+    );
   }
+
   Widget _navItem({
     required IconData icon,
     required IconData activeIcon,
@@ -687,11 +729,12 @@ return Container(
                 size: 24,
                 color: isActive ? AppColors.primary : AppColors.grey400),
             const SizedBox(height: 4),
-            Text(label, style: TextStyle(
-              fontSize: 10,
-              color: isActive ? AppColors.primary : AppColors.grey400,
-              fontWeight: FontWeight.w500,
-            )),
+            Text(label,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: isActive ? AppColors.primary : AppColors.grey400,
+                  fontWeight: FontWeight.w500,
+                )),
           ],
         ),
       ),
@@ -703,8 +746,8 @@ return Container(
   // ══════════════════════════════════════════════════════
   Widget _buildHomeTab(AppLocalizations loc, bool isDark) {
     final filterIconColor = isDark ? AppColors.grey400 : AppColors.grey600;
-    final dividerColor    = isDark ? _C.cardBorder : const Color(0xFFEEEEEE);
-    final appBarColor     = isDark ? _C.card : Colors.white;
+    final dividerColor = isDark ? _C.cardBorder : const Color(0xFFEEEEEE);
+    final appBarColor = isDark ? _C.card : Colors.white;
 
     // ── Search + CategoryList бийиктиги (туруктуу sticky блок) ──
     // search(44+8padding) + divider(1) + pills(44) = ~97
@@ -743,7 +786,7 @@ return Container(
                 // ── Баскычтар сабы ──
                 SliverToBoxAdapter(
                   child: Padding(
-                 padding: const EdgeInsets.fromLTRB(14, 25, 14, 8),
+                    padding: const EdgeInsets.fromLTRB(14, 25, 14, 8),
                     child: Row(
                       children: [
                         if (_isSearchMode && !_isLoading)
@@ -751,7 +794,8 @@ return Container(
                             child: Text(
                               '${displayedProducts.length} ${loc.get('results')}',
                               style: AppTextStyles.bodyMedium.copyWith(
-                                  color: isDark ? Colors.white70 : Colors.black54),
+                                  color:
+                                      isDark ? Colors.white70 : Colors.black54),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
@@ -760,17 +804,21 @@ return Container(
                             child: Text(
                               '📍 ${displayedProducts.length} ${loc.get('nearby_count')}',
                               style: AppTextStyles.bodyMedium.copyWith(
-                                  color: isDark ? Colors.white70 : Colors.black54),
+                                  color:
+                                      isDark ? Colors.white70 : Colors.black54),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         if (_filterMode != ProductFilterMode.all &&
-                            !_isSearchMode && !_isNearbyMode && !_isLoading)
+                            !_isSearchMode &&
+                            !_isNearbyMode &&
+                            !_isLoading)
                           Flexible(
                             child: Text(
                               '${_filterModeLabel(loc)} · ${displayedProducts.length} шт',
                               style: AppTextStyles.bodyMedium.copyWith(
-                                  color: isDark ? Colors.white70 : Colors.black54),
+                                  color:
+                                      isDark ? Colors.white70 : Colors.black54),
                               overflow: TextOverflow.ellipsis,
                               maxLines: 1,
                             ),
@@ -791,11 +839,14 @@ return Container(
                                 : () {
                                     switch (_filterMode) {
                                       case ProductFilterMode.newest:
-                                        _loadNewest(); break;
+                                        _loadNewest();
+                                        break;
                                       case ProductFilterMode.popular:
-                                        _loadPopular(); break;
+                                        _loadPopular();
+                                        break;
                                       case ProductFilterMode.all:
-                                        _loadProducts(refresh: true); break;
+                                        _loadProducts(refresh: true);
+                                        break;
                                     }
                                   },
                             icon: Icons.refresh,
@@ -912,7 +963,9 @@ return Container(
           // STICKY HEADER — экрандын жогору жагында туруктуу
           // ════════════════════════════════════════════
           Positioned(
-            top: 0, left: 0, right: 0,
+            top: 0,
+            left: 0,
+            right: 0,
             child: Container(
               color: appBarColor,
               child: Column(
@@ -928,110 +981,114 @@ return Container(
                     child: SizedBox(
                       height: _titleBarHeight,
                       child: Padding(
-  padding: const EdgeInsets.only(top: 20),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          // Дүкөн баскычы
-                          GestureDetector(
-                            onTap: () => Navigator.push(context,
-                                MaterialPageRoute(
-                                    builder: (_) =>
-                                        const SellerEntranceScreen()))
-                                .then((_) => setState(() {})),
-                            child: Container(
-                            margin: const EdgeInsets.fromLTRB(8, 6, 4, 6),
-                              padding: const EdgeInsets.symmetric(
-    horizontal: 14, vertical: 9),
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? const Color(0xFF2C1A00)
-                                    : Colors.white.withOpacity(0.9),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                    color: const Color(0xFFD97706)
-                                        .withOpacity(0.55),
-                                    width: 1.2),
-                                boxShadow: isDark
-                                    ? []
-                                    : [
-                                        BoxShadow(
-                                          color: const Color(0xFFD97706)
-                                              .withOpacity(0.15),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ],
+                        padding: const EdgeInsets.only(top: 20),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            // Дүкөн баскычы
+                            GestureDetector(
+                              onTap: () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (_) =>
+                                              const SellerEntranceScreen()))
+                                  .then((_) => setState(() {})),
+                              child: Container(
+                                margin: const EdgeInsets.fromLTRB(8, 6, 4, 6),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 14, vertical: 9),
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? const Color(0xFF2C1A00)
+                                      : Colors.white.withOpacity(0.9),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                      color: const Color(0xFFD97706)
+                                          .withOpacity(0.55),
+                                      width: 1.2),
+                                  boxShadow: isDark
+                                      ? []
+                                      : [
+                                          BoxShadow(
+                                            color: const Color(0xFFD97706)
+                                                .withOpacity(0.15),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ],
+                                ),
+                                child: Text(loc.get('shop'),
+                                    style: const TextStyle(
+                                        color: Color(0xFFD97706),
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 13)),
                               ),
-                              child: Text(loc.get('shop'),
-                                  style: const TextStyle(
-                                      color: Color(0xFFD97706),
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 13)),
                             ),
-                          ),
-                          // DD Online логотипи
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: _onTitleTap,
-                              child: Center(
-                                child: ShaderMask(
-                                  shaderCallback: (bounds) =>
-                                      const LinearGradient(
-                                    colors: [
-                                      Color(0xFFD97706),
-                                      Color(0xFFEF4444)
-                                    ],
-                                    begin: Alignment.centerLeft,
-                                    end: Alignment.centerRight,
-                                  ).createShader(bounds),
-                                  child: const Text('DD Online',
-                                      style: TextStyle(
-                                          fontSize: 26,
-                                          fontWeight: FontWeight.w900,
-                                          color: Colors.white,
-                                          letterSpacing: 1.0)),
+                            // DD Online логотипи
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: _onTitleTap,
+                                child: Center(
+                                  child: ShaderMask(
+                                    shaderCallback: (bounds) =>
+                                        const LinearGradient(
+                                      colors: [
+                                        Color(0xFFD97706),
+                                        Color(0xFFEF4444)
+                                      ],
+                                      begin: Alignment.centerLeft,
+                                      end: Alignment.centerRight,
+                                    ).createShader(bounds),
+                                    child: const Text('DD Online',
+                                        style: TextStyle(
+                                            fontSize: 26,
+                                            fontWeight: FontWeight.w900,
+                                            color: Colors.white,
+                                            letterSpacing: 1.0)),
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                          // Коңгуроо
-                          GestureDetector(
-                            onTap: () => Navigator.push(context,
-                                MaterialPageRoute(
-                                    builder: (_) =>
-                                        const NotificationsScreen()))
-                                .then((_) => _checkUnread()),
-                            child: Padding(
-                              padding: const EdgeInsets.only(right: 12),
-                              child: Stack(
-                                clipBehavior: Clip.none,
-                                children: [
-                                  Icon(Icons.notifications_outlined,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface
-                                          .withOpacity(0.8),
-                                      size: 26),
-                                  if (_hasUnread)
-                                    Positioned(
-                                      top: 0, right: 0,
-                                      child: Container(
-                                        width: 8, height: 8,
-                                        decoration: const BoxDecoration(
-                                            color: AppColors.error,
-                                            shape: BoxShape.circle),
+                            // Коңгуроо
+                            GestureDetector(
+                              onTap: () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (_) =>
+                                              const NotificationsScreen()))
+                                  .then((_) => _checkUnread()),
+                              child: Padding(
+                                padding: const EdgeInsets.only(right: 12),
+                                child: Stack(
+                                  clipBehavior: Clip.none,
+                                  children: [
+                                    Icon(Icons.notifications_outlined,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface
+                                            .withOpacity(0.8),
+                                        size: 26),
+                                    if (_hasUnread)
+                                      Positioned(
+                                        top: 0,
+                                        right: 0,
+                                        child: Container(
+                                          width: 8,
+                                          height: 8,
+                                          decoration: const BoxDecoration(
+                                              color: AppColors.error,
+                                              shape: BoxShape.circle),
+                                        ),
                                       ),
-                                    ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                    ),
 
                   // ── Search + баскычтар (дайыма туруктуу) ──
                   Padding(
@@ -1052,10 +1109,10 @@ return Container(
                                   : _loadNearbyProducts),
                           child: _isLocating
                               ? const SizedBox(
-                                  width: 22, height: 22,
+                                  width: 22,
+                                  height: 22,
                                   child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: AppColors.primary))
+                                      strokeWidth: 2, color: AppColors.primary))
                               : Icon(Icons.near_me_rounded,
                                   color: _isNearbyMode
                                       ? Colors.white
@@ -1076,9 +1133,11 @@ return Container(
                                   size: 22),
                               if (_filterCount > 0)
                                 Positioned(
-                                  top: -6, right: -6,
+                                  top: -6,
+                                  right: -6,
                                   child: Container(
-                                    width: 15, height: 15,
+                                    width: 15,
+                                    height: 15,
                                     decoration: const BoxDecoration(
                                         color: AppColors.error,
                                         shape: BoxShape.circle),
@@ -1087,8 +1146,7 @@ return Container(
                                             style: const TextStyle(
                                                 color: Colors.white,
                                                 fontSize: 9,
-                                                fontWeight:
-                                                    FontWeight.bold))),
+                                                fontWeight: FontWeight.bold))),
                                   ),
                                 ),
                             ],
@@ -1099,7 +1157,6 @@ return Container(
                   ),
                   Divider(height: 1, color: dividerColor),
                   const SizedBox(height: 6),
-
 
                   // ── CategoryList (дайыма туруктуу) ──
                   CategoryList(
@@ -1114,7 +1171,8 @@ return Container(
                       }
                     },
                     onFilterModeChanged: _onFilterModeChanged,
-                  ),const SizedBox(height: 6),
+                  ),
+                  const SizedBox(height: 6),
                 ],
               ),
             ),
@@ -1131,7 +1189,7 @@ return Container(
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-  final navbarTotal = _navbarTotal;
+    final navbarTotal = _navbarTotal;
 
     return PopScope(
       canPop: false,
@@ -1165,8 +1223,10 @@ return Container(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            Color(0xFFDCEBFF), Color(0xFFEEE0FF),
-                            Color(0xFFFFE0F0), Color(0xFFFFEDD5),
+                            Color(0xFFDCEBFF),
+                            Color(0xFFEEE0FF),
+                            Color(0xFFFFE0F0),
+                            Color(0xFFFFEDD5),
                           ],
                           stops: [0.0, 0.35, 0.7, 1.0],
                         ),
@@ -1176,27 +1236,78 @@ return Container(
 
             // ── Декоративдик тегеректер ──
             if (isDark) ...[
-              Positioned(top: -120, right: -80, child: Container(width: 300, height: 300,
-                  decoration: BoxDecoration(shape: BoxShape.circle, color: _C.glow1.withOpacity(0.25)))),
-              Positioned(top: 300, left: -100, child: Container(width: 250, height: 250,
-                  decoration: BoxDecoration(shape: BoxShape.circle, color: _C.glow2.withOpacity(0.20)))),
-              Positioned(bottom: 200, right: -60, child: Container(width: 200, height: 200,
-                  decoration: BoxDecoration(shape: BoxShape.circle, color: _C.glow3.withOpacity(0.18)))),
+              Positioned(
+                  top: -120,
+                  right: -80,
+                  child: Container(
+                      width: 300,
+                      height: 300,
+                      decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: _C.glow1.withOpacity(0.25)))),
+              Positioned(
+                  top: 300,
+                  left: -100,
+                  child: Container(
+                      width: 250,
+                      height: 250,
+                      decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: _C.glow2.withOpacity(0.20)))),
+              Positioned(
+                  bottom: 200,
+                  right: -60,
+                  child: Container(
+                      width: 200,
+                      height: 200,
+                      decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: _C.glow3.withOpacity(0.18)))),
             ],
             if (!isDark) ...[
-              Positioned(top: -120, left: -80, child: Container(width: 350, height: 350,
-                  decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xFFADD0FF).withOpacity(0.45)))),
-              Positioned(top: 80, right: -100, child: Container(width: 280, height: 280,
-                  decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xFFCEB4FF).withOpacity(0.38)))),
-              Positioned(top: 420, left: -60, child: Container(width: 220, height: 220,
-                  decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xFFFFB3D9).withOpacity(0.32)))),
-              Positioned(bottom: 250, right: -50, child: Container(width: 200, height: 200,
-                  decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xFFFFD4A8).withOpacity(0.35)))),
+              Positioned(
+                  top: -120,
+                  left: -80,
+                  child: Container(
+                      width: 350,
+                      height: 350,
+                      decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: const Color(0xFFADD0FF).withOpacity(0.45)))),
+              Positioned(
+                  top: 80,
+                  right: -100,
+                  child: Container(
+                      width: 280,
+                      height: 280,
+                      decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: const Color(0xFFCEB4FF).withOpacity(0.38)))),
+              Positioned(
+                  top: 420,
+                  left: -60,
+                  child: Container(
+                      width: 220,
+                      height: 220,
+                      decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: const Color(0xFFFFB3D9).withOpacity(0.32)))),
+              Positioned(
+                  bottom: 250,
+                  right: -50,
+                  child: Container(
+                      width: 200,
+                      height: 200,
+                      decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: const Color(0xFFFFD4A8).withOpacity(0.35)))),
             ],
 
             // ── Мазмун ──
             Positioned(
-              top: 0, left: 0, right: 0,
+              top: 0,
+              left: 0,
+              right: 0,
               bottom: 0,
               child: Stack(
                 children: [
@@ -1225,7 +1336,7 @@ return Container(
             ),
 
             // ── Калкып турган меню баскычы ──
-           if (_currentTab == _tabHome)
+            if (_currentTab == _tabHome)
               AnimatedPositioned(
                 duration: const Duration(milliseconds: 250),
                 curve: Curves.easeInOut,
@@ -1236,15 +1347,16 @@ return Container(
 
             // ── Navbar ──
 
-         AnimatedPositioned(
-  duration: _navVisible
-      ? const Duration(milliseconds: 300)
-      : const Duration(milliseconds: 200),
-  curve: Curves.easeOut,
-  left: 0, right: 0,
-  bottom: _navVisible ? 0 : -(64 + _navBottomPadding),
-  child: _buildBottomNav(loc),
-),
+            AnimatedPositioned(
+              duration: _navVisible
+                  ? const Duration(milliseconds: 300)
+                  : const Duration(milliseconds: 200),
+              curve: Curves.easeOut,
+              left: 0,
+              right: 0,
+              bottom: _navVisible ? 0 : -(64 + _navBottomPadding),
+              child: _buildBottomNav(loc),
+            ),
           ],
         ),
       ),
@@ -1305,18 +1417,22 @@ class _HomeBodySliderState extends State<_HomeBodySlider>
     _isDragging = false;
     final velocity = details.primaryVelocity ?? 0;
     if (_progress > _openThreshold || velocity < -_velocityThreshold) {
-      _ctrl.animateTo(1.0,
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutCubic).then((_) {
+      _ctrl
+          .animateTo(1.0,
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOutCubic)
+          .then((_) {
         if (!mounted) return;
         setState(() => _progress = 0.0);
         _ctrl.value = 0.0;
         widget.onOpenPanel();
       });
     } else {
-      _ctrl.animateTo(0.0,
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutCubic).then((_) {
+      _ctrl
+          .animateTo(0.0,
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOutCubic)
+          .then((_) {
         if (!mounted) return;
         setState(() => _progress = 0.0);
       });
@@ -1367,7 +1483,8 @@ class _MenuFabState extends State<_MenuFab> {
         scale: _pressed ? 0.88 : 1.0,
         duration: const Duration(milliseconds: 80),
         child: Container(
-          width: 52, height: 52,
+          width: 52,
+          height: 52,
           decoration: BoxDecoration(
             gradient: const LinearGradient(
               colors: [Color(0xFFD97706), Color(0xFFEF4444)],
@@ -1404,9 +1521,13 @@ class _IosBtn extends StatefulWidget {
   final bool isDark;
 
   const _IosBtn({
-    required this.child, required this.onTap,
-    required this.active, required this.activeColor,
-    required this.padding, required this.radius, required this.isDark,
+    required this.child,
+    required this.onTap,
+    required this.active,
+    required this.activeColor,
+    required this.padding,
+    required this.radius,
+    required this.isDark,
   });
 
   @override
@@ -1437,18 +1558,25 @@ class _IosBtnState extends State<_IosBtn> {
             color: bg,
             borderRadius: BorderRadius.circular(widget.radius),
             boxShadow: widget.active
-                ? [BoxShadow(
-                    color: widget.activeColor.withOpacity(0.35),
-                    blurRadius: 12, offset: const Offset(0, 4),
-                    spreadRadius: -2)]
+                ? [
+                    BoxShadow(
+                        color: widget.activeColor.withOpacity(0.35),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                        spreadRadius: -2)
+                  ]
                 : widget.isDark
                     ? []
                     : [
-                        BoxShadow(color: Colors.black.withOpacity(0.09),
-                            blurRadius: 12, offset: const Offset(0, 4),
+                        BoxShadow(
+                            color: Colors.black.withOpacity(0.09),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
                             spreadRadius: -2),
-                        BoxShadow(color: Colors.black.withOpacity(0.04),
-                            blurRadius: 3, offset: const Offset(0, 1)),
+                        BoxShadow(
+                            color: Colors.black.withOpacity(0.04),
+                            blurRadius: 3,
+                            offset: const Offset(0, 1)),
                       ],
           ),
           child: widget.child,
@@ -1466,8 +1594,11 @@ class _IosLabelBtn extends StatefulWidget {
   final bool isDark;
 
   const _IosLabelBtn({
-    required this.onTap, required this.icon,
-    required this.label, required this.color, required this.isDark,
+    required this.onTap,
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.isDark,
   });
 
   @override
@@ -1496,14 +1627,22 @@ class _IosLabelBtnState extends State<_IosLabelBtn> {
             color: bg,
             borderRadius: BorderRadius.circular(45),
             boxShadow: widget.isDark
-                ? [BoxShadow(color: _C.glow1.withOpacity(0.12),
-                    blurRadius: 8, offset: const Offset(0, 2))]
+                ? [
+                    BoxShadow(
+                        color: _C.glow1.withOpacity(0.12),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2))
+                  ]
                 : [
-                    BoxShadow(color: Colors.black.withOpacity(0.09),
-                        blurRadius: 12, offset: const Offset(0, 4),
+                    BoxShadow(
+                        color: Colors.black.withOpacity(0.09),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
                         spreadRadius: -2),
-                    BoxShadow(color: Colors.black.withOpacity(0.04),
-                        blurRadius: 3, offset: const Offset(0, 1)),
+                    BoxShadow(
+                        color: Colors.black.withOpacity(0.04),
+                        blurRadius: 3,
+                        offset: const Offset(0, 1)),
                   ],
             border: widget.isDark
                 ? Border.all(color: _C.btnBorder, width: 0.8)

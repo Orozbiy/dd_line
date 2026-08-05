@@ -10,6 +10,7 @@ import '../../../core/utils/image_utils.dart';
 import '../../../core/supabase_client.dart';
 import '../../home/models/category_model.dart';
 import '../screens/flash_sale_manage_screen.dart';
+import '../../../core/services/yandex_storage_service.dart';
 
 class SellerProductScreen extends StatefulWidget {
   final String sellerUid;
@@ -998,7 +999,14 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                               setD(() { isUploading = true; uploadStatus = loc.get('prod_uploading'); });
                               final compressed  = await compressImage(imageBytes!);
                               final watermarked = await addWatermark(compressed);
-                              final uploaded    = await _uploadToCloudinary(watermarked);
+
+
+                            final uploaded = await YandexStorageService.instance.uploadImage(
+  watermarked,
+  folder: 'products',
+);
+
+
                               if (uploaded == null) { setD(() { isLoading = false; isUploading = false; uploadStatus = ''; }); return; }
                               imageUrl = uploaded;
                               setD(() { isUploading = false; uploadStatus = loc.get('prod_uploaded'); });
