@@ -1,21 +1,21 @@
+import 'dart:ui';
+
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../core/app_localizations.dart';
 import '../../../core/supabase_client.dart';
 import '../../../core/utils/favorites_manager.dart';
+import '../../../core/utils/image_utils.dart';
 import '../../../data/models/product_model.dart';
 import '../../chat/screens/chat_screen.dart';
 import '../../chat/services/chat_service.dart';
 import '../widgets/review_section.dart';
 import '../widgets/share_widget.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import '../../../core/utils/image_utils.dart';
-import 'dart:ui';
-
-
 
 class ProductDetailScreen extends StatefulWidget {
   final ProductModel product;
@@ -28,8 +28,6 @@ class ProductDetailScreen extends StatefulWidget {
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   final _fav = FavoritesManager();
   final _chatService = ChatService();
-
-  bool _chatLoading = false;
   bool _dataLoading = true;
   String selectedSize = '';
 
@@ -123,7 +121,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           .select('*, stores(store_name, owner_id)')
           .eq('category_id', _product.category!)
           .eq('is_active', true)
-          .limit(10);
+         .limit(5);
       final list = (data as List)
           .cast<Map<String, dynamic>>()
           .where((row) => row['id'] != _product.id)
@@ -209,12 +207,24 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   Future<void> _openChat() async {
     final loc = AppLocalizations.of(context);
+
+    // _dataLoading бүтпөгөн болсо — бир аз күт
+    if (_dataLoading) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(loc.get('loading')),
+        duration: const Duration(seconds: 1),
+        backgroundColor: AppColors.primary,
+      ));
+      return;
+    }
+
     if (_sellerUid == null || _sellerUid!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(loc.get('seller_no_info')),
           backgroundColor: AppColors.warning));
       return;
     }
+
     final user = supabase.auth.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -222,18 +232,23 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           backgroundColor: AppColors.warning));
       return;
     }
+
     if (user.id == _sellerUid) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(loc.get('own_product')),
           backgroundColor: AppColors.warning));
       return;
     }
-    setState(() => _chatLoading = true);
+
+  
     try {
       final chatId = await _chatService.getOrCreateChat(
           buyerId: user.id, sellerId: _sellerUid!, productId: _product.id);
+
       if (!mounted) return;
-      Navigator.push(
+  
+
+      await Navigator.push(
           context,
           MaterialPageRoute(
               builder: (_) => ChatScreen(
@@ -247,12 +262,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     sellerId: _sellerUid!,
                   )));
     } catch (e) {
+      debugPrint('❌ _openChat: $e');
       if (!mounted) return;
+     
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('${AppLocalizations.of(context).get('error')}: $e'),
+          content: Text('${loc.get('error')}: $e'),
           backgroundColor: AppColors.error));
-    } finally {
-      if (mounted) setState(() => _chatLoading = false);
     }
   }
 
@@ -265,6 +280,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     ));
   }
+@override
+void dispose() {
+  _similarProducts.clear();
+  super.dispose();
+}
+
 
   bool _isOpenNow() {
     if (_workStart.isEmpty || _workEnd.isEmpty) return false;
@@ -708,7 +729,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 8),           
+                      const SizedBox(height: 8),
                       // ── Окшош товарлар ──
                       if (_similarProducts.isNotEmpty)
                         Container(
@@ -827,98 +848,82 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           ),
         ],
       ),
-
-
-
-
-     bottomNavigationBar: ClipRect(
-  child: BackdropFilter(
-    filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-    child: Container(
-      padding: EdgeInsets.fromLTRB(
-          16, 10, 16, MediaQuery.of(context).padding.bottom + 10),
-      decoration: BoxDecoration(
-        color: isDark
-            ? Colors.black.withValues(alpha: 0.55)
-            : Colors.white.withValues(alpha: 0.72),
-        border: Border(
-          top: BorderSide(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.08)
-                : Colors.black.withValues(alpha: 0.07),
-            width: 0.8,
-          ),
-        ),
-      ),
-      child: Row(
-        children: [
-          // ── 30% — Чат (айнек баскыч) ──
-        _GlassButton(
-  width: (MediaQuery.of(context).size.width - 32 - 12) * 0.38,
-  height: 52,
-  onTap: _chatLoading ? null : _openChat,
-  isDark: isDark,
-  color: const Color(0xFF10B981),
-  child: _chatLoading
-      ? const SizedBox(
-          width: 20, height: 20,
-          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary))
-      : Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.chat_bubble_outline_rounded,
-                color: Color.fromARGB(255, 17, 180, 213), size: 20),
-            const SizedBox(width: 6),
-            Text(
-              loc.locale.languageCode == 'ru'
-                  ? 'Написать продавцу'
-                  : ' Сатуучуга жазуу',
-              style: AppTextStyles.labelMedium.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w600),
-            ),
-          ],
-        ),
-),
-
-          const SizedBox(width: 12),
-
-          // ── 70% — Маршрут (градиент баскыч) ──
-          Expanded(
-            child: _GradientButton(
-              height: 52,
-              onTap: _openMapNavigation,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.near_me_rounded,
-                      color: Colors.white, size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    loc.get('route'),
-                    style: AppTextStyles.labelLarge
-                        .copyWith(color: Colors.white, fontSize: 15),
-                  ),
-                ],
+      bottomNavigationBar: ClipRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+          child: Container(
+            padding: EdgeInsets.fromLTRB(
+                16, 10, 16, MediaQuery.of(context).padding.bottom + 10),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? Colors.black.withValues(alpha: 0.55)
+                  : Colors.white.withValues(alpha: 0.72),
+              border: Border(
+                top: BorderSide(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.08)
+                      : Colors.black.withValues(alpha: 0.07),
+                  width: 0.8,
+                ),
               ),
             ),
-          ),
-        ],
+            child: Row(
+              children: [
+                // ── 30% — Чат (айнек баскыч) ──
+                _GlassButton(
+  width: (MediaQuery.of(context).size.width - 32 - 12) * 0.38,
+  height: 52,
+  onTap: _openChat,
+  isDark: isDark,
+  color: const Color(0xFF10B981),
+  child: Row(
+    mainAxisAlignment: MainAxisAlignment.center,
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      const Icon(Icons.chat_bubble_outline_rounded,
+          color: Color.fromARGB(255, 17, 180, 213),
+          size: 20),
+      const SizedBox(width: 6),
+      Text(
+        loc.locale.languageCode == 'ru'
+            ? 'Написать продавцу'
+            : ' Сатуучуга жазуу',
+        style: AppTextStyles.labelMedium.copyWith(
+            color: AppColors.primary,
+            fontWeight: FontWeight.w600),
       ),
-    ),
+    ],
   ),
 ),
 
+                const SizedBox(width: 12),
 
-      
+                // ── 70% — Маршрут (градиент баскыч) ──
+                Expanded(
+                  child: _GradientButton(
+                    height: 52,
+                    onTap: _openMapNavigation,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.near_me_rounded,
+                            color: Colors.white, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          loc.get('route'),
+                          style: AppTextStyles.labelLarge
+                              .copyWith(color: Colors.white, fontSize: 15),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
-
-
-
-
-
-    
   }
 
   Widget _buildCharacteristics(AppLocalizations loc, Color cardColor,
@@ -1338,6 +1343,7 @@ class _FullscreenImageScreen extends StatelessWidget {
     );
   }
 }
+
 // ══════════════════════════════════════════════════════
 // АЙНЕК БАСКЫЧ
 // ══════════════════════════════════════════════════════

@@ -500,29 +500,35 @@ final url = await YandexStorageService.instance.uploadImage(
     ..addAll(messages.map((m) => m.id)));
 
   Future<void> _deleteSelected() async {
-    final loc = AppLocalizations.of(context);
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(loc.get('chat_delete_msgs_title')),
-        content:
-            Text('${_selectedIds.length} ${loc.get('chat_delete_msgs_body')}'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(loc.get('no'))),
-          TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(loc.get('chat_delete_yes'),
-                  style: const TextStyle(color: AppColors.error))),
-        ],
-      ),
-    );
-    if (confirm == true) {
-      await _service.deleteMessages(_selectedIds.toList());
-      _exitSelectionMode();
-    }
+  final loc = AppLocalizations.of(context);
+  final confirm = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20)),
+      title: Text(loc.get('chat_delete_msgs_title')),
+      content: Text(
+          '${_selectedIds.length} ${loc.get('chat_delete_msgs_body')}'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: Text(loc.get('no')),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, true),
+          child: Text(
+            loc.get('chat_delete_yes'),
+            style: const TextStyle(color: AppColors.error),
+          ),
+        ),
+      ],
+    ),
+  );
+  if (confirm == true) {
+    await _service.deleteMessages(_selectedIds.toList());
+    _exitSelectionMode();
   }
+}
 
   Future<void> _copyMessage(MessageModel msg) async {}
 

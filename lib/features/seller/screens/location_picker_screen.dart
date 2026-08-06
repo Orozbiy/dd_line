@@ -78,7 +78,6 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
   // GPS МЕНЕН АНЫКТОО
   // ══════════════════════════════════════════════════════
   Future<void> _detectGpsLocation() async {
-    // Уруксат текшерүү
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
@@ -92,9 +91,9 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
     setState(() {
       _gpsLoading = true;
       _countdown  = 5;
+      _editMode   = false; // GPS иштеп жатканда форманы жашыр
     });
 
-    // GPS координат алуу
     try {
       final pos = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
@@ -115,7 +114,6 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       return;
     }
 
-    // 5 секунд каршы санак
     _countdownTimer =
         Timer.periodic(const Duration(seconds: 1), (timer) async {
       if (!mounted) {
@@ -127,7 +125,6 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       if (_countdown <= 0) {
         timer.cancel();
 
-        // Акыркы GPS точкасын алуу
         try {
           final finalPos = await Geolocator.getCurrentPosition(
             desiredAccuracy: LocationAccuracy.high,
@@ -137,17 +134,15 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
           _gpsLng = finalPos.longitude;
         } catch (_) {}
 
-        // Текст талааларга жазуу
         if (mounted) {
           setState(() {
             _latCtrl.text = _gpsLat!.toStringAsFixed(6);
             _lngCtrl.text = _gpsLng!.toStringAsFixed(6);
             _gpsLoading   = false;
-            _editMode     = true;
+            _editMode     = false;
           });
         }
 
-        // Автоматтык сактоо
         await _saveLocation();
       }
     });
@@ -179,8 +174,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(
-              '${AppLocalizations.of(context).get('error')}: $e'),
+          content: Text('${AppLocalizations.of(context).get('error')}: $e'),
           backgroundColor: AppColors.error,
         ));
       }
@@ -229,11 +223,9 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
         ),
         title: Column(children: [
           Text(widget.shopName,
-              style: AppTextStyles.headingSmall
-                  .copyWith(color: titleColor)),
+              style: AppTextStyles.headingSmall.copyWith(color: titleColor)),
           Text(loc.get('dash_location'),
-              style:
-                  AppTextStyles.bodySmall.copyWith(color: subColor)),
+              style: AppTextStyles.bodySmall.copyWith(color: subColor)),
         ]),
         centerTitle: true,
       ),
@@ -261,9 +253,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                       children: [
                         Text(loc.get('loc_saved_label'),
                             style: AppTextStyles.labelLarge
-                                .copyWith(
-                                    color:
-                                        const Color(0xFF16A34A))),
+                                .copyWith(color: const Color(0xFF16A34A))),
                         const SizedBox(height: 4),
                         Text(
                           'Lat: ${_savedLat!.toStringAsFixed(6)}\n'
@@ -279,8 +269,89 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
               const SizedBox(height: 16),
             ],
 
+            // ── GPS САНАК ИНДИКАТОРУ (ар дайым жогорудо) ──
+            if (_gpsLoading) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF16A34A).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                      color: const Color(0xFF16A34A).withValues(alpha: 0.3)),
+                ),
+                child: Column(children: [
+                  if (_countdown > 0) ...[
+                    Text(
+                      '$_countdown',
+                      style: const TextStyle(
+                        fontSize: 56,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFF16A34A),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      '📍 Жылбаңыз!',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF16A34A),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Телефонду кармап, бир жерде туруңуз',
+                      style: AppTextStyles.bodySmall
+                          .copyWith(color: AppColors.grey500),
+                      textAlign: TextAlign.center,
+                    ),
+                  ] else ...[
+                    const CircularProgressIndicator(
+                        color: Color(0xFF16A34A)),
+                    const SizedBox(height: 12),
+                    Text(
+                      '📍 Жайгашкан жер аныкталууда...',
+                      style: AppTextStyles.labelLarge
+                          .copyWith(color: const Color(0xFF16A34A)),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ]),
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            // ── GPS БАСКЫЧЫ (gpsLoading жок болгондо ар дайым көрүнөт) ──
+            if (!_gpsLoading) ...[
+              SizedBox(
+                width: double.infinity,
+                height: 54,
+                child: ElevatedButton.icon(
+                  onPressed: _detectGpsLocation,
+                  icon: const Icon(Icons.my_location_rounded,
+                      color: Colors.white),
+                  label: const Text(
+                    '📍  GPS менен аныктоо',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF16A34A),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                    elevation: 0,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+
             // ── ФОРМА (кол менен жазуу) ──
-            if (_editMode) ...[
+            if (_editMode && !_gpsLoading) ...[
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
@@ -289,8 +360,8 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                   border: Border.all(color: instrBorder),
                 ),
                 child: Text(loc.get('loc_instructions'),
-                    style: AppTextStyles.bodySmall.copyWith(
-                        color: instrText, height: 1.6)),
+                    style: AppTextStyles.bodySmall
+                        .copyWith(color: instrText, height: 1.6)),
               ),
               const SizedBox(height: 20),
 
@@ -302,8 +373,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                 controller: _latCtrl,
                 keyboardType: const TextInputType.numberWithOptions(
                     decimal: true, signed: true),
-                style: AppTextStyles.bodyMedium
-                    .copyWith(color: textColor),
+                style: AppTextStyles.bodyMedium.copyWith(color: textColor),
                 onChanged: (_) => setState(() {}),
                 decoration: InputDecoration(
                   hintText: '42.895300',
@@ -313,8 +383,8 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                           : AppColors.grey400),
                   filled: true,
                   fillColor: fieldFill,
-                  prefixIcon: const Icon(Icons.north,
-                      color: AppColors.primary),
+                  prefixIcon:
+                      const Icon(Icons.north, color: AppColors.primary),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(
@@ -331,8 +401,8 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                        color: AppColors.primary, width: 2),
+                    borderSide:
+                        const BorderSide(color: AppColors.primary, width: 2),
                   ),
                 ),
               ),
@@ -346,8 +416,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                 controller: _lngCtrl,
                 keyboardType: const TextInputType.numberWithOptions(
                     decimal: true, signed: true),
-                style: AppTextStyles.bodyMedium
-                    .copyWith(color: textColor),
+                style: AppTextStyles.bodyMedium.copyWith(color: textColor),
                 onChanged: (_) => setState(() {}),
                 decoration: InputDecoration(
                   hintText: '74.597500',
@@ -357,8 +426,8 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                           : AppColors.grey400),
                   filled: true,
                   fillColor: fieldFill,
-                  prefixIcon: const Icon(Icons.east,
-                      color: AppColors.primary),
+                  prefixIcon:
+                      const Icon(Icons.east, color: AppColors.primary),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(
@@ -375,8 +444,8 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                        color: AppColors.primary, width: 2),
+                    borderSide:
+                        const BorderSide(color: AppColors.primary, width: 2),
                   ),
                 ),
               ),
@@ -384,8 +453,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
 
               if (_hasSaved)
                 TextButton(
-                  onPressed: () =>
-                      setState(() => _editMode = false),
+                  onPressed: () => setState(() => _editMode = false),
                   child: Text(loc.get('cancel'),
                       style: AppTextStyles.labelMedium
                           .copyWith(color: AppColors.grey500)),
@@ -395,9 +463,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                 width: double.infinity,
                 height: 54,
                 child: ElevatedButton(
-                  onPressed: (_isValid && !_saving)
-                      ? _saveLocation
-                      : null,
+                  onPressed: (_isValid && !_saving) ? _saveLocation : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     disabledBackgroundColor: AppColors.grey200,
@@ -410,125 +476,36 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                           width: 22,
                           height: 22,
                           child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2.5))
+                              color: Colors.white, strokeWidth: 2.5))
                       : Text('📍  ${loc.get('save')}',
-                          style: AppTextStyles.labelLarge.copyWith(
-                              color: Colors.white, fontSize: 16)),
+                          style: AppTextStyles.labelLarge
+                              .copyWith(color: Colors.white, fontSize: 16)),
                 ),
               ),
               SizedBox(height: bottomPad + 8),
             ],
 
-            // ── БАСКЫЧТАР (edit mode жок болгондо) ──
-            if (!_editMode) ...[
+            // ── КОЛ МЕНЕН ӨЗГӨРТҮҮ БАСКЫЧЫ (editMode жок болгондо) ──
+            if (!_editMode && !_gpsLoading) ...[
               const Spacer(),
-
-              // ── GPS САНАК ИНДИКАТОРУ ──
-              if (_gpsLoading) ...[
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF16A34A)
-                        .withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                        color: const Color(0xFF16A34A)
-                            .withValues(alpha: 0.3)),
-                  ),
-                  child: Column(children: [
-                    // Санак чоң номер
-                    if (_countdown > 0) ...[
-                      Text(
-                        '$_countdown',
-                        style: const TextStyle(
-                          fontSize: 56,
-                          fontWeight: FontWeight.w900,
-                          color: Color(0xFF16A34A),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        '📍 Жылбаңыз!',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF16A34A),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Телефонду кармап, бир жерде туруңуз',
-                        style: AppTextStyles.bodySmall
-                            .copyWith(color: AppColors.grey500),
-                        textAlign: TextAlign.center,
-                      ),
-                    ] else ...[
-                      const CircularProgressIndicator(
-                          color: Color(0xFF16A34A)),
-                      const SizedBox(height: 12),
-                      Text(
-                        '📍 Жайгашкан жер аныкталууда...',
-                        style: AppTextStyles.labelLarge.copyWith(
-                            color: const Color(0xFF16A34A)),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ]),
-                ),
-              ] else ...[
-
-                // ── GPS БАСКЫЧЫ ──
-                SizedBox(
-                  width: double.infinity,
-                  height: 54,
-                  child: ElevatedButton.icon(
-                    onPressed: _detectGpsLocation,
-                    icon: const Icon(Icons.my_location_rounded,
-                        color: Colors.white),
-                    label: const Text(
-                      '📍  GPS менен аныктоо',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF16A34A),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14)),
-                      elevation: 0,
-                    ),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: OutlinedButton.icon(
+                  onPressed: () => setState(() => _editMode = true),
+                  icon: const Icon(Icons.edit_location_alt_outlined,
+                      color: AppColors.primary),
+                  label: Text(loc.get('loc_edit'),
+                      style: AppTextStyles.labelLarge
+                          .copyWith(color: AppColors.primary)),
+                  style: OutlinedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                    side: const BorderSide(
+                        color: AppColors.primary, width: 1.5),
                   ),
                 ),
-
-                const SizedBox(height: 12),
-
-                // ── КОЛ МЕНЕН ӨЗГӨРТҮҮ БАСКЫЧЫ ──
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: OutlinedButton.icon(
-                    onPressed: () =>
-                        setState(() => _editMode = true),
-                    icon: const Icon(
-                        Icons.edit_location_alt_outlined,
-                        color: AppColors.primary),
-                    label: Text(loc.get('loc_edit'),
-                        style: AppTextStyles.labelLarge
-                            .copyWith(color: AppColors.primary)),
-                    style: OutlinedButton.styleFrom(
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14)),
-                      side: const BorderSide(
-                          color: AppColors.primary, width: 1.5),
-                    ),
-                  ),
-                ),
-              ],
-
+              ),
               SizedBox(height: bottomPad + 8),
             ],
           ],

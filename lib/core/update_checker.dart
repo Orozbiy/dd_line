@@ -1,20 +1,18 @@
-// lib/core/update_checker.dart
 
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/supabase_client.dart';
+import '../services/notification_service.dart'; // navigatorKey үчүн
 
 class UpdateChecker {
   UpdateChecker._();
 
   static Future<void> check(BuildContext context, String langCode) async {
     try {
-      // 1. Учурдагы версияны ал
       final info = await PackageInfo.fromPlatform();
-      final currentVersion = info.version; // мисалы '1.0.0'
+      final currentVersion = info.version;
 
-      // 2. Supabase'тен акыркы версияны ал
       final data = await supabase
           .from('app_version')
           .select()
@@ -25,16 +23,17 @@ class UpdateChecker {
       final minVersion    = data['min_version'] as String;
       final storeUrl      = data['play_store_url'] as String;
 
-      // 3. Версияларды салыштыр
       final isOutdated  = _isOlder(currentVersion, latestVersion);
       final isMandatory = _isOlder(currentVersion, minVersion);
 
-      if (!isOutdated) return; // жаңы версия жок, диалог чыгарба
+      if (!isOutdated) return;
 
-      if (!context.mounted) return;
+      // ✅ navigatorKey.currentContext колдон — context.mounted эмес
+      final ctx = navigatorKey.currentContext;
+      if (ctx == null || !ctx.mounted) return;
 
       _showUpdateDialog(
-        context:     context,
+        context:     ctx,
         langCode:    langCode,
         storeUrl:    storeUrl,
         isMandatory: isMandatory,

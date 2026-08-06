@@ -21,38 +21,22 @@ import '../../chat/services/chat_service.dart';
 import '../../chat/models/chat_model.dart';
 import '../../../core/supabase_client.dart';
 import '../../product_detail/screens/product_detail_screen.dart';
-import '../widgets/fav_badge.dart';
 import '../screens/favorites_screen.dart';
 import '../widgets/suggestion_button.dart';
 import '../widgets/product_card.dart';
 import '../../../services/notification_service.dart';
+import '../constants/home_colors.dart';
+import '../widgets/home_bottom_nav.dart';
+import '../widgets/home_background.dart';
+import '../../../core/update_checker.dart';
 
 // ══════════════════════════════════════════════════════
 // TAB индекстери
 // ══════════════════════════════════════════════════════
-const int _tabHome = 0;
-const int _tabChat = 1;
-const int _tabMap = 2;
-const int _tabFavorites = 3;
-const int _tabSettings = 4;
 
 // ══════════════════════════════════════════════════════
 // COSMIC DARK — түс константалары
 // ══════════════════════════════════════════════════════
-class _C {
-  static const bgGrad1 = Color(0xFF0D0F1A);
-  static const bgGrad2 = Color(0xFF12103A);
-  static const bgGrad3 = Color(0xFF0D1525);
-  static const card = Color(0xFF14162A);
-  static const cardBorder = Color(0xFF2A2560);
-  static const btnBg = Color(0xFF1C1E38);
-  static const btnBorder = Color(0xFF3A3870);
-  static const navBg = Color(0xFF10121F);
-  static const navBorder = Color(0xFF252545);
-  static const glow1 = Color(0xFF3D2080);
-  static const glow2 = Color(0xFF1A3060);
-  static const glow3 = Color(0xFF2D1060);
-}
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -60,8 +44,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen>
-    with SingleTickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen> {
   List<ProductModel> allProducts = [];
   List<ProductModel> displayedProducts = [];
   bool _isLoading = true;
@@ -71,15 +54,12 @@ class _HomeScreenState extends State<HomeScreen>
   final fav = FavoritesManager();
 
   int _adminTapCount = 0;
-  int _currentTab = _tabHome;
+  int _currentTab = tabHome;
   DateTime? _lastTapTime;
 
   int _favCount = 0;
   int _totalUnreadChat = 0;
   StreamSubscription<List<ChatModel>>? _chatSub;
-
-  bool _cameraVisible = false;
-  late AnimationController _cameraAnim;
 
   int _offset = 0;
   bool _isLoadingMore = false;
@@ -108,7 +88,7 @@ class _HomeScreenState extends State<HomeScreen>
   bool _titleVisible = true;
   bool _navVisible = true;
   double _navBottomPadding = 12;
-  double get _navbarTotal => 64.0 + _navBottomPadding;
+
   // DD Online блогу көрүнөбү
 
   // DD Online блогунун бийиктиги: toolbar(52px)
@@ -125,24 +105,27 @@ class _HomeScreenState extends State<HomeScreen>
 @override
 void initState() {
   super.initState();
-  _loadProducts();
+  _loadProducts();  // ← бул бар
   _favCount = fav.count;
   _checkUnread();
   fav.addListener(_onFavChanged);
   _subscribeChatUnread();
 
-  _cameraAnim = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 300),
-  );
-
   _scrollController.addListener(_onScroll);
   WidgetsBinding.instance.addPostFrameCallback((_) {
     final bottom = MediaQuery.of(context).padding.bottom;
     setState(() => _navBottomPadding = bottom > 0 ? bottom : 12);
-    // ✅ Токенди дайым жаңырт — каалаган аккаунт менен кирсе да иштейт
     NotificationService().saveMyToken();
+
+    // ✅ МАЙ КОШУУ — товарлар жүктөлүп бүткөндөн кийин версия текшер
+    _checkAppUpdate();
   });
+}
+
+// ── Жаңы метод ──
+Future<void> _checkAppUpdate() async {
+  final langCode = AppLocalizations.of(context).locale.languageCode;
+  await UpdateChecker.check(context, langCode);
 }
 
   // ══════════════════════════════════════════════════════
@@ -185,14 +168,6 @@ void initState() {
     if (mounted) setState(() => _favCount = fav.count);
   }
 
-  void _toggleCamera() {
-    setState(() => _cameraVisible = !_cameraVisible);
-    if (_cameraVisible)
-      _cameraAnim.forward();
-    else
-      _cameraAnim.reverse();
-  }
-
   Future<void> _checkUnread() async {
     try {
       final userId = supabase.auth.currentUser?.id;
@@ -216,7 +191,6 @@ void initState() {
     fav.removeListener(_onFavChanged);
     _debounce?.cancel();
     _chatSub?.cancel();
-    _cameraAnim.dispose();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
@@ -550,41 +524,6 @@ void initState() {
     }
   }
 
-  Widget _chatBadgeIcon({Color color = AppColors.grey400}) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Icon(Icons.chat_bubble_outline_rounded, size: 24, color: color),
-        if (_totalUnreadChat > 0)
-          Positioned(
-            top: -5,
-            right: -6,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-              constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-              decoration: BoxDecoration(
-                color: AppColors.error,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: Theme.of(context).colorScheme.surface,
-                  width: 1.5,
-                ),
-              ),
-              child: Text(
-                _totalUnreadChat > 99 ? '99+' : '$_totalUnreadChat',
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 9,
-                    fontWeight: FontWeight.bold,
-                    height: 1.2),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-
   Widget _glassButton({
     required Widget child,
     required VoidCallback onTap,
@@ -609,145 +548,15 @@ void initState() {
   // ══════════════════════════════════════════════════════
   // NAVBAR
   // ══════════════════════════════════════════════════════
-  Widget _buildBottomNav(AppLocalizations loc) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    Color _ic(int tab) =>
-        _currentTab == tab ? AppColors.primary : AppColors.grey400;
-
-    TextStyle _ts(int tab) => TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w500,
-          color: _currentTab == tab ? AppColors.primary : AppColors.grey400,
-        );
-
-    return Container(
-      margin: EdgeInsets.fromLTRB(12, 0, 12, _navBottomPadding),
-      decoration: BoxDecoration(
-        color: isDark ? _C.navBg : Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: isDark ? _C.navBorder : const Color(0xFFEEEEEE),
-          width: 0.8,
-        ),
-        boxShadow: isDark
-            ? []
-            : [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.12),
-                  blurRadius: 20,
-                  offset: const Offset(0, 4),
-                  spreadRadius: -2,
-                ),
-              ],
-      ),
-      child: SizedBox(
-        height: 64.0,
-        child: Row(
-          children: [
-            _navItem(
-              icon: Icons.home_outlined,
-              activeIcon: Icons.home_rounded,
-              label: loc.get('home'),
-              isActive: _currentTab == _tabHome,
-              onTap: () => _switchTab(_tabHome),
-            ),
-            Expanded(
-              child: GestureDetector(
-                onTap: () => _switchTab(_tabChat),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _chatBadgeIcon(color: _ic(_tabChat)),
-                    const SizedBox(height: 4),
-                    Text(loc.get('chat'), style: _ts(_tabChat)),
-                  ],
-                ),
-              ),
-            ),
-            Expanded(
-              child: GestureDetector(
-                onTap: () => _switchTab(_tabMap),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.storefront_outlined,
-                        size: 24, color: _ic(_tabMap)),
-                    const SizedBox(height: 4),
-                    Text(loc.get('map_title'),
-                        style: _ts(_tabMap).copyWith(fontSize: 9),
-                        textAlign: TextAlign.center,
-                        maxLines: 2),
-                  ],
-                ),
-              ),
-            ),
-            Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  _switchTab(_tabFavorites);
-                  setState(() => _favCount = fav.count);
-                },
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    FavBadge(
-                        count: _favCount, active: _currentTab == _tabFavorites),
-                    const SizedBox(height: 4),
-                    Text(loc.get('favorites'), style: _ts(_tabFavorites)),
-                  ],
-                ),
-              ),
-            ),
-            _navItem(
-              icon: Icons.settings_outlined,
-              activeIcon: Icons.settings_rounded,
-              label: loc.get('settings'),
-              isActive: _currentTab == _tabSettings,
-              onTap: () => _switchTab(_tabSettings),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _navItem({
-    required IconData icon,
-    required IconData activeIcon,
-    required String label,
-    required bool isActive,
-    required VoidCallback onTap,
-  }) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(isActive ? activeIcon : icon,
-                size: 24,
-                color: isActive ? AppColors.primary : AppColors.grey400),
-            const SizedBox(height: 4),
-            Text(label,
-                style: TextStyle(
-                  fontSize: 10,
-                  color: isActive ? AppColors.primary : AppColors.grey400,
-                  fontWeight: FontWeight.w500,
-                )),
-          ],
-        ),
-      ),
-    );
-  }
 
   // ══════════════════════════════════════════════════════
   // HOME TAB мазмуну
   // ══════════════════════════════════════════════════════
   Widget _buildHomeTab(AppLocalizations loc, bool isDark) {
     final filterIconColor = isDark ? AppColors.grey400 : AppColors.grey600;
-    final dividerColor = isDark ? _C.cardBorder : const Color(0xFFEEEEEE);
-    final appBarColor = isDark ? _C.card : Colors.white;
+    final dividerColor =
+        isDark ? HomeColors.cardBorder : const Color(0xFFEEEEEE);
+    final appBarColor = isDark ? HomeColors.card : Colors.white;
 
     // ── Search + CategoryList бийиктиги (туруктуу sticky блок) ──
     // search(44+8padding) + divider(1) + pills(44) = ~97
@@ -1189,13 +998,12 @@ void initState() {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final navbarTotal = _navbarTotal;
 
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
-        if (_currentTab != _tabHome) {
-          setState(() => _currentTab = _tabHome);
+        if (_currentTab != tabHome) {
+          setState(() => _currentTab = tabHome);
         } else {
           SystemNavigator.pop();
         }
@@ -1204,104 +1012,11 @@ void initState() {
         backgroundColor: Colors.transparent,
         body: Stack(
           children: [
-            // ── Фон градиент ──
-            Positioned.fill(
-              child: isDark
-                  ? Container(
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [_C.bgGrad1, _C.bgGrad2, _C.bgGrad3],
-                          stops: [0.0, 0.5, 1.0],
-                        ),
-                      ),
-                    )
-                  : Container(
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            Color(0xFFDCEBFF),
-                            Color(0xFFEEE0FF),
-                            Color(0xFFFFE0F0),
-                            Color(0xFFFFEDD5),
-                          ],
-                          stops: [0.0, 0.35, 0.7, 1.0],
-                        ),
-                      ),
-                    ),
-            ),
-
-            // ── Декоративдик тегеректер ──
-            if (isDark) ...[
-              Positioned(
-                  top: -120,
-                  right: -80,
-                  child: Container(
-                      width: 300,
-                      height: 300,
-                      decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: _C.glow1.withOpacity(0.25)))),
-              Positioned(
-                  top: 300,
-                  left: -100,
-                  child: Container(
-                      width: 250,
-                      height: 250,
-                      decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: _C.glow2.withOpacity(0.20)))),
-              Positioned(
-                  bottom: 200,
-                  right: -60,
-                  child: Container(
-                      width: 200,
-                      height: 200,
-                      decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: _C.glow3.withOpacity(0.18)))),
-            ],
-            if (!isDark) ...[
-              Positioned(
-                  top: -120,
-                  left: -80,
-                  child: Container(
-                      width: 350,
-                      height: 350,
-                      decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: const Color(0xFFADD0FF).withOpacity(0.45)))),
-              Positioned(
-                  top: 80,
-                  right: -100,
-                  child: Container(
-                      width: 280,
-                      height: 280,
-                      decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: const Color(0xFFCEB4FF).withOpacity(0.38)))),
-              Positioned(
-                  top: 420,
-                  left: -60,
-                  child: Container(
-                      width: 220,
-                      height: 220,
-                      decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: const Color(0xFFFFB3D9).withOpacity(0.32)))),
-              Positioned(
-                  bottom: 250,
-                  right: -50,
-                  child: Container(
-                      width: 200,
-                      height: 200,
-                      decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: const Color(0xFFFFD4A8).withOpacity(0.35)))),
-            ],
+           
+            
+HomeBackground(isDark: isDark),
+            
+           
 
             // ── Мазмун ──
             Positioned(
@@ -1312,23 +1027,23 @@ void initState() {
               child: Stack(
                 children: [
                   Offstage(
-                    offstage: _currentTab != _tabHome,
+                    offstage: _currentTab != tabHome,
                     child: _buildHomeTab(loc, isDark),
                   ),
                   Offstage(
-                    offstage: _currentTab != _tabChat,
+                    offstage: _currentTab != tabChat,
                     child: const ChatListScreen(isSeller: false),
                   ),
                   Offstage(
-                    offstage: _currentTab != _tabMap,
+                    offstage: _currentTab != tabMap,
                     child: const MapScreen(),
                   ),
                   Offstage(
-                    offstage: _currentTab != _tabFavorites,
+                    offstage: _currentTab != tabFavorites,
                     child: const FavoritesScreen(),
                   ),
                   Offstage(
-                    offstage: _currentTab != _tabSettings,
+                    offstage: _currentTab != tabSettings,
                     child: const SettingsScreen(),
                   ),
                 ],
@@ -1336,26 +1051,26 @@ void initState() {
             ),
 
             // ── Калкып турган меню баскычы ──
-            if (_currentTab == _tabHome)
+            if (_currentTab == tabHome)
               AnimatedPositioned(
                 duration: const Duration(milliseconds: 250),
                 curve: Curves.easeInOut,
                 right: 16,
-                bottom: _navVisible ? navbarTotal + 16 : 32,
+                bottom: _navVisible
+                    ? HomeBottomNav.navHeight + _navBottomPadding + 16
+                    : 32,
                 child: _MenuFab(onTap: () => openSidePanel(context)),
               ),
 
             // ── Navbar ──
 
-            AnimatedPositioned(
-              duration: _navVisible
-                  ? const Duration(milliseconds: 300)
-                  : const Duration(milliseconds: 200),
-              curve: Curves.easeOut,
-              left: 0,
-              right: 0,
-              bottom: _navVisible ? 0 : -(64 + _navBottomPadding),
-              child: _buildBottomNav(loc),
+            HomeBottomNav(
+              currentTab: _currentTab,
+              isVisible: _navVisible,
+              totalUnreadChat: _totalUnreadChat,
+              favCount: _favCount,
+              bottomPadding: _navBottomPadding,
+              onTabSelected: _switchTab,
             ),
           ],
         ),
@@ -1541,7 +1256,7 @@ class _IosBtnState extends State<_IosBtn> {
   Widget build(BuildContext context) {
     final bg = widget.active
         ? widget.activeColor
-        : (widget.isDark ? _C.btnBg : Colors.white);
+        : (widget.isDark ? HomeColors.btnBg : Colors.white);
 
     return GestureDetector(
       onTap: widget.onTap,
@@ -1610,7 +1325,7 @@ class _IosLabelBtnState extends State<_IosLabelBtn> {
 
   @override
   Widget build(BuildContext context) {
-    final bg = widget.isDark ? _C.btnBg : Colors.white;
+    final bg = widget.isDark ? HomeColors.btnBg : Colors.white;
 
     return GestureDetector(
       onTap: widget.onTap,
@@ -1629,7 +1344,7 @@ class _IosLabelBtnState extends State<_IosLabelBtn> {
             boxShadow: widget.isDark
                 ? [
                     BoxShadow(
-                        color: _C.glow1.withOpacity(0.12),
+                        color: HomeColors.glow1.withOpacity(0.12),
                         blurRadius: 8,
                         offset: const Offset(0, 2))
                   ]
@@ -1645,7 +1360,7 @@ class _IosLabelBtnState extends State<_IosLabelBtn> {
                         offset: const Offset(0, 1)),
                   ],
             border: widget.isDark
-                ? Border.all(color: _C.btnBorder, width: 0.8)
+                ? Border.all(color: HomeColors.btnBorder, width: 0.8)
                 : null,
           ),
           child: Row(

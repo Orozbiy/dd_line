@@ -31,18 +31,21 @@ class AuthService {
   /// Системалык браузерде Google account picker ачылат.
   /// Натыйжа [authStateChanges] аркылуу [AuthChangeEvent.signedIn]
   /// окуясы катары келет.
-  Future<void> signInWithGoogle() async {
-    try {
-      await supabase.auth.signInWithOAuth(
-        OAuthProvider.google,
-        redirectTo: _redirectUrl,
-          authScreenLaunchMode: LaunchMode.inAppWebView,
-        queryParams: const {'prompt': 'select_account'},
-      );
-    } catch (e) {
-      throw AuthException('Кирүүдө ката кетти: $e');
-    }
+ Future<void> signInWithGoogle() async {
+  try {
+    await supabase.auth.signInWithOAuth(
+      OAuthProvider.google,
+      redirectTo: _redirectUrl,
+      authScreenLaunchMode: LaunchMode.externalApplication, // ✅ inAppWebView эмес
+      queryParams: const {
+        'prompt': 'select_account',
+        'access_type': 'offline',
+      },
+    );
+  } catch (e) {
+    throw AuthException('Кирүүдө ката кетти: $e');
   }
+}
 
   /// Колдонуучу кирген соң профилди акыркы Google маалыматтары
   /// менен синхрондоо (аты, сүрөтү, email).

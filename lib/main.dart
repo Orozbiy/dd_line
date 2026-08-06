@@ -43,9 +43,6 @@ Future<void> main() async {
   debugPrint('🚀 Firebase init...');
   await _initFirebase();
 
-  // ✅ МААНИЛҮҮ: Terminated state — колдонмо ТОЛУК жабык турганда
-  // notification басылганда chatId'ди Firebase'тен алабыз.
-  // Бул runApp() ЧЕЙИН болушу ШАРТ!
   debugPrint('🚀 handleInitialMessage...');
   await NotificationService().handleInitialMessage();
 
@@ -206,7 +203,6 @@ class _SplashRouterState extends State<SplashRouter> {
     _listenDeepLinks();
   }
 
-  // Deep link угуучу (колдонмо ачык турганда келген linkтер)
   void _listenDeepLinks() {
     _appLinks.uriLinkStream.listen((uri) {
       debugPrint('🔗 Deep link келди: $uri');
@@ -225,7 +221,6 @@ class _SplashRouterState extends State<SplashRouter> {
   }
 
   Future<void> _determineScreen() async {
-    // Terminated state: initial deep link текшер
     try {
       final initialUri = await _appLinks.getInitialLink();
       if (initialUri != null) {
@@ -237,28 +232,30 @@ class _SplashRouterState extends State<SplashRouter> {
       }
     } catch (_) {}
 
+    // ✅ prefs'ти МУРДА окуйбуз
+    final prefs = await SharedPreferences.getInstance();
+    final langCode = prefs.getString('app_locale') ?? 'ky';
+
     _targetScreen = await _getTargetScreen();
     if (mounted) setState(() => _checking = false);
 
-    // ✅ ЖАҢЫ: версия текшерүү
+    // ── Pending chat ──
+    final pendingChat = NotificationService.pendingChatId;
+    if (pendingChat != null) {
+      NotificationService.pendingChatId = null;
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        await Future.delayed(const Duration(milliseconds: 600));
+        NotificationService().navigateToChatPublic(pendingChat);
+      });
+    }
+
+    // ✅ версия текшерүү
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!mounted) return;
-      final prefs = await SharedPreferences.getInstance();
-      final langCode = prefs.getString('app_locale') ?? 'ky';
-      if (mounted) await UpdateChecker.check(context, langCode);
+      await Future.delayed(const Duration(milliseconds: 300));
+      final ctx = navigatorKey.currentContext;
+      if (ctx == null || !ctx.mounted) return;
+      await UpdateChecker.check(ctx, langCode);
     });
-
-  
-
-    // ── Pending chat (terminated notification tap) ──
-final pendingChat = NotificationService.pendingChatId;
-if (pendingChat != null) {
-  NotificationService.pendingChatId = null;
-  WidgetsBinding.instance.addPostFrameCallback((_) async {
-    await Future.delayed(const Duration(milliseconds: 600));
-    NotificationService().navigateToChatPublic(pendingChat);
-  });
-}
   }
 
   Future<Widget> _getTargetScreen() async {

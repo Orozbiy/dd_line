@@ -439,6 +439,7 @@ class NotificationService {
         debugPrint('✅ Notification жиберилди → $senderName: $messageText');
       } else {
         debugPrint('❌ FCM ката: ${response.statusCode} — ${response.body}');
+          debugPrint('❌ FCM жооп: ${response.body}'); // ← МУН КОШ
       }
     } catch (e) {
       debugPrint('❌ Notification жибере алган жок: $e');
@@ -475,48 +476,46 @@ class NotificationService {
 Future<void> saveMyToken() async {
   try {
     final user = supabase.auth.currentUser;
-    if (user == null) {
-      debugPrint('⚠️ saveMyToken: колдонуучу кирген эмес');
-      return;
-    }
+    if (user == null) return;
+    
     final token = await _messaging.getToken();
-    if (token == null) {
-      debugPrint('⚠️ saveMyToken: FCM токен алынбады');
-      return;
-    }
-    debugPrint('💾 saveMyToken: сактоо башталды uid=${user.id}');
+    if (token == null) return;
+    
+    debugPrint('💾 FCM Token сакталууда: $token');
 
+    // ── Эски токендерди өчүр, жаңысын кош ──
     await supabase
         .from('push_tokens')
         .delete()
-        .eq('token', token)
-        .neq('user_id', user.id);
+        .eq('user_id', user.id); // ← Баарын өчүр
 
-    await supabase.from('push_tokens').upsert({
+    await supabase.from('push_tokens').insert({
       'user_id':    user.id,
       'token':      token,
       'updated_at': DateTime.now().toIso8601String(),
-    }, onConflict: 'user_id');
+    });
 
-    debugPrint('✅ FCM Token сакталды uid=${user.id}');
+    debugPrint('✅ FCM Token сакталды: ${token.substring(0, 20)}...');
 
     _messaging.onTokenRefresh.listen((newToken) async {
       await supabase
           .from('push_tokens')
           .delete()
-          .eq('token', newToken)
-          .neq('user_id', user.id);
-      await supabase.from('push_tokens').upsert({
+          .eq('user_id', user.id);
+      await supabase.from('push_tokens').insert({
         'user_id':    user.id,
         'token':      newToken,
         'updated_at': DateTime.now().toIso8601String(),
-      }, onConflict: 'user_id');
-      debugPrint('✅ FCM Token жаңырды uid=${user.id}');
+      });
+      debugPrint('✅ FCM Token жаңырды');
     });
   } catch (e) {
     debugPrint('❌ Token сактоо катасы: $e');
   }
 }
+
+
+
   Future<void> clearMyToken() async {
     try {
       final user = supabase.auth.currentUser;
