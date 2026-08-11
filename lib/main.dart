@@ -257,12 +257,16 @@ class _SplashRouterState extends State<SplashRouter> {
       await UpdateChecker.check(ctx, langCode);
     });
   }
-
-  Future<Widget> _getTargetScreen() async {
-    final user = supabase.auth.currentSession?.user;
-    if (user != null) return const HomeScreen();
-    return const WelcomeScreen();
+Future<Widget> _getTargetScreen() async {
+  final user = supabase.auth.currentSession?.user;
+  if (user != null) {
+    // ✅ Колдонуучу кирип турса — токенди дайыма жаңырт
+    // (колдонмо өчүп-күйгөндө, токен эскирип же жок болуп калышы мүмкүн)
+    unawaited(NotificationService().saveMyToken());
+    return const HomeScreen();
   }
+  return const WelcomeScreen();
+}
 
   @override
   Widget build(BuildContext context) {

@@ -4,12 +4,17 @@ import '../../../config/theme/app_text_styles.dart';
 import '../../../core/app_localizations.dart';
 import '../../../core/seller_auth_service.dart';
 import '../../../core/supabase_client.dart';
+import '../../../services/notification_service.dart';
 import '../models/seller_model.dart';
 import '../services/seller_service.dart';
 import 'seller_dashboard_screen.dart';
 import 'seller_pending_screen.dart';
 import 'seller_register_screen.dart';
 import '../../home/screens/home_screen.dart';
+
+void unawaited(Future<void> future) {
+  future.catchError((e) => debugPrint('⚠️ unawaited ката: $e'));
+}
 
 class SellerLoginScreen extends StatefulWidget {
   const SellerLoginScreen({super.key});
@@ -70,6 +75,8 @@ class _SellerLoginScreenState extends State<SellerLoginScreen> {
       await supabase.auth.signOut();
       setState(() => _checkingSession = false);
     } else {
+      // ✅ Approved — токенди жаңырт + dashboard
+      unawaited(NotificationService().saveMyToken());
       Navigator.pushAndRemoveUntil(context,
           MaterialPageRoute(builder: (_) => SellerDashboardScreen(uid: seller.uid)),
           (route) => false);
@@ -113,25 +120,23 @@ class _SellerLoginScreenState extends State<SellerLoginScreen> {
       if (!mounted) return;
 
       if (seller.status == SellerStatus.pending) {
-        // ✅ Заявка каралууда — pending экранга өт
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (_) => const SellerPendingScreen()),
           (route) => false,
         );
       } else if (seller.status == SellerStatus.rejected) {
-        // ✅ Заявка четке кагылды — rejected экранга өт
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (_) => const SellerRejectedScreen()),
           (route) => false,
         );
       } else if (seller.status == SellerStatus.blocked) {
-        // ✅ Бөгөттөлгөн — чыгарып жибер
         await supabase.auth.signOut();
         _showSnack(loc.get('login_blocked'));
       } else {
-        // ✅ Active — dashboard га өт
+        // ✅ Active — токенди жаңырт + dashboard
+        unawaited(NotificationService().saveMyToken());
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (_) => SellerDashboardScreen(uid: seller.uid)),
@@ -169,7 +174,8 @@ class _SellerLoginScreenState extends State<SellerLoginScreen> {
     if (_checkingSession) {
       return Scaffold(
         backgroundColor: bgColor,
-        body: const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+        body: const Center(
+            child: CircularProgressIndicator(color: AppColors.primary)),
       );
     }
 
@@ -225,7 +231,9 @@ class _SellerLoginScreenState extends State<SellerLoginScreen> {
                   ),
                   hintText: '700123456',
                   hintStyle: TextStyle(
-                      color: isDark ? const Color(0xFF666666) : AppColors.grey400),
+                      color: isDark
+                          ? const Color(0xFF666666)
+                          : AppColors.grey400),
                   filled: true,
                   fillColor: fieldFill,
                   contentPadding:
@@ -236,8 +244,8 @@ class _SellerLoginScreenState extends State<SellerLoginScreen> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide:
-                        const BorderSide(color: AppColors.primary, width: 1.5),
+                    borderSide: const BorderSide(
+                        color: AppColors.primary, width: 1.5),
                   ),
                 ),
               ),
@@ -255,7 +263,9 @@ class _SellerLoginScreenState extends State<SellerLoginScreen> {
                 decoration: InputDecoration(
                   hintText: '••••••••',
                   hintStyle: TextStyle(
-                      color: isDark ? const Color(0xFF666666) : AppColors.grey400),
+                      color: isDark
+                          ? const Color(0xFF666666)
+                          : AppColors.grey400),
                   filled: true,
                   fillColor: fieldFill,
                   contentPadding:
@@ -266,8 +276,8 @@ class _SellerLoginScreenState extends State<SellerLoginScreen> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide:
-                        const BorderSide(color: AppColors.primary, width: 1.5),
+                    borderSide: const BorderSide(
+                        color: AppColors.primary, width: 1.5),
                   ),
                   suffixIcon: GestureDetector(
                     onTap: () => setState(() => _obscure = !_obscure),
@@ -300,8 +310,8 @@ class _SellerLoginScreenState extends State<SellerLoginScreen> {
                               color: Colors.white, strokeWidth: 2.5),
                         )
                       : Text(loc.get('login_btn'),
-                          style: AppTextStyles.labelLarge
-                              .copyWith(color: Colors.white, fontSize: 16)),
+                          style: AppTextStyles.labelLarge.copyWith(
+                              color: Colors.white, fontSize: 16)),
                 ),
               ),
               const SizedBox(height: 16),
@@ -311,7 +321,8 @@ class _SellerLoginScreenState extends State<SellerLoginScreen> {
                 child: TextButton(
                   onPressed: () => Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (_) => const SellerRegisterScreen()),
+                    MaterialPageRoute(
+                        builder: (_) => const SellerRegisterScreen()),
                   ),
                   child: Text(
                     loc.get('login_no_account'),
@@ -329,6 +340,7 @@ class _SellerLoginScreenState extends State<SellerLoginScreen> {
     );
   }
 }
+
 class SellerBlockedException implements Exception {
   const SellerBlockedException();
   @override

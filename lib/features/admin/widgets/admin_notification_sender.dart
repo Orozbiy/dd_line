@@ -1,14 +1,9 @@
+// lib/features/admin/widgets/admin_notification_sender.dart
+
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
-import '../../../core/supabase_client.dart';
-
-/// Бул виджетти admin_panel_screen.dart'ка кош:
-/// AdminNotificationSender()
-///
-/// Же өзүнчө баскыч катары:
-/// Navigator.push(context, MaterialPageRoute(
-///   builder: (_) => const AdminNotificationSender()));
+import '../../../services/notification_service.dart';
 
 class AdminNotificationSender extends StatefulWidget {
   const AdminNotificationSender({super.key});
@@ -22,6 +17,7 @@ class _AdminNotificationSenderState extends State<AdminNotificationSender> {
   final _titleCtrl = TextEditingController();
   final _bodyCtrl  = TextEditingController();
   bool _isSending  = false;
+  String? _lastResult;
 
   @override
   void dispose() {
@@ -44,20 +40,24 @@ class _AdminNotificationSenderState extends State<AdminNotificationSender> {
       return;
     }
 
-    setState(() => _isSending = true);
+    setState(() { _isSending = true; _lastResult = null; });
+
     try {
-      await supabase.from('admin_notifications').insert({
-        'title': title,
-        'body':  body,
-      });
+      // ✅ FCM аркылуу бардык токендерге түздөн жөнөт
+      final count = await NotificationService().sendBroadcastNotification(
+        title: title,
+        body: body,
+      );
 
       _titleCtrl.clear();
       _bodyCtrl.clear();
 
+      setState(() => _lastResult = '✅ $count колдонуучуга жеткирилди');
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('✅ Билдирүү жөнөтүлдү!'),
+            content: Text('✅ $count колдонуучуга жөнөтүлдү!'),
             backgroundColor: AppColors.success,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -66,6 +66,7 @@ class _AdminNotificationSenderState extends State<AdminNotificationSender> {
         );
       }
     } catch (e) {
+      setState(() => _lastResult = '❌ Ката: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -103,6 +104,7 @@ class _AdminNotificationSenderState extends State<AdminNotificationSender> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ── Башлык ──
           Row(
             children: [
               Container(
@@ -125,7 +127,7 @@ class _AdminNotificationSenderState extends State<AdminNotificationSender> {
           ),
           const SizedBox(height: 16),
 
-          // Аталышы
+          // ── Аталышы ──
           Text('Аталышы',
               style: AppTextStyles.labelMedium
                   .copyWith(color: isDark ? Colors.white70 : AppColors.grey600)),
@@ -151,7 +153,7 @@ class _AdminNotificationSenderState extends State<AdminNotificationSender> {
           ),
           const SizedBox(height: 12),
 
-          // Текст
+          // ── Текст ──
           Text('Текст',
               style: AppTextStyles.labelMedium
                   .copyWith(color: isDark ? Colors.white70 : AppColors.grey600)),
@@ -178,7 +180,7 @@ class _AdminNotificationSenderState extends State<AdminNotificationSender> {
           ),
           const SizedBox(height: 16),
 
-          // Жөнөт баскычы
+          // ── Жөнөт баскычы ──
           SizedBox(
             width: double.infinity,
             height: 48,
@@ -193,7 +195,8 @@ class _AdminNotificationSenderState extends State<AdminNotificationSender> {
               ),
               icon: _isSending
                   ? const SizedBox(
-                      width: 18, height: 18,
+                      width: 18,
+                      height: 18,
                       child: CircularProgressIndicator(
                           color: Colors.white, strokeWidth: 2))
                   : const Icon(Icons.send_rounded,
@@ -207,6 +210,29 @@ class _AdminNotificationSenderState extends State<AdminNotificationSender> {
               ),
             ),
           ),
+
+          // ── Акыркы натыйжа ──
+          if (_lastResult != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: _lastResult!.startsWith('✅')
+                    ? AppColors.success.withValues(alpha: 0.1)
+                    : AppColors.error.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                _lastResult!,
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: _lastResult!.startsWith('✅')
+                      ? AppColors.success
+                      : AppColors.error,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
