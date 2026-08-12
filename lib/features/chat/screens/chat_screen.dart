@@ -18,6 +18,7 @@ import '../widgets/voice_record_button.dart';
 import '../widgets/chat_product_banner.dart';
 import '../widgets/call_request_bubble.dart';
 import '../../../core/services/yandex_storage_service.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class ChatScreen extends StatefulWidget {
   final String chatId;
@@ -86,7 +87,7 @@ class _ChatScreenState extends State<ChatScreen> {
   String _myDisplayName = '';
   String _receiverDisplayName = '';
   String _sellerPhone = '';
-  
+
   @override
   void initState() {
     super.initState();
@@ -107,7 +108,16 @@ class _ChatScreenState extends State<ChatScreen> {
       final has = _msgCtrl.text.trim().isNotEmpty;
       if (has != _hasText) setState(() => _hasText = has);
     });
+_requestMicPermission();
+
+}
+Future<void> _requestMicPermission() async {
+  final status = await Permission.microphone.status;
+  if (!status.isGranted) {
+    await Permission.microphone.request();
   }
+}
+  
 
   @override
   void dispose() {
@@ -252,6 +262,18 @@ class _ChatScreenState extends State<ChatScreen> {
     final text = _msgCtrl.text.trim();
     final myId = _myId;
     if (text.isEmpty || myId == null) return;
+
+  debugPrint('═══════════════════════════════');
+  debugPrint('📤 ЖӨНӨТҮҮЧҮ myId: $myId');
+  debugPrint('📤 АЛУУЧУ _receiverUid: $_receiverUid');
+  debugPrint('📤 isSeller: ${widget.isSeller}');
+  debugPrint('📤 buyerId: ${widget.buyerId}');
+  debugPrint('📤 sellerId: ${widget.sellerId}');
+  debugPrint('═══════════════════════════════');
+
+
+
+
     _msgCtrl.clear();
     final replyTo = _replyingTo;
     if (replyTo != null) setState(() => _replyingTo = null);

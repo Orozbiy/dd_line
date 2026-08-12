@@ -341,48 +341,26 @@ class NotificationService {
   // ─────────────────────────────────────────────────────────────
   // SEND CHAT NOTIFICATION — FCM v1 API
   // ─────────────────────────────────────────────────────────────
-  Future<void> sendChatNotification({
+ Future<void> sendChatNotification({
     required String receiverUid,
     required String senderName,
     required String messageText,
     required String chatId,
   }) async {
-    debugPrint('📤 sendChatNotification → receiverUid=$receiverUid, chatId=$chatId');
+    debugPrint('📤 sendChatNotification → receiverUid=$receiverUid');
     try {
-      // ✅ ОҢДОО: бардык токендерди ал (эмес жалгыз .limit(1))
-      // Бир адам бир нече device'тан кире алат
-      final tokenRows = await supabase
-          .from('push_tokens')
-          .select('token')
-          .eq('user_id', receiverUid);
-
-      if ((tokenRows as List).isEmpty) {
-        debugPrint('⚠️ FCM токен жок! receiverUid=$receiverUid');
-        debugPrint('⚠️ Supabase push_tokens таблицасын текшер — ошол user\'дун токени барбы?');
-        return;
-      }
-
-      debugPrint('📋 Токен саны: ${tokenRows.length}');
-
-      final accessToken = await _getAccessToken();
-      if (accessToken == null) {
-        debugPrint('❌ Access Token алынбады — assets/service_account.json текшер!');
-        return;
-      }
-
-      for (final row in tokenRows) {
-        final fcmToken = row['token'] as String?;
-        if (fcmToken == null || fcmToken.isEmpty) continue;
-        await _sendOneFcm(
-          fcmToken:    fcmToken,
-          accessToken: accessToken,
-          title:       senderName,
-          body:        messageText,
-          chatId:      chatId,
-        );
-      }
+      await supabase.functions.invoke(
+        'send-push',
+        body: {
+          'receiver_uid': receiverUid,
+          'title':        senderName,
+          'body':         messageText,
+          'chat_id':      chatId,
+        },
+      );
+      debugPrint('✅ Edge Function пуш жөнөтүлдү');
     } catch (e) {
-      debugPrint('❌ sendChatNotification ката: $e');
+      debugPrint('❌ Edge Function ката: $e');
     }
   }
 
@@ -579,6 +557,36 @@ class NotificationService {
       ),
     );
   }
+ // ← МУН КОШУУ (showTestNotification'дан кийин, } жабылаардан мурун)
+  Future<void> testSendPush() async {
+    debugPrint('🧪 testSendPush башталды...');
+    
+    final rows = await supabase.from('push_tokens').select('token').limit(1);
+    if ((rows as List).isEmpty) {
+      debugPrint('❌ Токен жок!');
+      return;
+    }
+    
+    final token = rows[0]['token'] as String;
+    debugPrint('🎯 Тест токен: ${token.substring(0, 30)}...');
+    
+    final accessToken = await _getAccessToken();
+    if (accessToken == null) {
+      debugPrint('❌ ACCESS TOKEN АЛЫНБАДЫ!');
+      return;
+    }
+    debugPrint('✅ Access Token алынды!');
+    
+    await _sendOneFcm(
+      fcmToken: token,
+      accessToken: accessToken,
+      title: 'Тест пуш 🔔',
+      body: 'Пуш иштеп жатат!',
+      chatId: 'test',
+    );
+  }
+
+
 
   // ─────────────────────────────────────────────────────────────
   // FCM TOKEN — САКТОО

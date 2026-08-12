@@ -11,6 +11,7 @@ import '../widgets/cache_menu_item.dart';
 import '../widgets/support_menu_item.dart';
 import '../widgets/terms_menu_item.dart';
 
+
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
@@ -120,7 +121,9 @@ class SettingsScreen extends StatelessWidget {
 
             const SizedBox(height: 16),
             const LanguageSection(),
-            const SizedBox(height: 16),
+          const SizedBox(height: 16),
+
+
 
             // ── БАШКА ЖӨНДӨӨЛӨР ──
             Container(
@@ -155,6 +158,10 @@ class SettingsScreen extends StatelessWidget {
             ),
 
             const SizedBox(height: 32),
+
+
+
+
           ],
         ),
       ),
