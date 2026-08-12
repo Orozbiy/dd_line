@@ -16,6 +16,7 @@ import 'seller_close_account_screen.dart';
 import '../widgets/working_hours_sheet.dart';
 import 'seller_rules_screen.dart';
 import 'seller_edit_profile_screen.dart';
+import '../../chat/models/chat_model.dart';
 
 class SellerDashboardScreen extends StatefulWidget {
   final String uid;
@@ -817,73 +818,92 @@ const SizedBox(height: 20),
   // }
 
   Widget _buildChatMenuItem(AppLocalizations loc, Color cardBg) {
-    return StreamBuilder<List>(
-      stream: _chatService.sellerChatsStream(_seller!.uid),
-      builder: (context, snap) {
-        final isDark      = Theme.of(context).brightness == Brightness.dark;
-        final chats       = snap.data ?? [];
-        final totalUnread = chats.fold<int>(0, (sum, chat) => sum + ((chat as dynamic).sellerUnread as int));
-        final titleColor  = isDark ? Colors.white : AppColors.black;
+  return StreamBuilder<List<ChatModel>>(
+    stream: _chatService.sellerChatsStream(_seller!.uid),
+    builder: (context, snap) {
+      final isDark      = Theme.of(context).brightness == Brightness.dark;
+      final chats       = snap.data ?? [];
+    final totalUnread = chats.fold<int>(
+  0, (sum, chat) => sum + (chat.sellerUnread as num).toInt(),
+);
+      final titleColor = isDark ? Colors.white : AppColors.black;
 
-        return GestureDetector(
-          onTap: () => Navigator.push(context, MaterialPageRoute(
-              builder: (_) => ChatListScreen(isSeller: true, sellerId: _seller!.uid))),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: cardBg,
-              borderRadius: BorderRadius.circular(14),
-              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
-            ),
-            child: Row(children: [
-              Stack(clipBehavior: Clip.none, children: [
-                const Text('💬', style: TextStyle(fontSize: 28)),
-                if (totalUnread > 0)
-                  Positioned(
-                    top: -6, right: -8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: AppColors.error,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.white, width: 1.5),
+      return GestureDetector(
+        onTap: () => Navigator.push(context, MaterialPageRoute(
+            builder: (_) => ChatListScreen(isSeller: true, sellerId: _seller!.uid))),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: cardBg,
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            )],
+          ),
+          child: Row(children: [
+            Stack(clipBehavior: Clip.none, children: [
+              const Text('💬', style: TextStyle(fontSize: 28)),
+              if (totalUnread > 0)
+                Positioned(
+                  top: -6, right: -8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.error,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.white, width: 1.5),
+                    ),
+                    child: Text(
+                      totalUnread > 99 ? '99+' : '$totalUnread',
+                      style: const TextStyle(
+                        color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold,
                       ),
-                      child: Text(totalUnread > 99 ? '99+' : '$totalUnread',
-                          style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
                     ),
-                  ),
-              ]),
-              const SizedBox(width: 14),
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Row(children: [
-                  Text(loc.get('dash_messages'),
-                      style: AppTextStyles.labelLarge.copyWith(color: titleColor)),
-                  if (totalUnread > 0) ...[
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                      decoration: BoxDecoration(color: AppColors.error, borderRadius: BorderRadius.circular(10)),
-                      child: Text('$totalUnread ${loc.get('dash_new')}',
-                          style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-                    ),
-                  ],
-                ]),
-                const SizedBox(height: 2),
-                Text(
-                  totalUnread > 0 ? '$totalUnread ${loc.get('dash_unread')}' : loc.get('dash_chat_with_customers'),
-                  style: AppTextStyles.labelSmall.copyWith(
-                    color: totalUnread > 0 ? AppColors.error : AppColors.grey500,
-                    fontWeight: totalUnread > 0 ? FontWeight.w600 : FontWeight.normal,
                   ),
                 ),
-              ])),
-              const Icon(Icons.arrow_forward_ios, color: AppColors.grey400, size: 16),
             ]),
-          ),
-        );
-      },
-    );
-  }
+            const SizedBox(width: 14),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Text(loc.get('dash_messages'),
+                    style: AppTextStyles.labelLarge.copyWith(color: titleColor)),
+                if (totalUnread > 0) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.error,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '$totalUnread ${loc.get('dash_new')}',
+                      style: const TextStyle(
+                        color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ]),
+              const SizedBox(height: 2),
+              Text(
+                totalUnread > 0
+                    ? '$totalUnread ${loc.get('dash_unread')}'
+                    : loc.get('dash_chat_with_customers'),
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: totalUnread > 0 ? AppColors.error : AppColors.grey500,
+                  fontWeight: totalUnread > 0 ? FontWeight.w600 : FontWeight.normal,
+                ),
+              ),
+            ])),
+            const Icon(Icons.arrow_forward_ios, color: AppColors.grey400, size: 16),
+          ]),
+        ),
+      );
+    },
+  );
+}
 
   Widget _buildMenuItem(BuildContext context, {
     required String icon,

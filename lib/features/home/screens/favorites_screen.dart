@@ -228,6 +228,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
         backgroundColor: cardColor,
         elevation: 0,
         automaticallyImplyLeading: false,
+         foregroundColor: isDark ? Colors.white : AppColors.black, 
         title: _selectionMode
             ? Row(children: [
                 GestureDetector(
@@ -241,9 +242,11 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                 ),
               ])
             : Text(
-                loc.get('favorites'),
-                style: AppTextStyles.headingSmall,
-              ),
+        loc.get('favorites'),
+        style: AppTextStyles.headingSmall.copyWith(
+          color: isDark ? Colors.white : AppColors.black,  // ✅ тема боюнча
+        ),
+      ),
         actions: _selectionMode
             ? [
                 // Баарын тандоо
@@ -415,26 +418,28 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                 ),
               ),
 
-              // ── Белгилөө чекити ──
-              if (_selectionMode)
-                Positioned(
-                  top: 8,
-                  left: 8,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 150),
-                    width: 26,
-                    height: 26,
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppColors.primary
-                          : Colors.white.withValues(alpha: 0.9),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: isSelected
-                            ? AppColors.primary
-                            : AppColors.grey300,
-                        width: 2,
-                      ),
+             // ── Белгилөө чекити ──
+if (_selectionMode)
+  Positioned(
+    top: 8,
+    left: 8,
+    child: AnimatedContainer(
+      duration: const Duration(milliseconds: 150),
+      width: 26,
+      height: 26,
+      decoration: BoxDecoration(
+        color: isSelected
+            ? AppColors.primary
+            : (isDark2
+                ? Colors.white.withValues(alpha: 0.15)
+                : Colors.black.withValues(alpha: 0.08)),  // ✅ ак режимде боз фон
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: isSelected
+              ? AppColors.primary
+              : (isDark2 ? AppColors.grey400 : AppColors.grey500), // ✅ күчтүү контраст
+          width: 2,
+        ),
                       boxShadow: [
                         BoxShadow(
                           color:

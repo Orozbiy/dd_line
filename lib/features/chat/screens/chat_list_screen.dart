@@ -119,19 +119,23 @@ class _ChatListScreenState extends State<ChatListScreen> {
   // ════════════════════════════════════════════════════
 
   void _onPressStart(String chatId) {
-    if (_isSelectionMode) return; // Selection mode'до жөн tap иштесин
-    _longPressTimer?.cancel();
+  _longPressTimer?.cancel();
 
-    _longPressTimer = Timer(const Duration(seconds: 2), () {
-      if (!mounted) return;
-      HapticFeedback.mediumImpact();
-      setState(() {
-        _isSelectionMode = true;
-        _selectedIds.add(chatId);
-      });
-    });
+  if (_isSelectionMode) {
+    // Selection mode'до дароо тандоо
+    _toggleSelection(chatId);
+    return;
   }
 
+  _longPressTimer = Timer(const Duration(seconds: 0), () {
+    if (!mounted) return;
+    HapticFeedback.mediumImpact();
+    setState(() {
+      _isSelectionMode = true;
+      _selectedIds.add(chatId);
+    });
+  });
+}
   void _onPressEnd() {
     _longPressTimer?.cancel();
     _longPressTimer = null;
@@ -318,21 +322,21 @@ class _ChatListScreenState extends State<ChatListScreen> {
                   : chat.sellerName;
 
               return GestureDetector(
-                // ── 2 секунд basып туруу ──
-                onLongPressStart: (_) => _onPressStart(chat.id),
-                onLongPressEnd: (_) => _onPressEnd(),
-                onLongPressCancel: _onPressEnd,
-                // ── Tap: selection же navigate ──
-                onTap: _isSelectionMode
-                    ? () => _toggleSelection(chat.id)
-                    : () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => ChatScreen.fromChat(
-                                chat,
-                                isSeller: widget.isSeller),
-                          ),
-                        ),
+  // ── 2 секунд басып туруу → selection mode ──
+  onLongPressStart: (_) => _onPressStart(chat.id),
+  onLongPressEnd: (_) => _onPressEnd(),
+  onLongPressCancel: _onPressEnd,
+  // ── Selection mode'до tap → тандоо ──
+  // ── Жөн tap → чатка өт ──
+  onTap: _isSelectionMode
+      ? () => _toggleSelection(chat.id)
+      : () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ChatScreen.fromChat(
+                  chat, isSeller: widget.isSeller),
+            ),
+          ),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   margin: const EdgeInsets.only(bottom: 10),

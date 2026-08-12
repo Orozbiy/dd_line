@@ -38,158 +38,166 @@ class MessageBubble extends StatelessWidget {
   });
 
   void _handleLongPress(BuildContext context) {
-    if (isSelectionMode) {
-      onLongPress?.call();
-      return;
-    }
+  if (isSelectionMode) {
+    onLongPress?.call();
+    return;
+  }
 
-    // Вибрация
-    HapticFeedback.mediumImpact();
+  // Вибрация
+  HapticFeedback.mediumImpact();
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-    final divColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF0F0F0);
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  final bgColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+  final divColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF0F0F0);
 
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (sheetContext) => Container(
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.15),
-              blurRadius: 20,
-              offset: const Offset(0, -4),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // ── Handle ──
-              Container(
-                margin: const EdgeInsets.only(top: 12, bottom: 8),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF3A3A3A) : AppColors.grey300,
-                  borderRadius: BorderRadius.circular(2),
-                ),
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.transparent,
+    isScrollControlled: true,
+    builder: (sheetContext) => Container(
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.15),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // ── Handle ──
+            Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 8),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF3A3A3A) : AppColors.grey300,
+                borderRadius: BorderRadius.circular(2),
               ),
+            ),
 
-              // ── Билдирүү preview ──
-              if (message.text.isNotEmpty)
-                Container(
-                  margin: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? const Color(0xFF2A2A2A)
-                        : AppColors.grey100,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isDark
-                          ? const Color(0xFF3A3A3A)
-                          : AppColors.grey200,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 3,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          message.text,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: isDark ? Colors.white70 : AppColors.grey600,
-                          ),
-                        ),
-                      ),
-                    ],
+            // ── Билдирүү preview ──
+            if (message.text.isNotEmpty)
+              Container(
+                margin: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF2A2A2A) : AppColors.grey100,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isDark ? const Color(0xFF3A3A3A) : AppColors.grey200,
                   ),
                 ),
-
-              Divider(height: 1, color: divColor),
-
-              // ── Баскычтар ──
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    // Жооп берүү
-                    _ActionButton(
-                      icon: Icons.reply_rounded,
-                      label: 'Жооп',
-                      color: AppColors.primary,
-                      isDark: isDark,
-                      onTap: () {
-                        Navigator.pop(sheetContext);
-                        onReply?.call();
-                      },
-                    ),
-
-                    // Көчүрүү
-                    if (message.text.isNotEmpty)
-                      _ActionButton(
-                        icon: Icons.copy_rounded,
-                        label: 'Көчүрүү',
+                    Container(
+                      width: 3,
+                      height: 36,
+                      decoration: BoxDecoration(
                         color: AppColors.primary,
-                        isDark: isDark,
-                        onTap: () {
-                          Navigator.pop(sheetContext);
-                          onCopy?.call();
-                        },
+                        borderRadius: BorderRadius.circular(2),
                       ),
-
-                    // Өзгөртүү (өзүнүн билдирүүсү гана)
-                    if (isMe && message.text.isNotEmpty)
-                      _ActionButton(
-                        icon: Icons.edit_rounded,
-                        label: 'Өзгөртүү',
-                        color: const Color(0xFF6C63FF),
-                        isDark: isDark,
-                        onTap: () {
-                          Navigator.pop(sheetContext);
-                          onEdit?.call();
-                        },
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        message.text,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: isDark ? Colors.white70 : AppColors.grey600,
+                        ),
                       ),
-
-                    // Өчүрүү
-                    _ActionButton(
-                      icon: Icons.delete_rounded,
-                      label: 'Өчүрүү',
-                      color: AppColors.error,
-                      isDark: isDark,
-                      onTap: () {
-                        Navigator.pop(sheetContext);
-                        onDelete?.call();
-                      },
                     ),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 8),
-            ],
-          ),
+            Divider(height: 1, color: divColor),
+
+            // ── Баскычтар ──
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  // Жооп берүү
+                  _ActionButton(
+                    icon: Icons.reply_rounded,
+                    label: 'Жооп',
+                    color: AppColors.primary,
+                    isDark: isDark,
+                    onTap: () {
+                      Navigator.pop(sheetContext);
+                      onReply?.call();
+                    },
+                  ),
+
+                  // ✅ Тандоо — selection mode ачат
+                  _ActionButton(
+                    icon: Icons.checklist_rounded,
+                    label: 'Тандоо',
+                    color: AppColors.primary,
+                    isDark: isDark,
+                    onTap: () {
+                      Navigator.pop(sheetContext);
+                      onLongPress?.call();
+                    },
+                  ),
+
+                  // Көчүрүү
+                  if (message.text.isNotEmpty)
+                    _ActionButton(
+                      icon: Icons.copy_rounded,
+                      label: 'Көчүрүү',
+                      color: AppColors.primary,
+                      isDark: isDark,
+                      onTap: () {
+                        Navigator.pop(sheetContext);
+                        onCopy?.call();
+                      },
+                    ),
+
+                  // Өзгөртүү (өзүнүн билдирүүсү гана)
+                  if (isMe && message.text.isNotEmpty)
+                    _ActionButton(
+                      icon: Icons.edit_rounded,
+                      label: 'Өзгөртүү',
+                      color: const Color(0xFF6C63FF),
+                      isDark: isDark,
+                      onTap: () {
+                        Navigator.pop(sheetContext);
+                        onEdit?.call();
+                      },
+                    ),
+
+                  // Өчүрүү
+                  _ActionButton(
+                    icon: Icons.delete_rounded,
+                    label: 'Өчүрүү',
+                    color: AppColors.error,
+                    isDark: isDark,
+                    onTap: () {
+                      Navigator.pop(sheetContext);
+                      onDelete?.call();
+                    },
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 8),
+          ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   void _openFullscreen(BuildContext context, String imageUrl) {
     Navigator.push(

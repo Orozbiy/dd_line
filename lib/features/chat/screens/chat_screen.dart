@@ -256,75 +256,76 @@ Future<void> _requestMicPermission() async {
       : (_myDisplayName.isNotEmpty
           ? _myDisplayName
           : 'Кардар'); // Кардар жазса → кардардын аты
+bool _isSending = false; // 
+
 
   void _send() {
-    final loc = AppLocalizations.of(context);
-    final text = _msgCtrl.text.trim();
-    final myId = _myId;
-    if (text.isEmpty || myId == null) return;
+  if (_isSending) return;
+  _isSending = true;
 
-  debugPrint('═══════════════════════════════');
-  debugPrint('📤 ЖӨНӨТҮҮЧҮ myId: $myId');
-  debugPrint('📤 АЛУУЧУ _receiverUid: $_receiverUid');
-  debugPrint('📤 isSeller: ${widget.isSeller}');
-  debugPrint('📤 buyerId: ${widget.buyerId}');
-  debugPrint('📤 sellerId: ${widget.sellerId}');
-  debugPrint('═══════════════════════════════');
-
-
-
-
-    _msgCtrl.clear();
-    final replyTo = _replyingTo;
-    if (replyTo != null) setState(() => _replyingTo = null);
-
-    _service
-        .sendMessage(
-      chatId: widget.chatId,
-      senderId: myId,
-      text: text,
-      replyToId: replyTo?.id,
-      replyToText: replyTo != null
-          ? (replyTo.text.isNotEmpty
-              ? replyTo.text
-              : '📷 ${loc.get('chat_image')}')
-          : null,
-           senderIsBuyer: !widget.isSeller, 
-    )
-        .then((_) async {
-      String receiverLocale = 'ky';
-      try {
-        final receiverProfile = await supabase
-            .from('profiles')
-            .select('locale')
-            .eq('id', _receiverUid)
-            .maybeSingle();
-        receiverLocale = receiverProfile?['locale'] as String? ?? 'ky';
-      } catch (_) {}
-
-      String senderName;
-      if (widget.isSeller) {
-        senderName = _myDisplayName.isNotEmpty
-            ? _myDisplayName
-            : (receiverLocale == 'ru' ? 'Продавец' : 'Сатуучу');
-      } else {
-        senderName = _myDisplayName.isNotEmpty
-            ? _myDisplayName
-            : (receiverLocale == 'ru' ? 'Покупатель' : 'Кардар');
-      }
-
-      await NotificationService().sendChatNotification(
-        receiverUid: _receiverUid,
-        senderName: senderName,
-        messageText: text,
-        chatId: widget.chatId,
-      );
-    }).onError((e, stack) {
-      debugPrint('❌ _send ката: $e');
-      return null;
-    });
+  final loc = AppLocalizations.of(context);
+  final text = _msgCtrl.text.trim();
+  final myId = _myId;
+  
+  if (text.isEmpty || myId == null) {
+    _isSending = false;
+    return;
   }
 
+  _msgCtrl.clear();
+  final replyTo = _replyingTo;
+  if (replyTo != null) setState(() => _replyingTo = null);
+
+  _service.sendMessage(
+    chatId: widget.chatId,
+    senderId: myId,
+    text: text,
+    replyToId: replyTo?.id,
+    replyToText: replyTo != null
+        ? (replyTo.text.isNotEmpty
+            ? replyTo.text
+            : '📷 ${loc.get('chat_image')}')
+        : null,
+    senderIsBuyer: !widget.isSeller,
+  ).then((_) async {
+    // ✅ sendMessage бүткөндө дароо reset — notification күтпөйбүз
+    _isSending = false;
+
+    // Notification фондо жөнөтүлөт — UI'ды блокtабайт
+    String receiverLocale = 'ky';
+    try {
+      final receiverProfile = await supabase
+          .from('profiles')
+          .select('locale')
+          .eq('id', _receiverUid)
+          .maybeSingle();
+      receiverLocale = receiverProfile?['locale'] as String? ?? 'ky';
+    } catch (_) {}
+
+    String senderName;
+    if (widget.isSeller) {
+      senderName = _myDisplayName.isNotEmpty
+          ? _myDisplayName
+          : (receiverLocale == 'ru' ? 'Продавец' : 'Сатуучу');
+    } else {
+      senderName = _myDisplayName.isNotEmpty
+          ? _myDisplayName
+          : (receiverLocale == 'ru' ? 'Покупатель' : 'Кардар');
+    }
+
+    // ✅ unawaited — пуш фондо жөнөтүлөт
+    NotificationService().sendChatNotification(
+      receiverUid: _receiverUid,
+      senderName: senderName,
+      messageText: text,
+      chatId: widget.chatId,
+    );
+  }).onError((e, stack) {
+    debugPrint('❌ _send ката: $e');
+    _isSending = false; // ← ката болсо да reset
+    return null;
+  });
+}
   Future<ImageSource?> _chooseImageSource() {
     final loc = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;

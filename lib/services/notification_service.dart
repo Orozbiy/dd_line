@@ -10,6 +10,7 @@ import '../core/supabase_client.dart';
 import '../features/chat/screens/chat_screen.dart';
 import '../features/product_detail/screens/product_detail_screen.dart';
 import '../data/models/product_model.dart';
+import 'package:flutter/foundation.dart';
 
 // ─────────────────────────────────────────────────────────────
 // GLOBAL NAVIGATOR KEY — MaterialApp'ка берилет
@@ -264,7 +265,8 @@ class NotificationService {
             .select('avatar_url')
             .eq('id', otherUserId)
             .maybeSingle();
-        otherAvatarUrl = profile?['avatar_url'] as String? ?? '';
+        final rawAvatar = profile?['avatar_url'] as String? ?? '';
+otherAvatarUrl = rawAvatar.startsWith('http') ? rawAvatar : '';
       } catch (_) {}
 
       // Context'ти жаңырт — async операциялардан кийин
@@ -341,29 +343,53 @@ class NotificationService {
   // ─────────────────────────────────────────────────────────────
   // SEND CHAT NOTIFICATION — FCM v1 API
   // ─────────────────────────────────────────────────────────────
- Future<void> sendChatNotification({
-    required String receiverUid,
-    required String senderName,
-    required String messageText,
-    required String chatId,
-  }) async {
-    debugPrint('📤 sendChatNotification → receiverUid=$receiverUid');
-    try {
-      await supabase.functions.invoke(
-        'send-push',
-        body: {
-          'receiver_uid': receiverUid,
-          'title':        senderName,
-          'body':         messageText,
-          'chat_id':      chatId,
-        },
-      );
-      debugPrint('✅ Edge Function пуш жөнөтүлдү');
-    } catch (e) {
-      debugPrint('❌ Edge Function ката: $e');
-    }
-  }
+// ─────────────────────────────────────────────────────────────
+// SEND CHAT NOTIFICATION — FCM v1 API (Edge Function жок, түз)
+// ─────────────────────────────────────────────────────────────
+Future<void> sendChatNotification({
+  required String receiverUid,
+  required String senderName,
+  required String messageText,
+  required String chatId,
+}) async {
+  debugPrint('📤 sendChatNotification → receiverUid=$receiverUid');
+  try {
+    // 1. Алуучунун FCM токенин ал
+    final rows = await supabase
+        .from('push_tokens')
+        .select('token')
+        .eq('user_id', receiverUid);
 
+    if ((rows as List).isEmpty) {
+      debugPrint('⚠️ Токен жок: $receiverUid');
+      return;
+    }
+
+    // 2. Access token ал (service_account.json аркылуу)
+    final accessToken = await _getAccessToken();
+    if (accessToken == null) {
+      debugPrint('❌ Access token алынбады');
+      return;
+    }
+
+    // 3. Ар бир токенге жөнөт
+    for (final row in rows) {
+      final fcmToken = row['token'] as String?;
+      if (fcmToken == null || fcmToken.isEmpty) continue;
+      await _sendOneFcm(
+        fcmToken: fcmToken,
+        accessToken: accessToken,
+        title: senderName,
+        body: messageText,
+        chatId: chatId,
+      );
+    }
+
+    debugPrint('✅ sendChatNotification бүттү');
+  } catch (e) {
+    debugPrint('❌ sendChatNotification ката: $e');
+  }
+}
   // ─────────────────────────────────────────────────────────────
   // ЖАРДАМЧЫ: бир токенге FCM жөнөт
   // ─────────────────────────────────────────────────────────────
@@ -591,26 +617,45 @@ class NotificationService {
   // ─────────────────────────────────────────────────────────────
   // FCM TOKEN — САКТОО
   // ─────────────────────────────────────────────────────────────
- Future<void> saveMyToken() async {
+Future<void> saveMyToken() async {
   try {
     final user = supabase.auth.currentUser;
     if (user == null) return;
 
-    final token = await _messaging.getToken();
-    if (token == null) return;
+    String? token;
+    String platform;
 
-    debugPrint('💾 FCM Token сакталууда...');
+    if (kIsWeb) {
+      platform = 'web';
+      token = await _messaging.getToken(
+        vapidKey: 'BDpKYBHjHAilY1jGXlduqw1eJ6lSsmxwkJ8dIgag-2svdBpjn_QsiN2BrSbBboBNmVh2ZI-AQqZe3zaOjFsdXL0',
+      );
+    } else if (defaultTargetPlatform == TargetPlatform.iOS) {
+      platform = 'ios';
+      token = await _messaging.getToken();
+    } else {
+      platform = 'android';
+      token = await _messaging.getToken();
+    }
+
+    if (token == null) {
+      debugPrint('⚠️ Token null — $platform');
+      return;
+    }
+
+    debugPrint('💾 FCM Token сакталууда... ($platform): ${token.substring(0, 20)}...');
 
     await supabase.from('push_tokens').upsert(
       {
         'user_id':    user.id,
         'token':      token,
+        'platform':   platform,
         'updated_at': DateTime.now().toIso8601String(),
       },
-      onConflict: 'user_id', // ← МУН ГАНА ӨЗГӨРТ
+      onConflict: 'user_id,platform',
     );
 
-    debugPrint('✅ FCM Token сакталды: ${token.substring(0, 20)}...');
+    debugPrint('✅ FCM Token сакталды ($platform)');
 
     _messaging.onTokenRefresh.listen((newToken) async {
       try {
@@ -618,11 +663,12 @@ class NotificationService {
           {
             'user_id':    user.id,
             'token':      newToken,
+            'platform':   platform,
             'updated_at': DateTime.now().toIso8601String(),
           },
-          onConflict: 'user_id',
+          onConflict: 'user_id,platform',
         );
-        debugPrint('✅ FCM Token жаңырды');
+        debugPrint('✅ FCM Token жаңырды ($platform)');
       } catch (e) {
         debugPrint('❌ Token жаңыртуу катасы: $e');
       }
@@ -631,7 +677,6 @@ class NotificationService {
     debugPrint('❌ saveMyToken ката: $e');
   }
 }
-
   // ─────────────────────────────────────────────────────────────
   // FCM TOKEN — ӨЧҮРҮҮ (logout'та)
   // ─────────────────────────────────────────────────────────────

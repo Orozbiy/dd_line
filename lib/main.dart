@@ -50,10 +50,7 @@ Future<void> main() async {
   await CartManager.instance.loadFromPrefs();
   await FavoritesManager().loadFromPrefs();
 
-  final user = supabase.auth.currentUser;
-if (user != null) {
-  unawaited(NotificationService().saveMyToken());
-}
+
 
   debugPrint('🚀 runApp...');
   runApp(const ActiveStatusTracker(child: DDOnlineApp()));
@@ -223,48 +220,60 @@ class _SplashRouterState extends State<SplashRouter> {
   }
 
   Future<void> _determineScreen() async {
-    try {
-      final initialUri = await _appLinks.getInitialLink();
-      if (initialUri != null) {
-        debugPrint('🔗 Initial deep link: $initialUri');
-        if (initialUri.pathSegments.length >= 2 &&
-            initialUri.pathSegments[0] == 'product') {
-          NotificationService.pendingProductId = initialUri.pathSegments[1];
-        }
+  try {
+    final initialUri = await _appLinks.getInitialLink();
+    if (initialUri != null) {
+      debugPrint('🔗 Initial deep link: $initialUri');
+      if (initialUri.pathSegments.length >= 2 &&
+          initialUri.pathSegments[0] == 'product') {
+        NotificationService.pendingProductId = initialUri.pathSegments[1];
       }
-    } catch (_) {}
+    }
+  } catch (_) {}
 
-    // ✅ prefs'ти МУРДА окуйбуз
-    final prefs = await SharedPreferences.getInstance();
-    final langCode = prefs.getString('app_locale') ?? 'ky';
+  // ✅ prefs'ти МУРДА окуйбуз
+  final prefs = await SharedPreferences.getInstance();
+  final langCode = prefs.getString('app_locale') ?? 'ky';
 
-    _targetScreen = await _getTargetScreen();
-    if (mounted) setState(() => _checking = false);
+  _targetScreen = await _getTargetScreen();
+  if (mounted) setState(() => _checking = false);
 
-    // ── Pending chat ──
+  // ── Pending chat — ӨЧҮРҮЛДҮ (_getTargetScreen'да иштейт) ──
+
+  // ✅ версия текшерүү
+  WidgetsBinding.instance.addPostFrameCallback((_) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    final ctx = navigatorKey.currentContext;
+    if (ctx == null || !ctx.mounted) return;
+    await UpdateChecker.check(ctx, langCode);
+  });
+}
+
+Future<Widget> _getTargetScreen() async {
+  final user = supabase.auth.currentSession?.user;
+  if (user != null) {
+    unawaited(NotificationService().saveMyToken());
+
+    // ✅ Pending chat текшер — app өчүк турганда пуш басылганда
     final pendingChat = NotificationService.pendingChatId;
     if (pendingChat != null) {
       NotificationService.pendingChatId = null;
       WidgetsBinding.instance.addPostFrameCallback((_) async {
-        await Future.delayed(const Duration(milliseconds: 600));
+        await Future.delayed(const Duration(milliseconds: 800));
         NotificationService().navigateToChatPublic(pendingChat);
       });
     }
 
-    // ✅ версия текшерүү
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await Future.delayed(const Duration(milliseconds: 300));
-      final ctx = navigatorKey.currentContext;
-      if (ctx == null || !ctx.mounted) return;
-      await UpdateChecker.check(ctx, langCode);
-    });
-  }
-Future<Widget> _getTargetScreen() async {
-  final user = supabase.auth.currentSession?.user;
-  if (user != null) {
-    // ✅ Колдонуучу кирип турса — токенди дайыма жаңырт
-    // (колдонмо өчүп-күйгөндө, токен эскирип же жок болуп калышы мүмкүн)
-    unawaited(NotificationService().saveMyToken());
+    // ✅ Pending product текшер
+    final pendingProduct = NotificationService.pendingProductId;
+    if (pendingProduct != null) {
+      NotificationService.pendingProductId = null;
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        await Future.delayed(const Duration(milliseconds: 800));
+        NotificationService().navigateToProductPublic(pendingProduct);
+      });
+    }
+
     return const HomeScreen();
   }
   return const WelcomeScreen();

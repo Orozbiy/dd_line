@@ -14,39 +14,51 @@ class ChatService {
   // ════════════════════════════════════════════════════
 
   Future<String> getOrCreateChat({
-    required String buyerId,
-    required String sellerId,
-    required String productId,
-  }) async {
-    final existing = await supabase
-        .from('chats')
-        .select('id')
-        .eq('buyer_id',   buyerId)
-        .eq('seller_id',  sellerId)
-        .eq('product_id', productId)
+  required String buyerId,
+  required String sellerId,
+  required String productId,
+}) async {
+  final existing = await supabase
+      .from('chats')
+      .select('id')
+      .eq('buyer_id',   buyerId)
+      .eq('seller_id',  sellerId)
+      .eq('product_id', productId)
+      .maybeSingle();
+
+  if (existing != null) return existing['id'] as String;
+
+  // Сатуучунун дүкөн атын ал
+  String sellerName = '';
+  try {
+    final store = await supabase
+        .from('stores')
+        .select('store_name')
+        .eq('owner_id', sellerId)
         .maybeSingle();
+    sellerName = store?['store_name'] as String? ?? '';
+  } catch (_) {}
 
-    if (existing != null) return existing['id'] as String;
+  final inserted = await supabase
+      .from('chats')
+      .insert({
+        'buyer_id':     buyerId,
+        'seller_id':    sellerId,
+        'product_id':   productId,
+        'last_message': '',
+        'seller_name':  sellerName, // ← кош
+      })
+      .select('id')
+      .single();
 
-    final inserted = await supabase
-        .from('chats')
-        .insert({
-          'buyer_id':     buyerId,
-          'seller_id':    sellerId,
-          'product_id':   productId,
-          'last_message': '',
-        })
-        .select('id')
-        .single();
-
-    return inserted['id'] as String;
-  }
+  return inserted['id'] as String;
+}
 
   // ════════════════════════════════════════════════════
   // БИЛДИРҮҮ ЖӨНӨТҮҮ
   // ════════════════════════════════════════════════════
 
- Future<void> sendMessage({
+Future<void> sendMessage({
   required String chatId,
   required String senderId,
   String? text,
@@ -58,7 +70,11 @@ class ChatService {
   required bool senderIsBuyer,
 }) async {
   final messageText = text ?? (imageUrl != null ? '🖼️ Сүрөт' : '🎵 Үн');
- 
+
+  // Алуучунун unread санын кайсы талаа экенин аныкта
+  // senderIsBuyer=true  → сатуучунун seller_unread + 1
+  // senderIsBuyer=false → кардардын   buyer_unread  + 1
+  final unreadField = senderIsBuyer ? 'seller_unread' : 'buyer_unread';
 
   await Future.wait([
     supabase.from('messages').insert({
@@ -72,11 +88,14 @@ class ChatService {
       if (replyToId   != null) 'reply_to_id':   replyToId,
       if (replyToText != null) 'reply_to_text': replyToText,
     }),
+    supabase.rpc('increment_unread', params: {
+      'chat_id':     chatId,
+      'unread_field': unreadField,
+    }),
     supabase.from('chats').update({
       'last_message':    messageText,
       'last_message_at': DateTime.now().toUtc().toIso8601String(),
     }).eq('id', chatId),
-    
   ]);
 }
 
@@ -110,15 +129,18 @@ class ChatService {
   // SOFT-DELETE
   // ════════════════════════════════════════════════════
 
-  Future<void> deleteChat(String chatId, {required bool isSeller}) async {
-    try {
-      final field = isSeller ? 'deleted_for_seller' : 'deleted_for_buyer';
-      await supabase.from('chats').update({field: true}).eq('id', chatId);
-    } catch (e) {
-      debugPrint('❌ deleteChat ката: $e');
-      rethrow;
-    }
+ Future<void> deleteChat(String chatId, {required bool isSeller}) async {
+  try {
+    // 2 тараптан тең өчүр — messages да, chat да
+    await Future.wait([
+      supabase.from('messages').delete().eq('chat_id', chatId),
+      supabase.from('chats').delete().eq('id', chatId),
+    ]);
+  } catch (e) {
+    debugPrint('❌ deleteChat ката: $e');
+    rethrow;
   }
+}
 
   // ════════════════════════════════════════════════════
   // ТАНДАЛГАН БИЛДИРҮҮЛӨРДҮ ӨЧҮРҮҮ
