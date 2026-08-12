@@ -1,7 +1,12 @@
+// lib/features/notifications/screens/notifications_screen.dart
+
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
+import '../../../core/app_localizations.dart';
 import '../../../core/supabase_client.dart';
+
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -25,13 +30,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     try {
       final userId = supabase.auth.currentUser?.id;
 
-      // Билдирүүлөрдү жүктө
       final rows = await supabase
           .from('admin_notifications')
           .select()
           .order('created_at', ascending: false);
 
-      // Окулгандарды жүктө
       Set<String> readIds = {};
       if (userId != null) {
         final reads = await supabase
@@ -50,7 +53,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           _isLoading = false;
         });
 
-        // Экранга киргенде баарын окулган деп белгиле
         if (userId != null) {
           _markAllAsRead(userId);
         }
@@ -68,7 +70,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
       if (unread.isEmpty) return;
 
-      // Баарын бир учурда жаз
       final rows = unread.map((n) => {
             'user_id': userId,
             'notification_id': n['id'] as String,
@@ -86,26 +87,39 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     } catch (_) {}
   }
 
-  String _timeAgo(String? createdAt) {
+  String _timeAgo(String? createdAt, bool isKy) {
     if (createdAt == null) return '';
     final dt = DateTime.tryParse(createdAt)?.toLocal();
     if (dt == null) return '';
     final diff = DateTime.now().difference(dt);
-    if (diff.inMinutes < 1) return 'Азыр';
-    if (diff.inHours < 1) return '${diff.inMinutes} мүн. мурун';
-    if (diff.inDays < 1) return '${diff.inHours} саат мурун';
-    if (diff.inDays < 30) return '${diff.inDays} күн мурун';
+    if (diff.inMinutes < 1) return isKy ? 'Азыр' : 'Сейчас';
+    if (diff.inHours < 1)
+      return isKy
+          ? '${diff.inMinutes} мүн. мурун'
+          : '${diff.inMinutes} мин. назад';
+    if (diff.inDays < 1)
+      return isKy
+          ? '${diff.inHours} саат мурун'
+          : '${diff.inHours} ч. назад';
+    if (diff.inDays < 30)
+      return isKy
+          ? '${diff.inDays} күн мурун'
+          : '${diff.inDays} д. назад';
     return '${dt.day}.${dt.month}.${dt.year}';
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark      = Theme.of(context).brightness == Brightness.dark;
-    final bgColor     = isDark ? const Color(0xFF0D0F1A) : const Color(0xFFF4F5F7);
-    final cardColor   = isDark ? const Color(0xFF14162A) : Colors.white;
-    final unreadColor = isDark ? const Color(0xFF1C1E38) : const Color(0xFFFFF8F0);
-    final textColor   = isDark ? Colors.white : AppColors.black;
-    final subColor    = isDark ? const Color(0xFFAAAAAA) : AppColors.grey500;
+    final loc = AppLocalizations.of(context);
+    final isKy = loc.locale.languageCode == 'ky';
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF0D0F1A) : const Color(0xFFF4F5F7);
+    final cardColor = isDark ? const Color(0xFF14162A) : Colors.white;
+    final unreadColor =
+        isDark ? const Color(0xFF1C1E38) : const Color(0xFFFFF8F0);
+    final textColor = isDark ? Colors.white : AppColors.black;
+    final subColor = isDark ? const Color(0xFFAAAAAA) : AppColors.grey500;
     final borderColor = isDark ? const Color(0xFF2A2560) : Colors.transparent;
 
     return Scaffold(
@@ -116,7 +130,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         elevation: 0,
         centerTitle: true,
         title: Text(
-          'Билдирүүлөр',
+          // ✅ ОРУС / КЫРГЫЗ тили
+          isKy ? 'Билдирүүлөр' : 'Уведомления',
           style: AppTextStyles.headingSmall.copyWith(color: textColor),
         ),
         leading: GestureDetector(
@@ -136,9 +151,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           size: 72,
                           color: isDark ? Colors.white24 : Colors.grey[300]),
                       const SizedBox(height: 16),
-                      Text('Билдирүүлөр жок',
-                          style:
-                              AppTextStyles.bodyMedium.copyWith(color: subColor)),
+                      Text(
+                        isKy ? 'Билдирүүлөр жок' : 'Нет уведомлений',
+                        style: AppTextStyles.bodyMedium
+                            .copyWith(color: subColor),
+                      ),
                     ],
                   ),
                 )
@@ -150,11 +167,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     itemCount: _notifications.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 10),
                     itemBuilder: (context, i) {
-                      final n       = _notifications[i];
-                      final id      = n['id'] as String;
-                      final title   = n['title'] as String? ?? '';
-                      final body    = n['body'] as String? ?? '';
-                      final isRead  = _readIds.contains(id);
+                      final n = _notifications[i];
+                      final id = n['id'] as String;
+                      final title = n['title'] as String? ?? '';
+                      final body = n['body'] as String? ?? '';
+                      final imageUrl = n['image_url'] as String?; // ✅ сүрөт
+                      final isRead = _readIds.contains(id);
 
                       return Container(
                         padding: const EdgeInsets.all(16),
@@ -185,69 +203,113 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                   ),
                                 ],
                         ),
-                        child: Row(
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Иконка
-                            Container(
-                              width: 44,
-                              height: 44,
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [Color(0xFFD97706), Color(0xFFEF4444)],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
+                            // ── Иконка + Башлык ──
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  width: 44,
+                                  height: 44,
+                                  decoration: BoxDecoration(
+                                    gradient: const LinearGradient(
+                                      colors: [
+                                        Color(0xFFD97706),
+                                        Color(0xFFEF4444)
+                                      ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: const Icon(Icons.campaign_rounded,
+                                      color: Colors.white, size: 22),
                                 ),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: const Icon(Icons.campaign_rounded,
-                                  color: Colors.white, size: 22),
-                            ),
-                            const SizedBox(width: 12),
-
-                            // Текст
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      Expanded(
-                                        child: Text(
-                                          title,
-                                          style: AppTextStyles.labelLarge
-                                              .copyWith(
-                                            color: textColor,
-                                            fontWeight: FontWeight.w700,
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              title,
+                                              style: AppTextStyles.labelLarge
+                                                  .copyWith(
+                                                color: textColor,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
                                           ),
-                                        ),
+                                          if (!isRead)
+                                            Container(
+                                              width: 8,
+                                              height: 8,
+                                              margin: const EdgeInsets.only(
+                                                  left: 8, top: 2),
+                                              decoration: const BoxDecoration(
+                                                color: AppColors.error,
+                                                shape: BoxShape.circle,
+                                              ),
+                                            ),
+                                        ],
                                       ),
-                                      // Окулбаган — кызыл dot
-                                      if (!isRead)
-                                        Container(
-                                          width: 8,
-                                          height: 8,
-                                          margin: const EdgeInsets.only(left: 8, top: 2),
-                                          decoration: const BoxDecoration(
-                                            color: AppColors.error,
-                                            shape: BoxShape.circle,
-                                          ),
-                                        ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        body,
+                                        style: AppTextStyles.bodyMedium
+                                            .copyWith(color: subColor),
+                                      ),
                                     ],
                                   ),
-                                  const SizedBox(height: 4),
-                                  Text(body,
-                                      style: AppTextStyles.bodyMedium
-                                          .copyWith(color: subColor)),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    _timeAgo(n['created_at'] as String?),
-                                    style: AppTextStyles.bodySmall.copyWith(
-                                      color: AppColors.primary,
-                                      fontWeight: FontWeight.w500,
+                                ),
+                              ],
+                            ),
+
+                            // ── ✅ СҮРӨТ — маалыматтын астына, орточо размерде ──
+                            if (imageUrl != null && imageUrl.isNotEmpty) ...[
+                              const SizedBox(height: 12),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: CachedNetworkImage(
+                                  imageUrl: imageUrl,
+                                  width: double.infinity,
+                                  height: 200,
+                                  fit: BoxFit.cover,
+                                  placeholder: (_, __) => Container(
+                                    height: 200,
+                                    color: isDark
+                                        ? const Color(0xFF2A2560)
+                                        : const Color(0xFFEEEEEE),
+                                    child: const Center(
+                                      child: CircularProgressIndicator(
+                                          color: AppColors.primary,
+                                          strokeWidth: 2),
                                     ),
                                   ),
-                                ],
+                                  errorWidget: (_, __, ___) => Container(
+                                    height: 200,
+                                    color: isDark
+                                        ? const Color(0xFF2A2560)
+                                        : const Color(0xFFEEEEEE),
+                                    child: const Icon(Icons.broken_image,
+                                        color: Colors.grey),
+                                  ),
+                                ),
+                              ),
+                            ],
+
+                            // ── Убакыт ──
+                            const SizedBox(height: 8),
+                            Text(
+                              _timeAgo(n['created_at'] as String?, isKy),
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ],

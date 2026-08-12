@@ -19,6 +19,7 @@ import 'core/app_localizations.dart';
 import 'core/theme_provider.dart';
 import 'core/update_checker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'features/notifications/screens/notifications_screen.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -254,7 +255,7 @@ Future<Widget> _getTargetScreen() async {
   if (user != null) {
     unawaited(NotificationService().saveMyToken());
 
-    // ✅ Pending chat текшер — app өчүк турганда пуш басылганда
+    // ✅ Pending chat
     final pendingChat = NotificationService.pendingChatId;
     if (pendingChat != null) {
       NotificationService.pendingChatId = null;
@@ -264,13 +265,24 @@ Future<Widget> _getTargetScreen() async {
       });
     }
 
-    // ✅ Pending product текшер
+    // ✅ Pending product
     final pendingProduct = NotificationService.pendingProductId;
     if (pendingProduct != null) {
       NotificationService.pendingProductId = null;
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         await Future.delayed(const Duration(milliseconds: 800));
         NotificationService().navigateToProductPublic(pendingProduct);
+      });
+    }
+
+    // ✅ Pending notifications (admin broadcast)
+    if (NotificationService.pendingNotifications) {
+      NotificationService.pendingNotifications = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        await Future.delayed(const Duration(milliseconds: 800));
+        navigatorKey.currentState?.push(
+          MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+        );
       });
     }
 
