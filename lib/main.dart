@@ -50,8 +50,10 @@ Future<void> main() async {
   await CartManager.instance.loadFromPrefs();
   await FavoritesManager().loadFromPrefs();
 
-  debugPrint('🚀 saveMyToken...');
+  final user = supabase.auth.currentUser;
+if (user != null) {
   unawaited(NotificationService().saveMyToken());
+}
 
   debugPrint('🚀 runApp...');
   runApp(const ActiveStatusTracker(child: DDOnlineApp()));

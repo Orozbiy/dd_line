@@ -58,7 +58,7 @@ class ChatService {
   required bool senderIsBuyer,
 }) async {
   final messageText = text ?? (imageUrl != null ? '🖼️ Сүрөт' : '🎵 Үн');
-  final unreadCol   = senderIsBuyer ? 'seller_unread' : 'buyer_unread';
+ 
 
   await Future.wait([
     supabase.from('messages').insert({
@@ -76,10 +76,7 @@ class ChatService {
       'last_message':    messageText,
       'last_message_at': DateTime.now().toUtc().toIso8601String(),
     }).eq('id', chatId),
-    supabase.rpc('increment_chat_unread', params: {
-      'p_chat_id': chatId,
-      'p_column':  unreadCol,
-    }),
+    
   ]);
 }
 

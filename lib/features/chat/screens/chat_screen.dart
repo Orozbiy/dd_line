@@ -86,6 +86,7 @@ class _ChatScreenState extends State<ChatScreen> {
   String _myDisplayName = '';
   String _receiverDisplayName = '';
   String _sellerPhone = '';
+  
   @override
   void initState() {
     super.initState();
