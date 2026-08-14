@@ -730,6 +730,56 @@ void dispose() {
                         ),
                       ),
                       const SizedBox(height: 8),
+
+
+                       // ── Бөлүшүү кнопкасы ──
+Container(
+  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+  decoration: BoxDecoration(
+    gradient: const LinearGradient(
+      colors: [Color(0xFF10B981), Color(0xFF059669)],
+      begin: Alignment.centerLeft,
+      end: Alignment.centerRight,
+    ),
+    borderRadius: BorderRadius.circular(16),
+    boxShadow: [
+      BoxShadow(
+        color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.25 : 0.35),
+        blurRadius: 12,
+        offset: const Offset(0, 4),
+        spreadRadius: -2,
+      ),
+    ],
+  ),
+  child: Material(
+    color: Colors.transparent,
+    child: InkWell(
+      onTap: () => ShareWidget.show(context, _product),
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.share_rounded, color: Colors.white, size: 22),
+            const SizedBox(width: 10),
+            Text(
+              loc.locale.languageCode == 'ru' ? 'Поделиться' : 'Бөлүшүү',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  ),
+),
+const SizedBox(height: 8),
+
                       // ── Окшош товарлар ──
                       if (_similarProducts.isNotEmpty)
                         Container(

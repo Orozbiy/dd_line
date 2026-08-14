@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 class AppLocalizations {
   final Locale locale;
@@ -318,7 +318,7 @@ class AppLocalizations {
     'sort_newest': 'Жаңылары',
     'filter_apply': 'Колдонуу',
     'filter_count_suffix': 'фильтр',
-    'map_title': 'Дүкөнчүлөрдүн тизмеги.',
+    'map_title': 'Дүкөндөр',
     'map_store_count': 'дүкөн',
     'map_search_hint': 'Дүкөн же контейнер издөө...',
     'map_no_location': 'дүкөндүн локациясы кошулган жок',
@@ -1218,7 +1218,7 @@ class AppLocalizations {
     'favorites': 'Избранное',
     'chat': 'Чат',
     'shop': 'Магазин',
-    'map_title': 'Список магазинов.',
+    'map_title': 'Магазины',
     'map_store_count': 'магазин',
     'map_search_hint': 'Поиск магазина или контейнера...',
     'map_no_location': 'магазинов без указанного местоположения',
@@ -1746,3 +1746,5 @@ class AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
   @override
   bool shouldReload(_) => false;
 }
+
+

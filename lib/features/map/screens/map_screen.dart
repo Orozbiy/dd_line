@@ -1,9 +1,12 @@
+﻿import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../core/app_localizations.dart';
 import '../../../core/supabase_client.dart';
+import '../../../data/models/product_model.dart';
+import '../../product_detail/screens/product_detail_screen.dart';
 
 class _StoreLocation {
   final String id;
@@ -12,6 +15,7 @@ class _StoreLocation {
   final String containerNumber;
   final double? latitude;
   final double? longitude;
+  final String ownerId;
 
   _StoreLocation({
     required this.id,
@@ -20,6 +24,7 @@ class _StoreLocation {
     required this.containerNumber,
     this.latitude,
     this.longitude,
+    this.ownerId = '',
   });
 
   factory _StoreLocation.fromMap(Map<String, dynamic> data) {
@@ -36,13 +41,13 @@ class _StoreLocation {
       containerNumber: container,
       latitude:        (data['latitude']  as num?)?.toDouble(),
       longitude:       (data['longitude'] as num?)?.toDouble(),
+      ownerId:         data['owner_id']   as String? ?? '',
     );
   }
 }
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
-
   @override
   State<MapScreen> createState() => _MapScreenState();
 }
@@ -107,59 +112,72 @@ class _MapScreenState extends State<MapScreen> {
     });
   }
 
- Future<void> _open2GIS(_StoreLocation seller) async {
-  final loc = AppLocalizations.of(context);
-  final lat = seller.latitude!;
-  final lng = seller.longitude!;
+  Future<void> _open2GIS(_StoreLocation seller) async {
+    final loc = AppLocalizations.of(context);
+    final lat = seller.latitude!;
+    final lng = seller.longitude!;
 
-  final appUri       = Uri.parse('dgis://2gis.ru/routeSearch/rsType/pedestrian/to/$lng,$lat');
-  final playStoreUri = Uri.parse('https://play.google.com/store/apps/details?id=ru.dublgis.dgismobile');
-  final appStoreUri  = Uri.parse('https://apps.apple.com/app/id481627348');
+    final appUri       = Uri.parse('dgis://2gis.ru/routeSearch/rsType/pedestrian/to/$lng,$lat');
+    final playStoreUri = Uri.parse('https://play.google.com/store/apps/details?id=ru.dublgis.dgismobile');
+    final appStoreUri  = Uri.parse('https://apps.apple.com/app/id481627348');
 
-  if (await canLaunchUrl(appUri)) {
-    await launchUrl(appUri);
-  } else {
-    if (!mounted) return;
-    final isIOS    = Theme.of(context).platform == TargetPlatform.iOS;
-    final storeUri = isIOS ? appStoreUri : playStoreUri;
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(loc.get('2gis_not_installed')),
-        content: Text(loc.get('2gis_download_hint')),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(loc.get('no')),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              elevation: 0,
+    if (await canLaunchUrl(appUri)) {
+      await launchUrl(appUri);
+    } else {
+      if (!mounted) return;
+      final isIOS    = Theme.of(context).platform == TargetPlatform.iOS;
+      final storeUri = isIOS ? appStoreUri : playStoreUri;
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(loc.get('2gis_not_installed')),
+          content: Text(loc.get('2gis_download_hint')),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(loc.get('no')),
             ),
-            onPressed: () async {
-              Navigator.pop(ctx);
-              if (await canLaunchUrl(storeUri)) {
-                await launchUrl(storeUri, mode: LaunchMode.externalApplication);
-              }
-            },
-            child: Text(loc.get('download'), style: const TextStyle(color: Colors.white)),
-          ),
-        ],
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                elevation: 0,
+              ),
+              onPressed: () async {
+                Navigator.pop(ctx);
+                if (await canLaunchUrl(storeUri)) {
+                  await launchUrl(storeUri, mode: LaunchMode.externalApplication);
+                }
+              },
+              child: Text(loc.get('download'), style: const TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  void _openStoreProducts(_StoreLocation seller) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => _StoreProductsScreen(
+          storeId: seller.id,
+          shopName: seller.shopName,
+          containerNumber: seller.containerNumber,
+        ),
       ),
     );
   }
-}
 
   @override
   Widget build(BuildContext context) {
     final loc    = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor    = isDark ? const Color(0xFF121212) : const Color(0xFFF4F5F7);
-    final cardColor  = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-    final inputBg    = isDark ? const Color(0xFF2C2C2C) : AppColors.grey100;
+    final bgColor   = isDark ? const Color(0xFF121212) : const Color(0xFFF4F5F7);
+    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final inputBg   = isDark ? const Color(0xFF2C2C2C) : AppColors.grey100;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -375,22 +393,277 @@ class _MapScreenState extends State<MapScreen> {
                   ],
                 ),
               const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton.icon(
-                  onPressed: () => _open2GIS(seller),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    elevation: 0,
+              // ── Эки кнопка ──
+              Row(
+                children: [
+                  // Дүкөндү көрүү
+                  Expanded(
+                    child: SizedBox(
+                      height: 48,
+                      child: OutlinedButton.icon(
+                        onPressed: () => _openStoreProducts(seller),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: AppColors.primary, width: 1.5),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        icon: const Icon(Icons.storefront_rounded, size: 18, color: AppColors.primary),
+                        label: Text(
+                          loc.locale.languageCode == 'ru' ? 'Товары' : 'Товарлар',
+                          style: AppTextStyles.labelLarge.copyWith(color: AppColors.primary),
+                        ),
+                      ),
+                    ),
                   ),
-                  icon: const Icon(Icons.navigation_rounded, size: 18, color: Colors.white),
-                  label: Text(loc.get('open_2gis'),
-                      style: AppTextStyles.labelLarge.copyWith(color: Colors.white)),
-                ),
+                  const SizedBox(width: 10),
+                  // Маршрут
+                  Expanded(
+                    child: SizedBox(
+                      height: 48,
+                      child: ElevatedButton.icon(
+                        onPressed: () => _open2GIS(seller),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          elevation: 0,
+                        ),
+                        icon: const Icon(Icons.navigation_rounded, size: 18, color: Colors.white),
+                        label: Text(
+                          loc.get('open_2gis'),
+                          style: AppTextStyles.labelLarge.copyWith(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// ДҮКӨНДҮН ТОВАРЛАРЫ ЭКРАНЫ
+// ══════════════════════════════════════════════════════
+class _StoreProductsScreen extends StatefulWidget {
+  final String storeId;
+  final String shopName;
+  final String containerNumber;
+
+  const _StoreProductsScreen({
+    required this.storeId,
+    required this.shopName,
+    required this.containerNumber,
+  });
+
+  @override
+  State<_StoreProductsScreen> createState() => _StoreProductsScreenState();
+}
+
+class _StoreProductsScreenState extends State<_StoreProductsScreen> {
+  List<ProductModel> _products = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProducts();
+  }
+
+  Future<void> _loadProducts() async {
+    try {
+      final data = await supabase
+          .from('products')
+          .select('*, stores(*)')
+          .eq('store_id', widget.storeId)
+          .eq('is_active', true)
+          .order('created_at', ascending: false);
+
+      final list = (data as List)
+          .cast<Map<String, dynamic>>()
+          .map((row) => ProductModel.fromMap(row))
+          .toList();
+
+      if (mounted) setState(() { _products = list; _isLoading = false; });
+    } catch (e) {
+      debugPrint('❌ _loadProducts: $e');
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final loc    = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor   = isDark ? const Color(0xFF121212) : const Color(0xFFF4F5F7);
+    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final textColor = isDark ? Colors.white : Colors.black87;
+
+    return Scaffold(
+      backgroundColor: bgColor,
+      appBar: AppBar(
+        backgroundColor: cardColor,
+        elevation: 0,
+        leading: GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: Icon(Icons.arrow_back, color: textColor),
+        ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(widget.shopName,
+                style: AppTextStyles.headingSmall.copyWith(color: textColor),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis),
+            if (widget.containerNumber.isNotEmpty)
+              Text('📍 ${widget.containerNumber}',
+                  style: AppTextStyles.labelSmall.copyWith(color: AppColors.primary)),
+          ],
+        ),
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          : _products.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text('🏪', style: TextStyle(fontSize: 48)),
+                      const SizedBox(height: 12),
+                      Text(
+                        loc.locale.languageCode == 'ru'
+                            ? 'Товаров пока нет'
+                            : 'Азырынча товар жок',
+                        style: AppTextStyles.headingSmall,
+                      ),
+                    ],
+                  ),
+                )
+              : GridView.builder(
+                  padding: const EdgeInsets.all(12),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 0.62,
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 10,
+                  ),
+                  itemCount: _products.length,
+                  itemBuilder: (_, i) => _ProductCard(
+                    product: _products[i],
+                    isDark: isDark,
+                    cardColor: cardColor,
+                    loc: loc,
+                  ),
+                ),
+    );
+  }
+}
+
+// ── Товар карточкасы ──
+class _ProductCard extends StatelessWidget {
+  final ProductModel product;
+  final bool isDark;
+  final Color cardColor;
+  final AppLocalizations loc;
+
+  const _ProductCard({
+    required this.product,
+    required this.isDark,
+    required this.cardColor,
+    required this.loc,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cur = loc.get('currency');
+    final hasDiscount = product.discountedPrice != null &&
+        product.discountedPrice! < product.price;
+
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => ProductDetailScreen(product: product)),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: cardColor,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.06),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Сүрөт ──
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+              child: CachedNetworkImage(
+                imageUrl: product.imageUrl,
+                height: 140,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                placeholder: (_, __) => Container(
+                  height: 140,
+                  color: isDark ? const Color(0xFF2C2C2C) : AppColors.grey100,
+                ),
+                errorWidget: (_, __, ___) => Container(
+                  height: 140,
+                  color: isDark ? const Color(0xFF2C2C2C) : AppColors.grey100,
+                  child: const Icon(Icons.image_not_supported_outlined,
+                      color: AppColors.grey400),
+                ),
+              ),
+            ),
+            // ── Маалымат ──
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      product.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.labelMedium.copyWith(
+                        color: isDark ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                    const Spacer(),
+                    if (hasDiscount) ...[
+                      Text(
+                        '${product.discountedPrice!.toStringAsFixed(0)} $cur',
+                        style: AppTextStyles.labelLarge.copyWith(
+                          color: AppColors.error,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        '${product.price.toStringAsFixed(0)} $cur',
+                        style: AppTextStyles.labelSmall.copyWith(
+                          color: AppColors.grey400,
+                          decoration: TextDecoration.lineThrough,
+                        ),
+                      ),
+                    ] else
+                      Text(
+                        '${product.price.toStringAsFixed(0)} $cur',
+                        style: AppTextStyles.labelLarge.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
