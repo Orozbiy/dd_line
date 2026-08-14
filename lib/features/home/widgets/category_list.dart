@@ -3,7 +3,7 @@ import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../core/app_localizations.dart';
 import '../models/category_model.dart';
-import 'dart:ui'; 
+import 'dart:ui';
 
 enum ProductFilterMode { all, newest, popular }
 
@@ -106,7 +106,7 @@ class _CategoryListState extends State<CategoryList> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-       barrierColor: Colors.black.withValues(alpha: 0.1), 
+      barrierColor: Colors.black.withValues(alpha: 0.1),
       builder: (_) => _CategoryBottomSheet(
         categories: _categories,
         selectedId: _selectedCategoryId,
@@ -134,10 +134,9 @@ class _CategoryListState extends State<CategoryList> {
     final cat    = _selectedCategory;
     final sub    = _selectedSub;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final inactiveBg   = isDark ? const Color(0xFF2C2C2C) : AppColors.grey100;
+    final inactiveBg    = isDark ? const Color(0xFF2C2C2C) : AppColors.grey100;
     final inactiveColor = isDark ? AppColors.grey400 : AppColors.grey600;
 
-    // Категория тандалганда анын түсүн алабыз, болбосо primary
     final activeCatColor = cat != null
         ? Color(int.parse('0xFF${cat.color}'))
         : AppColors.primary;
@@ -155,7 +154,6 @@ class _CategoryListState extends State<CategoryList> {
             physics: const BouncingScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 12),
             children: [
-              // ── Категория pill ──
               _PillButton(
                 icon: Icons.grid_view_rounded,
                 emoji: cat?.icon,
@@ -171,8 +169,6 @@ class _CategoryListState extends State<CategoryList> {
                 onTap: _openCategorySheet,
               ),
               const SizedBox(width: 8),
-
-              // ── Жаңы pill ──
               _PillButton(
                 icon: Icons.fiber_new_rounded,
                 label: loc.get('cat_newest'),
@@ -183,8 +179,6 @@ class _CategoryListState extends State<CategoryList> {
                 onTap: () => _setFilterMode(ProductFilterMode.newest),
               ),
               const SizedBox(width: 8),
-
-              // ── Таанымал pill ──
               _PillButton(
                 icon: Icons.trending_up_rounded,
                 label: loc.get('cat_popular'),
@@ -240,7 +234,7 @@ class _CategoryListState extends State<CategoryList> {
 }
 
 // ══════════════════════════════════════════════════════════
-// Бирдей стилдеги Pill баскычы (1-деңгээл үчүн)
+// Pill баскычы (1-деңгээл)
 // ══════════════════════════════════════════════════════════
 class _PillButton extends StatelessWidget {
   final IconData icon;
@@ -267,20 +261,34 @@ class _PillButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // Нейтрал көгүш — бардык pill бирдей стилде
+    const neutralBlue = Color(0xFF3B82F6);
+    final activeBg     = neutralBlue.withOpacity(isDark ? 0.30 : 0.18);
+    final activeBorder = neutralBlue.withOpacity(isDark ? 0.60 : 0.45);
+    final inactiveBgC  = neutralBlue.withOpacity(isDark ? 0.08 : 0.06);
+    final inactiveBorderC = neutralBlue.withOpacity(isDark ? 0.20 : 0.15);
+    final activeTextC  = isDark ? Colors.white : const Color(0xFF1E3A5F);
+    final inactiveTextC = isDark
+        ? Colors.white.withOpacity(0.75)
+        : const Color(0xFF1E3A5F).withOpacity(0.70);
+
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
         decoration: BoxDecoration(
-          color: isActive 
-    ? activeColor.withOpacity(0.80) 
-    : inactiveBg.withOpacity(0.50),
+          color: isActive ? activeBg : inactiveBgC,
           borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+            color: isActive ? activeBorder : inactiveBorderC,
+            width: isActive ? 1.5 : 1.0,
+          ),
           boxShadow: isActive
               ? [
                   BoxShadow(
-                    color: activeColor.withValues(alpha: 0.35),
+                    color: neutralBlue.withOpacity(0.20),
                     blurRadius: 8,
                     offset: const Offset(0, 3),
                   )
@@ -290,28 +298,26 @@ class _PillButton extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Эмoji болсо — ошону, болбосо иконка
             if (isActive && emoji != null)
               Text(emoji!, style: const TextStyle(fontSize: 14))
             else
               Icon(icon,
                   size: 16,
-                  color: isActive ? Colors.white : inactiveColor),
+                  color: isActive ? activeTextC : inactiveTextC),
             const SizedBox(width: 6),
             Text(
               label,
               style: AppTextStyles.labelLarge.copyWith(
-                color: isActive ? Colors.white : inactiveColor,
+                color: isActive ? activeTextC : inactiveTextC,
                 fontSize: 13,
-                fontWeight:
-                    isActive ? FontWeight.w700 : FontWeight.w500,
+                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
               ),
             ),
             if (showClose) ...[
               const SizedBox(width: 4),
               Icon(Icons.close_rounded,
                   size: 14,
-                  color: Colors.white.withValues(alpha: 0.8)),
+                  color: activeTextC.withOpacity(0.8)),
             ],
           ],
         ),
@@ -321,7 +327,7 @@ class _PillButton extends StatelessWidget {
 }
 
 // ══════════════════════════════════════════════════════════
-// Бирдей стилдеги Pill тизмеси (2 жана 3-деңгээл үчүн)
+// Pill тизмеси (2 жана 3-деңгээл)
 // ══════════════════════════════════════════════════════════
 class _PillRow extends StatelessWidget {
   final List<SubCategoryModel> items;
@@ -351,13 +357,15 @@ class _PillRow extends StatelessWidget {
         ? const EdgeInsets.symmetric(horizontal: 11, vertical: 0)
         : const EdgeInsets.symmetric(horizontal: 13, vertical: 0);
 
-    final unselBg = isDark
-        ? activeColor.withValues(alpha: 0.15)
-        : activeColor.withValues(alpha: 0.08);
-    final unselBorder = activeColor.withValues(alpha: 0.25);
-    final unselText = isDark
-        ? activeColor.withValues(alpha: 0.9)
-        : activeColor.withValues(alpha: 0.8);
+    // Нейтрал көгүш — ар башка категория түсү эмес, бирдей стил
+    const neutralBlue = Color(0xFF3B82F6);
+    final unselBg     = isDark
+        ? neutralBlue.withValues(alpha: 0.08)
+        : neutralBlue.withValues(alpha: 0.06);
+    final unselBorder = neutralBlue.withValues(alpha: isDark ? 0.20 : 0.15);
+    final unselText   = isDark
+        ? Colors.white.withOpacity(0.75)
+        : const Color(0xFF1E3A5F).withOpacity(0.70);
 
     return SizedBox(
       height: rowHeight + topMargin,
@@ -370,7 +378,7 @@ class _PillRow extends StatelessWidget {
           itemCount: items.length,
           separatorBuilder: (_, __) => const SizedBox(width: 7),
           itemBuilder: (context, i) {
-            final item = items[i];
+            final item       = items[i];
             final isSelected = selectedId == item.id;
 
             return GestureDetector(
@@ -379,16 +387,20 @@ class _PillRow extends StatelessWidget {
                 duration: const Duration(milliseconds: 180),
                 padding: padding,
                 decoration: BoxDecoration(
-                  color: isSelected ? activeColor : unselBg,
+                  color: isSelected
+                      ? neutralBlue.withValues(alpha: isDark ? 0.30 : 0.18)
+                      : unselBg,
                   borderRadius: BorderRadius.circular(22),
                   border: Border.all(
-                    color: isSelected ? activeColor : unselBorder,
-                    width: 1.5,
+                    color: isSelected
+                        ? neutralBlue.withValues(alpha: isDark ? 0.60 : 0.45)
+                        : unselBorder,
+                    width: isSelected ? 1.5 : 1.0,
                   ),
                   boxShadow: isSelected
                       ? [
                           BoxShadow(
-                            color: activeColor.withValues(alpha: 0.28),
+                            color: neutralBlue.withValues(alpha: 0.20),
                             blurRadius: 6,
                             offset: const Offset(0, 2),
                           )
@@ -400,28 +412,29 @@ class _PillRow extends StatelessWidget {
                   return Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(item.icon,
-                          style: TextStyle(fontSize: iconSize)),
+                      Text(item.icon, style: TextStyle(fontSize: iconSize)),
                       const SizedBox(width: 5),
                       Text(
                         item.localizedName(loc.locale.languageCode),
                         style: TextStyle(
                           fontSize: fontSize,
-                          fontWeight: isSelected
-                              ? FontWeight.w700
-                              : FontWeight.w500,
-                          color: isSelected ? Colors.white : unselText,
+                          fontWeight:
+                              isSelected ? FontWeight.w700 : FontWeight.w500,
+                          color: isSelected
+                              ? (isDark ? Colors.white : const Color(0xFF1E3A5F))
+                              : unselText,
                         ),
                       ),
-                      // SubItems бар болсо жебе
                       if (!isSubSub && item.hasSubItems) ...[
                         const SizedBox(width: 3),
                         Icon(
                           Icons.keyboard_arrow_down_rounded,
                           size: 14,
                           color: isSelected
-                              ? Colors.white.withValues(alpha: 0.8)
-                              : activeColor.withValues(alpha: 0.6),
+                              ? (isDark
+                                  ? Colors.white.withOpacity(0.8)
+                                  : const Color(0xFF1E3A5F).withOpacity(0.8))
+                              : neutralBlue.withValues(alpha: 0.50),
                         ),
                       ],
                     ],
@@ -452,120 +465,144 @@ class _CategoryBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final loc    = AppLocalizations.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final maxH   = MediaQuery.of(context).size.height * 0.85;
-    final bgColor     = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final loc      = AppLocalizations.of(context);
+    final isDark   = Theme.of(context).brightness == Brightness.dark;
+    final maxH     = MediaQuery.of(context).size.height * 0.85;
+    final bgColor  = isDark ? const Color(0xFF1E1E1E) : Colors.white;
     final handleColor = isDark ? const Color(0xFF3A3A3A) : AppColors.grey300;
-    final itemBg      = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF7F7F7);
     final textColor   = isDark ? Colors.white : AppColors.black;
 
-    return ClipRRect(
-  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-  child: BackdropFilter(
-    filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-    child: Container(
-      constraints: BoxConstraints(maxHeight: maxH),
-      decoration: BoxDecoration(
-        color: bgColor.withValues(alpha: 0.70),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Handle
-          Container(
-            margin: const EdgeInsets.only(top: 12, bottom: 8),
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: handleColor,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            child: Text(
-              loc.get('cat_select'),
-              style: AppTextStyles.headingSmall.copyWith(color: textColor),
-            ),
-          ),
-          Flexible(
-            child: GridView.builder(
-              shrinkWrap: true,
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 4,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 10,
-                childAspectRatio: 0.82,
-              ),
-              itemCount: categories.length,
-              itemBuilder: (_, idx) {
-                final cat = categories[idx];
-                final color = Color(int.parse('0xFF${cat.color}'));
-                final isSelected = selectedId == cat.id;
+    // ── Бардык item үчүн бирдей: өтө аз көгүш прозрачный фон ──
+    // Тандалган: категориянын түсү, тандалбаган: жарым-өткөрүмдүү нейтрал
+    const neutralBg      = Color(0xFF3B82F6); // нейтрал көгүш
+    const neutralBgAlpha = 0.06;              // өтө аз — айнек сымал
+    const borderAlpha    = 0.18;             // border жакшы көрүнсүн
 
-                return GestureDetector(
-                  onTap: () => onSelected(cat),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? color.withValues(alpha: 0.15)
-                          : itemBg,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: isSelected ? color : Colors.transparent,
-                        width: 2,
-                      ),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 46,
-                          height: 46,
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? color.withValues(alpha: 0.2)
-                                : color.withValues(alpha: 0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Center(
-                            child: Text(cat.icon,
-                                style: const TextStyle(fontSize: 22)),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          child: Text(
-                            cat.localizedName(loc.locale.languageCode),
-                            textAlign: TextAlign.center,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: isSelected
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
-                              color: isSelected ? color : textColor,
-                              height: 1.2,
-            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: Container(
+          constraints: BoxConstraints(maxHeight: maxH),
+          decoration: BoxDecoration(
+            color: bgColor.withValues(alpha: 0.70),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
-        ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle
+              Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: handleColor,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                child: Text(
+                  loc.get('cat_select'),
+                  style: AppTextStyles.headingSmall.copyWith(color: textColor),
+                ),
+              ),
+              Flexible(
+                child: GridView.builder(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 4,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 10,
+                    childAspectRatio: 0.82,
+                  ),
+                  itemCount: categories.length,
+                  itemBuilder: (_, idx) {
+                    final cat        = categories[idx];
+                    final catColor   = Color(int.parse('0xFF${cat.color}'));
+                    final isSelected = selectedId == cat.id;
+
+                    return GestureDetector(
+                      onTap: () => onSelected(cat),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        decoration: BoxDecoration(
+                          // тандалган: категориянын түсү (жарым өткөрүмдүү)
+                          // тандалбаган: бардыгы бирдей өтө аз көгүш
+                          color: isSelected
+                              ? catColor.withValues(alpha: 0.18)
+                              : neutralBg.withValues(alpha: neutralBgAlpha),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            // тандалган: категориянын түсү
+                            // тандалбаган: жарым-өткөрүмдүү нейтрал border
+                            color: isSelected
+                                ? catColor.withValues(alpha: 0.70)
+                                : neutralBg.withValues(alpha: borderAlpha),
+                            width: isSelected ? 2.0 : 1.0,
+                          ),
+                          boxShadow: isSelected
+                              ? [
+                                  BoxShadow(
+                                    color: catColor.withValues(alpha: 0.20),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  )
+                                ]
+                              : [],
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // Иконка тегерек — бардыгы бирдей нейтрал
+                            Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? catColor.withValues(alpha: 0.20)
+                                    : neutralBg.withValues(alpha: 0.10),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  cat.icon,
+                                  style: const TextStyle(fontSize: 22),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              child: Text(
+                                cat.localizedName(loc.locale.languageCode),
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w700
+                                      : FontWeight.w500,
+                                  // текст ар дайым окулгудай — textColor
+                                  color: isSelected ? catColor : textColor,
+                                  height: 1.2,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
-    ),   // ← Container жабылат
-    ),   // ← BackdropFilter жабылат
-  );     // ← ClipRRect жабылат
+    );
   }
 }

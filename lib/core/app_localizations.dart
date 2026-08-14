@@ -150,7 +150,7 @@ class AppLocalizations {
     'nav_step1': 'Төмөндөгү баскычты басыңыз',
     'nav_step2': '2ГИС тиркемеси ачылат',
     'nav_step3': '"Маршрут түзүү" баскычын басып жолго чыгыңыз',
-    'open_2gis': '2ГИС менен маршрут түзүү',
+    'open_2gis': 'Маршрут',
     'login_error': 'Кирүүдө ката кетти',
     'seller_login': 'Сатуучу катары кирүү',
     'email_not_found': 'Почта тиркемеси табылбады',
@@ -866,9 +866,29 @@ class AppLocalizations {
     'paid_yes': '✅ Төлөдү',
     'paid_no': '❌ Төлөбөдү',
     'unknown': 'Белгисиз',
+
+
+  
+    'chat_background': 'Чат фону',
+    'cache_clear': 'Кэшти тазалоо',
+  
   };
 
   static const _ru = {
+
+    'settings': 'Настройки',
+    'profile': 'Профиль',
+    'profile_view_edit': 'Просмотр и редактирование',
+    'language': 'Язык',
+    'notifications': 'Уведомления',
+    'theme_mode': 'Тема оформления',
+    'theme_light': 'Светлая',
+    'theme_dark': 'Темная',
+    'theme_system': 'Системная',
+    'chat_background': 'Фон чата',
+    'cache_clear': 'Очистить кэш',
+    'support': 'Служба поддержки',
+    'terms': 'Условия использования',
     // 🎰 Рулетка — Drawer кнопка
     'status_pending': '⏳ Ожидание',
     'status_approved': '✅ Активный',
@@ -928,10 +948,7 @@ class AppLocalizations {
     'cat_1_14_3_3': 'Осенние',
     'cat_1_14_3_4': 'Зимние',
     'cat_1_14_3_5': 'Офисные',
-    'theme_mode': 'Режим',
-    'theme_light': 'Светлый',
-    'theme_dark': 'Тёмный',
-    'theme_system': 'Системный',
+   
     'cat_1_14_3_6': 'Повседневные',
     'cat_1_14_3_7': 'Национальные',
     'cat_1_14_4': 'Детские',
@@ -1205,14 +1222,11 @@ class AppLocalizations {
     'pending_btn_home': 'Вернуться на главную',
     'rejected_title': 'Заявка отклонена',
     'rejected_desc': 'Для повторной попытки свяжитесь с администратором.',
-    'settings': 'Настройки',
-    'language': 'Язык',
-    'notifications': 'Уведомления',
+   
     'dark_mode': 'Тёмный режим',
-    'profile': 'Профиль',
+   
     'cache': 'Очистить кэш',
-    'support': 'Поддержка',
-    'terms': 'Правила',
+  
     'home': 'Главная',
     'cart': 'Корзина',
     'favorites': 'Избранное',
@@ -1405,7 +1419,7 @@ class AppLocalizations {
     'nav_step1': 'Нажмите кнопку ниже',
     'nav_step2': 'Откроется приложение 2ГИС',
     'nav_step3': 'Нажмите "Построить маршрут" и отправляйтесь',
-    'open_2gis': 'Маршрут через 2ГИС',
+    'open_2gis': 'Маршрут ',
     'login_error': 'Ошибка при входе',
     'seller_login': 'Войти как продавец',
     'email_not_found': 'Почтовое приложение не найдено',

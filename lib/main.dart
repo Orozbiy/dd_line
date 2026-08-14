@@ -20,6 +20,7 @@ import 'core/theme_provider.dart';
 import 'core/update_checker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'features/notifications/screens/notifications_screen.dart';
+import 'core/chat_background_provider.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -50,6 +51,8 @@ Future<void> main() async {
   debugPrint('🚀 Cart & Favorites...');
   await CartManager.instance.loadFromPrefs();
   await FavoritesManager().loadFromPrefs();
+  await ChatBackgroundProvider.instance.load(); 
+
 
 
 

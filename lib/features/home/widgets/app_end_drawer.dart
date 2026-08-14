@@ -34,7 +34,6 @@ class AppEndDrawer extends StatelessWidget {
 
 // ══════════════════════════════════════════════════════
 // МЕНЮ БАСКЫЧЫ — AppBar actions ичине коюлат
-// Мандарин градиент, басканда openSidePanel чакырат
 // ══════════════════════════════════════════════════════
 class MenuOpenButton extends StatefulWidget {
   final VoidCallback onTap;
@@ -103,7 +102,6 @@ class _SidePanelOverlayState extends State<_SidePanelOverlay>
   late AnimationController _ctrl;
   bool _isDragging = false;
 
-  // Панелдин кеңдиги — экрандын 90%
   static const double _panelRatio = 0.90;
 
   @override
@@ -163,18 +161,16 @@ class _SidePanelOverlayState extends State<_SidePanelOverlay>
     final totalBottom = navbarHeight + bottomPadding;
     final sw = MediaQuery.of(context).size.width;
     final panelWidth = sw * _panelRatio;
-
-    // Панел оң тараптан сыртта турат, _ctrl.value = 1 болгондо толук кирет
     final offsetX = panelWidth * (1.0 - _ctrl.value);
 
     return Stack(
       children: [
-        // ── Кара фон (сол тарап) — басканда жабылат ──
+        // ── Арткы кара фон — 30% азайтылган (0.45 → 0.15) ──
         Positioned.fill(
           child: GestureDetector(
             onTap: _close,
             child: AnimatedOpacity(
-              opacity: _ctrl.value * 0.25,
+              opacity: _ctrl.value * 0.45,
               duration: Duration.zero,
               child: const ColoredBox(color: Colors.black),
             ),
@@ -242,12 +238,8 @@ class _SidePanelScreenState extends State<_SidePanelScreen> {
   Future<void> _openStory(int index) async {
     final stories = List<StoryModel>.from(_stories);
     final nav = Navigator.of(context, rootNavigator: true);
-
-    // Панелди жап
     widget.onClose?.call();
     await Future.delayed(const Duration(milliseconds: 350));
-
-    // Navigator сакталган болгондуктан ачса болот
     await nav.push<void>(
       PageRouteBuilder(
         pageBuilder: (_, __, ___) => StoryViewerScreen(
@@ -287,8 +279,13 @@ class _SidePanelScreenState extends State<_SidePanelScreen> {
         isDark ? const Color(0xFF2C2C2C) : const Color(0xFFEEEEEE);
     final footerColor = isDark ? AppColors.grey500 : AppColors.grey400;
 
-  return Material(
-  color: Colors.transparent,
+    // ── Панелдин фону: жарым өткөрүмдүү, айнек сымал эффект ──
+    final panelBg = isDark
+        ? Colors.black.withOpacity(0.65)   // 30% азайтылган
+        : Colors.white.withOpacity(0.65);  // 30% азайтылган
+
+    return Material(
+      color: panelBg,
       child: DefaultTextStyle.merge(
         style: TextStyle(
           decoration: TextDecoration.none,
@@ -318,7 +315,6 @@ class _SidePanelScreenState extends State<_SidePanelScreen> {
                       ),
                     ),
                     const Spacer(),
-                    // Жабуу баскычы
                     GestureDetector(
                       onTap: widget.onClose,
                       child: Container(
@@ -394,8 +390,7 @@ class _SidePanelScreenState extends State<_SidePanelScreen> {
 
                       // ── 🎟 Акциялар ──
                       Padding(
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 16),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onTap: () => _goTo(const PromotionScreen()),
@@ -406,7 +401,7 @@ class _SidePanelScreenState extends State<_SidePanelScreen> {
                               gradient: const LinearGradient(
                                 colors: [
                                   Color(0xFF6C47FF),
-                                  Color(0xFF4A90D9)
+                                  Color(0xFF4A90D9),
                                 ],
                                 begin: Alignment.centerLeft,
                                 end: Alignment.centerRight,
@@ -419,24 +414,20 @@ class _SidePanelScreenState extends State<_SidePanelScreen> {
                                     style: TextStyle(fontSize: 32)),
                                 const SizedBox(width: 14),
                                 Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(loc.get('drawer_promo_title'),
                                         style: const TextStyle(
                                             color: Colors.white,
                                             fontWeight: FontWeight.w600,
                                             fontSize: 15,
-                                            decoration:
-                                                TextDecoration.none)),
+                                            decoration: TextDecoration.none)),
                                     const SizedBox(height: 2),
-                                    Text(
-                                        loc.get('drawer_promo_subtitle'),
+                                    Text(loc.get('drawer_promo_subtitle'),
                                         style: const TextStyle(
                                             color: Colors.white70,
                                             fontSize: 12,
-                                            decoration:
-                                                TextDecoration.none)),
+                                            decoration: TextDecoration.none)),
                                   ],
                                 ),
                                 const Spacer(),
@@ -451,8 +442,7 @@ class _SidePanelScreenState extends State<_SidePanelScreen> {
                       // ── ⚡ Flash Sale ──
                       const SizedBox(height: 12),
                       Padding(
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 16),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onTap: () => _goTo(const FlashSaleScreen()),
@@ -469,24 +459,20 @@ class _SidePanelScreenState extends State<_SidePanelScreen> {
                                     style: TextStyle(fontSize: 32)),
                                 const SizedBox(width: 14),
                                 Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(loc.get('drawer_flash_title'),
                                         style: const TextStyle(
                                             color: Colors.white,
                                             fontWeight: FontWeight.bold,
                                             fontSize: 15,
-                                            decoration:
-                                                TextDecoration.none)),
+                                            decoration: TextDecoration.none)),
                                     const SizedBox(height: 2),
-                                    Text(
-                                        loc.get('drawer_flash_subtitle'),
+                                    Text(loc.get('drawer_flash_subtitle'),
                                         style: const TextStyle(
                                             color: Colors.white70,
                                             fontSize: 12,
-                                            decoration:
-                                                TextDecoration.none)),
+                                            decoration: TextDecoration.none)),
                                   ],
                                 ),
                                 const Spacer(),
@@ -501,8 +487,7 @@ class _SidePanelScreenState extends State<_SidePanelScreen> {
                       // ── ⭐ Өзгөчө товарлар ──
                       const SizedBox(height: 12),
                       Padding(
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 16),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onTap: () => _goTo(const FeaturedScreen()),
@@ -513,7 +498,7 @@ class _SidePanelScreenState extends State<_SidePanelScreen> {
                               gradient: const LinearGradient(
                                 colors: [
                                   Color(0xFF1A7A4A),
-                                  Color(0xFF2ECC71)
+                                  Color(0xFF2ECC71),
                                 ],
                                 begin: Alignment.centerLeft,
                                 end: Alignment.centerRight,
@@ -526,26 +511,20 @@ class _SidePanelScreenState extends State<_SidePanelScreen> {
                                     style: TextStyle(fontSize: 32)),
                                 const SizedBox(width: 14),
                                 Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
-                                        loc.get('drawer_featured_title'),
+                                    Text(loc.get('drawer_featured_title'),
                                         style: const TextStyle(
                                             color: Colors.white,
                                             fontWeight: FontWeight.bold,
                                             fontSize: 15,
-                                            decoration:
-                                                TextDecoration.none)),
+                                            decoration: TextDecoration.none)),
                                     const SizedBox(height: 2),
-                                    Text(
-                                        loc.get(
-                                            'drawer_featured_subtitle'),
+                                    Text(loc.get('drawer_featured_subtitle'),
                                         style: const TextStyle(
                                             color: Colors.white70,
                                             fontSize: 12,
-                                            decoration:
-                                                TextDecoration.none)),
+                                            decoration: TextDecoration.none)),
                                   ],
                                 ),
                                 const Spacer(),

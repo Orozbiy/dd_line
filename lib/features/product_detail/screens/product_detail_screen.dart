@@ -92,11 +92,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         }
       }
 
-      // ✅ View +1 жазуу
       supabase.rpc('increment_product_views', params: {
         'product_id': widget.product.id,
       }).then((_) {
-        // views_count экранда жаңыртуу
         if (mounted) {
           setState(() {
             _product = _product.copyWith(viewsCount: _product.viewsCount + 1);
@@ -207,8 +205,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   Future<void> _openChat() async {
     final loc = AppLocalizations.of(context);
-
-    // _dataLoading бүтпөгөн болсо — бир аз күт
     if (_dataLoading) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(loc.get('loading')),
@@ -217,14 +213,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       ));
       return;
     }
-
     if (_sellerUid == null || _sellerUid!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(loc.get('seller_no_info')),
           backgroundColor: AppColors.warning));
       return;
     }
-
     final user = supabase.auth.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -232,20 +226,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           backgroundColor: AppColors.warning));
       return;
     }
-
     if (user.id == _sellerUid) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(loc.get('own_product')),
           backgroundColor: AppColors.warning));
       return;
     }
-
     try {
       final chatId = await _chatService.getOrCreateChat(
           buyerId: user.id, sellerId: _sellerUid!, productId: _product.id);
-
       if (!mounted) return;
-
       await Navigator.push(
           context,
           MaterialPageRoute(
@@ -262,7 +252,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     } catch (e) {
       debugPrint('❌ _openChat: $e');
       if (!mounted) return;
-
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('${loc.get('error')}: $e'),
           backgroundColor: AppColors.error));
@@ -293,17 +282,23 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       return TimeOfDay(
           hour: int.tryParse(p[0]) ?? 0, minute: int.tryParse(p[1]) ?? 0);
     }
-
     final s = parse(_workStart);
     final e = parse(_workEnd);
     final nowMin = now.hour * 60 + now.minute;
     return nowMin >= s.hour * 60 + s.minute && nowMin < e.hour * 60 + e.minute;
   }
 
-  // ✅ ЖАҢЫ: санды форматтоо (1200 → 1.2к)
   String _formatCount(int count) {
     if (count >= 1000) return '${(count / 1000).toStringAsFixed(1)}к';
     return count.toString();
+  }
+
+  // ── Жардамчы: блокту blur менен ороо ──
+  Widget _blurBlock(Widget child, Color cardColor) {
+    return Container(
+      color: cardColor,
+      child: child,
+    );
   }
 
   Widget _buildPriceSection(AppLocalizations loc) {
@@ -344,8 +339,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     decorationThickness: 1.5)),
             const SizedBox(width: 8),
             Text('$saved ${loc.get('price_saved')}',
-                style: AppTextStyles.labelSmall
-                    .copyWith(color: AppColors.success)),
+                style: AppTextStyles.labelSmall.copyWith(color: AppColors.success)),
           ]),
         ],
       );
@@ -361,28 +355,56 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final cur = loc.get('currency');
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF121212) : const Color(0xFFF4F5F7);
-    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+
+    final cardColor = Colors.transparent;
     final chipColor = isDark ? const Color(0xFF2C2C2C) : AppColors.grey50;
     final chipBorder = isDark ? const Color(0xFF3A3A3A) : AppColors.grey200;
+    final appBarBg = isDark
+        ? Colors.black.withOpacity(0.65)
+        : Colors.white.withOpacity(0.80);
+    final btnBg = isDark
+        ? Colors.black.withOpacity(0.70)
+        : Colors.white.withOpacity(0.85);
+
+    // ── Арткы фон: dark → синий градиент (HomeBackground), light → ак ──
+    final scaffoldBg = isDark
+        ? const Color(0xFF0D0F1A)   // HomeColors.bgGrad1 — башкы фон
+        : const Color(0xFFF4F5F7);  // light ак фон
 
     return Scaffold(
-      backgroundColor: bgColor,
-      body: CustomScrollView(
+      backgroundColor: scaffoldBg,
+      body: Stack(
+        children: [
+          // ── Арткы фон: dark → синий градиент, light → ак ──
+          if (isDark)
+            Positioned.fill(
+              child: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Color(0xFF0D0F1A),
+                      Color(0xFF12103A),
+                      Color(0xFF0D1525),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    stops: [0.0, 0.5, 1.0],
+                  ),
+                ),
+              ),
+            ),
+          CustomScrollView(
         slivers: [
           SliverAppBar(
             expandedHeight: 320,
             pinned: true,
-            backgroundColor: cardColor,
+            backgroundColor: appBarBg,
             leading: GestureDetector(
               onTap: () => Navigator.pop(context),
               child: Container(
                 margin: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                    color: cardColor.withValues(alpha: 0.9),
-                    shape: BoxShape.circle),
-                child:
-                    Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
+                decoration: BoxDecoration(color: btnBg, shape: BoxShape.circle),
+                child: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
               ),
             ),
             actions: [
@@ -393,9 +415,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 },
                 child: Container(
                   margin: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                      color: cardColor.withValues(alpha: 0.9),
-                      shape: BoxShape.circle),
+                  decoration: BoxDecoration(color: btnBg, shape: BoxShape.circle),
                   child: Padding(
                       padding: const EdgeInsets.all(8),
                       child: Icon(
@@ -407,13 +427,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 onTap: () => ShareWidget.show(context, _product),
                 child: Container(
                   margin: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                      color: cardColor.withValues(alpha: 0.9),
-                      shape: BoxShape.circle),
+                  decoration: BoxDecoration(color: btnBg, shape: BoxShape.circle),
                   child: const Padding(
                       padding: EdgeInsets.all(8),
-                      child:
-                          Icon(Icons.share_outlined, color: AppColors.grey600)),
+                      child: Icon(Icons.share_outlined, color: AppColors.grey600)),
                 ),
               ),
               const SizedBox(width: 4),
@@ -426,8 +443,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           PageRouteBuilder(
                             opaque: false,
                             barrierColor: Colors.black,
-                            transitionDuration:
-                                const Duration(milliseconds: 250),
+                            transitionDuration: const Duration(milliseconds: 250),
                             pageBuilder: (_, __, ___) => _FullscreenImageScreen(
                                 imageUrl: _product.imageUrl,
                                 heroTag: 'product_image_${_product.id}'),
@@ -435,12 +451,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       child: Hero(
                         tag: 'product_image_${_product.id}',
                         child: CachedNetworkImage(
-                          imageUrl:
-                              toCloudinaryThumb(_product.imageUrl, width: 800),
+                          imageUrl: toCloudinaryThumb(_product.imageUrl, width: 800),
                           fit: BoxFit.cover,
                           fadeInDuration: const Duration(milliseconds: 150),
-                          placeholder: (_, __) =>
-                              Container(color: AppColors.grey100),
+                          placeholder: (_, __) => Container(color: AppColors.grey100),
                           errorWidget: (_, __, ___) => Container(
                               color: AppColors.grey100,
                               child: const Icon(Icons.image_not_supported,
@@ -450,204 +464,179 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     )
                   : Container(
                       color: AppColors.grey100,
-                      child: const Icon(Icons.image,
-                          size: 80, color: AppColors.grey300)),
+                      child: const Icon(Icons.image, size: 80, color: AppColors.grey300)),
             ),
           ),
+
           SliverToBoxAdapter(
             child: _dataLoading
                 ? const Padding(
                     padding: EdgeInsets.all(32),
                     child: Center(
-                        child: CircularProgressIndicator(
-                            color: AppColors.primary)))
+                        child: CircularProgressIndicator(color: AppColors.primary)))
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // ── Баа + аты ──
-                      Container(
-                        color: cardColor,
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildPriceSection(loc),
-                            const SizedBox(height: 8),
-                            const SizedBox(height: 8),
-                            Text(_product.name,
-                                style: AppTextStyles.headingMedium
-                                    .copyWith(fontSize: 24)),
-                            const SizedBox(height: 8),
-                            Row(children: [
-                              // ── Рейтинг ──
-                              if ((_product.rating ?? 0) > 0) ...[
-                                const Icon(Icons.star_rounded,
-                                    color: Colors.amber, size: 16),
-                                const SizedBox(width: 2),
-                                Text(_product.rating!.toStringAsFixed(1),
-                                    style: AppTextStyles.labelMedium
-                                        .copyWith(fontSize: 16)),
-                                if ((_product.ratingCount ?? 0) > 0)
-                                  Text(' (${_product.ratingCount})',
-                                      style: AppTextStyles.labelSmall
-                                          .copyWith(color: AppColors.grey400)),
-                              ],
-                              const Spacer(),
-
-                              // ✅ ЖАҢЫ: Көрүлгөн саны
-                              Icon(Icons.remove_red_eye_outlined,
-                                  size: 14, color: AppColors.grey400),
-                              const SizedBox(width: 3),
-                              Text(
-                                _formatCount(_product.viewsCount),
-                                style: AppTextStyles.labelSmall
-                                    .copyWith(color: AppColors.grey400),
-                              ),
-                              const SizedBox(width: 10),
-
-                              // ✅ ЖАҢЫ: Жактырылган саны
-                              Icon(Icons.favorite_outline,
-                                  size: 14,
-                                  color:
-                                      Colors.pinkAccent.withValues(alpha: 0.8)),
-                              const SizedBox(width: 3),
-                              Text(
-                                _formatCount(_product.likesCount),
-                                style: AppTextStyles.labelSmall
-                                    .copyWith(color: AppColors.grey400),
-                              ),
-
-                              // ── Distance ──
-                              if (_product.distanceFormatted.isNotEmpty) ...[
+                      _blurBlock(
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildPriceSection(loc),
+                              const SizedBox(height: 8),
+                              const SizedBox(height: 8),
+                              Text(_product.name,
+                                  style: AppTextStyles.headingMedium.copyWith(fontSize: 24)),
+                              const SizedBox(height: 8),
+                              Row(children: [
+                                if ((_product.rating ?? 0) > 0) ...[
+                                  const Icon(Icons.star_rounded, color: Colors.amber, size: 16),
+                                  const SizedBox(width: 2),
+                                  Text(_product.rating!.toStringAsFixed(1),
+                                      style: AppTextStyles.labelMedium.copyWith(fontSize: 16)),
+                                  if ((_product.ratingCount ?? 0) > 0)
+                                    Text(' (${_product.ratingCount})',
+                                        style: AppTextStyles.labelSmall
+                                            .copyWith(color: AppColors.grey400)),
+                                ],
+                                const Spacer(),
+                                Icon(Icons.remove_red_eye_outlined,
+                                    size: 14, color: AppColors.grey400),
+                                const SizedBox(width: 3),
+                                Text(_formatCount(_product.viewsCount),
+                                    style: AppTextStyles.labelSmall
+                                        .copyWith(color: AppColors.grey400)),
                                 const SizedBox(width: 10),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 10, vertical: 4),
-                                  decoration: BoxDecoration(
-                                      color: AppColors.primary
-                                          .withValues(alpha: 0.08),
-                                      borderRadius: BorderRadius.circular(8)),
-                                  child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        const Icon(Icons.location_on,
-                                            size: 14, color: AppColors.primary),
-                                        const SizedBox(width: 4),
-                                        Text(_product.distanceFormatted,
-                                            style: AppTextStyles.labelSmall
-                                                .copyWith(
-                                                    color: AppColors.primary)),
-                                      ]),
-                                ),
-                              ],
-                            ]),
-                          ],
+                                Icon(Icons.favorite_outline,
+                                    size: 14,
+                                    color: Colors.pinkAccent.withValues(alpha: 0.8)),
+                                const SizedBox(width: 3),
+                                Text(_formatCount(_product.likesCount),
+                                    style: AppTextStyles.labelSmall
+                                        .copyWith(color: AppColors.grey400)),
+                                if (_product.distanceFormatted.isNotEmpty) ...[
+                                  const SizedBox(width: 10),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                        color: AppColors.primary.withValues(alpha: 0.08),
+                                        borderRadius: BorderRadius.circular(8)),
+                                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                                      const Icon(Icons.location_on,
+                                          size: 14, color: AppColors.primary),
+                                      const SizedBox(width: 4),
+                                      Text(_product.distanceFormatted,
+                                          style: AppTextStyles.labelSmall
+                                              .copyWith(color: AppColors.primary)),
+                                    ]),
+                                  ),
+                                ],
+                              ]),
+                            ],
+                          ),
                         ),
+                        cardColor,
                       ),
                       const SizedBox(height: 8),
-                      _buildCharacteristics(
-                          loc, cardColor, chipColor, chipBorder),
+
+                      // ── Характеристикалар ──
+                      _buildCharacteristics(loc, cardColor, chipColor, chipBorder),
                       const SizedBox(height: 8),
 
                       // ── Сүрөттөмө ──
                       if (_product.description != null &&
                           _product.description!.isNotEmpty) ...[
-                        Container(
-                          color: cardColor,
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(loc.get('description'),
-                                  style: AppTextStyles.headingSmall),
-                              const SizedBox(height: 8),
-                              Text(_product.description!,
-                                  style: AppTextStyles.bodyMedium),
-                            ],
+                        _blurBlock(
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(loc.get('description'),
+                                    style: AppTextStyles.headingSmall),
+                                const SizedBox(height: 8),
+                                Text(_product.description!,
+                                    style: AppTextStyles.bodyMedium),
+                              ],
+                            ),
                           ),
+                          cardColor,
                         ),
                         const SizedBox(height: 8),
                       ],
 
                       // ── Размер тандоо ──
                       if (_product.sizes.isNotEmpty) ...[
-                        Container(
-                          color: cardColor,
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(loc.get('select_size'),
-                                  style: AppTextStyles.headingSmall),
-                              const SizedBox(height: 12),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: _product.sizes.map((size) {
-                                  final isSel = selectedSize == size;
-                                  return GestureDetector(
-                                    onTap: () =>
-                                        setState(() => selectedSize = size),
-                                    child: AnimatedContainer(
-                                      duration:
-                                          const Duration(milliseconds: 200),
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 16, vertical: 10),
-                                      decoration: BoxDecoration(
-                                        color: isSel
-                                            ? AppColors.primary
-                                            : chipColor,
-                                        borderRadius: BorderRadius.circular(10),
-                                        border: Border.all(
-                                            color: isSel
-                                                ? AppColors.primary
-                                                : chipBorder),
+                        _blurBlock(
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(loc.get('select_size'),
+                                    style: AppTextStyles.headingSmall),
+                                const SizedBox(height: 12),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: _product.sizes.map((size) {
+                                    final isSel = selectedSize == size;
+                                    return GestureDetector(
+                                      onTap: () => setState(() => selectedSize = size),
+                                      child: AnimatedContainer(
+                                        duration: const Duration(milliseconds: 200),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 16, vertical: 10),
+                                        decoration: BoxDecoration(
+                                          color: isSel ? AppColors.primary : chipColor,
+                                          borderRadius: BorderRadius.circular(10),
+                                          border: Border.all(
+                                              color: isSel ? AppColors.primary : chipBorder),
+                                        ),
+                                        child: Text(size,
+                                            style: AppTextStyles.labelLarge.copyWith(
+                                                color: isSel
+                                                    ? Colors.white
+                                                    : theme.colorScheme.onSurface)),
                                       ),
-                                      child: Text(size,
-                                          style: AppTextStyles.labelLarge
-                                              .copyWith(
-                                                  color: isSel
-                                                      ? Colors.white
-                                                      : theme.colorScheme
-                                                          .onSurface)),
-                                    ),
-                                  );
-                                }).toList(),
-                              ),
-                            ],
+                                    );
+                                  }).toList(),
+                                ),
+                              ],
+                            ),
                           ),
+                          cardColor,
                         ),
                         const SizedBox(height: 8),
                       ],
 
                       // ── Сатуучу маалыматы ──
-                      Container(
-                        color: cardColor,
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(loc.get('seller'),
-                                style: AppTextStyles.headingMedium),
-                            const SizedBox(height: 12),
-                            if (_shopName.isNotEmpty) ...[
-                              _infoRow(Icons.store_outlined, loc.get('shop'),
-                                  _shopName),
+                      _blurBlock(
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(loc.get('seller'), style: AppTextStyles.headingMedium),
+                              const SizedBox(height: 12),
+                              if (_shopName.isNotEmpty) ...[
+                                _infoRow(Icons.store_outlined, loc.get('shop'), _shopName),
+                                const SizedBox(height: 8),
+                              ],
+                              if (_sellerName.isNotEmpty) ...[
+                                _infoRow(Icons.person_outline, loc.get('seller'), _sellerName),
+                                const SizedBox(height: 8),
+                              ],
+                              if (_containerNumber.isNotEmpty) ...[
+                                _infoRow(Icons.location_on_outlined,
+                                    loc.get('container'), _containerNumber,
+                                    valueColor: AppColors.primary),
+                              ],
                               const SizedBox(height: 8),
-                            ],
-                            if (_sellerName.isNotEmpty) ...[
-                              _infoRow(Icons.person_outline, loc.get('seller'),
-                                  _sellerName),
-                              const SizedBox(height: 8),
-                            ],
-                            if (_containerNumber.isNotEmpty) ...[
-                              _infoRow(Icons.location_on_outlined,
-                                  loc.get('container'), _containerNumber,
-                                  valueColor: AppColors.primary),
-                            ],
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
+                              Row(children: [
                                 const Icon(Icons.storefront_outlined,
                                     size: 18, color: AppColors.grey500),
                                 const SizedBox(width: 8),
@@ -656,22 +645,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                       horizontal: 10, vertical: 4),
                                   decoration: BoxDecoration(
                                     color: _storeType == 'market'
-                                        ? AppColors.primary
-                                            .withValues(alpha: 0.1)
-                                        : const Color(0xFF10B981)
-                                            .withValues(alpha: 0.1),
+                                        ? AppColors.primary.withValues(alpha: 0.1)
+                                        : const Color(0xFF10B981).withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(
                                       color: _storeType == 'market'
-                                          ? AppColors.primary
-                                              .withValues(alpha: 0.4)
-                                          : const Color(0xFF10B981)
-                                              .withValues(alpha: 0.4),
+                                          ? AppColors.primary.withValues(alpha: 0.4)
+                                          : const Color(0xFF10B981).withValues(alpha: 0.4),
                                     ),
                                   ),
                                   child: Text(
-                                    _storeType == 'market' &&
-                                            _marketName.isNotEmpty
+                                    _storeType == 'market' && _marketName.isNotEmpty
                                         ? '🏪 $_marketName'
                                         : '🏬 Жеке менчик дүкөн',
                                     style: AppTextStyles.labelSmall.copyWith(
@@ -682,57 +666,54 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                     ),
                                   ),
                                 ),
-                              ],
-                            ),
-                            if (_workStart.isNotEmpty &&
-                                _workEnd.isNotEmpty) ...[
-                              const SizedBox(height: 8),
-                              Row(children: [
-                                Container(
-                                  width: 8,
-                                  height: 8,
-                                  decoration: BoxDecoration(
-                                    color: _isOpenNow()
-                                        ? const Color(0xFF10B981)
-                                        : const Color(0xFFF87171),
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  _isOpenNow()
-                                      ? loc.get('open')
-                                      : loc.get('closed'),
-                                  style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
+                              ]),
+                              if (_workStart.isNotEmpty && _workEnd.isNotEmpty) ...[
+                                const SizedBox(height: 8),
+                                Row(children: [
+                                  Container(
+                                    width: 8,
+                                    height: 8,
+                                    decoration: BoxDecoration(
                                       color: _isOpenNow()
                                           ? const Color(0xFF10B981)
-                                          : const Color(0xFFF87171)),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                    '·  ${_workDays.isNotEmpty ? "$_workDays  " : ""}$_workStart — $_workEnd',
+                                          : const Color(0xFFF87171),
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    _isOpenNow() ? loc.get('open') : loc.get('closed'),
                                     style: TextStyle(
                                         fontSize: 12,
-                                        color: isDark
-                                            ? AppColors.grey400
-                                            : const Color(0xFF6B7280))),
-                              ]),
+                                        fontWeight: FontWeight.w600,
+                                        color: _isOpenNow()
+                                            ? const Color(0xFF10B981)
+                                            : const Color(0xFFF87171)),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                      '·  ${_workDays.isNotEmpty ? "$_workDays  " : ""}$_workStart — $_workEnd',
+                                      style: TextStyle(
+                                          fontSize: 12,
+                                          color: isDark
+                                              ? AppColors.grey400
+                                              : const Color(0xFF6B7280))),
+                                ]),
+                              ],
+                              if (_shopName.isEmpty && _sellerName.isEmpty)
+                                Text(loc.get('no_info'),
+                                    style: AppTextStyles.bodyMedium
+                                        .copyWith(color: AppColors.grey500)),
                             ],
-                            if (_shopName.isEmpty && _sellerName.isEmpty)
-                              Text(loc.get('no_info'),
-                                  style: AppTextStyles.bodyMedium
-                                      .copyWith(color: AppColors.grey500)),
-                          ],
+                          ),
                         ),
+                        cardColor,
                       ),
                       const SizedBox(height: 8),
 
                       // ── Бөлүшүү кнопкасы ──
                       Container(
-                        margin: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 4),
+                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
                             colors: [Color(0xFF10B981), Color(0xFF059669)],
@@ -760,13 +741,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Icon(Icons.share_rounded,
-                                      color: Colors.white, size: 22),
+                                  const Icon(Icons.share_rounded, color: Colors.white, size: 22),
                                   const SizedBox(width: 10),
                                   Text(
-                                    loc.locale.languageCode == 'ru'
-                                        ? 'Поделиться'
-                                        : 'Бөлүшүү',
+                                    loc.locale.languageCode == 'ru' ? 'Поделиться' : 'Бөлүшүү',
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 16,
@@ -784,111 +762,88 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
                       // ── Окшош товарлар ──
                       if (_similarProducts.isNotEmpty)
-                        Container(
-                          color: cardColor,
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(loc.get('similar'),
-                                  style: AppTextStyles.headingSmall),
-                              const SizedBox(height: 12),
-                              SizedBox(
-                                height: 220,
-                                child: ListView.separated(
-                                  scrollDirection: Axis.horizontal,
-                                  itemCount: _similarProducts.length,
-                                  separatorBuilder: (_, __) =>
-                                      const SizedBox(width: 12),
-                                  itemBuilder: (context, i) {
-                                    final p = _similarProducts[i];
-                                    final pHasDiscount = p.hasPromotion &&
-                                        p.discountedPrice != null &&
-                                        p.discountedPrice! < p.price;
-                                    return GestureDetector(
-                                      onTap: () => Navigator.pushReplacement(
-                                          context,
-                                          MaterialPageRoute(
-                                              builder: (_) =>
-                                                  ProductDetailScreen(
-                                                      product: p))),
-                                      child: SizedBox(
-                                        width: 140,
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            ClipRRect(
-                                              borderRadius:
-                                                  BorderRadius.circular(10),
-                                              child: CachedNetworkImage(
-                                                imageUrl: toCloudinaryThumb(
-                                                    p.imageUrl,
-                                                    width: 300),
-                                                height: 140,
-                                                width: 140,
-                                                fit: BoxFit.cover,
-                                                fadeInDuration: const Duration(
-                                                    milliseconds: 150),
-                                                placeholder: (_, __) =>
-                                                    Container(
-                                                        height: 140,
-                                                        width: 140,
-                                                        color:
-                                                            AppColors.grey100),
-                                                errorWidget: (_, __, ___) =>
-                                                    Container(
-                                                        height: 140,
-                                                        color:
-                                                            AppColors.grey100,
-                                                        child: const Icon(Icons
-                                                            .image_not_supported)),
+                        _blurBlock(
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(loc.get('similar'), style: AppTextStyles.headingSmall),
+                                const SizedBox(height: 12),
+                                SizedBox(
+                                  height: 220,
+                                  child: ListView.separated(
+                                    scrollDirection: Axis.horizontal,
+                                    itemCount: _similarProducts.length,
+                                    separatorBuilder: (_, __) => const SizedBox(width: 12),
+                                    itemBuilder: (context, i) {
+                                      final p = _similarProducts[i];
+                                      final pHasDiscount = p.hasPromotion &&
+                                          p.discountedPrice != null &&
+                                          p.discountedPrice! < p.price;
+                                      return GestureDetector(
+                                        onTap: () => Navigator.pushReplacement(
+                                            context,
+                                            MaterialPageRoute(
+                                                builder: (_) =>
+                                                    ProductDetailScreen(product: p))),
+                                        child: SizedBox(
+                                          width: 140,
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              ClipRRect(
+                                                borderRadius: BorderRadius.circular(10),
+                                                child: CachedNetworkImage(
+                                                  imageUrl: toCloudinaryThumb(p.imageUrl, width: 300),
+                                                  height: 140,
+                                                  width: 140,
+                                                  fit: BoxFit.cover,
+                                                  fadeInDuration:
+                                                      const Duration(milliseconds: 150),
+                                                  placeholder: (_, __) => Container(
+                                                      height: 140,
+                                                      width: 140,
+                                                      color: AppColors.grey100),
+                                                  errorWidget: (_, __, ___) => Container(
+                                                      height: 140,
+                                                      color: AppColors.grey100,
+                                                      child: const Icon(
+                                                          Icons.image_not_supported)),
+                                                ),
                                               ),
-                                            ),
-                                            const SizedBox(height: 6),
-                                            Text(p.name,
-                                                maxLines: 2,
-                                                overflow: TextOverflow.ellipsis,
-                                                style:
-                                                    AppTextStyles.labelMedium),
-                                            const SizedBox(height: 4),
-                                            if (pHasDiscount) ...[
-                                              Text(
-                                                  '${p.discountedPrice!.toStringAsFixed(0)} $cur',
-                                                  style: AppTextStyles
-                                                      .labelLarge
-                                                      .copyWith(
-                                                          color:
-                                                              AppColors.error,
-                                                          fontWeight:
-                                                              FontWeight.bold)),
-                                              Text(
-                                                  '${p.price.toStringAsFixed(0)} $cur',
-                                                  style: AppTextStyles
-                                                      .labelSmall
-                                                      .copyWith(
-                                                          color:
-                                                              AppColors.grey400,
-                                                          decoration:
-                                                              TextDecoration
-                                                                  .lineThrough)),
-                                            ] else
-                                              Text(
-                                                  '${p.price.toStringAsFixed(0)} $cur',
-                                                  style: AppTextStyles
-                                                      .labelLarge
-                                                      .copyWith(
-                                                          color: AppColors
-                                                              .primary)),
-                                          ],
+                                              const SizedBox(height: 6),
+                                              Text(p.name,
+                                                  maxLines: 2,
+                                                  overflow: TextOverflow.ellipsis,
+                                                  style: AppTextStyles.labelMedium),
+                                              const SizedBox(height: 4),
+                                              if (pHasDiscount) ...[
+                                                Text(
+                                                    '${p.discountedPrice!.toStringAsFixed(0)} $cur',
+                                                    style: AppTextStyles.labelLarge.copyWith(
+                                                        color: AppColors.error,
+                                                        fontWeight: FontWeight.bold)),
+                                                Text('${p.price.toStringAsFixed(0)} $cur',
+                                                    style: AppTextStyles.labelSmall.copyWith(
+                                                        color: AppColors.grey400,
+                                                        decoration:
+                                                            TextDecoration.lineThrough)),
+                                              ] else
+                                                Text('${p.price.toStringAsFixed(0)} $cur',
+                                                    style: AppTextStyles.labelLarge
+                                                        .copyWith(color: AppColors.primary)),
+                                            ],
+                                          ),
                                         ),
-                                      ),
-                                    );
-                                  },
+                                      );
+                                    },
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
+                          cardColor,
                         ),
                       const SizedBox(height: 8),
                       Padding(
@@ -900,103 +855,84 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: ClipRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-          child: Container(
-            padding: EdgeInsets.fromLTRB(
-                16, 10, 16, MediaQuery.of(context).padding.bottom + 10),
-            decoration: BoxDecoration(
-              color: isDark
-    ? Colors.black.withValues(alpha: 0.30)
-    : Colors.white.withValues(alpha: 0.40),
-              border: Border(
-                top: BorderSide(
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.08)
-                      : Colors.black.withValues(alpha: 0.07),
-                  width: 0.8,
-                ),
-              ),
-            ),
-            child: Row(
-              children: [
-                // ── 30% — Чат баскычы (жашыл градиент) ──
-               // ── 25% — Чат баскычы ──
-Expanded(
-  flex: 2,
-  child: Container(
-    height: 52,
-    decoration: BoxDecoration(
-      gradient: const LinearGradient(
-        colors: [Color(0xFF10B981), Color(0xFF059669)],
-        begin: Alignment.centerLeft,
-        end: Alignment.centerRight,
-      ),
-      borderRadius: BorderRadius.circular(14),
-      boxShadow: [
-        BoxShadow(
-          color: const Color(0xFF10B981)
-              .withValues(alpha: isDark ? 0.25 : 0.30),
-          blurRadius: 10,
-          offset: const Offset(0, 4),
-          spreadRadius: -2,
-        ),
-      ],
-    ),
-    child: Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: _openChat,
-        borderRadius: BorderRadius.circular(14),
+        ],  // ← Stack children
+      ),    // ← Stack
+
+      // ── Төмөнкү баскычтар ──
+      bottomNavigationBar: Container(
+        padding: EdgeInsets.fromLTRB(
+            16, 10, 16, MediaQuery.of(context).padding.bottom + 10),
+        color: Colors.transparent,
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.chat_bubble_rounded,
-                color: Colors.white, size: 18),
-            const SizedBox(width: 6),
-            Text(
-              loc.locale.languageCode == 'ru' ? 'Чат' : 'Чат',
-              style: AppTextStyles.labelMedium.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    ),
-  ),
-),
-
-const SizedBox(width: 12),
-
-// ── 75% — Маршрут ──
-Expanded(
-  flex: 3,  // ← ушул гана кошулду
-  child: _GradientButton(
-    height: 52,
-    onTap: _openMapNavigation,
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const Icon(Icons.near_me_rounded,
-            color: Colors.white, size: 20),
-        const SizedBox(width: 8),
-        Text(
-          loc.get('route'),
-          style: AppTextStyles.labelLarge
-              .copyWith(color: Colors.white, fontSize: 15),
-        ),
-      ],
-    ),
-  ),
-),
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: Container(
+                    height: 52,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF10B981), Color(0xFF059669)],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                      ),
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF10B981)
+                              .withValues(alpha: isDark ? 0.25 : 0.30),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                          spreadRadius: -2,
+                        ),
+                      ],
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: _openChat,
+                        borderRadius: BorderRadius.circular(14),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.chat_bubble_rounded,
+                                color: Colors.white, size: 18),
+                            const SizedBox(width: 6),
+                            Text(
+                              loc.locale.languageCode == 'ru' ? 'Чат' : 'Чат',
+                              style: AppTextStyles.labelMedium.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 3,
+                  child: _GradientButton(
+                    height: 52,
+                    onTap: _openMapNavigation,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.near_me_rounded, color: Colors.white, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          loc.get('route'),
+                          style: AppTextStyles.labelLarge
+                              .copyWith(color: Colors.white, fontSize: 15),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ],
             ),
-          ),
         ),
-      ),
     );
   }
 
@@ -1007,131 +943,82 @@ Expanded(
     final hasStock = _product.inStock != null;
     if (!hasColors && !hasSizes && !hasStock) return const SizedBox.shrink();
 
-    return Container(
-      color: cardColor,
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(loc.get('characteristics'), style: AppTextStyles.headingMedium),
-          const SizedBox(height: 12),
-          if (hasStock) ...[
-            Row(children: [
-              Icon(
+    return _blurBlock(
+      Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(loc.get('characteristics'), style: AppTextStyles.headingMedium),
+            const SizedBox(height: 12),
+            if (hasStock) ...[
+              Row(children: [
+                Icon(
+                    (_product.inStock ?? 0) > 0
+                        ? Icons.check_circle_outline
+                        : Icons.cancel_outlined,
+                    size: 16,
+                    color: (_product.inStock ?? 0) > 0 ? AppColors.success : AppColors.error),
+                const SizedBox(width: 6),
+                Text(
                   (_product.inStock ?? 0) > 0
-                      ? Icons.check_circle_outline
-                      : Icons.cancel_outlined,
-                  size: 16,
-                  color: (_product.inStock ?? 0) > 0
-                      ? AppColors.success
-                      : AppColors.error),
-              const SizedBox(width: 6),
-              Text(
-                (_product.inStock ?? 0) > 0
-                    ? '${loc.get('in_stock')}: ${_product.inStock} ${loc.get('pcs')}'
-                    : loc.get('out_of_stock'),
-                style: AppTextStyles.labelMedium.copyWith(
-                    color: (_product.inStock ?? 0) > 0
-                        ? AppColors.success
-                        : AppColors.error),
-              ),
-            ]),
-            const SizedBox(height: 10),
-          ],
-          if (hasColors) ...[
-            Text('🎨 ${loc.get('colors')}',
-                style: AppTextStyles.labelMedium
-                    .copyWith(color: AppColors.grey500)),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _product.colors.map((c) {
-                // Эски format (color_white) → кыргызча
-                const legacyToKy = {
-                  'color_white': 'Ак',
-                  'color_black': 'Кара',
-                  'color_red': 'Кызыл',
-                  'color_blue': 'Көк',
-                  'color_green': 'Жашыл',
-                  'color_yellow': 'Сары',
-                  'color_pink': 'Кызгылт',
-                  'color_brown': 'Күрөң',
-                  'color_grey': 'Боз',
-                  'color_gray': 'Боз',
-                  'color_purple': 'Күлгүн',
-                  'color_orange': 'Кызгылт сары',
-                  'color_lightblue': 'Ачык көк',
-                  'color_beige': 'Бежевый',
-                  'color_cream': 'Кремовый',
-                  'color_gold': 'Алтын',
-                  'color_silver': 'Күмүш',
-                  'color_darkgreen': 'Кара жашыл',
-                  'color_darkblue': 'Темно-көк',
-                };
-
-                // Кыргызча → орусча
-                const kyToRu = {
-                  'Кара': 'Чёрный',
-                  'Ак': 'Белый',
-                  'Кызыл': 'Красный',
-                  'Көк': 'Синий',
-                  'Жашыл': 'Зелёный',
-                  'Сары': 'Жёлтый',
-                  'Кызгылт': 'Розовый',
-                  'Күрөң': 'Коричневый',
-                  'Боз': 'Серый',
-                  'Күлгүн': 'Фиолетовый',
-                  'Кызгылт сары': 'Оранжевый',
-                  'Ачык көк': 'Голубой',
-                  'Бежевый': 'Бежевый',
-                  'Кремовый': 'Кремовый',
-                  'Жыгач': 'Деревянный',
-                  'Алтын': 'Золотой',
-                  'Күмүш': 'Серебряный',
-                  'Кара жашыл': 'Тёмно-зелёный',
-                  'Темно-көк': 'Тёмно-синий',
-                };
-
-                // Түс чекити (hex)
-                const colorHexMap = {
-                  'Кара': 0xFF1C1C1C,
-                  'Ак': 0xFFEEEEEE,
-                  'Кызыл': 0xFFEF4444,
-                  'Көк': 0xFF3B82F6,
-                  'Жашыл': 0xFF22C55E,
-                  'Сары': 0xFFEAB308,
-                  'Кызгылт': 0xFFEC4899,
-                  'Күрөң': 0xFF92400E,
-                  'Боз': 0xFF6B7280,
-                  'Күлгүн': 0xFF8B5CF6,
-                  'Кызгылт сары': 0xFFF97316,
-                  'Ачык көк': 0xFF06B6D4,
-                  'Бежевый': 0xFFF5F0DC,
-                  'Кремовый': 0xFFFFFDD0,
-                  'Жыгач': 0xFF8B4513,
-                  'Алтын': 0xFFFFD700,
-                  'Күмүш': 0xFFC0C0C0,
-                  'Кара жашыл': 0xFF006400,
-                  'Темно-көк': 0xFF00008B,
-                };
-
-                final ky = legacyToKy[c] ?? c;
-                final display =
-                    loc.locale.languageCode == 'ru' ? (kyToRu[ky] ?? ky) : ky;
-                final hex = colorHexMap[ky];
-
-                return Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: chipColor,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: chipBorder),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
+                      ? '${loc.get('in_stock')}: ${_product.inStock} ${loc.get('pcs')}'
+                      : loc.get('out_of_stock'),
+                  style: AppTextStyles.labelMedium.copyWith(
+                      color: (_product.inStock ?? 0) > 0 ? AppColors.success : AppColors.error),
+                ),
+              ]),
+              const SizedBox(height: 10),
+            ],
+            if (hasColors) ...[
+              Text('🎨 ${loc.get('colors')}',
+                  style: AppTextStyles.labelMedium.copyWith(color: AppColors.grey500)),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _product.colors.map((c) {
+                  const legacyToKy = {
+                    'color_white': 'Ак', 'color_black': 'Кара', 'color_red': 'Кызыл',
+                    'color_blue': 'Көк', 'color_green': 'Жашыл', 'color_yellow': 'Сары',
+                    'color_pink': 'Кызгылт', 'color_brown': 'Күрөң', 'color_grey': 'Боз',
+                    'color_gray': 'Боз', 'color_purple': 'Күлгүн',
+                    'color_orange': 'Кызгылт сары', 'color_lightblue': 'Ачык көк',
+                    'color_beige': 'Бежевый', 'color_cream': 'Кремовый',
+                    'color_gold': 'Алтын', 'color_silver': 'Күмүш',
+                    'color_darkgreen': 'Кара жашыл', 'color_darkblue': 'Темно-көк',
+                  };
+                  const kyToRu = {
+                    'Кара': 'Чёрный', 'Ак': 'Белый', 'Кызыл': 'Красный', 'Көк': 'Синий',
+                    'Жашыл': 'Зелёный', 'Сары': 'Жёлтый', 'Кызгылт': 'Розовый',
+                    'Күрөң': 'Коричневый', 'Боз': 'Серый', 'Күлгүн': 'Фиолетовый',
+                    'Кызгылт сары': 'Оранжевый', 'Ачык көк': 'Голубой',
+                    'Бежевый': 'Бежевый', 'Кремовый': 'Кремовый', 'Жыгач': 'Деревянный',
+                    'Алтын': 'Золотой', 'Күмүш': 'Серебряный',
+                    'Кара жашыл': 'Тёмно-зелёный', 'Темно-көк': 'Тёмно-синий',
+                  };
+                  const colorHexMap = {
+                    'Кара': 0xFF1C1C1C, 'Ак': 0xFFEEEEEE, 'Кызыл': 0xFFEF4444,
+                    'Көк': 0xFF3B82F6, 'Жашыл': 0xFF22C55E, 'Сары': 0xFFEAB308,
+                    'Кызгылт': 0xFFEC4899, 'Күрөң': 0xFF92400E, 'Боз': 0xFF6B7280,
+                    'Күлгүн': 0xFF8B5CF6, 'Кызгылт сары': 0xFFF97316,
+                    'Ачык көк': 0xFF06B6D4, 'Бежевый': 0xFFF5F0DC,
+                    'Кремовый': 0xFFFFFDD0, 'Жыгач': 0xFF8B4513,
+                    'Алтын': 0xFFFFD700, 'Күмүш': 0xFFC0C0C0,
+                    'Кара жашыл': 0xFF006400, 'Темно-көк': 0xFF00008B,
+                  };
+                  final ky = legacyToKy[c] ?? c;
+                  final display =
+                      loc.locale.languageCode == 'ru' ? (kyToRu[ky] ?? ky) : ky;
+                  final hex = colorHexMap[ky];
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: chipColor,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: chipBorder),
+                    ),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
                       if (hex != null) ...[
                         Container(
                           width: 12,
@@ -1139,48 +1026,44 @@ Expanded(
                           decoration: BoxDecoration(
                             color: Color(hex),
                             shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.grey.withValues(alpha: 0.4),
-                            ),
+                            border: Border.all(color: Colors.grey.withValues(alpha: 0.4)),
                           ),
                         ),
                         const SizedBox(width: 6),
                       ],
                       Text(display, style: AppTextStyles.labelSmall),
-                    ],
-                  ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 10),
+                    ]),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 10),
+            ],
+            if (hasSizes) ...[
+              Text('📐 ${loc.get('sizes')}',
+                  style: AppTextStyles.labelMedium.copyWith(color: AppColors.grey500)),
+              const SizedBox(height: 8),
+              Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _product.sizes
+                      .map((s) => Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                                color: chipColor,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: chipBorder)),
+                            child: Text(s, style: AppTextStyles.labelSmall),
+                          ))
+                      .toList()),
+            ],
           ],
-          if (hasSizes) ...[
-            Text('📐 ${loc.get('sizes')}',
-                style: AppTextStyles.labelMedium
-                    .copyWith(color: AppColors.grey500)),
-            const SizedBox(height: 8),
-            Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _product.sizes
-                    .map((s) => Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                              color: chipColor,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: chipBorder)),
-                          child: Text(s, style: AppTextStyles.labelSmall),
-                        ))
-                    .toList()),
-          ],
-        ],
+        ),
       ),
+      cardColor,
     );
   }
 
-  Widget _infoRow(IconData icon, String label, String value,
-      {Color? valueColor}) {
+  Widget _infoRow(IconData icon, String label, String value, {Color? valueColor}) {
     final theme = Theme.of(context);
     return Row(children: [
       Icon(icon, size: 18, color: AppColors.grey500),
@@ -1233,26 +1116,22 @@ class _NavigationGuideSheetState extends State<_NavigationGuideSheet> {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: Text(loc.get('2gis_not_installed')),
           content: Text(loc.get('2gis_download_hint')),
           actions: [
             TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: Text(loc.get('no'))),
+                onPressed: () => Navigator.pop(ctx), child: Text(loc.get('no'))),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 elevation: 0,
               ),
               onPressed: () async {
                 Navigator.pop(ctx);
                 if (await canLaunchUrl(storeUri)) {
-                  await launchUrl(storeUri,
-                      mode: LaunchMode.externalApplication);
+                  await launchUrl(storeUri, mode: LaunchMode.externalApplication);
                 }
               },
               child: Text(loc.get('download'),
@@ -1284,17 +1163,14 @@ class _NavigationGuideSheetState extends State<_NavigationGuideSheet> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                    color: handleColor,
-                    borderRadius: BorderRadius.circular(2))),
+                    color: handleColor, borderRadius: BorderRadius.circular(2))),
             const SizedBox(height: 20),
             Container(
               width: 64,
               height: 64,
               decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  shape: BoxShape.circle),
-              child: const Icon(Icons.navigation_rounded,
-                  color: AppColors.primary, size: 32),
+                  color: AppColors.primary.withValues(alpha: 0.1), shape: BoxShape.circle),
+              child: const Icon(Icons.navigation_rounded, color: AppColors.primary, size: 32),
             ),
             const SizedBox(height: 16),
             Text(widget.shopName.isNotEmpty ? widget.shopName : loc.get('shop'),
@@ -1302,8 +1178,7 @@ class _NavigationGuideSheetState extends State<_NavigationGuideSheet> {
             if (widget.containerNumber.isNotEmpty) ...[
               const SizedBox(height: 4),
               Text('📍 ${widget.containerNumber}',
-                  style: AppTextStyles.labelSmall
-                      .copyWith(color: AppColors.primary)),
+                  style: AppTextStyles.labelSmall.copyWith(color: AppColors.primary)),
             ],
             const SizedBox(height: 16),
             Container(
@@ -1328,13 +1203,11 @@ class _NavigationGuideSheetState extends State<_NavigationGuideSheet> {
                 onPressed: _open2GIS,
                 style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     elevation: 0),
                 icon: const Icon(Icons.map_rounded, color: Colors.white),
                 label: Text(loc.get('open_2gis'),
-                    style: AppTextStyles.headingSmall
-                        .copyWith(color: Colors.white)),
+                    style: AppTextStyles.headingSmall.copyWith(color: Colors.white)),
               ),
             ),
           ],
@@ -1348,14 +1221,11 @@ class _NavigationGuideSheetState extends State<_NavigationGuideSheet> {
       Container(
           width: 24,
           height: 24,
-          decoration: const BoxDecoration(
-              color: AppColors.primary, shape: BoxShape.circle),
+          decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
           alignment: Alignment.center,
           child: Text(num,
               style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold))),
+                  color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold))),
       const SizedBox(width: 12),
       Expanded(child: Text(text, style: AppTextStyles.bodyMedium)),
     ]);
@@ -1389,8 +1259,8 @@ class _FullscreenImageScreen extends StatelessWidget {
                 width: screenSize.width,
                 height: screenSize.height,
                 fit: BoxFit.contain,
-                placeholder: (_, __) => const Center(
-                    child: CircularProgressIndicator(color: Colors.white)),
+                placeholder: (_, __) =>
+                    const Center(child: CircularProgressIndicator(color: Colors.white)),
                 errorWidget: (_, __, ___) => const Center(
                     child: Icon(Icons.image_not_supported_outlined,
                         color: Colors.white54, size: 64)),
@@ -1406,8 +1276,7 @@ class _FullscreenImageScreen extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                    color: Colors.black54,
-                    borderRadius: BorderRadius.circular(20)),
+                    color: Colors.black54, borderRadius: BorderRadius.circular(20)),
                 child: const Icon(Icons.close, color: Colors.white, size: 24),
               ),
             ),
@@ -1464,10 +1333,10 @@ class _GlassButtonState extends State<_GlassButton> {
               width: widget.width,
               height: widget.height,
               decoration: BoxDecoration(
-                color: widget.color.withValues(alpha: _pressed ? 0.60 : 0.50),
+                color: widget.color.withValues(alpha: _pressed ? 0.88 : 0.80),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: widget.color.withValues(alpha: 0.35),
+                  color: widget.color.withValues(alpha: 0.80),
                   width: 1.2,
                 ),
               ),
@@ -1517,8 +1386,14 @@ class _GradientButtonState extends State<_GradientButton> {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: _pressed
-    ? [const Color(0xFFB45309).withOpacity(0.50), const Color(0xFFD97706).withOpacity(0.50)]
-    : [const Color(0xFFD97706).withOpacity(0.50), const Color(0xFFEF4444).withOpacity(0.50)],
+                  ? [
+                      const Color(0xFFB45309).withOpacity(0.80),
+                      const Color(0xFFD97706).withOpacity(0.80)
+                    ]
+                  : [
+                      const Color(0xFFD97706).withOpacity(0.80),
+                      const Color(0xFFEF4444).withOpacity(0.80)
+                    ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),

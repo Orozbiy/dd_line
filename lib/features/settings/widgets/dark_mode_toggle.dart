@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
@@ -59,13 +60,20 @@ class DarkModeToggle extends StatelessWidget {
 
           const SizedBox(width: 4),
 
-          // ── 3 точка баскычы ──
+          // ── 3 точка баскычы (Тунук Меню менен) ──
           PopupMenuButton<AppThemeMode>(
             onSelected: (mode) => provider.setMode(mode),
-            color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
-            elevation: 4,
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.65)
+                : Colors.white.withValues(alpha: 0.75),
+            elevation: 0,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(14),
+              side: BorderSide(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.15)
+                    : Colors.white.withValues(alpha: 0.50),
+              ),
             ),
             icon: Icon(
               Icons.more_vert,

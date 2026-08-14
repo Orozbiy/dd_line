@@ -19,6 +19,7 @@ import '../widgets/chat_product_banner.dart';
 import '../widgets/call_request_bubble.dart';
 import '../../../core/services/yandex_storage_service.dart';
 import 'package:permission_handler/permission_handler.dart';
+import '../../../core/chat_background_provider.dart';
 
 class ChatScreen extends StatefulWidget {
   final String chatId;
@@ -72,6 +73,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   bool _isSendingImage = false;
   bool _hasText = false;
+  bool _isSending = false;
 
   List<MessageModel> _cachedMessages = [];
   bool _initialLoadDone = false;
@@ -108,19 +110,23 @@ class _ChatScreenState extends State<ChatScreen> {
       final has = _msgCtrl.text.trim().isNotEmpty;
       if (has != _hasText) setState(() => _hasText = has);
     });
-_requestMicPermission();
-
-}
-Future<void> _requestMicPermission() async {
-  final status = await Permission.microphone.status;
-  if (!status.isGranted) {
-    await Permission.microphone.request();
+    _requestMicPermission();
+    // Фон өзгөргөндө экранды жаңыртуу
+    ChatBackgroundProvider.instance.addListener(_onBgChanged);
   }
-}
-  
+
+  void _onBgChanged() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _requestMicPermission() async {
+    final status = await Permission.microphone.status;
+    if (!status.isGranted) await Permission.microphone.request();
+  }
 
   @override
   void dispose() {
+    ChatBackgroundProvider.instance.removeListener(_onBgChanged);
     _msgCtrl.dispose();
     _scrollCtrl.dispose();
     _msgSub?.cancel();
@@ -138,38 +144,34 @@ Future<void> _requestMicPermission() async {
             .select('store_name')
             .eq('owner_id', myId)
             .maybeSingle();
-        if (storeRow != null && mounted) {
-          setState(
-              () => _myDisplayName = storeRow['store_name'] as String? ?? '');
-        }
+        if (storeRow != null && mounted)
+          setState(() => _myDisplayName = storeRow['store_name'] as String? ?? '');
+
         final buyerRow = await supabase
             .from('profiles')
             .select('full_name')
             .eq('id', widget.buyerId)
             .maybeSingle();
-        if (buyerRow != null && mounted) {
-          setState(() =>
-              _receiverDisplayName = buyerRow['full_name'] as String? ?? '');
-        }
+        if (buyerRow != null && mounted)
+          setState(() => _receiverDisplayName = buyerRow['full_name'] as String? ?? '');
       } else {
         final profileRow = await supabase
             .from('profiles')
             .select('full_name')
             .eq('id', myId)
             .maybeSingle();
-        if (profileRow != null && mounted) {
-          setState(
-              () => _myDisplayName = profileRow['full_name'] as String? ?? '');
-        }
+        if (profileRow != null && mounted)
+          setState(() => _myDisplayName = profileRow['full_name'] as String? ?? '');
+
         if (mounted) setState(() => _receiverDisplayName = widget.sellerName);
+
         final phoneRow = await supabase
             .from('profiles')
             .select('phone')
             .eq('id', widget.sellerId)
             .maybeSingle();
-        if (phoneRow != null && mounted) {
+        if (phoneRow != null && mounted)
           setState(() => _sellerPhone = phoneRow['phone'] as String? ?? '');
-        }
       }
     } catch (e) {
       debugPrint('⚠️ _loadMyName ката: $e');
@@ -247,85 +249,80 @@ Future<void> _requestMicPermission() async {
     _scrollToBottom();
   }
 
-  String get _receiverUid => widget.isSeller ? widget.buyerId : widget.sellerId;
+  String get _receiverUid =>
+      widget.isSeller ? widget.buyerId : widget.sellerId;
 
   String get _senderDisplayName => widget.isSeller
-      ? (_myDisplayName.isNotEmpty
-          ? _myDisplayName
-          : 'Сатуучу') // Сатуучу жазса → дүкөн аты
-      : (_myDisplayName.isNotEmpty
-          ? _myDisplayName
-          : 'Кардар'); // Кардар жазса → кардардын аты
-bool _isSending = false; // 
-
+      ? (_myDisplayName.isNotEmpty ? _myDisplayName : 'Сатуучу')
+      : (_myDisplayName.isNotEmpty ? _myDisplayName : 'Кардар');
 
   void _send() {
-  if (_isSending) return;
-  _isSending = true;
+    if (_isSending) return;
+    _isSending = true;
 
-  final loc = AppLocalizations.of(context);
-  final text = _msgCtrl.text.trim();
-  final myId = _myId;
-  
-  if (text.isEmpty || myId == null) {
-    _isSending = false;
-    return;
-  }
+    final loc = AppLocalizations.of(context);
+    final text = _msgCtrl.text.trim();
+    final myId = _myId;
 
-  _msgCtrl.clear();
-  final replyTo = _replyingTo;
-  if (replyTo != null) setState(() => _replyingTo = null);
-
-  _service.sendMessage(
-    chatId: widget.chatId,
-    senderId: myId,
-    text: text,
-    replyToId: replyTo?.id,
-    replyToText: replyTo != null
-        ? (replyTo.text.isNotEmpty
-            ? replyTo.text
-            : '📷 ${loc.get('chat_image')}')
-        : null,
-    senderIsBuyer: !widget.isSeller,
-  ).then((_) async {
-    // ✅ sendMessage бүткөндө дароо reset — notification күтпөйбүз
-    _isSending = false;
-
-    // Notification фондо жөнөтүлөт — UI'ды блокtабайт
-    String receiverLocale = 'ky';
-    try {
-      final receiverProfile = await supabase
-          .from('profiles')
-          .select('locale')
-          .eq('id', _receiverUid)
-          .maybeSingle();
-      receiverLocale = receiverProfile?['locale'] as String? ?? 'ky';
-    } catch (_) {}
-
-    String senderName;
-    if (widget.isSeller) {
-      senderName = _myDisplayName.isNotEmpty
-          ? _myDisplayName
-          : (receiverLocale == 'ru' ? 'Продавец' : 'Сатуучу');
-    } else {
-      senderName = _myDisplayName.isNotEmpty
-          ? _myDisplayName
-          : (receiverLocale == 'ru' ? 'Покупатель' : 'Кардар');
+    if (text.isEmpty || myId == null) {
+      _isSending = false;
+      return;
     }
 
-    // ✅ unawaited — пуш фондо жөнөтүлөт
-    NotificationService().sendChatNotification(
-      receiverUid: _receiverUid,
-      senderName: senderName,
-      messageText: text,
-      chatId: widget.chatId,
-    );
-  }).onError((e, stack) {
-    debugPrint('❌ _send ката: $e');
-    _isSending = false; // ← ката болсо да reset
-    return null;
-  });
-}
+    _msgCtrl.clear();
+    final replyTo = _replyingTo;
+    if (replyTo != null) setState(() => _replyingTo = null);
+
+    _service
+        .sendMessage(
+          chatId: widget.chatId,
+          senderId: myId,
+          text: text,
+          replyToId: replyTo?.id,
+          replyToText: replyTo != null
+              ? (replyTo.text.isNotEmpty
+                  ? replyTo.text
+                  : '📷 ${loc.get('chat_image')}')
+              : null,
+          senderIsBuyer: !widget.isSeller,
+        )
+        .then((_) async {
+      _isSending = false;
+
+      String receiverLocale = 'ky';
+      try {
+        final receiverProfile = await supabase
+            .from('profiles')
+            .select('locale')
+            .eq('id', _receiverUid)
+            .maybeSingle();
+        receiverLocale = receiverProfile?['locale'] as String? ?? 'ky';
+      } catch (_) {}
+
+      String senderName;
+      if (widget.isSeller) {
+        senderName = _myDisplayName.isNotEmpty
+            ? _myDisplayName
+            : (receiverLocale == 'ru' ? 'Продавец' : 'Сатуучу');
+      } else {
+        senderName = _myDisplayName.isNotEmpty
+            ? _myDisplayName
+            : (receiverLocale == 'ru' ? 'Покупатель' : 'Кардар');
+      }
+
+      NotificationService().sendChatNotification(
+        receiverUid: _receiverUid,
+        senderName: senderName,
+        messageText: text,
+        chatId: widget.chatId,
+      );
+    }).onError((e, stack) {
+      debugPrint('❌ _send ката: $e');
+      _isSending = false;
+      return null;
+    });
+  }
+
   Future<ImageSource?> _chooseImageSource() {
     final loc = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -380,16 +377,16 @@ bool _isSending = false; //
     if (picked == null) return;
     setState(() => _isSendingImage = true);
     try {
-     final bytes = await picked.readAsBytes();
-final compressed = await compressImage(bytes);
-final url = await YandexStorageService.instance.uploadImage(
-  compressed,
-  folder: 'chat',
-);
+      final bytes = await picked.readAsBytes();
+      final compressed = await compressImage(bytes);
+      final url = await YandexStorageService.instance.uploadImage(
+        compressed,
+        folder: 'chat',
+      );
       if (url == null) {
         if (mounted)
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text(loc.get('chat_img_fail'))));
+          ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(loc.get('chat_img_fail'))));
         return;
       }
       final replyTo = _replyingTo;
@@ -404,7 +401,7 @@ final url = await YandexStorageService.instance.uploadImage(
                 ? replyTo.text
                 : '📷 ${loc.get('chat_image')}')
             : null,
-             senderIsBuyer: !widget.isSeller, 
+        senderIsBuyer: !widget.isSeller,
       );
       NotificationService().sendChatNotification(
           receiverUid: _receiverUid,
@@ -480,12 +477,11 @@ final url = await YandexStorageService.instance.uploadImage(
         audioDuration: durationSeconds,
         replyToId: replyTo?.id,
         replyToText: replyTo != null
-        
             ? (replyTo.text.isNotEmpty
                 ? replyTo.text
                 : '📷 ${loc.get('chat_image')}')
             : null,
-              senderIsBuyer: !widget.isSeller, 
+        senderIsBuyer: !widget.isSeller,
       );
       NotificationService().sendChatNotification(
           receiverUid: _receiverUid,
@@ -502,6 +498,7 @@ final url = await YandexStorageService.instance.uploadImage(
         _isSelectionMode = true;
         _selectedIds.add(msgId);
       });
+
   void _exitSelectionMode() => setState(() {
         _isSelectionMode = false;
         _selectedIds.clear();
@@ -524,35 +521,33 @@ final url = await YandexStorageService.instance.uploadImage(
     ..addAll(messages.map((m) => m.id)));
 
   Future<void> _deleteSelected() async {
-  final loc = AppLocalizations.of(context);
-  final confirm = await showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20)),
-      title: Text(loc.get('chat_delete_msgs_title')),
-      content: Text(
-          '${_selectedIds.length} ${loc.get('chat_delete_msgs_body')}'),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: Text(loc.get('no')),
-        ),
-        TextButton(
-          onPressed: () => Navigator.pop(context, true),
-          child: Text(
-            loc.get('chat_delete_yes'),
-            style: const TextStyle(color: AppColors.error),
+    final loc = AppLocalizations.of(context);
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(loc.get('chat_delete_msgs_title')),
+        content:
+            Text('${_selectedIds.length} ${loc.get('chat_delete_msgs_body')}'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(loc.get('no')),
           ),
-        ),
-      ],
-    ),
-  );
-  if (confirm == true) {
-    await _service.deleteMessages(_selectedIds.toList());
-    _exitSelectionMode();
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(loc.get('chat_delete_yes'),
+                style: const TextStyle(color: AppColors.error)),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true) {
+      await _service.deleteMessages(_selectedIds.toList());
+      _exitSelectionMode();
+    }
   }
-}
 
   Future<void> _copyMessage(MessageModel msg) async {}
 
@@ -578,7 +573,6 @@ final url = await YandexStorageService.instance.uploadImage(
   }
 
   void _editMessage(MessageModel msg) {
-    // ✅ 5 мүнөт текшерүү
     final diff = DateTime.now().difference(msg.timestamp);
     if (diff.inMinutes >= 5) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -594,7 +588,8 @@ final url = await YandexStorageService.instance.uploadImage(
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Билдирүүнү өзгөртүү',
             style: AppTextStyles.headingSmall),
         content: TextField(
@@ -602,18 +597,20 @@ final url = await YandexStorageService.instance.uploadImage(
           autofocus: true,
           maxLines: null,
           decoration: InputDecoration(
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            border:
+                OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.primary, width: 2),
+              borderSide:
+                  const BorderSide(color: AppColors.primary, width: 2),
             ),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child:
-                const Text('Жок', style: TextStyle(color: AppColors.grey500)),
+            child: const Text('Жок',
+                style: TextStyle(color: AppColors.grey500)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -623,18 +620,15 @@ final url = await YandexStorageService.instance.uploadImage(
                 return;
               }
               Navigator.pop(context);
-              await _service.editMessage(
-                messageId: msg.id,
-                newText: newText,
-              );
+              await _service.editMessage(messageId: msg.id, newText: newText);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
+                  borderRadius: BorderRadius.circular(10)),
             ),
-            child: const Text('Сактоо', style: TextStyle(color: Colors.white)),
+            child:
+                const Text('Сактоо', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -663,289 +657,331 @@ final url = await YandexStorageService.instance.uploadImage(
     final myId = _myId;
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF121212) : const Color(0xFFF4F5F7);
     final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
     final inputBg = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF7F7F7);
     final dividerColor =
         isDark ? const Color(0xFF2C2C2C) : const Color(0xFFEEEEEE);
 
-    return Scaffold(
-      resizeToAvoidBottomInset: true,
-      backgroundColor: bgColor,
-      appBar: _isSelectionMode
-          ? AppBar(
-              backgroundColor: cardColor,
-              elevation: 0,
-              leading: IconButton(
-                icon: Icon(Icons.close, color: theme.colorScheme.onSurface),
-                onPressed: _exitSelectionMode,
-              ),
-              title: Text('${_selectedIds.length} ${loc.get('selected')}',
-                  style: AppTextStyles.headingSmall),
-              actions: [
-                IconButton(
-                  icon:
-                      const Icon(Icons.delete_outline, color: AppColors.error),
-                  onPressed: _selectedIds.isEmpty ? null : _deleteSelected,
-                ),
-              ],
-            )
-          : AppBar(
-              backgroundColor: cardColor,
-              elevation: 0,
-              leading: IconButton(
-                icon:
-                    Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
-                onPressed: () => Navigator.pop(context),
-              ),
-              title: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 18,
-                    backgroundImage: widget.otherAvatarUrl.isNotEmpty
-                        ? NetworkImage(widget.otherAvatarUrl)
-                        : null,
-                    backgroundColor: AppColors.grey200,
-                    child: widget.otherAvatarUrl.isEmpty
-                        ? const Icon(Icons.person,
-                            size: 18, color: AppColors.grey400)
-                        : null,
+    return Stack(
+      children: [
+        // ── ФОН ТЕМАСЫ ──────────────────────────────────
+       Positioned.fill(
+  child: AnimatedSwitcher(
+    duration: const Duration(milliseconds: 400),
+    child: KeyedSubtree(
+      key: ValueKey(ChatBackgroundProvider.instance.theme),
+      child: ChatBackgroundProvider.instance.theme.buildBackground(isDark),
+    ),
+  ),
+),
+
+        // ── SCAFFOLD ────────────────────────────────────
+        Scaffold(
+          resizeToAvoidBottomInset: true,
+          backgroundColor: Colors.transparent,
+          appBar: _isSelectionMode
+              ? AppBar(
+                  backgroundColor: cardColor,
+                  elevation: 0,
+                  leading: IconButton(
+                    icon:
+                        Icon(Icons.close, color: theme.colorScheme.onSurface),
+                    onPressed: _exitSelectionMode,
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _receiverDisplayName.isNotEmpty
-                              ? _receiverDisplayName
-                              : (widget.isSeller
-                                  ? loc.get('chat_buyer')
-                                  : widget.sellerName),
-                          style: AppTextStyles.labelLarge,
-                          overflow: TextOverflow.ellipsis,
+                  title: Text(
+                      '${_selectedIds.length} ${loc.get('selected')}',
+                      style: AppTextStyles.headingSmall),
+                  actions: [
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline,
+                          color: AppColors.error),
+                      onPressed:
+                          _selectedIds.isEmpty ? null : _deleteSelected,
+                    ),
+                  ],
+                )
+              : AppBar(
+                  backgroundColor: cardColor,
+                  elevation: 0,
+                  leading: IconButton(
+                    icon: Icon(Icons.arrow_back,
+                        color: theme.colorScheme.onSurface),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                  title: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 18,
+                        backgroundImage: widget.otherAvatarUrl.isNotEmpty
+                            ? NetworkImage(widget.otherAvatarUrl)
+                            : null,
+                        backgroundColor: AppColors.grey200,
+                        child: widget.otherAvatarUrl.isEmpty
+                            ? const Icon(Icons.person,
+                                size: 18, color: AppColors.grey400)
+                            : null,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _receiverDisplayName.isNotEmpty
+                                  ? _receiverDisplayName
+                                  : (widget.isSeller
+                                      ? loc.get('chat_buyer')
+                                      : widget.sellerName),
+                              style: AppTextStyles.labelLarge,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (widget.productName.isNotEmpty)
+                              Text(widget.productName,
+                                  style: AppTextStyles.labelSmall
+                                      .copyWith(color: AppColors.grey500),
+                                  overflow: TextOverflow.ellipsis),
+                          ],
                         ),
-                        if (widget.productName.isNotEmpty)
-                          Text(widget.productName,
-                              style: AppTextStyles.labelSmall
-                                  .copyWith(color: AppColors.grey500),
-                              overflow: TextOverflow.ellipsis),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              actions: [
-                if (!widget.isSeller)
-                  IconButton(
-                    icon: const Icon(
-                      Icons.phone_callback_rounded,
-                      color: AppColors.primary,
-                    ),
-                    tooltip: 'Чалуу суроо',
-                    onPressed: _sendCallRequest,
-                  ),
-              ],
-            ),
-      body: myId == null
-          ? Center(child: Text(loc.get('chat_login_required')))
-          : Column(
-              children: [
-                ChatProductBanner(
-                  productId: widget.productId,
-                  productName: widget.productName,
-                  productImage: widget.productImage,
+                  actions: [
+                    if (!widget.isSeller)
+                      IconButton(
+                        icon: const Icon(Icons.phone_callback_rounded,
+                            color: AppColors.primary),
+                        tooltip: 'Чалуу суроо',
+                        onPressed: _sendCallRequest,
+                      ),
+                  ],
                 ),
-                Expanded(
-                  child: !_initialLoadDone
-                      ? const Center(
-                          child: CircularProgressIndicator(
-                              color: AppColors.primary))
-                      : _cachedMessages.isEmpty
-                          ? Center(
-                              child: Text(loc.get('chat_empty'),
-                                  style: AppTextStyles.bodyMedium
-                                      .copyWith(color: AppColors.grey400)))
-                          : Column(
-                              children: [
-                                if (_isSelectionMode)
-                                  Container(
-                                    color: cardColor,
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 12, vertical: 4),
-                                    child: Align(
-                                      alignment: Alignment.centerRight,
-                                      child: TextButton(
-                                        onPressed: () =>
-                                            _selectAll(_cachedMessages),
-                                        child: Text(loc.get('select_all')),
+          body: myId == null
+              ? Center(child: Text(loc.get('chat_login_required')))
+              : Column(
+                  children: [
+                    ChatProductBanner(
+                      productId: widget.productId,
+                      productName: widget.productName,
+                      productImage: widget.productImage,
+                    ),
+                    Expanded(
+                      child: !_initialLoadDone
+                          ? const Center(
+                              child: CircularProgressIndicator(
+                                  color: AppColors.primary))
+                          : _cachedMessages.isEmpty
+                              ? Center(
+                                  child: Text(loc.get('chat_empty'),
+                                      style: AppTextStyles.bodyMedium
+                                          .copyWith(
+                                              color: AppColors.grey400)))
+                              : Column(
+                                  children: [
+                                    if (_isSelectionMode)
+                                      Container(
+                                        color: cardColor,
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 12, vertical: 4),
+                                        child: Align(
+                                          alignment: Alignment.centerRight,
+                                          child: TextButton(
+                                            onPressed: () =>
+                                                _selectAll(_cachedMessages),
+                                            child:
+                                                Text(loc.get('select_all')),
+                                          ),
+                                        ),
+                                      ),
+                                    Expanded(
+                                      child: ListView.builder(
+                                        controller: _scrollCtrl,
+                                        reverse: true,
+                                        padding: const EdgeInsets.all(12),
+                                        itemCount: _cachedMessages.length,
+                                        itemBuilder: (context, i) {
+                                          final msg = _cachedMessages[
+                                              _cachedMessages.length - 1 - i];
+                                          final isMe =
+                                              msg.senderId == myId;
+
+                                          if (msg.isCallRequest) {
+                                            return CallRequestBubble(
+                                              message: msg,
+                                              isMe: isMe,
+                                              isSeller: widget.isSeller,
+                                              myPhone: _sellerPhone,
+                                            );
+                                          }
+
+                                          return MessageBubble(
+                                            message: msg,
+                                            isMe: isMe,
+                                            isSelectionMode:
+                                                _isSelectionMode,
+                                            isSelected: _selectedIds
+                                                .contains(msg.id),
+                                            onLongPress: () =>
+                                                _enterSelectionMode(msg.id),
+                                            onTap: () =>
+                                                _toggleSelection(msg.id),
+                                            onCopy: () => _copyMessage(msg),
+                                            onDelete: () =>
+                                                _deleteSingle(msg),
+                                            onReply: () =>
+                                                _startReply(msg),
+                                            onEdit: () =>
+                                                _editMessage(msg),
+                                            onReplyTap: () =>
+                                                _scrollToMessage(
+                                                    msg.replyToId,
+                                                    _cachedMessages),
+                                          );
+                                        },
                                       ),
                                     ),
-                                  ),
-                                Expanded(
-                                  child: ListView.builder(
-                                    controller: _scrollCtrl,
-                                    reverse: true,
-                                    padding: const EdgeInsets.all(12),
-                                    itemCount: _cachedMessages.length,
-                                    itemBuilder: (context, i) {
-                                      final msg = _cachedMessages[
-                                          _cachedMessages.length - 1 - i];
-                                      final isMe = msg.senderId == myId;
-
-                                      // ✅ Чалуу өтүнүчү — атайын bubble
-                                      if (msg.isCallRequest) {
-                                        return CallRequestBubble(
-                                          message: msg,
-                                          isMe: isMe,
-                                          isSeller: widget.isSeller,
-                                          myPhone: _sellerPhone,
-                                        );
-                                      }
-
-                                      return MessageBubble(
-                                        message: msg,
-                                        isMe: isMe,
-                                        isSelectionMode: _isSelectionMode,
-                                        isSelected:
-                                            _selectedIds.contains(msg.id),
-                                        onLongPress: () =>
-                                            _enterSelectionMode(msg.id),
-                                        onTap: () => _toggleSelection(msg.id),
-                                        onCopy: () => _copyMessage(msg),
-                                        onDelete: () => _deleteSingle(msg),
-                                        onReply: () => _startReply(msg),
-                                        onEdit: () => _editMessage(msg),
-                                        onReplyTap: () => _scrollToMessage(
-                                            msg.replyToId, _cachedMessages),
-                                      );
-                                    },
-                                  ),
+                                  ],
                                 ),
-                              ],
+                    ),
+
+                    // ── Жооп берүү preview ──
+                    if (!_isSelectionMode && _replyingTo != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: cardColor,
+                          border: Border(
+                              top: BorderSide(color: dividerColor)),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                                width: 3,
+                                height: 36,
+                                color: AppColors.primary),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(loc.get('chat_reply'),
+                                      style: AppTextStyles.labelSmall
+                                          .copyWith(
+                                              color: AppColors.primary)),
+                                  Text(
+                                    _replyingTo!.text.isNotEmpty
+                                        ? _replyingTo!.text
+                                        : '📷 ${loc.get('chat_image')}',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: AppTextStyles.bodyMedium
+                                        .copyWith(color: AppColors.grey600),
+                                  ),
+                                ],
+                              ),
                             ),
+                            GestureDetector(
+                                onTap: _cancelReply,
+                                child: const Icon(Icons.close,
+                                    color: AppColors.grey400, size: 20)),
+                          ],
+                        ),
+                      ),
+
+                    // ── Жазуу талаасы ──
+                    if (!_isSelectionMode)
+                      Container(
+                        padding: EdgeInsets.fromLTRB(
+                            12,
+                            8,
+                            12,
+                            MediaQuery.of(context).padding.bottom + 8),
+                        decoration: BoxDecoration(
+                          color: cardColor,
+                          boxShadow: [
+                            BoxShadow(
+                                color:
+                                    Colors.black.withValues(alpha: 0.05),
+                                blurRadius: 8,
+                                offset: const Offset(0, -2))
+                          ],
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            _isSendingImage
+                                ? const SizedBox(
+                                    width: 44,
+                                    height: 44,
+                                    child: Padding(
+                                        padding: EdgeInsets.all(10),
+                                        child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: AppColors.primary)))
+                                : GestureDetector(
+                                    onTap: _pickAndSendImage,
+                                    child: Container(
+                                      width: 44,
+                                      height: 44,
+                                      decoration: BoxDecoration(
+                                          color: inputBg,
+                                          borderRadius:
+                                              BorderRadius.circular(22)),
+                                      child: const Icon(
+                                          Icons.image_outlined,
+                                          color: AppColors.grey500,
+                                          size: 22),
+                                    ),
+                                  ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: TextField(
+                                controller: _msgCtrl,
+                                minLines: 1,
+                                maxLines: 4,
+                                textInputAction: TextInputAction.send,
+                                onSubmitted: (_) => _send(),
+                                decoration: InputDecoration(
+                                  hintText: loc.get('chat_hint'),
+                                  filled: true,
+                                  fillColor: inputBg,
+                                  contentPadding:
+                                      const EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 10),
+                                  border: OutlineInputBorder(
+                                      borderRadius:
+                                          BorderRadius.circular(20),
+                                      borderSide: BorderSide.none),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            _hasText
+                                ? GestureDetector(
+                                    onTap: _send,
+                                    child: Container(
+                                      width: 44,
+                                      height: 44,
+                                      decoration: BoxDecoration(
+                                          color: AppColors.primary,
+                                          borderRadius:
+                                              BorderRadius.circular(22)),
+                                      child: const Icon(
+                                          Icons.send_rounded,
+                                          color: Colors.white,
+                                          size: 20),
+                                    ),
+                                  )
+                                : VoiceRecordButton(
+                                    onRecorded: _sendVoiceMessage,
+                                    onCancel: () {}),
+                          ],
+                        ),
+                      ),
+                  ],
                 ),
-
-                // ── Жооп берүү preview ──
-                if (!_isSelectionMode && _replyingTo != null)
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: cardColor,
-                      border: Border(top: BorderSide(color: dividerColor)),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                            width: 3, height: 36, color: AppColors.primary),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(loc.get('chat_reply'),
-                                  style: AppTextStyles.labelSmall
-                                      .copyWith(color: AppColors.primary)),
-                              Text(
-                                _replyingTo!.text.isNotEmpty
-                                    ? _replyingTo!.text
-                                    : '📷 ${loc.get('chat_image')}',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: AppTextStyles.bodyMedium
-                                    .copyWith(color: AppColors.grey600),
-                              ),
-                            ],
-                          ),
-                        ),
-                        GestureDetector(
-                            onTap: _cancelReply,
-                            child: const Icon(Icons.close,
-                                color: AppColors.grey400, size: 20)),
-                      ],
-                    ),
-                  ),
-
-                // ── Жазуу талаасы ──
-                if (!_isSelectionMode)
-                  Container(
-                    padding: EdgeInsets.fromLTRB(
-                        12, 8, 12, MediaQuery.of(context).padding.bottom + 8),
-                    decoration: BoxDecoration(
-                      color: cardColor,
-                      boxShadow: [
-                        BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.05),
-                            blurRadius: 8,
-                            offset: const Offset(0, -2))
-                      ],
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        _isSendingImage
-                            ? const SizedBox(
-                                width: 44,
-                                height: 44,
-                                child: Padding(
-                                    padding: EdgeInsets.all(10),
-                                    child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: AppColors.primary)))
-                            : GestureDetector(
-                                onTap: _pickAndSendImage,
-                                child: Container(
-                                  width: 44,
-                                  height: 44,
-                                  decoration: BoxDecoration(
-                                      color: inputBg,
-                                      borderRadius: BorderRadius.circular(22)),
-                                  child: const Icon(Icons.image_outlined,
-                                      color: AppColors.grey500, size: 22),
-                                ),
-                              ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: TextField(
-                            controller: _msgCtrl,
-                            minLines: 1,
-                            maxLines: 4,
-                            textInputAction: TextInputAction.send,
-                            onSubmitted: (_) => _send(),
-                            decoration: InputDecoration(
-                              hintText: loc.get('chat_hint'),
-                              filled: true,
-                              fillColor: inputBg,
-                              contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 10),
-                              border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                  borderSide: BorderSide.none),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        _hasText
-                            ? GestureDetector(
-                                onTap: _send,
-                                child: Container(
-                                  width: 44,
-                                  height: 44,
-                                  decoration: BoxDecoration(
-                                      color: AppColors.primary,
-                                      borderRadius: BorderRadius.circular(22)),
-                                  child: const Icon(Icons.send_rounded,
-                                      color: Colors.white, size: 20),
-                                ),
-                              )
-                            : VoiceRecordButton(
-                                onRecorded: _sendVoiceMessage, onCancel: () {}),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
+        ),
+      ],
     );
   }
 }

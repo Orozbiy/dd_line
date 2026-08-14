@@ -2,7 +2,7 @@
 
 import 'dart:async';
 import 'dart:convert';
-
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -33,7 +33,6 @@ class _ChatListScreenState extends State<ChatListScreen> {
   bool _isSelectionMode = false;
   final Set<String> _selectedIds = {};
 
-  // ── 2 секунд long-press үчүн Timer ──
   Timer? _longPressTimer;
 
   String get _cacheKey {
@@ -52,10 +51,6 @@ class _ChatListScreenState extends State<ChatListScreen> {
     _longPressTimer?.cancel();
     super.dispose();
   }
-
-  // ════════════════════════════════════════════════════
-  // КЭШТЕР
-  // ════════════════════════════════════════════════════
 
   Future<void> _loadCache() async {
     try {
@@ -89,10 +84,6 @@ class _ChatListScreenState extends State<ChatListScreen> {
     } catch (_) {}
   }
 
-  // ════════════════════════════════════════════════════
-  // SELECTION MODE
-  // ════════════════════════════════════════════════════
-
   void _exitSelectionMode() => setState(() {
         _isSelectionMode = false;
         _selectedIds.clear();
@@ -109,52 +100,40 @@ class _ChatListScreenState extends State<ChatListScreen> {
     });
   }
 
-  void _selectAll(List<ChatModel> chats) => setState(
-      () => _selectedIds.addAll(chats.map((c) => c.id)));
+  void _selectAll(List<ChatModel> chats) =>
+      setState(() => _selectedIds.addAll(chats.map((c) => c.id)));
 
   void _deselectAll() => setState(() => _selectedIds.clear());
 
-  // ════════════════════════════════════════════════════
-  // 2 СЕКУНД LONG-PRESS ЛОГИКАСЫ
-  // ════════════════════════════════════════════════════
-
   void _onPressStart(String chatId) {
-  _longPressTimer?.cancel();
-
-  if (_isSelectionMode) {
-    // Selection mode'до дароо тандоо
-    _toggleSelection(chatId);
-    return;
+    _longPressTimer?.cancel();
+    if (_isSelectionMode) {
+      _toggleSelection(chatId);
+      return;
+    }
+    _longPressTimer = Timer(const Duration(seconds: 0), () {
+      if (!mounted) return;
+      HapticFeedback.mediumImpact();
+      setState(() {
+        _isSelectionMode = true;
+        _selectedIds.add(chatId);
+      });
+    });
   }
 
-  _longPressTimer = Timer(const Duration(seconds: 0), () {
-    if (!mounted) return;
-    HapticFeedback.mediumImpact();
-    setState(() {
-      _isSelectionMode = true;
-      _selectedIds.add(chatId);
-    });
-  });
-}
   void _onPressEnd() {
     _longPressTimer?.cancel();
     _longPressTimer = null;
   }
-
-  // ════════════════════════════════════════════════════
-  // ӨЧҮРҮҮ (кэш + Supabase)
-  // ════════════════════════════════════════════════════
 
   Future<void> _deleteSelected() async {
     final loc = AppLocalizations.of(context);
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(loc.get('delete_chat')),
-        content: Text(
-            '${_selectedIds.length} ${loc.get('delete_chat_confirm')}'),
+        content: Text('${_selectedIds.length} ${loc.get('delete_chat_confirm')}'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -171,16 +150,10 @@ class _ChatListScreenState extends State<ChatListScreen> {
     if (confirm != true) return;
 
     final toDelete = Set<String>.from(_selectedIds);
-
-    // UI'дан дароо алып салуу
-    setState(
-        () => _cachedChats.removeWhere((c) => toDelete.contains(c.id)));
+    setState(() => _cachedChats.removeWhere((c) => toDelete.contains(c.id)));
     _exitSelectionMode();
-
-    // ✅ Кэшти жаңыртуу (өчүрүлгөндөр жок)
     await _saveCache(_cachedChats);
 
-    // Supabase'тен өчүрүү
     for (final id in toDelete) {
       try {
         await _service.deleteChat(id, isSeller: widget.isSeller);
@@ -199,9 +172,16 @@ class _ChatListScreenState extends State<ChatListScreen> {
     final loc = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final bgColor =
-        isDark ? const Color(0xFF121212) : const Color(0xFFF4F5F7);
-    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+
+    // ── Арткы фон көрүнүшү үчүн transparent ──
+    final appBarBg = isDark
+        ? Colors.black.withOpacity(0.55)
+        : Colors.white.withOpacity(0.65);
+
+    // ── Чат карточка фону — жарым өткөрүмдүү ──
+    final cardBg = isDark
+        ? Colors.white.withOpacity(0.06)
+        : Colors.white.withOpacity(0.75);
 
     final myId = supabase.auth.currentUser?.id ?? '';
     final stream = widget.isSeller
@@ -209,62 +189,71 @@ class _ChatListScreenState extends State<ChatListScreen> {
         : _service.buyerChatsStream(myId);
 
     return Scaffold(
-      backgroundColor: bgColor,
-      appBar: _isSelectionMode
-          ? AppBar(
-              backgroundColor: cardColor,
-              elevation: 0,
-              leading: IconButton(
-                icon: Icon(Icons.close,
-                    color: theme.colorScheme.onSurface),
-                onPressed: _exitSelectionMode,
-              ),
-              title: Text(
-                  '${_selectedIds.length} ${loc.get('selected')}',
-                  style: AppTextStyles.headingSmall),
-              actions: [
-                // ── Баарын тандоо / алып салуу ──
-                StreamBuilder<List<ChatModel>>(
-                  stream: stream,
-                  builder: (context, snap) {
-                    final chats =
-                        snap.data ?? _cachedChats;
-                    final allSelected =
-                        chats.isNotEmpty &&
-                            _selectedIds.length == chats.length;
-                    return TextButton(
-                      onPressed: () => allSelected
-                          ? _deselectAll()
-                          : _selectAll(chats),
-                      child: Text(
-                        allSelected
-                            ? loc.get('deselect_all')
-                            : loc.get('select_all'),
-                        style: AppTextStyles.labelLarge.copyWith(
-                            color: AppColors.primary),
+      // ── Арткы HomeBackground көрүнөт ──
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
+
+      // ── AppBar — размытие ──
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(kToolbarHeight),
+        child: ClipRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+            child: _isSelectionMode
+                ? AppBar(
+                    backgroundColor: appBarBg,
+                    elevation: 0,
+                    leading: IconButton(
+                      icon: Icon(Icons.close, color: theme.colorScheme.onSurface),
+                      onPressed: _exitSelectionMode,
+                    ),
+                    title: Text(
+                      '${_selectedIds.length} ${loc.get('selected')}',
+                      style: AppTextStyles.headingSmall,
+                    ),
+                    actions: [
+                      StreamBuilder<List<ChatModel>>(
+                        stream: stream,
+                        builder: (context, snap) {
+                          final chats = snap.data ?? _cachedChats;
+                          final allSelected = chats.isNotEmpty &&
+                              _selectedIds.length == chats.length;
+                          return TextButton(
+                            onPressed: () => allSelected
+                                ? _deselectAll()
+                                : _selectAll(chats),
+                            child: Text(
+                              allSelected
+                                  ? loc.get('deselect_all')
+                                  : loc.get('select_all'),
+                              style: AppTextStyles.labelLarge
+                                  .copyWith(color: AppColors.primary),
+                            ),
+                          );
+                        },
                       ),
-                    );
-                  },
-                ),
-                // ── Өчүрүү баскычы ──
-                IconButton(
-                  icon: const Icon(Icons.delete_outline,
-                      color: AppColors.error),
-                  onPressed:
-                      _selectedIds.isEmpty ? null : _deleteSelected,
-                ),
-              ],
-            )
-          : AppBar(
-              backgroundColor: cardColor,
-              elevation: 0,
-            title: Text(
-  loc.get('messages'),
-  style: AppTextStyles.headingSmall.copyWith(
-    color: isDark ? Colors.white : AppColors.black,
-  ),
-),
-            ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline,
+                            color: AppColors.error),
+                        onPressed:
+                            _selectedIds.isEmpty ? null : _deleteSelected,
+                      ),
+                    ],
+                  )
+                : AppBar(
+                    backgroundColor: appBarBg,
+                    elevation: 0,
+                    title: Text(
+                      loc.get('messages'),
+                      style: AppTextStyles.headingSmall.copyWith(
+                        color: isDark ? Colors.white : AppColors.black,
+                      ),
+                    ),
+                  ),
+          ),
+        ),
+      ),
+
       body: StreamBuilder<List<ChatModel>>(
         stream: stream,
         builder: (context, snapshot) {
@@ -292,67 +281,66 @@ class _ChatListScreenState extends State<ChatListScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text('💬',
-                      style: TextStyle(fontSize: 64)),
+                  const Text('💬', style: TextStyle(fontSize: 64)),
                   const SizedBox(height: 16),
-                  Text(loc.get('no_chats'),
-                      style: AppTextStyles.headingSmall),
+                  Text(loc.get('no_chats'), style: AppTextStyles.headingSmall),
                 ],
               ),
             );
           }
 
           return ListView.builder(
-            padding: const EdgeInsets.all(12),
+            // ── AppBar бийиктигин эсепке алуу ──
+            padding: EdgeInsets.fromLTRB(
+                12, kToolbarHeight + MediaQuery.of(context).padding.top + 8, 12, 12),
             itemCount: chats.length,
             itemBuilder: (context, i) {
               final chat = chats[i];
-              final unread = widget.isSeller
-                  ? chat.sellerUnread
-                  : chat.buyerUnread;
+              final unread =
+                  widget.isSeller ? chat.sellerUnread : chat.buyerUnread;
               final hasProduct = !widget.isSeller &&
                   chat.productName != null &&
                   chat.productName!.isNotEmpty;
               final isSelected = _selectedIds.contains(chat.id);
 
               final displayName = widget.isSeller
-                  ? (chat.buyerName.isNotEmpty
-                      ? chat.buyerName
-                      : chat.buyerId)
+                  ? (chat.buyerName.isNotEmpty ? chat.buyerName : chat.buyerId)
                   : chat.sellerName;
 
               return GestureDetector(
-  // ── 2 секунд басып туруу → selection mode ──
-  onLongPressStart: (_) => _onPressStart(chat.id),
-  onLongPressEnd: (_) => _onPressEnd(),
-  onLongPressCancel: _onPressEnd,
-  // ── Selection mode'до tap → тандоо ──
-  // ── Жөн tap → чатка өт ──
-  onTap: _isSelectionMode
-      ? () => _toggleSelection(chat.id)
-      : () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => ChatScreen.fromChat(
-                  chat, isSeller: widget.isSeller),
-            ),
-          ),
+                onLongPressStart: (_) => _onPressStart(chat.id),
+                onLongPressEnd: (_) => _onPressEnd(),
+                onLongPressCancel: _onPressEnd,
+                onTap: _isSelectionMode
+                    ? () => _toggleSelection(chat.id)
+                    : () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                ChatScreen.fromChat(chat, isSeller: widget.isSeller),
+                          ),
+                        ),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   margin: const EdgeInsets.only(bottom: 10),
                   decoration: BoxDecoration(
+                    // ── Жарым өткөрүмдүү карточка ──
                     color: isSelected
-                        ? AppColors.primary.withValues(alpha: 0.08)
-                        : cardColor,
+                        ? AppColors.primary.withValues(alpha: 0.15)
+                        : cardBg,
                     borderRadius: BorderRadius.circular(14),
                     border: isSelected
                         ? Border.all(
-                            color: AppColors.primary.withValues(alpha: 0.3),
+                            color: AppColors.primary.withValues(alpha: 0.4),
                             width: 1.5)
-                        : null,
+                        : Border.all(
+                            color: isDark
+                                ? Colors.white.withOpacity(0.08)
+                                : Colors.black.withOpacity(0.05),
+                            width: 0.8),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.04),
+                        color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.04),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -360,8 +348,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
                   ),
                   child: ListTile(
                     isThreeLine: hasProduct,
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 6),
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                     leading: _isSelectionMode
                         ? Icon(
                             isSelected
@@ -384,7 +372,9 @@ class _ChatListScreenState extends State<ChatListScreen> {
                                 : null,
                           ),
                     title: Text(displayName,
-                        style: AppTextStyles.bodyLarge,
+                        style: AppTextStyles.bodyLarge.copyWith(
+                          color: isDark ? Colors.white : AppColors.black,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis),
                     subtitle: Column(
@@ -393,15 +383,15 @@ class _ChatListScreenState extends State<ChatListScreen> {
                         if (hasProduct)
                           Text(
                             '📦 ${chat.productName}',
-                            style: AppTextStyles.labelSmall.copyWith(
-                                color: AppColors.grey500),
+                            style: AppTextStyles.labelSmall
+                                .copyWith(color: AppColors.grey500),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                         Text(
                           chat.lastMessage,
-                          style: AppTextStyles.bodySmall.copyWith(
-                              color: AppColors.grey600),
+                          style: AppTextStyles.bodySmall
+                              .copyWith(color: AppColors.grey600),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -445,10 +435,6 @@ class _ChatListScreenState extends State<ChatListScreen> {
       ),
     );
   }
-
-  // ════════════════════════════════════════════════════
-  // ЖАРДАМЧЫ МЕТОДДОР
-  // ════════════════════════════════════════════════════
 
   String? _avatarUrl(ChatModel chat) {
     if (widget.isSeller) return chat.buyerAvatar;
@@ -502,7 +488,6 @@ class _ChatSkeletonListState extends State<_ChatSkeletonList>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
 
     return AnimatedBuilder(
       animation: _anim,
@@ -513,16 +498,30 @@ class _ChatSkeletonListState extends State<_ChatSkeletonList>
             : Color.lerp(const Color(0xFFE8E8E8), const Color(0xFFF5F5F5),
                 _anim.value)!;
 
+        final cardBg = isDark
+            ? Colors.white.withOpacity(0.06)
+            : Colors.white.withOpacity(0.75);
+
         return ListView.builder(
-          padding: const EdgeInsets.all(12),
+          padding: EdgeInsets.fromLTRB(
+              12,
+              kToolbarHeight + MediaQuery.of(context).padding.top + 8,
+              12,
+              12),
           itemCount: 6,
           itemBuilder: (_, __) => Container(
             margin: const EdgeInsets.only(bottom: 10),
-            padding: const EdgeInsets.symmetric(
-                horizontal: 14, vertical: 12),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
-              color: cardColor,
+              color: cardBg,
               borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: isDark
+                    ? Colors.white.withOpacity(0.08)
+                    : Colors.black.withOpacity(0.05),
+                width: 0.8,
+              ),
             ),
             child: Row(
               children: [
