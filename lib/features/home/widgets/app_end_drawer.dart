@@ -174,7 +174,7 @@ class _SidePanelOverlayState extends State<_SidePanelOverlay>
           child: GestureDetector(
             onTap: _close,
             child: AnimatedOpacity(
-              opacity: _ctrl.value * 0.45,
+              opacity: _ctrl.value * 0.25,
               duration: Duration.zero,
               child: const ColoredBox(color: Colors.black),
             ),
@@ -282,14 +282,13 @@ class _SidePanelScreenState extends State<_SidePanelScreen> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
     final textColor = isDark ? Colors.white : Colors.black87;
     final dividerColor =
         isDark ? const Color(0xFF2C2C2C) : const Color(0xFFEEEEEE);
     final footerColor = isDark ? AppColors.grey500 : AppColors.grey400;
 
-    return Material(
-      color: bgColor,
+  return Material(
+  color: Colors.transparent,
       child: DefaultTextStyle.merge(
         style: TextStyle(
           decoration: TextDecoration.none,

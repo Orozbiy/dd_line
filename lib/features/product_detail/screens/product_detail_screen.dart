@@ -121,7 +121,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           .select('*, stores(store_name, owner_id)')
           .eq('category_id', _product.category!)
           .eq('is_active', true)
-         .limit(5);
+          .limit(5);
       final list = (data as List)
           .cast<Map<String, dynamic>>()
           .where((row) => row['id'] != _product.id)
@@ -240,13 +240,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       return;
     }
 
-  
     try {
       final chatId = await _chatService.getOrCreateChat(
           buyerId: user.id, sellerId: _sellerUid!, productId: _product.id);
 
       if (!mounted) return;
-  
 
       await Navigator.push(
           context,
@@ -264,7 +262,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     } catch (e) {
       debugPrint('❌ _openChat: $e');
       if (!mounted) return;
-     
+
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('${loc.get('error')}: $e'),
           backgroundColor: AppColors.error));
@@ -280,12 +278,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     ));
   }
-@override
-void dispose() {
-  _similarProducts.clear();
-  super.dispose();
-}
 
+  @override
+  void dispose() {
+    _similarProducts.clear();
+    super.dispose();
+  }
 
   bool _isOpenNow() {
     if (_workStart.isEmpty || _workEnd.isEmpty) return false;
@@ -731,54 +729,58 @@ void dispose() {
                       ),
                       const SizedBox(height: 8),
 
-
-                       // ── Бөлүшүү кнопкасы ──
-Container(
-  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-  decoration: BoxDecoration(
-    gradient: const LinearGradient(
-      colors: [Color(0xFF10B981), Color(0xFF059669)],
-      begin: Alignment.centerLeft,
-      end: Alignment.centerRight,
-    ),
-    borderRadius: BorderRadius.circular(16),
-    boxShadow: [
-      BoxShadow(
-        color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.25 : 0.35),
-        blurRadius: 12,
-        offset: const Offset(0, 4),
-        spreadRadius: -2,
-      ),
-    ],
-  ),
-  child: Material(
-    color: Colors.transparent,
-    child: InkWell(
-      onTap: () => ShareWidget.show(context, _product),
-      borderRadius: BorderRadius.circular(16),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.share_rounded, color: Colors.white, size: 22),
-            const SizedBox(width: 10),
-            Text(
-              loc.locale.languageCode == 'ru' ? 'Поделиться' : 'Бөлүшүү',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.3,
-              ),
-            ),
-          ],
-        ),
-      ),
-    ),
-  ),
-),
-const SizedBox(height: 8),
+                      // ── Бөлүшүү кнопкасы ──
+                      Container(
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 4),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF10B981), Color(0xFF059669)],
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF10B981)
+                                  .withValues(alpha: isDark ? 0.25 : 0.35),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                              spreadRadius: -2,
+                            ),
+                          ],
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () => ShareWidget.show(context, _product),
+                            borderRadius: BorderRadius.circular(16),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.share_rounded,
+                                      color: Colors.white, size: 22),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    loc.locale.languageCode == 'ru'
+                                        ? 'Поделиться'
+                                        : 'Бөлүшүү',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: 0.3,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
 
                       // ── Окшош товарлар ──
                       if (_similarProducts.isNotEmpty)
@@ -906,8 +908,8 @@ const SizedBox(height: 8),
                 16, 10, 16, MediaQuery.of(context).padding.bottom + 10),
             decoration: BoxDecoration(
               color: isDark
-                  ? Colors.black.withValues(alpha: 0.55)
-                  : Colors.white.withValues(alpha: 0.72),
+    ? Colors.black.withValues(alpha: 0.30)
+    : Colors.white.withValues(alpha: 0.40),
               border: Border(
                 top: BorderSide(
                   color: isDark
@@ -919,55 +921,77 @@ const SizedBox(height: 8),
             ),
             child: Row(
               children: [
-                // ── 30% — Чат (айнек баскыч) ──
-                _GlassButton(
-  width: (MediaQuery.of(context).size.width - 32 - 12) * 0.38,
-  height: 52,
-  onTap: _openChat,
-  isDark: isDark,
-  color: const Color(0xFF10B981),
-  child: Row(
-    mainAxisAlignment: MainAxisAlignment.center,
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      const Icon(Icons.chat_bubble_outline_rounded,
-          color: Color.fromARGB(255, 17, 180, 213),
-          size: 20),
-      const SizedBox(width: 6),
-      Text(
-        loc.locale.languageCode == 'ru'
-            ? 'Написать продавцу'
-            : ' Сатуучуга жазуу',
-        style: AppTextStyles.labelMedium.copyWith(
-            color: AppColors.primary,
-            fontWeight: FontWeight.w600),
+                // ── 30% — Чат баскычы (жашыл градиент) ──
+               // ── 25% — Чат баскычы ──
+Expanded(
+  flex: 2,
+  child: Container(
+    height: 52,
+    decoration: BoxDecoration(
+      gradient: const LinearGradient(
+        colors: [Color(0xFF10B981), Color(0xFF059669)],
+        begin: Alignment.centerLeft,
+        end: Alignment.centerRight,
       ),
-    ],
+      borderRadius: BorderRadius.circular(14),
+      boxShadow: [
+        BoxShadow(
+          color: const Color(0xFF10B981)
+              .withValues(alpha: isDark ? 0.25 : 0.30),
+          blurRadius: 10,
+          offset: const Offset(0, 4),
+          spreadRadius: -2,
+        ),
+      ],
+    ),
+    child: Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: _openChat,
+        borderRadius: BorderRadius.circular(14),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.chat_bubble_rounded,
+                color: Colors.white, size: 18),
+            const SizedBox(width: 6),
+            Text(
+              loc.locale.languageCode == 'ru' ? 'Чат' : 'Чат',
+              style: AppTextStyles.labelMedium.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
   ),
 ),
 
-                const SizedBox(width: 12),
+const SizedBox(width: 12),
 
-                // ── 70% — Маршрут (градиент баскыч) ──
-                Expanded(
-                  child: _GradientButton(
-                    height: 52,
-                    onTap: _openMapNavigation,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.near_me_rounded,
-                            color: Colors.white, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          loc.get('route'),
-                          style: AppTextStyles.labelLarge
-                              .copyWith(color: Colors.white, fontSize: 15),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+// ── 75% — Маршрут ──
+Expanded(
+  flex: 3,  // ← ушул гана кошулду
+  child: _GradientButton(
+    height: 52,
+    onTap: _openMapNavigation,
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Icon(Icons.near_me_rounded,
+            color: Colors.white, size: 20),
+        const SizedBox(width: 8),
+        Text(
+          loc.get('route'),
+          style: AppTextStyles.labelLarge
+              .copyWith(color: Colors.white, fontSize: 15),
+        ),
+      ],
+    ),
+  ),
+),
               ],
             ),
           ),
@@ -1440,9 +1464,7 @@ class _GlassButtonState extends State<_GlassButton> {
               width: widget.width,
               height: widget.height,
               decoration: BoxDecoration(
-                color: widget.isDark
-                    ? widget.color.withValues(alpha: _pressed ? 0.18 : 0.10)
-                    : widget.color.withValues(alpha: _pressed ? 0.14 : 0.08),
+                color: widget.color.withValues(alpha: _pressed ? 0.60 : 0.50),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: widget.color.withValues(alpha: 0.35),
@@ -1495,8 +1517,8 @@ class _GradientButtonState extends State<_GradientButton> {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: _pressed
-                  ? [const Color(0xFFB45309), const Color(0xFFD97706)]
-                  : [const Color(0xFFD97706), const Color(0xFFEF4444)],
+    ? [const Color(0xFFB45309).withOpacity(0.50), const Color(0xFFD97706).withOpacity(0.50)]
+    : [const Color(0xFFD97706).withOpacity(0.50), const Color(0xFFEF4444).withOpacity(0.50)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),

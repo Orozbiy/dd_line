@@ -258,12 +258,12 @@ class _ChatListScreenState extends State<ChatListScreen> {
           : AppBar(
               backgroundColor: cardColor,
               elevation: 0,
-              title: Text(
-                loc.get('messages'),
-                style: AppTextStyles.headingMedium.copyWith(
-                  color: isDark ? Colors.white : AppColors.black,
-                ),
-              ),
+            title: Text(
+  loc.get('messages'),
+  style: AppTextStyles.headingSmall.copyWith(
+    color: isDark ? Colors.white : AppColors.black,
+  ),
+),
             ),
       body: StreamBuilder<List<ChatModel>>(
         stream: stream,

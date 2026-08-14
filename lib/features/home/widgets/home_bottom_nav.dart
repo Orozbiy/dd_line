@@ -1,26 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../core/app_localizations.dart';
 import '../constants/home_colors.dart';
 import '../widgets/fav_badge.dart';
+import 'dart:ui';
 
-// ══════════════════════════════════════════════════════
-// TAB индекстери — бардык жерде бир жерден import кылынат
-// ══════════════════════════════════════════════════════
 const int tabHome      = 0;
 const int tabChat      = 1;
 const int tabMap       = 2;
 const int tabFavorites = 3;
 const int tabSettings  = 4;
 
-// ══════════════════════════════════════════════════════
-// HomeBottomNav
-// Мурда: home_screen.dart ичиндеги _buildBottomNav()
-// Эми: lib/features/home/widgets/home_bottom_nav.dart
-// ══════════════════════════════════════════════════════
 class HomeBottomNav extends StatelessWidget {
   final int currentTab;
-  final bool isVisible; 
+  final bool isVisible;
   final int totalUnreadChat;
   final int favCount;
   final double bottomPadding;
@@ -29,14 +23,13 @@ class HomeBottomNav extends StatelessWidget {
   const HomeBottomNav({
     super.key,
     required this.currentTab,
-    required this.isVisible, 
+    required this.isVisible,
     required this.totalUnreadChat,
     required this.favCount,
     required this.bottomPadding,
     required this.onTabSelected,
   });
 
-  // navbar бийиктиги — MenuFab позициясын эсептөодо колдонулат
   static const double navHeight = 64.0;
 
   @override
@@ -53,113 +46,113 @@ class HomeBottomNav extends StatelessWidget {
           color: currentTab == tab ? AppColors.primary : AppColors.grey400,
         );
 
-  return AnimatedPositioned(
-  duration: isVisible
-      ? const Duration(milliseconds: 300)
-      : const Duration(milliseconds: 200),
-  curve: Curves.easeOut,
-  left: 0,
-  right: 0,
-  bottom: isVisible ? 0 : -(navHeight + bottomPadding),
-      child: Container(
-        margin: EdgeInsets.fromLTRB(12, 0, 12, bottomPadding),
-        decoration: BoxDecoration(
-          color: isDark ? HomeColors.navBg : Colors.white,
+    return AnimatedPositioned(
+      duration: isVisible
+          ? const Duration(milliseconds: 300)
+          : const Duration(milliseconds: 200),
+      curve: Curves.easeOut,
+      left: 0,
+      right: 0,
+      bottom: isVisible ? 0 : -(navHeight + bottomPadding),
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(12, 0, 12, bottomPadding),
+        child: ClipRRect(
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: isDark ? HomeColors.navBorder : const Color(0xFFEEEEEE),
-            width: 0.8,
-          ),
-          boxShadow: isDark
-              ? []
-              : [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.12),
-                    blurRadius: 20,
-                    offset: const Offset(0, 4),
-                    spreadRadius: -2,
-                  ),
-                ],
-        ),
-        child: SizedBox(
-          height: navHeight,
-          child: Row(
-            children: [
-              // 🏠 Home
-              _NavItem(
-                icon:       Icons.home_outlined,
-                activeIcon: Icons.home_rounded,
-                label:      loc.get('home'),
-                isActive:   currentTab == tabHome,
-                onTap:      () => onTabSelected(tabHome),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+            child: Container(
+              decoration: BoxDecoration(
+                color: (isDark ? HomeColors.navBg : Colors.white)
+                    .withValues(alpha: 0.35),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: isDark ? HomeColors.navBorder : const Color(0xFFEEEEEE),
+                  width: 0.8,
+                ),
+                boxShadow: isDark
+                    ? []
+                    : [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.12),
+                          blurRadius: 20,
+                          offset: const Offset(0, 4),
+                          spreadRadius: -2,
+                        ),
+                      ],
               ),
-
-              // 💬 Chat
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => onTabSelected(tabChat),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _ChatBadgeIcon(
-                        unreadCount: totalUnreadChat,
-                        color: iconColor(tabChat),
+              child: SizedBox(
+                height: navHeight,
+                child: Row(
+                  children: [
+                    _NavItem(
+                      icon:       Icons.home_outlined,
+                      activeIcon: Icons.home_rounded,
+                      label:      loc.get('home'),
+                      isActive:   currentTab == tabHome,
+                      onTap:      () => onTabSelected(tabHome),
+                    ),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => onTabSelected(tabChat),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            _ChatBadgeIcon(
+                              unreadCount: totalUnreadChat,
+                              color: iconColor(tabChat),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(loc.get('chat'), style: labelStyle(tabChat)),
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(loc.get('chat'), style: labelStyle(tabChat)),
-                    ],
-                  ),
+                    ),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => onTabSelected(tabMap),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.storefront_outlined,
+                                size: 24, color: iconColor(tabMap)),
+                            const SizedBox(height: 4),
+                            Text(
+                              loc.get('map_title'),
+                              style: labelStyle(tabMap).copyWith(fontSize: 9),
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => onTabSelected(tabFavorites),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            FavBadge(
+                              count:  favCount,
+                              active: currentTab == tabFavorites,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(loc.get('favorites'), style: labelStyle(tabFavorites)),
+                          ],
+                        ),
+                      ),
+                    ),
+                    _NavItem(
+                      icon:       Icons.settings_outlined,
+                      activeIcon: Icons.settings_rounded,
+                      label:      loc.get('settings'),
+                      isActive:   currentTab == tabSettings,
+                      onTap:      () => onTabSelected(tabSettings),
+                    ),
+                  ],
                 ),
               ),
-
-              // 🗺️ Map
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => onTabSelected(tabMap),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.storefront_outlined,
-                          size: 24, color: iconColor(tabMap)),
-                      const SizedBox(height: 4),
-                      Text(
-                        loc.get('map_title'),
-                        style: labelStyle(tabMap).copyWith(fontSize: 9),
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              // ❤️ Favorites — FavBadge колдонулат
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => onTabSelected(tabFavorites),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      FavBadge(
-                        count:  favCount,
-                        active: currentTab == tabFavorites,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(loc.get('favorites'), style: labelStyle(tabFavorites)),
-                    ],
-                  ),
-                ),
-              ),
-
-              // ⚙️ Settings
-              _NavItem(
-                icon:       Icons.settings_outlined,
-                activeIcon: Icons.settings_rounded,
-                label:      loc.get('settings'),
-                isActive:   currentTab == tabSettings,
-                onTap:      () => onTabSelected(tabSettings),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -168,9 +161,6 @@ class HomeBottomNav extends StatelessWidget {
 }
 
 // ══════════════════════════════════════════════════════
-// Жардамчы виджеттер (бул файлда гана колдонулат)
-// ══════════════════════════════════════════════════════
-
 class _NavItem extends StatelessWidget {
   final IconData icon;
   final IconData activeIcon;
@@ -215,6 +205,7 @@ class _NavItem extends StatelessWidget {
   }
 }
 
+// ══════════════════════════════════════════════════════
 class _ChatBadgeIcon extends StatelessWidget {
   final int unreadCount;
   final Color color;

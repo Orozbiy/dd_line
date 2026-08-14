@@ -3,6 +3,7 @@ import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../core/app_localizations.dart';
 import '../models/category_model.dart';
+import 'dart:ui'; 
 
 enum ProductFilterMode { all, newest, popular }
 
@@ -105,6 +106,7 @@ class _CategoryListState extends State<CategoryList> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+       barrierColor: Colors.black.withValues(alpha: 0.1), 
       builder: (_) => _CategoryBottomSheet(
         categories: _categories,
         selectedId: _selectedCategoryId,
@@ -271,7 +273,9 @@ class _PillButton extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
         decoration: BoxDecoration(
-          color: isActive ? activeColor : inactiveBg,
+          color: isActive 
+    ? activeColor.withOpacity(0.80) 
+    : inactiveBg.withOpacity(0.50),
           borderRadius: BorderRadius.circular(22),
           boxShadow: isActive
               ? [
@@ -456,10 +460,14 @@ class _CategoryBottomSheet extends StatelessWidget {
     final itemBg      = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF7F7F7);
     final textColor   = isDark ? Colors.white : AppColors.black;
 
-    return Container(
+    return ClipRRect(
+  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+  child: BackdropFilter(
+    filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+    child: Container(
       constraints: BoxConstraints(maxHeight: maxH),
       decoration: BoxDecoration(
-        color: bgColor,
+        color: bgColor.withValues(alpha: 0.70),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
@@ -544,7 +552,7 @@ class _CategoryBottomSheet extends StatelessWidget {
                                   : FontWeight.w500,
                               color: isSelected ? color : textColor,
                               height: 1.2,
-                            ),
+            ),
                           ),
                         ),
                       ],
@@ -556,6 +564,8 @@ class _CategoryBottomSheet extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ),   // ← Container жабылат
+    ),   // ← BackdropFilter жабылат
+  );     // ← ClipRRect жабылат
   }
 }
