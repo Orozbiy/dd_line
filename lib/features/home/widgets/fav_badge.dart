@@ -16,11 +16,15 @@ class FavBadge extends StatelessWidget {
       clipBehavior: Clip.none,
       children: [
         // ── Жүрөкчө иконасы ──
-        Icon(
-          active ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-          color: active ? AppColors.primary : AppColors.grey400,
-          size: 26,
-        ),
+       Icon(
+  active ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+  color: active
+      ? AppColors.primary
+      : (Theme.of(context).brightness == Brightness.dark
+          ? AppColors.grey400
+          : AppColors.grey600),
+  size: 26,
+),
 
         // ── Badge — 0 болсо жашырылат ──
         if (count > 0)

@@ -70,21 +70,22 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
   final List<String> sizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
   final List<Map<String, String>> _sortValues = [
-    {'value': 'popular',    'icon': '🔥', 'key': 'sort_popular'},
-    {'value': 'price_asc',  'icon': '⬆️', 'key': 'sort_price_asc'},
+    {'value': 'popular', 'icon': '🔥', 'key': 'sort_popular'},
+    {'value': 'price_asc', 'icon': '⬆️', 'key': 'sort_price_asc'},
     {'value': 'price_desc', 'icon': '⬇️', 'key': 'sort_price_desc'},
-    {'value': 'rating',     'icon': '⭐', 'key': 'sort_rating'},
-    {'value': 'newest',     'icon': '🆕', 'key': 'sort_newest'},
+    {'value': 'rating', 'icon': '⭐', 'key': 'sort_rating'},
+    {'value': 'newest', 'icon': '🆕', 'key': 'sort_newest'},
   ];
 
   @override
   void initState() {
     super.initState();
-    _priceRange    = widget.initialOptions.priceRange;
-    _minCtrl       = TextEditingController(text: _priceRange.start.toInt().toString());
-    _maxCtrl       = TextEditingController(text: _priceRange.end.toInt().toString());
+    _priceRange = widget.initialOptions.priceRange;
+    _minCtrl =
+        TextEditingController(text: _priceRange.start.toInt().toString());
+    _maxCtrl = TextEditingController(text: _priceRange.end.toInt().toString());
     _selectedSizes = List.from(widget.initialOptions.selectedSizes);
-    _sortBy        = widget.initialOptions.sortBy;
+    _sortBy = widget.initialOptions.sortBy;
   }
 
   @override
@@ -96,11 +97,11 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
 
   void _reset() {
     setState(() {
-      _priceRange    = const RangeValues(0, _maxPrice);
+      _priceRange = const RangeValues(0, _maxPrice);
       _selectedSizes = [];
-      _sortBy        = 'default';
-      _minCtrl.text  = '0';
-      _maxCtrl.text  = _maxPrice.toInt().toString();
+      _sortBy = 'default';
+      _minCtrl.text = '0';
+      _maxCtrl.text = _maxPrice.toInt().toString();
     });
   }
 
@@ -123,69 +124,67 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
     return '${buf.toString()} с';
   }
 
-Widget _priceField({
-  required TextEditingController controller,
-  required String hint,
-  required ValueChanged<String> onChanged,
-  required bool isDark,
-}) {
-  return ClipRRect(
-    borderRadius: BorderRadius.circular(10),
-    child: BackdropFilter(
-      filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.08)
-              : Colors.white.withValues(alpha: 0.55),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.12)
-                : Colors.white.withValues(alpha: 0.80),
-          ),
+  Widget _priceField({
+    required TextEditingController controller,
+    required String hint,
+    required ValueChanged<String> onChanged,
+    required bool isDark,
+  }) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.06)
+            : Colors.black.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.transparent,
+          width: 1.5,
         ),
-        child: TextField(
-          controller: controller,
-          keyboardType: TextInputType.number,
-          style: AppTextStyles.bodyMedium.copyWith(
-            color: isDark ? Colors.white : AppColors.black,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: TextField(
+        controller: controller,
+        keyboardType: TextInputType.number,
+        style: AppTextStyles.bodyMedium.copyWith(
+          color: isDark ? Colors.white : AppColors.black,
+        ),
+        onChanged: onChanged,
+        decoration: InputDecoration(
+          hintText: hint,
+          suffixText: 'с',
+          suffixStyle: TextStyle(
+            color: isDark ? AppColors.grey400 : AppColors.grey500,
           ),
-          onChanged: onChanged,
-          decoration: InputDecoration(
-            hintText: hint,
-            suffixText: 'с',
-            suffixStyle: TextStyle(
-              color: isDark ? AppColors.grey400 : AppColors.grey500,
-            ),
-            border: InputBorder.none,
-            isDense: true,
-            contentPadding: const EdgeInsets.symmetric(vertical: 12),
-          ),
-        ),       // ← TextField жабылды
-      ),         // ← Container жабылды
-    ),           // ← BackdropFilter жабылды
-  );             // ← ClipRRect жабылды
-}
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          filled: true, // ← КОШ
+          fillColor: Colors.transparent, // ← КОШ
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final loc    = AppLocalizations.of(context);
+    final loc = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // ── Размытие фон үчүн жарым өткөрүмдүү түстөр ──
-    final bgColor      = isDark
+    final bgColor = isDark
         ? Colors.black.withOpacity(0.55)
         : Colors.white.withOpacity(0.65);
     final dividerColor = isDark
         ? Colors.white.withOpacity(0.08)
         : Colors.black.withOpacity(0.06);
-    final sortItemBg   = isDark
+    final sortItemBg = isDark
         ? Colors.white.withOpacity(0.06)
         : Colors.black.withOpacity(0.03);
-    final textColor    = isDark ? Colors.white : AppColors.black;
-    final sizeUnselBg  = isDark
+    final textColor = isDark ? Colors.white : AppColors.black;
+    final sizeUnselBg = isDark
         ? Colors.white.withOpacity(0.06)
         : Colors.black.withOpacity(0.03);
     final sizeUnselBorder = isDark
@@ -268,7 +267,6 @@ Widget _priceField({
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-
                       // ── 1. БААСЫ ──
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -287,8 +285,8 @@ Widget _priceField({
                             ),
                             child: Text(
                               '${_formatPrice(_priceRange.start)} — ${_formatPrice(_priceRange.end)}',
-                              style: AppTextStyles.labelSmall.copyWith(
-                                  color: AppColors.primary),
+                              style: AppTextStyles.labelSmall
+                                  .copyWith(color: AppColors.primary),
                             ),
                           ),
                         ],
@@ -331,8 +329,7 @@ Widget _priceField({
                               onChanged: (val) {
                                 final v = double.tryParse(val) ?? 0;
                                 setState(() {
-                                  final clamped =
-                                      v.clamp(0, _priceRange.end);
+                                  final clamped = v.clamp(0, _priceRange.end);
                                   _priceRange = RangeValues(
                                       clamped.toDouble(), _priceRange.end);
                                 });
@@ -340,8 +337,7 @@ Widget _priceField({
                             ),
                           ),
                           Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 10),
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
                             child: Text('—',
                                 style: AppTextStyles.bodyMedium
                                     .copyWith(color: textColor)),
@@ -471,9 +467,8 @@ Widget _priceField({
                                 child: Text(
                                   size,
                                   style: AppTextStyles.labelLarge.copyWith(
-                                    color: isSelected
-                                        ? Colors.white
-                                        : textColor,
+                                    color:
+                                        isSelected ? Colors.white : textColor,
                                   ),
                                 ),
                               ),
@@ -510,9 +505,9 @@ Widget _priceField({
                     child: ElevatedButton(
                       onPressed: () {
                         widget.onApply(FilterOptions(
-                          priceRange:    _priceRange,
+                          priceRange: _priceRange,
                           selectedSizes: _selectedSizes,
-                          sortBy:        _sortBy,
+                          sortBy: _sortBy,
                         ));
                         Navigator.pop(context);
                       },

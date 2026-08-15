@@ -38,14 +38,17 @@ class HomeBottomNav extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     Color iconColor(int tab) =>
-        currentTab == tab ? AppColors.primary : AppColors.grey400;
+    currentTab == tab
+        ? AppColors.primary
+        : (isDark ? AppColors.grey400 : AppColors.grey600);
 
-    TextStyle labelStyle(int tab) => TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w500,
-          color: currentTab == tab ? AppColors.primary : AppColors.grey400,
-        );
-
+TextStyle labelStyle(int tab) => TextStyle(
+      fontSize: 10,
+      fontWeight: FontWeight.w500,
+      color: currentTab == tab
+          ? AppColors.primary
+          : (isDark ? AppColors.grey400 : AppColors.grey600),
+    );
     return AnimatedPositioned(
       duration: isVisible
           ? const Duration(milliseconds: 300)
@@ -94,6 +97,7 @@ class HomeBottomNav extends StatelessWidget {
                     Expanded(
                       child: GestureDetector(
                         onTap: () => onTabSelected(tabChat),
+                       
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -110,6 +114,7 @@ class HomeBottomNav extends StatelessWidget {
                     Expanded(
                       child: GestureDetector(
                         onTap: () => onTabSelected(tabMap),
+                        
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -129,6 +134,8 @@ class HomeBottomNav extends StatelessWidget {
                     Expanded(
                       child: GestureDetector(
                         onTap: () => onTabSelected(tabFavorites),
+                        
+                       
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -144,6 +151,7 @@ class HomeBottomNav extends StatelessWidget {
                     ),
                     _NavItem(
                       icon:       Icons.settings_outlined,
+                      
                       activeIcon: Icons.settings_rounded,
                       label:      loc.get('settings'),
                       isActive:   currentTab == tabSettings,
@@ -178,26 +186,31 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark; 
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
+         behavior: HitTestBehavior.opaque,  
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              isActive ? activeIcon : icon,
-              size: 24,
-              color: isActive ? AppColors.primary : AppColors.grey400,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
-                color: isActive ? AppColors.primary : AppColors.grey400,
-              ),
-            ),
+  isActive ? activeIcon : icon,
+  size: 24,
+  color: isActive
+      ? AppColors.primary
+      : (isDark ? AppColors.grey400 : AppColors.grey600),
+),
+Text(
+  label,
+  style: TextStyle(
+    fontSize: 10,
+    fontWeight: FontWeight.w500,
+    color: isActive
+        ? AppColors.primary
+        : (isDark ? AppColors.grey400 : AppColors.grey600),
+  ),
+),
           ],
         ),
       ),

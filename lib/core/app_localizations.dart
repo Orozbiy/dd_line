@@ -432,6 +432,7 @@ class AppLocalizations {
     'flash_hours': 'саат',
     'flash_minutes': 'мүнөт',
     'flash_seconds': 'секунд',
+    'rty': 'Тиркемеге жаңы сунуштар кошуу',
 
 // 🏆 Leaderboard
     'leaderboard_title': 'Топ алуучулар',
@@ -877,6 +878,7 @@ class AppLocalizations {
 
     'chat_background': 'Чат фону',
     'cache_clear': 'Кэшти тазалоо',
+    'profile_view_edit': 'Түзөтүү',
   };
 
   static const _ru = {
@@ -932,6 +934,7 @@ class AppLocalizations {
     'stat_chats': 'Чаты',
     'stat_nav': 'Навигация',
     'stat_products': 'Товаров',
+    'rty': 'Добавить новые предложения в приложение',
     'paid_mark': '💰  Отметить оплату',
     'paid_yes': '✅ Оплатил',
     'paid_no': '❌ Не оплатил',
@@ -976,7 +979,7 @@ class AppLocalizations {
     'call_request_dialog_body':
         'Продавцу будет отправлен запрос на звонок.\nКогда он примет — телефон позвонит.',
     'call_request_dialog_send': 'Отправить',
-    'call_request_tooltip': 'Запросить звонок',
+    'call_request_tooltip': 'Поддержки',
     'call_request_error': 'Ошибка, попробуйте ещё раз',
     'suggestion': 'Отправить запрос',
     'rules_btn_title': 'Золотые правила продавца',

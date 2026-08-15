@@ -13,18 +13,19 @@ import '../widgets/chat_bg_menu_item.dart';
 import '../widgets/cache_menu_item.dart';
 import '../widgets/support_menu_item.dart';
 import '../widgets/terms_menu_item.dart';
+import '../../home/widgets/suggestion_button.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final isDark    = Theme.of(context).brightness == Brightness.dark;
-    final loc       = AppLocalizations.of(context);
-    final divColor  = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFEEEEEE);
-    final textColor = isDark ? Colors.white : AppColors.black;
-    final subColor  = isDark ? const Color(0xFFAAAAAA) : AppColors.grey500;
-    final cardBg    = isDark
+    final isDark     = Theme.of(context).brightness == Brightness.dark;
+    final loc        = AppLocalizations.of(context);
+    final divColor   = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFEEEEEE);
+    final textColor  = isDark ? Colors.white : AppColors.black;
+    final subColor   = isDark ? const Color(0xFFAAAAAA) : AppColors.grey500;
+    final cardBg     = isDark
         ? Colors.white.withValues(alpha: 0.06)
         : Colors.white.withValues(alpha: 0.55);
     final cardBorder = isDark
@@ -49,7 +50,7 @@ class SettingsScreen extends StatelessWidget {
         ),
         foregroundColor: textColor,
         title: Text(
-          loc.get('settings'), // Орусча/Кыргызча автоматтык которулат
+          loc.get('settings'),
           style: AppTextStyles.headingSmall.copyWith(color: textColor),
         ),
       ),
@@ -65,7 +66,7 @@ class SettingsScreen extends StatelessWidget {
             const SettingsHeader(),
             const SizedBox(height: 24),
 
-            // Profile Card
+            // ── Profile Card ──
             _glassCard(
               cardBg: cardBg,
               cardBorder: cardBorder,
@@ -125,7 +126,7 @@ class SettingsScreen extends StatelessWidget {
 
             const SizedBox(height: 16),
 
-            // Негизги айнек блок
+            // ── Негизги айнек блок ──
             _glassCard(
               cardBg: cardBg,
               cardBorder: cardBorder,
@@ -139,10 +140,83 @@ class SettingsScreen extends StatelessWidget {
                     Divider(height: 1, color: divColor),
                     const DarkModeToggle(),
                     Divider(height: 1, color: divColor),
-                    // Чат фону
                     ChatBgMenuItem(provider: ChatBackgroundProvider.instance),
                     Divider(height: 1, color: divColor),
                     const CacheMenuItem(),
+                    Divider(height: 1, color: divColor),
+
+                    // ── Өтүнүч жиберүү ──
+                    InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () => showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.vertical(
+                            top: Radius.circular(24),
+                          ),
+                        ),
+                        builder: (_) => ClipRRect(
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(24),
+                          ),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? Colors.black.withValues(alpha: 0.55)
+                                    : Colors.white.withValues(alpha: 0.60),
+                                borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(24),
+                                ),
+                                border: Border(
+                                  top: BorderSide(
+                                    color: isDark
+                                        ? Colors.white.withValues(alpha: 0.12)
+                                        : Colors.black.withValues(alpha: 0.08),
+                                  ),
+                                ),
+                              ),
+                              child: const SuggestionButton(),
+                            ),
+                          ),
+                        ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.chat_bubble_outline_rounded,
+                                color: AppColors.primary, size: 20),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    loc.get('call_request_tooltip'),
+                                    style: AppTextStyles.bodyMedium
+                                        .copyWith(color: textColor),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    loc.get('rty'),
+                                    
+                                    style: AppTextStyles.labelSmall
+                                        .copyWith(color: subColor),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(Icons.chevron_right,
+                                color: AppColors.grey300, size: 20),
+                          ],
+                        ),
+                      ),
+                    ),
+
                     Divider(height: 1, color: divColor),
                     const SupportMenuItem(),
                     Divider(height: 1, color: divColor),

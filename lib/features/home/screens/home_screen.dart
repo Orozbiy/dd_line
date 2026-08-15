@@ -22,7 +22,7 @@ import '../../chat/models/chat_model.dart';
 import '../../../core/supabase_client.dart';
 import '../../product_detail/screens/product_detail_screen.dart';
 import '../screens/favorites_screen.dart';
-import '../widgets/suggestion_button.dart';
+
 import '../widgets/product_card.dart';
 import 'dart:ui';
 import '../constants/home_colors.dart';
@@ -102,28 +102,28 @@ class _HomeScreenState extends State<HomeScreen> {
     return c;
   }
 
-@override
-void initState() {
-  super.initState();
-  _loadProducts();  // ← бул бар
-  _favCount = fav.count;
-  _checkUnread();
-  fav.addListener(_onFavChanged);
-  _subscribeChatUnread();
+  @override
+  void initState() {
+    super.initState();
+    _loadProducts(); // ← бул бар
+    _favCount = fav.count;
+    _checkUnread();
+    fav.addListener(_onFavChanged);
+    _subscribeChatUnread();
 
-  _scrollController.addListener(_onScroll);
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    final bottom = MediaQuery.of(context).padding.bottom;
-    setState(() => _navBottomPadding = bottom > 0 ? bottom : 12);
-    _checkAppUpdate();
-  });
-}
+    _scrollController.addListener(_onScroll);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final bottom = MediaQuery.of(context).padding.bottom;
+      setState(() => _navBottomPadding = bottom > 0 ? bottom : 12);
+      _checkAppUpdate();
+    });
+  }
 
 // ── Жаңы метод ──
-Future<void> _checkAppUpdate() async {
-  final langCode = AppLocalizations.of(context).locale.languageCode;
-  await UpdateChecker.check(context, langCode);
-}
+  Future<void> _checkAppUpdate() async {
+    final langCode = AppLocalizations.of(context).locale.languageCode;
+    await UpdateChecker.check(context, langCode);
+  }
 
   // ══════════════════════════════════════════════════════
   // LALAFO SCROLL ЛОГИКАСЫ
@@ -483,17 +483,6 @@ Future<void> _checkAppUpdate() async {
     });
   }
 
-  void _showSuggestionSheet() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => SuggestionButton(),
-    );
-  }
-
   void _onTitleTap() {
     final now = DateTime.now();
     if (_lastTapTime == null ||
@@ -572,196 +561,186 @@ Future<void> _checkAppUpdate() async {
                 _loadMoreProducts();
               return false;
             },
-            child: CustomScrollView(
-              controller: _scrollController,
-              physics: const AlwaysScrollableScrollPhysics(),
-              slivers: [
-                // ── Жогоруда бош орун (sticky header бийиктиги) ──
-                // DD Online жашынганда: _searchCatH
-                // DD Online көрүнгөндө: _titleBarHeight + _searchCatH
-                SliverToBoxAdapter(
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 250),
-                    curve: Curves.easeInOut,
-                    height: _titleVisible
-                        ? _titleBarHeight + _searchCatH
-                        : _searchCatH,
-                  ),
-                ),
-
-                // ── Баскычтар сабы ──
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(14, 25, 14, 8),
-                    child: Row(
-                      children: [
-                        if (_isSearchMode && !_isLoading)
-                          Flexible(
-                            child: Text(
-                              '${displayedProducts.length} ${loc.get('results')}',
-                              style: AppTextStyles.bodyMedium.copyWith(
-                                  color:
-                                      isDark ? Colors.white70 : Colors.black54),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        if (_isNearbyMode && !_isLoading)
-                          Flexible(
-                            child: Text(
-                              '📍 ${displayedProducts.length} ${loc.get('nearby_count')}',
-                              style: AppTextStyles.bodyMedium.copyWith(
-                                  color:
-                                      isDark ? Colors.white70 : Colors.black54),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        if (_filterMode != ProductFilterMode.all &&
-                            !_isSearchMode &&
-                            !_isNearbyMode &&
-                            !_isLoading)
-                          Flexible(
-                            child: Text(
-                              '${_filterModeLabel(loc)} · ${displayedProducts.length} шт',
-                              style: AppTextStyles.bodyMedium.copyWith(
-                                  color:
-                                      isDark ? Colors.white70 : Colors.black54),
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
-                            ),
-                          ),
-                        if (!_isSearchMode)
-                          _IosLabelBtn(
-                            onTap: _showSuggestionSheet,
-                            icon: Icons.chat_bubble_outline,
-                            label: loc.get('suggestion'),
-                            color: AppColors.primary,
-                            isDark: isDark,
-                          ),
-                        const Spacer(),
-                        if (!_isSearchMode)
-                          _IosLabelBtn(
-                            onTap: _isNearbyMode
-                                ? _loadNearbyProducts
-                                : () {
-                                    switch (_filterMode) {
-                                      case ProductFilterMode.newest:
-                                        _loadNewest();
-                                        break;
-                                      case ProductFilterMode.popular:
-                                        _loadPopular();
-                                        break;
-                                      case ProductFilterMode.all:
-                                        _loadProducts(refresh: true);
-                                        break;
-                                    }
-                                  },
-                            icon: Icons.refresh,
-                            label: loc.get('refresh'),
-                            color: AppColors.primary,
-                            isDark: isDark,
-                          ),
-                        if (_filterCount > 0) ...[
-                          const SizedBox(width: 8),
-                          _IosLabelBtn(
-                            onTap: _resetFilters,
-                            icon: Icons.close,
-                            label: loc.get('filter_reset'),
-                            color: AppColors.error,
-                            isDark: isDark,
-                          ),
-                        ],
-                      ],
+            child: RefreshIndicator(
+              onRefresh: () async {
+                if (_isNearbyMode) {
+                  await _loadNearbyProducts();
+                } else {
+                  switch (_filterMode) {
+                    case ProductFilterMode.newest:
+                      await _loadNewest();
+                      break;
+                    case ProductFilterMode.popular:
+                      await _loadPopular();
+                      break;
+                    case ProductFilterMode.all:
+                      await _loadProducts(refresh: true);
+                      break;
+                  }
+                }
+              },
+              color: AppColors.primary,
+              displacement: 80,
+              child: CustomScrollView(
+                controller: _scrollController,
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  // ── Жогоруда бош орун (sticky header бийиктиги) ──
+                  SliverToBoxAdapter(
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeInOut,
+                      height: _titleVisible
+                          ? _titleBarHeight + _searchCatH
+                          : _searchCatH,
                     ),
                   ),
-                ),
 
-                // ── Товарлар ──
-                if (_isLoading)
-                  SliverFillRemaining(
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const CircularProgressIndicator(
-                              color: AppColors.primary, strokeWidth: 3),
-                          const SizedBox(height: 16),
-                          Text(loc.get('loading'),
-                              style: const TextStyle(
-                                  color: AppColors.grey500, fontSize: 14)),
-                        ],
-                      ),
-                    ),
-                  )
-                else if (displayedProducts.isEmpty)
-                  SliverFillRemaining(
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text('🔍', style: TextStyle(fontSize: 48)),
-                          const SizedBox(height: 12),
-                          Text(
-                            _isSearchMode
-                                ? '"$_searchQuery" — ${loc.get('no_products')}'
-                                : loc.get('no_products'),
-                            style: AppTextStyles.bodyMedium
-                                .copyWith(color: AppColors.grey500),
-                            textAlign: TextAlign.center,
-                          ),
-                          if (_isSearchMode) ...[
-                            const SizedBox(height: 8),
-                            Text(loc.get('search_empty'),
-                                style: AppTextStyles.bodySmall
-                                    .copyWith(color: AppColors.grey400)),
+                  // ── Баскычтар сабы ──
+                  // ── Баскычтар сабы — маалымат болгондо гана ──
+if (_isSearchMode || _isNearbyMode || 
+    (_filterMode != ProductFilterMode.all && !_isLoading) || 
+    _filterCount > 0)
+  SliverToBoxAdapter(
+    child: Padding(
+      padding: const EdgeInsets.fromLTRB(14, 15, 14, 10),
+      child: Row(
+        children: [
+          if (_isSearchMode && !_isLoading)
+            Flexible(
+              child: Text(
+                '${displayedProducts.length} ${loc.get('results')}',
+                style: AppTextStyles.bodyMedium.copyWith(
+                    color: isDark ? Colors.white70 : Colors.black54),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          if (_isNearbyMode && !_isLoading)
+            Flexible(
+              child: Text(
+                '📍 ${displayedProducts.length} ${loc.get('nearby_count')}',
+                style: AppTextStyles.bodyMedium.copyWith(
+                    color: isDark ? Colors.white70 : Colors.black54),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          if (_filterMode != ProductFilterMode.all &&
+              !_isSearchMode &&
+              !_isNearbyMode &&
+              !_isLoading)
+            Flexible(
+              child: Text(
+                '${_filterModeLabel(loc)} · ${displayedProducts.length} шт',
+                style: AppTextStyles.bodyMedium.copyWith(
+                    color: isDark ? Colors.white70 : Colors.black54),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
+            ),
+          const Spacer(),
+          if (_filterCount > 0) ...[
+            const SizedBox(width: 8),
+            _IosLabelBtn(
+              onTap: _resetFilters,
+              icon: Icons.close,
+              label: loc.get('filter_reset'),
+              color: AppColors.error,
+              isDark: isDark,
+            ),
+          ],
+        ],
+      ),
+    ),
+  ),
+
+                  // ── Товарлар ──
+                  if (_isLoading)
+                    SliverFillRemaining(
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const CircularProgressIndicator(
+                                color: AppColors.primary, strokeWidth: 3),
+                            const SizedBox(height: 16),
+                            Text(loc.get('loading'),
+                                style: const TextStyle(
+                                    color: AppColors.grey500, fontSize: 14)),
                           ],
-                        ],
+                        ),
                       ),
-                    ),
-                  )
-                else ...[
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(8, 4, 8, 12),
-                    sliver: SliverGrid(
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        childAspectRatio: 0.62,
-                        crossAxisSpacing: 5,
-                        mainAxisSpacing: 5,
+                    )
+                  else if (displayedProducts.isEmpty)
+                    SliverFillRemaining(
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Text('🔍', style: TextStyle(fontSize: 48)),
+                            const SizedBox(height: 12),
+                            Text(
+                              _isSearchMode
+                                  ? '"$_searchQuery" — ${loc.get('no_products')}'
+                                  : loc.get('no_products'),
+                              style: AppTextStyles.bodyMedium
+                                  .copyWith(color: AppColors.grey500),
+                              textAlign: TextAlign.center,
+                            ),
+                            if (_isSearchMode) ...[
+                              const SizedBox(height: 8),
+                              Text(loc.get('search_empty'),
+                                  style: AppTextStyles.bodySmall
+                                      .copyWith(color: AppColors.grey400)),
+                            ],
+                          ],
+                        ),
                       ),
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          final product = displayedProducts[index];
-                          return RepaintBoundary(
-                            key: ValueKey(product.id),
-                            child: Padding(
-                              padding: const EdgeInsets.all(2),
-                              child: GestureDetector(
-                                onTap: () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (_) => ProductDetailScreen(
-                                          product: product)),
-                                ).then((_) => setState(() {})),
-                                child: ProductCard(
-                                  product: product,
+                    )
+                  else ...[
+                    SliverPadding(
+padding: const EdgeInsets.fromLTRB(8, 15, 8, 12),
+                      sliver: SliverGrid(
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          childAspectRatio: 0.62,
+                          crossAxisSpacing: 5,
+                          mainAxisSpacing: 5,
+                        ),
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            final product = displayedProducts[index];
+                            return RepaintBoundary(
+                              key: ValueKey(product.id),
+                              child: Padding(
+                                padding: const EdgeInsets.all(2),
+                                child: GestureDetector(
                                   onTap: () => Navigator.push(
                                     context,
                                     MaterialPageRoute(
                                         builder: (_) => ProductDetailScreen(
                                             product: product)),
                                   ).then((_) => setState(() {})),
+                                  child: ProductCard(
+                                    product: product,
+                                    onTap: () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (_) => ProductDetailScreen(
+                                              product: product)),
+                                    ).then((_) => setState(() {})),
+                                  ),
                                 ),
                               ),
-                            ),
-                          );
-                        },
-                        childCount: displayedProducts.length,
+                            );
+                          },
+                          childCount: displayedProducts.length,
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
 
@@ -772,223 +751,226 @@ Future<void> _checkAppUpdate() async {
             top: 0,
             left: 0,
             right: 0,
-           
-  child: ClipRect(
-  child: BackdropFilter(
-    filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-    child: Container(
-      color: appBarColor.withOpacity(0.75),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // ── DD Online блогу — анимация менен жашынат/чыгат ──
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeInOut,
-            height: _titleVisible ? _titleBarHeight : 0,
-            clipBehavior: Clip.hardEdge,
-            decoration: const BoxDecoration(),
-            child: SizedBox(
-              height: _titleBarHeight,
-              child: Padding(
-                padding: const EdgeInsets.only(top: 20),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // Дүкөн баскычы
-                    GestureDetector(
-                      onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) =>
-                                      const SellerEntranceScreen()))
-                          .then((_) => setState(() {})),
-                      child: Container(
-                        margin: const EdgeInsets.fromLTRB(8, 6, 4, 6),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 9),
-                        decoration: BoxDecoration(
-                          color: isDark
-    ? const Color(0xFF2C1A00).withOpacity(0.55)
-    : Colors.white.withOpacity(0.45),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                              color: const Color(0xFFD97706)
-                                  .withOpacity(0.55),
-                              width: 1.2),
-                          boxShadow: isDark
-                              ? []
-                              : [
-                                  BoxShadow(
-                                    color: const Color(0xFFD97706)
-                                        .withOpacity(0.15),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
+            child: ClipRect(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                child: Container(
+                  color: appBarColor.withOpacity(0.75),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // ── DD Online блогу — анимация менен жашынат/чыгат ──
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 250),
+                        curve: Curves.easeInOut,
+                        height: _titleVisible ? _titleBarHeight : 0,
+                        clipBehavior: Clip.hardEdge,
+                        decoration: const BoxDecoration(),
+                        child: SizedBox(
+                          height: _titleBarHeight,
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 20),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                // Дүкөн баскычы
+                                GestureDetector(
+                                  onTap: () => Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                              builder: (_) =>
+                                                  const SellerEntranceScreen()))
+                                      .then((_) => setState(() {})),
+                                  child: Container(
+                                    margin:
+                                        const EdgeInsets.fromLTRB(8, 6, 4, 6),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 14, vertical: 9),
+                                    decoration: BoxDecoration(
+                                      color: isDark
+                                          ? const Color(0xFF2C1A00)
+                                              .withOpacity(0.55)
+                                          : Colors.white.withOpacity(0.45),
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
+                                          color: const Color(0xFFD97706)
+                                              .withOpacity(0.55),
+                                          width: 1.2),
+                                      boxShadow: isDark
+                                          ? []
+                                          : [
+                                              BoxShadow(
+                                                color: const Color(0xFFD97706)
+                                                    .withOpacity(0.15),
+                                                blurRadius: 8,
+                                                offset: const Offset(0, 2),
+                                              ),
+                                            ],
+                                    ),
+                                    child: Text(loc.get('shop'),
+                                        style: const TextStyle(
+                                            color: Color(0xFFD97706),
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 13)),
                                   ),
-                                ],
-                        ),
-                        child: Text(loc.get('shop'),
-                            style: const TextStyle(
-                                color: Color(0xFFD97706),
-                                fontWeight: FontWeight.w700,
-                                fontSize: 13)),
-                      ),
-                    ),
-                    // DD Online логотипи
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: _onTitleTap,
-                        child: Center(
-                          child: ShaderMask(
-                            shaderCallback: (bounds) =>
-                                const LinearGradient(
-                              colors: [
-                                Color(0xFFD97706),
-                                Color(0xFFEF4444)
+                                ),
+                                // DD Online логотипи
+                                Expanded(
+                                  child: GestureDetector(
+                                    onTap: _onTitleTap,
+                                    child: Center(
+                                      child: ShaderMask(
+                                        shaderCallback: (bounds) =>
+                                            const LinearGradient(
+                                          colors: [
+                                            Color(0xFFD97706),
+                                            Color(0xFFEF4444)
+                                          ],
+                                          begin: Alignment.centerLeft,
+                                          end: Alignment.centerRight,
+                                        ).createShader(bounds),
+                                        child: const Text('DD Online',
+                                            style: TextStyle(
+                                                fontSize: 26,
+                                                fontWeight: FontWeight.w900,
+                                                color: Colors.white,
+                                                letterSpacing: 1.0)),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                // Коңгуроо
+                                GestureDetector(
+                                  onTap: () => Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                              builder: (_) =>
+                                                  const NotificationsScreen()))
+                                      .then((_) => _checkUnread()),
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(right: 12),
+                                    child: Stack(
+                                      clipBehavior: Clip.none,
+                                      children: [
+                                        Icon(Icons.notifications_outlined,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurface
+                                                .withOpacity(0.8),
+                                            size: 26),
+                                        if (_hasUnread)
+                                          Positioned(
+                                            top: 0,
+                                            right: 0,
+                                            child: Container(
+                                              width: 8,
+                                              height: 8,
+                                              decoration: const BoxDecoration(
+                                                  color: AppColors.error,
+                                                  shape: BoxShape.circle),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
                               ],
-                              begin: Alignment.centerLeft,
-                              end: Alignment.centerRight,
-                            ).createShader(bounds),
-                            child: const Text('DD Online',
-                                style: TextStyle(
-                                    fontSize: 26,
-                                    fontWeight: FontWeight.w900,
-                                    color: Colors.white,
-                                    letterSpacing: 1.0)),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    // Коңгуроо
-                    GestureDetector(
-                      onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) =>
-                                      const NotificationsScreen()))
-                          .then((_) => _checkUnread()),
-                      child: Padding(
-                        padding: const EdgeInsets.only(right: 12),
-                        child: Stack(
-                          clipBehavior: Clip.none,
+
+                      // ── Search + баскычтар (дайыма туруктуу) ──
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+                        child: Row(
                           children: [
-                            Icon(Icons.notifications_outlined,
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurface
-                                    .withOpacity(0.8),
-                                size: 26),
-                            if (_hasUnread)
-                              Positioned(
-                                top: 0,
-                                right: 0,
-                                child: Container(
-                                  width: 8,
-                                  height: 8,
-                                  decoration: const BoxDecoration(
-                                      color: AppColors.error,
-                                      shape: BoxShape.circle),
-                                ),
+                            Expanded(
+                                child: SearchBarWidget(
+                                    onChanged: _onSearchChanged,
+                                    onClear: _onSearchClear)),
+                            const SizedBox(width: 8),
+                            _glassButton(
+                              active: _isNearbyMode,
+                              onTap: _isLocating
+                                  ? () {}
+                                  : (_isNearbyMode
+                                      ? () => _loadProducts(refresh: true)
+                                      : _loadNearbyProducts),
+                              child: _isLocating
+                                  ? const SizedBox(
+                                      width: 22,
+                                      height: 22,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: AppColors.primary))
+                                  : Icon(Icons.near_me_rounded,
+                                      color: _isNearbyMode
+                                          ? Colors.white
+                                          : filterIconColor,
+                                      size: 22),
+                            ),
+                            const SizedBox(width: 8),
+                            _glassButton(
+                              active: _filterCount > 0,
+                              onTap: _openFilter,
+                              child: Stack(
+                                clipBehavior: Clip.none,
+                                children: [
+                                  Icon(Icons.tune_rounded,
+                                      color: _filterCount > 0
+                                          ? Colors.white
+                                          : filterIconColor,
+                                      size: 22),
+                                  if (_filterCount > 0)
+                                    Positioned(
+                                      top: -6,
+                                      right: -6,
+                                      child: Container(
+                                        width: 15,
+                                        height: 15,
+                                        decoration: const BoxDecoration(
+                                            color: AppColors.error,
+                                            shape: BoxShape.circle),
+                                        child: Center(
+                                            child: Text('$_filterCount',
+                                                style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 9,
+                                                    fontWeight:
+                                                        FontWeight.bold))),
+                                      ),
+                                    ),
+                                ],
                               ),
+                            ),
                           ],
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+                      Divider(height: 1, color: dividerColor),
+                      const SizedBox(height: 6),
 
-          // ── Search + баскычтар (дайыма туруктуу) ──
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
-            child: Row(
-              children: [
-                Expanded(
-                    child: SearchBarWidget(
-                        onChanged: _onSearchChanged,
-                        onClear: _onSearchClear)),
-                const SizedBox(width: 8),
-                _glassButton(
-                  active: _isNearbyMode,
-                  onTap: _isLocating
-                      ? () {}
-                      : (_isNearbyMode
-                          ? () => _loadProducts(refresh: true)
-                          : _loadNearbyProducts),
-                  child: _isLocating
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: AppColors.primary))
-                      : Icon(Icons.near_me_rounded,
-                          color: _isNearbyMode
-                              ? Colors.white
-                              : filterIconColor,
-                          size: 22),
-                ),
-                const SizedBox(width: 8),
-                _glassButton(
-                  active: _filterCount > 0,
-                  onTap: _openFilter,
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Icon(Icons.tune_rounded,
-                          color: _filterCount > 0
-                              ? Colors.white
-                              : filterIconColor,
-                          size: 22),
-                      if (_filterCount > 0)
-                        Positioned(
-                          top: -6,
-                          right: -6,
-                          child: Container(
-                            width: 15,
-                            height: 15,
-                            decoration: const BoxDecoration(
-                                color: AppColors.error,
-                                shape: BoxShape.circle),
-                            child: Center(
-                                child: Text('$_filterCount',
-                                    style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.bold))),
-                          ),
-                        ),
+                      // ── CategoryList (дайыма туруктуу) ──
+                      CategoryList(
+                        onCategorySelected: (id) {
+                          setState(() => _selectedCategoryId = id);
+                          if (_isSearchMode && _searchQuery.isNotEmpty) {
+                            _onSearchChanged(_searchQuery);
+                          } else if (_isNearbyMode) {
+                            _loadNearbyProducts();
+                          } else {
+                            _onFilterModeChanged(_filterMode);
+                          }
+                        },
+                        onFilterModeChanged: _onFilterModeChanged,
+                      ),
+                      const SizedBox(height: 6),
                     ],
                   ),
-                ),
-              ],
+                ), // ← Container
+              ), // ← BackdropFilter
             ),
-          ),
-          Divider(height: 1, color: dividerColor),
-          const SizedBox(height: 6),
-
-          // ── CategoryList (дайыма туруктуу) ──
-          CategoryList(
-            onCategorySelected: (id) {
-              setState(() => _selectedCategoryId = id);
-              if (_isSearchMode && _searchQuery.isNotEmpty) {
-                _onSearchChanged(_searchQuery);
-              } else if (_isNearbyMode) {
-                _loadNearbyProducts();
-              } else {
-                _onFilterModeChanged(_filterMode);
-              }
-            },
-            onFilterModeChanged: _onFilterModeChanged,
-          ),
-          const SizedBox(height: 6),
-        ],
-      ),
-    ),    // ← Container
-  ),      // ← BackdropFilter
-),  
-  ),                        // ← ClipRect
+          ), // ← ClipRect
         ],
       ),
     );
@@ -1015,11 +997,7 @@ Future<void> _checkAppUpdate() async {
         backgroundColor: Colors.transparent,
         body: Stack(
           children: [
-           
-            
-HomeBackground(isDark: isDark),
-            
-           
+            HomeBackground(isDark: isDark),
 
             // ── Мазмун ──
             Positioned(
@@ -1205,13 +1183,13 @@ class _MenuFabState extends State<_MenuFab> {
           height: 52,
           decoration: BoxDecoration(
             gradient: LinearGradient(
-  colors: [
-    const Color(0xFFD97706).withOpacity(0.70),
-    const Color(0xFFEF4444).withOpacity(0.70),
-  ],
-  begin: Alignment.topLeft,
-  end: Alignment.bottomRight,
-),
+              colors: [
+                const Color(0xFFD97706).withOpacity(0.70),
+                const Color(0xFFEF4444).withOpacity(0.70),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
@@ -1261,10 +1239,10 @@ class _IosBtnState extends State<_IosBtn> {
   @override
   Widget build(BuildContext context) {
     final bg = widget.active
-    ? widget.activeColor
-    : (widget.isDark 
-        ? HomeColors.btnBg.withOpacity(0.55) 
-        : Colors.white.withOpacity(0.55));
+        ? widget.activeColor
+        : (widget.isDark
+            ? HomeColors.btnBg.withOpacity(0.55)
+            : Colors.white.withOpacity(0.55));
 
     return GestureDetector(
       onTap: widget.onTap,

@@ -884,7 +884,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (replyToId == null) return;
     final reversedIndex = messages.indexWhere((m) => m.id == replyToId);
     if (reversedIndex == -1) return;
-    final offset = (messages.length - 1 - reversedIndex) * 80.0;
+   final offset = reversedIndex * 80.0;
     if (_scrollCtrl.hasClients)
       _scrollCtrl.animateTo(
         offset.clamp(0.0, _scrollCtrl.position.maxScrollExtent),
@@ -1013,7 +1013,7 @@ class _ChatScreenState extends State<ChatScreen> {
                             IconButton(
                               icon: const Icon(Icons.phone_callback_rounded,
                                   color: AppColors.primary),
-                              tooltip: 'Чалуу суроо',
+                              tooltip: 'Өтүнүч жиберүү',
                               onPressed: _sendCallRequest,
                             ),
                         ],
@@ -1070,8 +1070,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                         initialItemCount:
                                             _cachedMessages.length,
                                         itemBuilder: (context, i, animation) {
-                                          final msg = _cachedMessages[
-                                              _cachedMessages.length - 1 - i];
+                                          final msg = _cachedMessages[i];
                                           final isMe = msg.senderId == myId;
 
                                           return SizeTransition(
