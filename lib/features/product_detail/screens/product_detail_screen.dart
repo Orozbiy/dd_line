@@ -29,6 +29,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   final _fav = FavoritesManager();
   final _chatService = ChatService();
   bool _dataLoading = true;
+  bool _isChatLoading = false;
   String selectedSize = '';
 
   late ProductModel _product;
@@ -204,6 +205,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Future<void> _openChat() async {
+   if (_isChatLoading) return;
     final loc = AppLocalizations.of(context);
     if (_dataLoading) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -213,6 +215,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       ));
       return;
     }
+    setState(() => _isChatLoading = true);
     if (_sellerUid == null || _sellerUid!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(loc.get('seller_no_info')),
@@ -249,12 +252,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     buyerId: user.id,
                     sellerId: _sellerUid!,
                   )));
-    } catch (e) {
+   } catch (e) {
       debugPrint('❌ _openChat: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('${loc.get('error')}: $e'),
           backgroundColor: AppColors.error));
+    } finally {
+      if (mounted) setState(() => _isChatLoading = false);
     }
   }
 
@@ -889,7 +894,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
-                        onTap: _openChat,
+                       onTap: _isChatLoading ? null : () async {
+                          if (_isChatLoading) return;
+                          await _openChat();
+                        },
                         borderRadius: BorderRadius.circular(14),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,

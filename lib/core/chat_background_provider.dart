@@ -1,123 +1,153 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:math' as math;
 
 enum ChatBgTheme {
-  classic,   // Демейки
+  classic,   // Классикалык
   floral,    // Гүлдөр
   nature,    // Жаратылыш
   sunset,    // Күн батышы
   galaxy,    // Галактика
+  ocean,     // Деңиз 🌊
+  aurora,    // Аврора 🌌
+  desert,    // Чөл 🏜
+  cyberpunk, // Киберпанк 🤖
+  sakura,    // Сакура 🌸
 }
 
 extension ChatBgThemeExt on ChatBgTheme {
   String get label {
     switch (this) {
-      case ChatBgTheme.classic:  return 'Классикалык';
-      case ChatBgTheme.floral:   return 'Гүлдөр 🌸';
-      case ChatBgTheme.nature:   return 'Жаратылыш 🌿';
-      case ChatBgTheme.sunset:   return 'Күн батышы 🌅';
-      case ChatBgTheme.galaxy:   return 'Галактика 🌌';
+      case ChatBgTheme.classic:   return 'Классикалык';
+      case ChatBgTheme.floral:    return 'Гүлдөр 🌸';
+      case ChatBgTheme.nature:    return 'Жаратылыш 🌿';
+      case ChatBgTheme.sunset:    return 'Күн батышы 🌅';
+      case ChatBgTheme.galaxy:    return 'Галактика 🌌';
+      case ChatBgTheme.ocean:     return 'Деңиз 🌊';
+      case ChatBgTheme.aurora:    return 'Аврора 🌠';
+      case ChatBgTheme.desert:    return 'Чөл 🏜️';
+      case ChatBgTheme.cyberpunk: return 'Киберпанк 🤖';
+      case ChatBgTheme.sakura:    return 'Сакура 🌸';
     }
   }
+
+  String localizedLabel(BuildContext context) => label;
 
   Color get previewColor {
     switch (this) {
-      case ChatBgTheme.classic:  return const Color(0xFFF0F2F5);
-      case ChatBgTheme.floral:   return const Color(0xFFFFE4F0);
-      case ChatBgTheme.nature:   return const Color(0xFFD4EDDA);
-      case ChatBgTheme.sunset:   return const Color(0xFFFFD4A8);
-      case ChatBgTheme.galaxy:   return const Color(0xFF1A1040);
+      case ChatBgTheme.classic:   return const Color(0xFFF0F2F5);
+      case ChatBgTheme.floral:    return const Color(0xFFFFE4F0);
+      case ChatBgTheme.nature:    return const Color(0xFFD4EDDA);
+      case ChatBgTheme.sunset:    return const Color(0xFFFFD4A8);
+      case ChatBgTheme.galaxy:    return const Color(0xFF1A1040);
+      case ChatBgTheme.ocean:     return const Color(0xFF006994);
+      case ChatBgTheme.aurora:    return const Color(0xFF0D2137);
+      case ChatBgTheme.desert:    return const Color(0xFFD4A256);
+      case ChatBgTheme.cyberpunk: return const Color(0xFF0A0A1A);
+      case ChatBgTheme.sakura:    return const Color(0xFFFFB7C5);
     }
   }
 
-  // Фон виджети
   Widget buildBackground(bool isDark) {
     switch (this) {
       case ChatBgTheme.classic:
-        return Container(
-          color: isDark ? const Color(0xFF121212) : const Color(0xFFF0F2F5),
-        );
+        return Container(color: isDark ? const Color(0xFF121212) : const Color(0xFFF0F2F5));
       case ChatBgTheme.floral:
         return _FloralBackground(isDark: isDark);
       case ChatBgTheme.nature:
         return _NatureBackground(isDark: isDark);
       case ChatBgTheme.sunset:
-        return _SunsetBackground(isDark: isDark);
+        return _SunsetBackground();
       case ChatBgTheme.galaxy:
         return const _GalaxyBackground();
+      case ChatBgTheme.ocean:
+        return const _OceanBackground();
+      case ChatBgTheme.aurora:
+        return const _AuroraBackground();
+      case ChatBgTheme.desert:
+        return const _DesertBackground();
+      case ChatBgTheme.cyberpunk:
+        return const _CyberpunkBackground();
+      case ChatBgTheme.sakura:
+        return _SakuraBackground(isDark: isDark);
     }
   }
 
-  // BoxDecoration — chat_screen Stack үчүн (жөнөкөй версия)
   BoxDecoration backgroundDecoration(bool isDark) {
     switch (this) {
       case ChatBgTheme.classic:
-        return BoxDecoration(
-          color: isDark ? const Color(0xFF121212) : const Color(0xFFF0F2F5),
-        );
+        return BoxDecoration(color: isDark ? const Color(0xFF121212) : const Color(0xFFF0F2F5));
       case ChatBgTheme.floral:
-        return BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: isDark
-                ? [const Color(0xFF2D1020), const Color(0xFF1A0A18), const Color(0xFF2D1020)]
-                : [const Color(0xFFFFF0F5), const Color(0xFFFFD6E8), const Color(0xFFFFF0F5)],
-          ),
-        );
+        return BoxDecoration(gradient: LinearGradient(
+          begin: Alignment.topLeft, end: Alignment.bottomRight,
+          colors: isDark
+              ? [const Color(0xFF2D1020), const Color(0xFF1A0A18), const Color(0xFF2D1020)]
+              : [const Color(0xFFFFF0F5), const Color(0xFFFFD6E8), const Color(0xFFFFF0F5)],
+        ));
       case ChatBgTheme.nature:
-        return BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: isDark
-                ? [const Color(0xFF0A1F0F), const Color(0xFF0D2B14), const Color(0xFF0A1F0F)]
-                : [const Color(0xFFE8F5E9), const Color(0xFFC8E6C9), const Color(0xFFE8F5E9)],
-          ),
-        );
+        return BoxDecoration(gradient: LinearGradient(
+          begin: Alignment.topCenter, end: Alignment.bottomCenter,
+          colors: isDark
+              ? [const Color(0xFF0A1F0F), const Color(0xFF0D2B14), const Color(0xFF0A1F0F)]
+              : [const Color(0xFFE8F5E9), const Color(0xFFC8E6C9), const Color(0xFFE8F5E9)],
+        ));
       case ChatBgTheme.sunset:
-        return const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFFFF6B35), Color(0xFFFF8E53), Color(0xFFFFB347), Color(0xFFFFD700)],
-          ),
-        );
+        return const BoxDecoration(gradient: LinearGradient(
+          begin: Alignment.topCenter, end: Alignment.bottomCenter,
+          colors: [Color(0xFFFF6B35), Color(0xFFFF8E53), Color(0xFFFFB347), Color(0xFFFFD700)],
+        ));
       case ChatBgTheme.galaxy:
-        return const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF0D0221), Color(0xFF1A0845), Color(0xFF0D1B2A)],
-          ),
-        );
+        return const BoxDecoration(gradient: LinearGradient(
+          begin: Alignment.topLeft, end: Alignment.bottomRight,
+          colors: [Color(0xFF0D0221), Color(0xFF1A0845), Color(0xFF0D1B2A)],
+        ));
+      case ChatBgTheme.ocean:
+        return const BoxDecoration(gradient: LinearGradient(
+          begin: Alignment.topCenter, end: Alignment.bottomCenter,
+          colors: [Color(0xFF001E3C), Color(0xFF006994), Color(0xFF0099CC)],
+        ));
+      case ChatBgTheme.aurora:
+        return const BoxDecoration(gradient: LinearGradient(
+          begin: Alignment.topLeft, end: Alignment.bottomRight,
+          colors: [Color(0xFF0D2137), Color(0xFF1A3A2A), Color(0xFF0D2137)],
+        ));
+      case ChatBgTheme.desert:
+        return const BoxDecoration(gradient: LinearGradient(
+          begin: Alignment.topCenter, end: Alignment.bottomCenter,
+          colors: [Color(0xFFE8B86D), Color(0xFFD4855A), Color(0xFFA0522D)],
+        ));
+      case ChatBgTheme.cyberpunk:
+        return const BoxDecoration(gradient: LinearGradient(
+          begin: Alignment.topLeft, end: Alignment.bottomRight,
+          colors: [Color(0xFF0A0A1A), Color(0xFF1A0A2E), Color(0xFF0A1A0A)],
+        ));
+      case ChatBgTheme.sakura:
+        return BoxDecoration(gradient: LinearGradient(
+          begin: Alignment.topCenter, end: Alignment.bottomCenter,
+          colors: isDark
+              ? [const Color(0xFF2D1020), const Color(0xFF1A0518)]
+              : [const Color(0xFFFFF0F8), const Color(0xFFFFD6E8)],
+        ));
     }
   }
 }
 
 // ════════════════════════════════════════════════════
-// ГҮЛДӨР ФОНУ
+// ГҮЛДӨР
 // ════════════════════════════════════════════════════
 class _FloralBackground extends StatelessWidget {
   final bool isDark;
   const _FloralBackground({required this.isDark});
-
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark
-              ? [const Color(0xFF2D1020), const Color(0xFF1A0A18)]
-              : [const Color(0xFFFFF0F5), const Color(0xFFFFD6E8)],
-        ),
-      ),
-      child: CustomPaint(
-        painter: _FloralPainter(isDark: isDark),
-        child: const SizedBox.expand(),
-      ),
+      decoration: BoxDecoration(gradient: LinearGradient(
+        begin: Alignment.topLeft, end: Alignment.bottomRight,
+        colors: isDark
+            ? [const Color(0xFF2D1020), const Color(0xFF1A0A18)]
+            : [const Color(0xFFFFF0F5), const Color(0xFFFFD6E8)],
+      )),
+      child: CustomPaint(painter: _FloralPainter(isDark: isDark), child: const SizedBox.expand()),
     );
   }
 }
@@ -125,95 +155,68 @@ class _FloralBackground extends StatelessWidget {
 class _FloralPainter extends CustomPainter {
   final bool isDark;
   _FloralPainter({required this.isDark});
-
   @override
   void paint(Canvas canvas, Size size) {
     final petalColor = isDark
         ? const Color(0xFFFF69B4).withOpacity(0.15)
         : const Color(0xFFFF69B4).withOpacity(0.25);
     final leafColor = isDark
-        ? const Color(0xFF4CAF50).withOpacity(0.12)
-        : const Color(0xFF81C784).withOpacity(0.30);
-
-    _drawFlower(canvas, Offset(size.width * 0.15, size.height * 0.12), 28, petalColor, leafColor);
-    _drawFlower(canvas, Offset(size.width * 0.80, size.height * 0.08), 22, petalColor, leafColor);
-    _drawFlower(canvas, Offset(size.width * 0.05, size.height * 0.45), 18, petalColor, leafColor);
-    _drawFlower(canvas, Offset(size.width * 0.90, size.height * 0.38), 24, petalColor, leafColor);
-    _drawFlower(canvas, Offset(size.width * 0.50, size.height * 0.05), 20, petalColor, leafColor);
-    _drawFlower(canvas, Offset(size.width * 0.25, size.height * 0.85), 26, petalColor, leafColor);
-    _drawFlower(canvas, Offset(size.width * 0.75, size.height * 0.80), 20, petalColor, leafColor);
-    _drawFlower(canvas, Offset(size.width * 0.92, size.height * 0.70), 16, petalColor, leafColor);
-    _drawFlower(canvas, Offset(size.width * 0.10, size.height * 0.75), 22, petalColor, leafColor);
-  }
-
-  void _drawFlower(Canvas canvas, Offset center, double r, Color petalColor, Color leafColor) {
-    final paint = Paint()..color = petalColor..style = PaintingStyle.fill;
-    // 6 лепесток
-    for (int i = 0; i < 6; i++) {
-      final angle = i * 3.14159 / 3;
-      final ox = center.dx + r * 0.6 * _cos(angle);
-      final oy = center.dy + r * 0.6 * _sin(angle);
-      canvas.drawCircle(Offset(ox, oy), r * 0.55, paint);
+        ? const Color(0xFF90EE90).withOpacity(0.10)
+        : const Color(0xFF90EE90).withOpacity(0.20);
+    final paint = Paint()..style = PaintingStyle.fill;
+    void drawFlower(double cx, double cy, double r) {
+      paint.color = petalColor;
+      for (int i = 0; i < 6; i++) {
+        final angle = i * math.pi / 3;
+        canvas.drawCircle(Offset(cx + r * math.cos(angle), cy + r * math.sin(angle)), r * 0.6, paint);
+      }
+      paint.color = petalColor.withOpacity(petalColor.opacity * 1.5);
+      canvas.drawCircle(Offset(cx, cy), r * 0.4, paint);
     }
-    // Борбор
-    final centerPaint = Paint()
-      ..color = isDark
-          ? const Color(0xFFFFD700).withOpacity(0.4)
-          : const Color(0xFFFFD700).withOpacity(0.7)
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(center, r * 0.35, centerPaint);
-    // Жалбырак
-    final leafPaint = Paint()..color = leafColor..style = PaintingStyle.fill;
-    final path = Path();
-    path.moveTo(center.dx, center.dy + r);
-    path.quadraticBezierTo(
-        center.dx + r * 0.8, center.dy + r * 1.5,
-        center.dx, center.dy + r * 2.0);
-    path.quadraticBezierTo(
-        center.dx - r * 0.8, center.dy + r * 1.5,
-        center.dx, center.dy + r);
-    canvas.drawPath(path, leafPaint);
-  }
-
-  double _cos(double a) => (a == 0) ? 1 : (a == 3.14159 / 2) ? 0 : (a == 3.14159) ? -1 : (a == 3 * 3.14159 / 2) ? 0 : _cosApprox(a);
-  double _sin(double a) => _cosApprox(3.14159 / 2 - a);
-  double _cosApprox(double a) {
-    double x = a % (2 * 3.14159265);
-    double t = 1, sum = 1;
-    for (int i = 1; i <= 8; i++) {
-      t *= -x * x / ((2 * i - 1) * (2 * i));
-      sum += t;
+    void drawLeaf(double cx, double cy, double w, double h, double angle) {
+      paint.color = leafColor;
+      canvas.save();
+      canvas.translate(cx, cy);
+      canvas.rotate(angle);
+      final path = Path()
+        ..moveTo(0, -h / 2)
+        ..quadraticBezierTo(w / 2, 0, 0, h / 2)
+        ..quadraticBezierTo(-w / 2, 0, 0, -h / 2);
+      canvas.drawPath(path, paint);
+      canvas.restore();
     }
-    return sum;
+    drawFlower(size.width * 0.15, size.height * 0.12, 28);
+    drawFlower(size.width * 0.80, size.height * 0.08, 22);
+    drawFlower(size.width * 0.50, size.height * 0.25, 18);
+    drawFlower(size.width * 0.10, size.height * 0.55, 24);
+    drawFlower(size.width * 0.88, size.height * 0.45, 30);
+    drawFlower(size.width * 0.60, size.height * 0.75, 20);
+    drawFlower(size.width * 0.30, size.height * 0.85, 26);
+    drawFlower(size.width * 0.75, size.height * 0.90, 18);
+    drawLeaf(size.width * 0.25, size.height * 0.20, 20, 40, 0.5);
+    drawLeaf(size.width * 0.70, size.height * 0.60, 18, 36, -0.8);
+    drawLeaf(size.width * 0.45, size.height * 0.80, 22, 44, 1.2);
   }
-
   @override
   bool shouldRepaint(_FloralPainter old) => false;
 }
 
 // ════════════════════════════════════════════════════
-// ЖАРАТЫЛЫШ ФОНУ
+// ЖАРАТЫЛЫШ
 // ════════════════════════════════════════════════════
 class _NatureBackground extends StatelessWidget {
   final bool isDark;
   const _NatureBackground({required this.isDark});
-
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: isDark
-              ? [const Color(0xFF0A1F0F), const Color(0xFF0D2B14)]
-              : [const Color(0xFFE8F5E9), const Color(0xFFC8E6C9)],
-        ),
-      ),
-      child: CustomPaint(
-        painter: _NaturePainter(isDark: isDark),
-        child: const SizedBox.expand(),
-      ),
+      decoration: BoxDecoration(gradient: LinearGradient(
+        begin: Alignment.topCenter, end: Alignment.bottomCenter,
+        colors: isDark
+            ? [const Color(0xFF0A1F0F), const Color(0xFF0D2B14)]
+            : [const Color(0xFFE8F5E9), const Color(0xFFA5D6A7)],
+      )),
+      child: CustomPaint(painter: _NaturePainter(isDark: isDark), child: const SizedBox.expand()),
     );
   }
 }
@@ -221,200 +224,124 @@ class _NatureBackground extends StatelessWidget {
 class _NaturePainter extends CustomPainter {
   final bool isDark;
   _NaturePainter({required this.isDark});
-
   @override
   void paint(Canvas canvas, Size size) {
-    final leafColor = isDark
-        ? const Color(0xFF4CAF50).withOpacity(0.20)
-        : const Color(0xFF388E3C).withOpacity(0.22);
-    final stemColor = isDark
-        ? const Color(0xFF2E7D32).withOpacity(0.25)
-        : const Color(0xFF2E7D32).withOpacity(0.30);
-
-    _drawBranch(canvas, Offset(0, size.height * 0.3), size.width * 0.35, -0.4, leafColor, stemColor);
-    _drawBranch(canvas, Offset(size.width, size.height * 0.15), size.width * 0.30, 3.14 + 0.4, leafColor, stemColor);
-    _drawBranch(canvas, Offset(0, size.height * 0.75), size.width * 0.28, -0.2, leafColor, stemColor);
-    _drawBranch(canvas, Offset(size.width, size.height * 0.65), size.width * 0.25, 3.14 + 0.2, leafColor, stemColor);
-
-    // Чөп
-    final grassPaint = Paint()..color = stemColor..strokeWidth = 1.5..style = PaintingStyle.stroke;
-    for (int i = 0; i < 8; i++) {
-      final x = size.width * (0.1 + i * 0.12);
-      final h = size.height * (0.06 + (i % 3) * 0.03);
-      canvas.drawLine(
-        Offset(x, size.height),
-        Offset(x + (i % 2 == 0 ? 8.0 : -8.0), size.height - h),
-        grassPaint,
-      );
+    final treePaint = Paint()
+      ..color = isDark
+          ? const Color(0xFF1B4D1B).withOpacity(0.6)
+          : const Color(0xFF2E7D32).withOpacity(0.3)
+      ..style = PaintingStyle.fill;
+    void drawTree(double x, double y, double h) {
+      final w = h * 0.4;
+      final path = Path()
+        ..moveTo(x, y - h)
+        ..lineTo(x + w, y)
+        ..lineTo(x - w, y)
+        ..close();
+      canvas.drawPath(path, treePaint);
+      final path2 = Path()
+        ..moveTo(x, y - h * 1.3)
+        ..lineTo(x + w * 0.8, y - h * 0.4)
+        ..lineTo(x - w * 0.8, y - h * 0.4)
+        ..close();
+      canvas.drawPath(path2, treePaint);
     }
+    drawTree(size.width * 0.05, size.height, size.height * 0.35);
+    drawTree(size.width * 0.18, size.height, size.height * 0.28);
+    drawTree(size.width * 0.82, size.height, size.height * 0.32);
+    drawTree(size.width * 0.95, size.height, size.height * 0.25);
+    drawTree(size.width * 0.60, size.height, size.height * 0.20);
+
+    // Жердин сызыгы
+    final groundPaint = Paint()
+      ..color = isDark
+          ? const Color(0xFF1B4D1B).withOpacity(0.4)
+          : const Color(0xFF4CAF50).withOpacity(0.25);
+    final groundPath = Path()
+      ..moveTo(0, size.height * 0.85)
+      ..quadraticBezierTo(size.width * 0.5, size.height * 0.78, size.width, size.height * 0.85)
+      ..lineTo(size.width, size.height)
+      ..lineTo(0, size.height)
+      ..close();
+    canvas.drawPath(groundPath, groundPaint);
   }
-
-  void _drawBranch(Canvas canvas, Offset start, double len, double angle, Color leafColor, Color stemColor) {
-    final stemPaint = Paint()..color = stemColor..strokeWidth = 2..style = PaintingStyle.stroke;
-    final leafPaint = Paint()..color = leafColor..style = PaintingStyle.fill;
-
-    final endX = start.dx + len * _cosA(angle);
-    final endY = start.dy + len * _sinA(angle);
-    final end = Offset(endX, endY);
-    canvas.drawLine(start, end, stemPaint);
-
-    for (int i = 1; i <= 4; i++) {
-      final t = i / 5.0;
-      final mx = start.dx + (end.dx - start.dx) * t;
-      final my = start.dy + (end.dy - start.dy) * t;
-      for (int side in [-1, 1]) {
-        final la = angle + side * 0.7;
-        final ll = len * 0.20;
-        final lx = mx + ll * _cosA(la);
-        final ly = my + ll * _sinA(la);
-        final path = Path();
-        path.moveTo(mx, my);
-        path.quadraticBezierTo(
-            (mx + lx) / 2 + side * ll * 0.3, (my + ly) / 2 - ll * 0.3,
-            lx, ly);
-        path.quadraticBezierTo(
-            (mx + lx) / 2 - side * ll * 0.1, (my + ly) / 2 + ll * 0.1,
-            mx, my);
-        canvas.drawPath(path, leafPaint);
-      }
-    }
-  }
-
-  double _cosA(double a) => _cosApprox(a);
-  double _sinA(double a) => _cosApprox(3.14159265 / 2 - a);
-  double _cosApprox(double a) {
-    double x = a % (2 * 3.14159265);
-    double t = 1, s = 1;
-    for (int i = 1; i <= 8; i++) {
-      t *= -x * x / ((2 * i - 1) * (2 * i));
-      s += t;
-    }
-    return s;
-  }
-
   @override
   bool shouldRepaint(_NaturePainter old) => false;
 }
 
 // ════════════════════════════════════════════════════
-// КҮН БАТЫШЫ ФОНУ
+// КҮН БАТЫШЫ
 // ════════════════════════════════════════════════════
 class _SunsetBackground extends StatelessWidget {
-  final bool isDark;
-  const _SunsetBackground({required this.isDark});
-
+  const _SunsetBackground();
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: _SunsetPainter(isDark: isDark),
-      child: const SizedBox.expand(),
+    return Container(
+      decoration: const BoxDecoration(gradient: LinearGradient(
+        begin: Alignment.topCenter, end: Alignment.bottomCenter,
+        colors: [Color(0xFF1A0533), Color(0xFF8B1A4A), Color(0xFFFF6B35), Color(0xFFFFD700)],
+      )),
+      child: CustomPaint(painter: _SunsetPainter(), child: const SizedBox.expand()),
     );
   }
 }
 
 class _SunsetPainter extends CustomPainter {
-  final bool isDark;
-  _SunsetPainter({required this.isDark});
-
   @override
   void paint(Canvas canvas, Size size) {
-    // Асман градиенти
-    final skyPaint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: isDark
-            ? [const Color(0xFF0D0221), const Color(0xFF2D0845), const Color(0xFFB22222)]
-            : [const Color(0xFF87CEEB), const Color(0xFFFF8C69), const Color(0xFFFF6347)],
-      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
-    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), skyPaint);
-
     // Күн
-    final sunY = size.height * (isDark ? 0.55 : 0.40);
     final sunPaint = Paint()
-      ..shader = RadialGradient(
-        colors: isDark
-            ? [const Color(0xFFFF4500), const Color(0xFFFF6347).withOpacity(0)]
-            : [const Color(0xFFFFD700), const Color(0xFFFF8C00).withOpacity(0)],
-      ).createShader(Rect.fromCircle(
-          center: Offset(size.width * 0.5, sunY), radius: size.width * 0.22));
-    canvas.drawCircle(Offset(size.width * 0.5, sunY), size.width * 0.22, sunPaint);
+      ..shader = const RadialGradient(
+        colors: [Color(0xFFFFFFAA), Color(0xFFFFD700), Color(0xFFFF8C00)],
+      ).createShader(Rect.fromCircle(center: Offset(size.width / 2, size.height * 0.55), radius: 40));
+    canvas.drawCircle(Offset(size.width / 2, size.height * 0.55), 38, sunPaint);
 
-    // Тоолор / үйлөр силуэти
+    // Суу чагылышы
+    final reflectPaint = Paint()
+      ..color = const Color(0xFFFF6B35).withOpacity(0.25)
+      ..strokeWidth = 2;
+    for (int i = 0; i < 8; i++) {
+      final y = size.height * 0.65 + i * 8.0;
+      final w = 60.0 + i * 15;
+      canvas.drawLine(
+        Offset(size.width / 2 - w / 2, y),
+        Offset(size.width / 2 + w / 2, y),
+        reflectPaint,
+      );
+    }
+
+    // Тоолор
     final mountainPaint = Paint()
-      ..color = isDark
-          ? const Color(0xFF1A0845).withOpacity(0.9)
-          : const Color(0xFF8B4513).withOpacity(0.55)
+      ..color = const Color(0xFF1A0533).withOpacity(0.5)
       ..style = PaintingStyle.fill;
-    final path = Path();
-    path.moveTo(0, size.height);
-    path.lineTo(0, size.height * 0.62);
-    path.lineTo(size.width * 0.12, size.height * 0.42);
-    path.lineTo(size.width * 0.22, size.height * 0.58);
-    path.lineTo(size.width * 0.35, size.height * 0.35);
-    path.lineTo(size.width * 0.50, size.height * 0.55);
-    path.lineTo(size.width * 0.62, size.height * 0.40);
-    path.lineTo(size.width * 0.75, size.height * 0.58);
-    path.lineTo(size.width * 0.88, size.height * 0.45);
-    path.lineTo(size.width, size.height * 0.60);
-    path.lineTo(size.width, size.height);
-    path.close();
-    canvas.drawPath(path, mountainPaint);
-
-    // Суу / жер
-    final waterPaint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: isDark
-            ? [const Color(0xFF1A0845), const Color(0xFF0D0221)]
-            : [const Color(0xFFFF7043), const Color(0xFFFF5722)],
-      ).createShader(Rect.fromLTWH(0, size.height * 0.72, size.width, size.height * 0.28));
-    canvas.drawRect(
-        Rect.fromLTWH(0, size.height * 0.72, size.width, size.height * 0.28),
-        waterPaint);
-
-    // Күндүн чагылышы суудан
-    final reflPaint = Paint()
-      ..color = (isDark ? const Color(0xFFFF4500) : const Color(0xFFFFD700)).withOpacity(0.35)
-      ..style = PaintingStyle.fill;
-    for (int i = 0; i < 5; i++) {
-      final w = size.width * (0.05 - i * 0.008);
-      final y = size.height * (0.74 + i * 0.04);
-      canvas.drawRect(
-          Rect.fromCenter(
-              center: Offset(size.width * 0.5, y), width: w * 2, height: 3),
-          reflPaint);
-    }
-
-    // Жылдыздар (кечки)
-    if (isDark) {
-      final starPaint = Paint()..color = Colors.white.withOpacity(0.6);
-      final stars = [
-        [0.1, 0.05], [0.25, 0.10], [0.45, 0.03], [0.65, 0.08],
-        [0.80, 0.04], [0.90, 0.12], [0.55, 0.15], [0.70, 0.20],
-      ];
-      for (final s in stars) {
-        canvas.drawCircle(Offset(size.width * s[0], size.height * s[1]), 1.5, starPaint);
-      }
-    }
+    final mPath = Path()
+      ..moveTo(0, size.height * 0.65)
+      ..lineTo(size.width * 0.20, size.height * 0.38)
+      ..lineTo(size.width * 0.40, size.height * 0.58)
+      ..lineTo(size.width * 0.60, size.height * 0.35)
+      ..lineTo(size.width * 0.80, size.height * 0.52)
+      ..lineTo(size.width, size.height * 0.42)
+      ..lineTo(size.width, size.height * 0.65)
+      ..close();
+    canvas.drawPath(mPath, mountainPaint);
   }
-
   @override
   bool shouldRepaint(_SunsetPainter old) => false;
 }
 
 // ════════════════════════════════════════════════════
-// ГАЛАКТИКА ФОНУ
+// ГАЛАКТИКА
 // ════════════════════════════════════════════════════
 class _GalaxyBackground extends StatelessWidget {
   const _GalaxyBackground();
-
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: _GalaxyPainter(),
-      child: const SizedBox.expand(),
+    return Container(
+      decoration: const BoxDecoration(gradient: LinearGradient(
+        begin: Alignment.topLeft, end: Alignment.bottomRight,
+        colors: [Color(0xFF0D0221), Color(0xFF1A0845), Color(0xFF0D1B2A)],
+      )),
+      child: CustomPaint(painter: _GalaxyPainter(), child: const SizedBox.expand()),
     );
   }
 }
@@ -422,71 +349,454 @@ class _GalaxyBackground extends StatelessWidget {
 class _GalaxyPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    // Фон
-    final bgPaint = Paint()
-      ..shader = RadialGradient(
-        center: Alignment.center,
-        colors: [const Color(0xFF1A0845), const Color(0xFF0D0221)],
-      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
-    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), bgPaint);
-
-    // Жылдыздар
-    final stars = [
-      [0.05,0.10,1.5],[0.15,0.05,1.0],[0.25,0.18,2.0],[0.35,0.08,1.2],
-      [0.50,0.03,1.8],[0.60,0.12,1.0],[0.72,0.07,2.2],[0.85,0.15,1.5],
-      [0.92,0.04,1.0],[0.10,0.30,1.3],[0.20,0.42,1.8],[0.40,0.25,1.0],
-      [0.55,0.35,2.5],[0.70,0.28,1.2],[0.88,0.38,1.8],[0.03,0.55,1.0],
-      [0.18,0.65,2.0],[0.32,0.58,1.5],[0.48,0.70,1.0],[0.65,0.62,2.2],
-      [0.80,0.55,1.3],[0.95,0.65,1.8],[0.08,0.80,1.5],[0.22,0.88,1.0],
-      [0.42,0.82,2.0],[0.58,0.90,1.2],[0.75,0.85,1.8],[0.90,0.78,1.0],
-      [0.30,0.72,1.5],[0.62,0.45,1.0],[0.78,0.42,2.0],[0.45,0.50,1.3],
-    ];
-    for (final s in stars) {
-      final opacity = 0.4 + (s[2] / 3.0) * 0.6;
-      final starPaint = Paint()..color = Colors.white.withOpacity(opacity);
-      canvas.drawCircle(Offset(size.width * s[0], size.height * s[1]), s[2], starPaint);
+    final rng = math.Random(42);
+    final starPaint = Paint()..style = PaintingStyle.fill;
+    for (int i = 0; i < 120; i++) {
+      final x = rng.nextDouble() * size.width;
+      final y = rng.nextDouble() * size.height;
+      final r = rng.nextDouble() * 1.8 + 0.3;
+      final opacity = rng.nextDouble() * 0.7 + 0.3;
+      starPaint.color = Colors.white.withOpacity(opacity);
+      canvas.drawCircle(Offset(x, y), r, starPaint);
     }
-
-    // Галактика туманы
-    final nebulaPaint = Paint()
+    final nebula = Paint()
       ..shader = RadialGradient(
-        center: const Alignment(0.2, -0.3),
-        colors: [
-          const Color(0xFF9C27B0).withOpacity(0.15),
-          const Color(0xFF3F51B5).withOpacity(0.08),
-          Colors.transparent,
-        ],
-      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
-    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), nebulaPaint);
-
-    final nebula2 = Paint()
-      ..shader = RadialGradient(
-        center: const Alignment(-0.4, 0.5),
-        colors: [
-          const Color(0xFF00BCD4).withOpacity(0.12),
-          const Color(0xFF1976D2).withOpacity(0.06),
-          Colors.transparent,
-        ],
-      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
-    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), nebula2);
-
-    // Сызык жылдыздар
-    final shootPaint = Paint()
-      ..color = Colors.white.withOpacity(0.5)
-      ..strokeWidth = 1.0
-      ..style = PaintingStyle.stroke;
-    canvas.drawLine(
-        Offset(size.width * 0.20, size.height * 0.10),
-        Offset(size.width * 0.35, size.height * 0.22),
-        shootPaint);
-    canvas.drawLine(
-        Offset(size.width * 0.70, size.height * 0.05),
-        Offset(size.width * 0.80, size.height * 0.15),
-        shootPaint);
+        colors: [const Color(0xFF7B2FBE).withOpacity(0.3), Colors.transparent],
+      ).createShader(Rect.fromCircle(center: Offset(size.width * 0.3, size.height * 0.3), radius: size.width * 0.4));
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), nebula);
   }
-
   @override
   bool shouldRepaint(_GalaxyPainter old) => false;
+}
+
+// ════════════════════════════════════════════════════
+// ДЕҢИЗ 🌊  (ЖАҢЫ)
+// ════════════════════════════════════════════════════
+class _OceanBackground extends StatelessWidget {
+  const _OceanBackground();
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(gradient: LinearGradient(
+        begin: Alignment.topCenter, end: Alignment.bottomCenter,
+        colors: [Color(0xFF001E3C), Color(0xFF003D6B), Color(0xFF006994), Color(0xFF0099CC)],
+      )),
+      child: CustomPaint(painter: _OceanPainter(), child: const SizedBox.expand()),
+    );
+  }
+}
+
+class _OceanPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final wavePaint = Paint()
+      ..style = PaintingStyle.fill
+      ..color = Colors.white.withOpacity(0.06);
+
+    // Толкундар
+    for (int w = 0; w < 5; w++) {
+      final offsetY = size.height * (0.3 + w * 0.12);
+      final path = Path();
+      path.moveTo(0, offsetY);
+      for (double x = 0; x <= size.width; x += 1) {
+        final y = offsetY + math.sin((x / size.width) * 4 * math.pi + w) * (10 - w * 1.5);
+        path.lineTo(x, y);
+      }
+      path.lineTo(size.width, size.height);
+      path.lineTo(0, size.height);
+      path.close();
+      wavePaint.color = Colors.white.withOpacity(0.04 + w * 0.015);
+      canvas.drawPath(path, wavePaint);
+    }
+
+    // Жарык нурлар
+    final rayPaint = Paint()
+      ..color = const Color(0xFF00BFFF).withOpacity(0.08)
+      ..style = PaintingStyle.fill;
+    for (int i = 0; i < 6; i++) {
+      final path = Path();
+      final cx = size.width * 0.5;
+      final angle = (-0.3 + i * 0.12);
+      path.moveTo(cx, 0);
+      path.lineTo(cx + math.sin(angle - 0.05) * size.height * 1.5, size.height);
+      path.lineTo(cx + math.sin(angle + 0.05) * size.height * 1.5, size.height);
+      path.close();
+      canvas.drawPath(path, rayPaint);
+    }
+
+    // Балыктар / көбүкчөлөр
+    final bubblePaint = Paint()
+      ..color = Colors.white.withOpacity(0.12)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    final rng = math.Random(7);
+    for (int i = 0; i < 20; i++) {
+      final x = rng.nextDouble() * size.width;
+      final y = size.height * 0.5 + rng.nextDouble() * size.height * 0.5;
+      final r = rng.nextDouble() * 5 + 2;
+      canvas.drawCircle(Offset(x, y), r, bubblePaint);
+    }
+  }
+  @override
+  bool shouldRepaint(_OceanPainter old) => false;
+}
+
+// ════════════════════════════════════════════════════
+// АВРОРА 🌠  (ЖАҢЫ)
+// ════════════════════════════════════════════════════
+class _AuroraBackground extends StatelessWidget {
+  const _AuroraBackground();
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(gradient: LinearGradient(
+        begin: Alignment.topCenter, end: Alignment.bottomCenter,
+        colors: [Color(0xFF020818), Color(0xFF0D2137), Color(0xFF071A2F)],
+      )),
+      child: CustomPaint(painter: _AuroraPainter(), child: const SizedBox.expand()),
+    );
+  }
+}
+
+class _AuroraPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Жылдыздар
+    final starPaint = Paint()..style = PaintingStyle.fill;
+    final rng = math.Random(13);
+    for (int i = 0; i < 80; i++) {
+      starPaint.color = Colors.white.withOpacity(rng.nextDouble() * 0.6 + 0.2);
+      canvas.drawCircle(
+        Offset(rng.nextDouble() * size.width, rng.nextDouble() * size.height * 0.5),
+        rng.nextDouble() * 1.2 + 0.3,
+        starPaint,
+      );
+    }
+
+    // Аврора лентасы — жашыл
+    void drawAuroraStrip(List<Color> colors, double baseY, double amplitude, int seed) {
+      final r = math.Random(seed);
+      final paint = Paint()..style = PaintingStyle.fill;
+      for (int layer = 0; layer < 3; layer++) {
+        final path = Path();
+        path.moveTo(0, size.height);
+        for (double x = 0; x <= size.width; x += 2) {
+          final t = x / size.width;
+          final y = baseY * size.height +
+              math.sin(t * 3 * math.pi + layer * 0.8) * amplitude +
+              math.sin(t * 5 * math.pi + r.nextDouble()) * amplitude * 0.4;
+          if (x == 0) path.moveTo(x, y);
+          else path.lineTo(x, y);
+        }
+        path.lineTo(size.width, size.height);
+        path.lineTo(0, size.height);
+        path.close();
+        paint.shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [colors[layer % colors.length].withOpacity(0.18 - layer * 0.04), Colors.transparent],
+        ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+        canvas.drawPath(path, paint);
+      }
+    }
+
+    drawAuroraStrip([const Color(0xFF00FF88), const Color(0xFF00DDAA), const Color(0xFF00CC77)], 0.35, 30, 1);
+    drawAuroraStrip([const Color(0xFF7B2FBE), const Color(0xFF9B4FDE), const Color(0xFF6B1FAE)], 0.50, 25, 2);
+    drawAuroraStrip([const Color(0xFF00BFFF), const Color(0xFF0088CC), const Color(0xFF005599)], 0.42, 20, 3);
+  }
+  @override
+  bool shouldRepaint(_AuroraPainter old) => false;
+}
+
+// ════════════════════════════════════════════════════
+// ЧӨЛ 🏜️  (ЖАҢЫ)
+// ════════════════════════════════════════════════════
+class _DesertBackground extends StatelessWidget {
+  const _DesertBackground();
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(gradient: LinearGradient(
+        begin: Alignment.topCenter, end: Alignment.bottomCenter,
+        colors: [Color(0xFF1A0A00), Color(0xFF8B4513), Color(0xFFD4855A), Color(0xFFE8B86D)],
+      )),
+      child: CustomPaint(painter: _DesertPainter(), child: const SizedBox.expand()),
+    );
+  }
+}
+
+class _DesertPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Кум дөңдөрү
+    final dunePaint = Paint()..style = PaintingStyle.fill;
+
+    void drawDune(double cx, double baseY, double w, double h, Color color) {
+      dunePaint.color = color;
+      final path = Path()
+        ..moveTo(cx - w / 2, baseY)
+        ..quadraticBezierTo(cx - w * 0.1, baseY - h, cx, baseY - h * 0.95)
+        ..quadraticBezierTo(cx + w * 0.15, baseY - h * 0.85, cx + w / 2, baseY)
+        ..close();
+      canvas.drawPath(path, dunePaint);
+    }
+
+    drawDune(size.width * 0.2, size.height, size.width * 0.7, size.height * 0.30, const Color(0xFFC0732A).withOpacity(0.6));
+    drawDune(size.width * 0.75, size.height, size.width * 0.6, size.height * 0.22, const Color(0xFFB8651E).withOpacity(0.5));
+    drawDune(size.width * 0.5, size.height, size.width * 0.9, size.height * 0.18, const Color(0xFFD4855A).withOpacity(0.4));
+
+    // Жылдыздар / кум бөлүкчөлөрү
+    final dotPaint = Paint()..color = const Color(0xFFFFD700).withOpacity(0.15);
+    final rng = math.Random(5);
+    for (int i = 0; i < 30; i++) {
+      canvas.drawCircle(
+        Offset(rng.nextDouble() * size.width, rng.nextDouble() * size.height * 0.4),
+        rng.nextDouble() * 1.5 + 0.5,
+        dotPaint,
+      );
+    }
+
+    // Ай
+    final moonPaint = Paint()
+      ..color = const Color(0xFFFFF8DC).withOpacity(0.9)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(Offset(size.width * 0.8, size.height * 0.12), 18, moonPaint);
+    final moonCut = Paint()
+      ..color = const Color(0xFF1A0A00).withOpacity(0.85)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(Offset(size.width * 0.8 + 8, size.height * 0.12), 15, moonCut);
+
+    // Кактус
+    final cactusPaint = Paint()
+      ..color = const Color(0xFF2D5A27).withOpacity(0.7)
+      ..style = PaintingStyle.fill
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 10;
+    final cactusStroke = Paint()
+      ..color = const Color(0xFF2D5A27).withOpacity(0.7)
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 10;
+    // Туловище
+    final body = RRect.fromRectAndRadius(
+      Rect.fromCenter(center: Offset(size.width * 0.15, size.height * 0.72), width: 10, height: 55),
+      const Radius.circular(5),
+    );
+    canvas.drawRRect(body, cactusPaint);
+    // Колдор
+    final armPath = Path()
+      ..moveTo(size.width * 0.15, size.height * 0.60)
+      ..lineTo(size.width * 0.09, size.height * 0.60)
+      ..lineTo(size.width * 0.09, size.height * 0.54);
+    canvas.drawPath(armPath, cactusStroke);
+    final armPath2 = Path()
+      ..moveTo(size.width * 0.15, size.height * 0.64)
+      ..lineTo(size.width * 0.21, size.height * 0.64)
+      ..lineTo(size.width * 0.21, size.height * 0.58);
+    canvas.drawPath(armPath2, cactusStroke);
+  }
+  @override
+  bool shouldRepaint(_DesertPainter old) => false;
+}
+
+// ════════════════════════════════════════════════════
+// КИБЕРПАНК 🤖  (ЖАҢЫ)
+// ════════════════════════════════════════════════════
+class _CyberpunkBackground extends StatelessWidget {
+  const _CyberpunkBackground();
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(gradient: LinearGradient(
+        begin: Alignment.topLeft, end: Alignment.bottomRight,
+        colors: [Color(0xFF0A0A1A), Color(0xFF1A0A2E), Color(0xFF000A1A)],
+      )),
+      child: CustomPaint(painter: _CyberpunkPainter(), child: const SizedBox.expand()),
+    );
+  }
+}
+
+class _CyberpunkPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Тор сызыктар
+    final gridPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.5;
+
+    // Горизонталдык
+    for (int i = 0; i < 20; i++) {
+      final y = size.height * i / 20;
+      final perspective = 1 - (y / size.height) * 0.6;
+      gridPaint.color = const Color(0xFF00FF88).withOpacity(0.06 * perspective);
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+    }
+    // Перспектива торчу
+    for (int i = -8; i <= 8; i++) {
+      gridPaint.color = const Color(0xFF00FF88).withOpacity(0.08);
+      canvas.drawLine(
+        Offset(size.width / 2 + i * 30, size.height * 0.4),
+        Offset(size.width / 2 + i * size.width * 0.15, size.height),
+        gridPaint,
+      );
+    }
+
+    // Неон жарыктар
+    void drawNeonLine(Offset start, Offset end, Color color, double width) {
+      final glowPaint = Paint()
+        ..color = color.withOpacity(0.15)
+        ..strokeWidth = width * 4
+        ..style = PaintingStyle.stroke;
+      canvas.drawLine(start, end, glowPaint);
+      final corePaint = Paint()
+        ..color = color.withOpacity(0.8)
+        ..strokeWidth = width
+        ..style = PaintingStyle.stroke;
+      canvas.drawLine(start, end, corePaint);
+    }
+
+    drawNeonLine(
+      Offset(0, size.height * 0.3),
+      Offset(size.width * 0.4, size.height * 0.3),
+      const Color(0xFF00FFFF), 1.5,
+    );
+    drawNeonLine(
+      Offset(size.width * 0.6, size.height * 0.5),
+      Offset(size.width, size.height * 0.5),
+      const Color(0xFFFF00FF), 1.5,
+    );
+    drawNeonLine(
+      Offset(size.width * 0.2, 0),
+      Offset(size.width * 0.2, size.height * 0.2),
+      const Color(0xFF00FF88), 1.0,
+    );
+    drawNeonLine(
+      Offset(size.width * 0.75, size.height * 0.6),
+      Offset(size.width * 0.75, size.height),
+      const Color(0xFFFF4500), 1.0,
+    );
+
+    // Тексттер (маалымат бөлүкчөлөрү)
+    final textPainter = TextPainter(textDirection: TextDirection.ltr);
+    final fragments = ['01', '10', 'FF', 'A3', '7E', '00', 'C9', 'B1'];
+    final rng = math.Random(9);
+    for (int i = 0; i < 14; i++) {
+      textPainter.text = TextSpan(
+        text: fragments[i % fragments.length],
+        style: TextStyle(
+          color: const Color(0xFF00FF88).withOpacity(rng.nextDouble() * 0.2 + 0.05),
+          fontSize: rng.nextDouble() * 8 + 7,
+          fontFamily: 'monospace',
+        ),
+      );
+      textPainter.layout();
+      textPainter.paint(
+        canvas,
+        Offset(rng.nextDouble() * size.width, rng.nextDouble() * size.height),
+      );
+    }
+  }
+  @override
+  bool shouldRepaint(_CyberpunkPainter old) => false;
+}
+
+// ════════════════════════════════════════════════════
+// САКУРА 🌸  (ЖАҢЫ)
+// ════════════════════════════════════════════════════
+class _SakuraBackground extends StatelessWidget {
+  final bool isDark;
+  const _SakuraBackground({required this.isDark});
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(gradient: LinearGradient(
+        begin: Alignment.topCenter, end: Alignment.bottomCenter,
+        colors: isDark
+            ? [const Color(0xFF1A0510), const Color(0xFF2D0A20), const Color(0xFF1A0510)]
+            : [const Color(0xFFFFF0F8), const Color(0xFFFFD6E8), const Color(0xFFFCE4EC)],
+      )),
+      child: CustomPaint(painter: _SakuraPainter(isDark: isDark), child: const SizedBox.expand()),
+    );
+  }
+}
+
+class _SakuraPainter extends CustomPainter {
+  final bool isDark;
+  _SakuraPainter({required this.isDark});
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rng = math.Random(21);
+    final petalPaint = Paint()..style = PaintingStyle.fill;
+
+    void drawPetal(double cx, double cy, double size_, double angle) {
+      canvas.save();
+      canvas.translate(cx, cy);
+      canvas.rotate(angle);
+      petalPaint.shader = RadialGradient(
+        colors: isDark
+            ? [const Color(0xFFFF69B4).withOpacity(0.25), const Color(0xFFFF1493).withOpacity(0.08)]
+            : [const Color(0xFFFFB7C5).withOpacity(0.7), const Color(0xFFFF69B4).withOpacity(0.2)],
+      ).createShader(Rect.fromCircle(center: Offset.zero, radius: size_));
+      final path = Path()
+        ..moveTo(0, -size_)
+        ..cubicTo(size_ * 0.6, -size_ * 0.6, size_ * 0.6, size_ * 0.2, 0, size_ * 0.4)
+        ..cubicTo(-size_ * 0.6, size_ * 0.2, -size_ * 0.6, -size_ * 0.6, 0, -size_);
+      canvas.drawPath(path, petalPaint);
+      canvas.restore();
+    }
+
+    void drawFlower(double cx, double cy, double r) {
+      for (int i = 0; i < 5; i++) {
+        final angle = i * 2 * math.pi / 5;
+        drawPetal(cx + math.cos(angle) * r * 0.5, cy + math.sin(angle) * r * 0.5, r * 0.6, angle);
+      }
+      // Борбор
+      petalPaint.shader = null;
+      petalPaint.color = isDark
+          ? const Color(0xFFFFD700).withOpacity(0.3)
+          : const Color(0xFFFFD700).withOpacity(0.6);
+      canvas.drawCircle(Offset(cx, cy), r * 0.2, petalPaint);
+    }
+
+    // Чоң гүлдөр
+    drawFlower(size.width * 0.12, size.height * 0.08, 22);
+    drawFlower(size.width * 0.85, size.height * 0.05, 18);
+    drawFlower(size.width * 0.55, size.height * 0.15, 15);
+    drawFlower(size.width * 0.08, size.height * 0.45, 20);
+    drawFlower(size.width * 0.90, size.height * 0.38, 24);
+    drawFlower(size.width * 0.40, size.height * 0.70, 16);
+    drawFlower(size.width * 0.72, size.height * 0.80, 20);
+    drawFlower(size.width * 0.20, size.height * 0.88, 14);
+
+    // Учуп жүргөн лепесткалар
+    for (int i = 0; i < 25; i++) {
+      final x = rng.nextDouble() * size.width;
+      final y = rng.nextDouble() * size.height;
+      final s = rng.nextDouble() * 7 + 4;
+      final angle = rng.nextDouble() * math.pi * 2;
+      drawPetal(x, y, s, angle);
+    }
+
+    // Бутак
+    final branchPaint = Paint()
+      ..color = isDark
+          ? const Color(0xFF6D3B2E).withOpacity(0.3)
+          : const Color(0xFF8B4513).withOpacity(0.25)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 6
+      ..strokeCap = StrokeCap.round;
+    final branchPath = Path()
+      ..moveTo(0, size.height * 0.55)
+      ..quadraticBezierTo(size.width * 0.3, size.height * 0.3, size.width * 0.6, size.height * 0.1);
+    canvas.drawPath(branchPath, branchPaint);
+    branchPaint.strokeWidth = 3;
+    final branch2 = Path()
+      ..moveTo(size.width * 0.3, size.height * 0.38)
+      ..quadraticBezierTo(size.width * 0.45, size.height * 0.25, size.width * 0.5, size.height * 0.18);
+    canvas.drawPath(branch2, branchPaint);
+  }
+  @override
+  bool shouldRepaint(_SakuraPainter old) => false;
 }
 
 // ════════════════════════════════════════════════════
@@ -494,7 +804,6 @@ class _GalaxyPainter extends CustomPainter {
 // ════════════════════════════════════════════════════
 class ChatBackgroundProvider extends ChangeNotifier {
   static const _key = 'chat_bg_theme';
-
   static final ChatBackgroundProvider instance = ChatBackgroundProvider._internal();
   ChatBackgroundProvider._internal();
 

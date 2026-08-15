@@ -82,7 +82,9 @@ class MessageModel {
     String?   callStatus,
     bool?     isEdited,
     DateTime? editedAt,
-  }) {
+  }
+  
+  ) {
     return MessageModel(
       id:            id            ?? this.id,
       senderId:      senderId      ?? this.senderId,
@@ -98,6 +100,27 @@ class MessageModel {
       callStatus:    callStatus    ?? this.callStatus,
       isEdited:      isEdited      ?? this.isEdited,
       editedAt:      editedAt      ?? this.editedAt,
-    );
+ );
   }
+
+  // ── SharedPreferences кэш үчүн ──
+  Map<String, dynamic> toJson() => {
+    'id':             id,
+    'sender_id':      senderId,
+    'text':           text,
+    'image_url':      imageUrl,
+    'audio_url':      audioUrl,
+    'audio_duration': audioDuration,
+    'created_at':     timestamp.toUtc().toIso8601String(),
+    'is_read':        isRead,
+    'reply_to_id':    replyToId,
+    'reply_to_text':  replyToText,
+    'message_type':   messageType,
+    'call_status':    callStatus,
+    'is_edited':      isEdited,
+    'edited_at':      editedAt?.toUtc().toIso8601String(),
+  };
+
+  factory MessageModel.fromJson(Map<String, dynamic> json) =>
+      MessageModel.fromMap(json);
 }

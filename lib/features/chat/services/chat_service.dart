@@ -5,8 +5,8 @@ import '../models/message_model.dart';
 
 class ChatService {
   final Map<String, Map<String, dynamic>> _productCache = {};
-  final Map<String, String>  _storeCache  = {};
-  final Map<String, String?> _nameCache   = {};
+  final Map<String, String> _storeCache = {};
+  final Map<String, String?> _nameCache = {};
   final Map<String, String?> _avatarCache = {};
 
   // ════════════════════════════════════════════════════
@@ -14,90 +14,90 @@ class ChatService {
   // ════════════════════════════════════════════════════
 
   Future<String> getOrCreateChat({
-  required String buyerId,
-  required String sellerId,
-  required String productId,
-}) async {
-  final existing = await supabase
-      .from('chats')
-      .select('id')
-      .eq('buyer_id',   buyerId)
-      .eq('seller_id',  sellerId)
-      .eq('product_id', productId)
-      .maybeSingle();
-
-  if (existing != null) return existing['id'] as String;
-
-  // Сатуучунун дүкөн атын ал
-  String sellerName = '';
-  try {
-    final store = await supabase
-        .from('stores')
-        .select('store_name')
-        .eq('owner_id', sellerId)
+    required String buyerId,
+    required String sellerId,
+    required String productId,
+  }) async {
+    final existing = await supabase
+        .from('chats')
+        .select('id')
+        .eq('buyer_id', buyerId)
+        .eq('seller_id', sellerId)
+        .eq('product_id', productId)
         .maybeSingle();
-    sellerName = store?['store_name'] as String? ?? '';
-  } catch (_) {}
 
-  final inserted = await supabase
-      .from('chats')
-      .insert({
-        'buyer_id':     buyerId,
-        'seller_id':    sellerId,
-        'product_id':   productId,
-        'last_message': '',
-        'seller_name':  sellerName, // ← кош
-      })
-      .select('id')
-      .single();
+    if (existing != null) return existing['id'] as String;
 
-  return inserted['id'] as String;
-}
+    // Сатуучунун дүкөн атын ал
+    String sellerName = '';
+    try {
+      final store = await supabase
+          .from('stores')
+          .select('store_name')
+          .eq('owner_id', sellerId)
+          .maybeSingle();
+      sellerName = store?['store_name'] as String? ?? '';
+    } catch (_) {}
+
+    final inserted = await supabase
+        .from('chats')
+        .insert({
+          'buyer_id': buyerId,
+          'seller_id': sellerId,
+          'product_id': productId,
+          'last_message': '',
+          'seller_name': sellerName, // ← кош
+        })
+        .select('id')
+        .single();
+
+    return inserted['id'] as String;
+  }
 
   // ════════════════════════════════════════════════════
   // БИЛДИРҮҮ ЖӨНӨТҮҮ
   // ════════════════════════════════════════════════════
 
-Future<void> sendMessage({
-  required String chatId,
-  required String senderId,
-  String? text,
-  String? imageUrl,
-  String? audioUrl,
-  int?    audioDuration,
-  String? replyToId,
-  String? replyToText,
-  required bool senderIsBuyer,
-}) async {
-  final messageText = text ?? (imageUrl != null ? '🖼️ Сүрөт' : '🎵 Үн');
+  Future<void> sendMessage({
+    required String chatId,
+    required String senderId,
+    String? text,
+    String? imageUrl,
+    String? audioUrl,
+    int? audioDuration,
+    String? replyToId,
+    String? replyToText,
+    required bool senderIsBuyer,
+  }) async {
+    final messageText = text ?? (imageUrl != null ? '🖼️ Сүрөт' : '🎵 Үн');
 
-  // Алуучунун unread санын кайсы талаа экенин аныкта
-  // senderIsBuyer=true  → сатуучунун seller_unread + 1
-  // senderIsBuyer=false → кардардын   buyer_unread  + 1
-  final unreadField = senderIsBuyer ? 'seller_unread' : 'buyer_unread';
+    // Алуучунун unread санын кайсы талаа экенин аныкта
+    // senderIsBuyer=true  → сатуучунун seller_unread + 1
+    // senderIsBuyer=false → кардардын   buyer_unread  + 1
+    final unreadField = senderIsBuyer ? 'seller_unread' : 'buyer_unread';
 
-  await Future.wait([
-    supabase.from('messages').insert({
-      'chat_id':        chatId,
-      'sender_id':      senderId,
-      'text':           text,
-      'image_url':      imageUrl,
-      'audio_url':      audioUrl,
-      'audio_duration': audioDuration,
-      'is_read':        false,
-      if (replyToId   != null) 'reply_to_id':   replyToId,
-      if (replyToText != null) 'reply_to_text': replyToText,
-    }),
-    supabase.rpc('increment_unread', params: {
-      'chat_id':     chatId,
-      'unread_field': unreadField,
-    }),
-    supabase.from('chats').update({
-      'last_message':    messageText,
-      'last_message_at': DateTime.now().toUtc().toIso8601String(),
-    }).eq('id', chatId),
-  ]);
-}
+    await Future.wait([
+      supabase.from('messages').insert({
+        'chat_id': chatId,
+        'sender_id': senderId,
+        'text': text,
+        'image_url': imageUrl,
+        'audio_url': audioUrl,
+        'audio_duration': audioDuration,
+        'is_read': false,
+        if (replyToId != null) 'reply_to_id': replyToId,
+        if (replyToText != null) 'reply_to_text': replyToText,
+      }),
+      supabase.rpc('increment_unread', params: {
+        'chat_id': chatId,
+        'unread_field': unreadField,
+      }),
+      supabase.from('chats').update({
+        'last_message': messageText,
+        'last_message_at': DateTime.now().toUtc().toIso8601String(),
+      }).eq('id', chatId),
+    ]);
+  }
 
   // ════════════════════════════════════════════════════
   // ОКУЛДУ ДЕГЕН БЕЛГИЛӨӨ
@@ -106,18 +106,19 @@ Future<void> sendMessage({
   Future<void> markAsRead({
     required String chatId,
     required String myUserId,
-    required bool   readerIsBuyer,
+    required bool readerIsBuyer,
   }) async {
     try {
       await Future.wait([
         supabase.from('chats').update({
-          if (readerIsBuyer)  'buyer_unread':  0,
+          if (readerIsBuyer) 'buyer_unread': 0,
           if (!readerIsBuyer) 'seller_unread': 0,
         }).eq('id', chatId),
-        supabase.from('messages')
+        supabase
+            .from('messages')
             .update({'is_read': true})
-            .eq('chat_id',    chatId)
-            .eq('is_read',    false)
+            .eq('chat_id', chatId)
+            .eq('is_read', false)
             .neq('sender_id', myUserId),
       ]);
     } catch (e) {
@@ -129,18 +130,18 @@ Future<void> sendMessage({
   // SOFT-DELETE
   // ════════════════════════════════════════════════════
 
- Future<void> deleteChat(String chatId, {required bool isSeller}) async {
-  try {
-    // 2 тараптан тең өчүр — messages да, chat да
-    await Future.wait([
-      supabase.from('messages').delete().eq('chat_id', chatId),
-      supabase.from('chats').delete().eq('id', chatId),
-    ]);
-  } catch (e) {
-    debugPrint('❌ deleteChat ката: $e');
-    rethrow;
+  Future<void> deleteChat(String chatId, {required bool isSeller}) async {
+    try {
+      // 2 тараптан тең өчүр — messages да, chat да
+      await Future.wait([
+        supabase.from('messages').delete().eq('chat_id', chatId),
+        supabase.from('chats').delete().eq('id', chatId),
+      ]);
+    } catch (e) {
+      debugPrint('❌ deleteChat ката: $e');
+      rethrow;
+    }
   }
-}
 
   // ════════════════════════════════════════════════════
   // ТАНДАЛГАН БИЛДИРҮҮЛӨРДҮ ӨЧҮРҮҮ
@@ -161,7 +162,7 @@ Future<void> sendMessage({
   }) async {
     try {
       await supabase.from('messages').update({
-        'text':      newText,
+        'text': newText,
         'is_edited': true,
         'edited_at': DateTime.now().toUtc().toIso8601String(),
       }).eq('id', messageId);
@@ -223,8 +224,8 @@ Future<void> sendMessage({
     if (rows.isEmpty) return [];
 
     final missingProductIds = <String>{};
-    final missingSellerIds  = <String>{};
-    final missingUserIds    = <String>{};
+    final missingSellerIds = <String>{};
+    final missingUserIds = <String>{};
 
     for (final row in rows) {
       final pid = row['product_id'] as String?;
@@ -238,12 +239,12 @@ Future<void> sendMessage({
         missingSellerIds.add(sid);
       }
 
-      final buyId = row['buyer_id']  as String? ?? '';
+      final buyId = row['buyer_id'] as String? ?? '';
       final selId = row['seller_id'] as String? ?? '';
 
-      final buyerNameMissing   = !_nameCache.containsKey(buyId)   || _nameCache[buyId] == null;
-      final buyerAvatarMissing = !_avatarCache.containsKey(buyId) || _avatarCache[buyId] == null;
-      final sellerAvatarMissing= !_avatarCache.containsKey(selId) || _avatarCache[selId] == null;
+      final buyerNameMissing = !_nameCache.containsKey(buyId);
+      final buyerAvatarMissing = !_avatarCache.containsKey(buyId);
+      final sellerAvatarMissing = !_avatarCache.containsKey(selId);
 
       if (buyerNameMissing || buyerAvatarMissing) missingUserIds.add(buyId);
       if (sellerAvatarMissing) missingUserIds.add(selId);
@@ -256,50 +257,48 @@ Future<void> sendMessage({
             .select('id, title, images')
             .inFilter('id', missingProductIds.toList())
             .then((list) {
-              for (final p in list) {
-                _productCache[p['id'] as String] = p;
-              }
-            }).catchError((e) {
-              debugPrint('❌ products batch ката: $e');
-            }),
-
+          for (final p in list) {
+            _productCache[p['id'] as String] = p;
+          }
+        }).catchError((e) {
+          debugPrint('❌ products batch ката: $e');
+        }),
       if (missingSellerIds.isNotEmpty)
         supabase
             .from('stores')
             .select('owner_id, store_name')
             .inFilter('owner_id', missingSellerIds.toList())
             .then((list) {
-              for (final s in list) {
-                _storeCache[s['owner_id'] as String] =
-                    s['store_name'] as String? ?? '';
-              }
-              for (final id in missingSellerIds) {
-                _storeCache.putIfAbsent(id, () => '');
-              }
-            }).catchError((e) {
-              debugPrint('❌ stores batch ката: $e');
-            }),
-
+          for (final s in list) {
+            _storeCache[s['owner_id'] as String] =
+                s['store_name'] as String? ?? '';
+          }
+          for (final id in missingSellerIds) {
+            _storeCache.putIfAbsent(id, () => '');
+          }
+        }).catchError((e) {
+          debugPrint('❌ stores batch ката: $e');
+        }),
       if (missingUserIds.isNotEmpty)
         supabase
             .from('profiles')
             .select('id, full_name, avatar_url')
             .inFilter('id', missingUserIds.toList())
             .then((list) {
-              for (final p in list) {
-                final uid    = p['id']         as String;
-                final name   = p['full_name']  as String?;
-                final avatar = p['avatar_url'] as String?;
-                _nameCache[uid]   = name;
-                _avatarCache[uid] = avatar;
-              }
-              for (final uid in missingUserIds) {
-                if (!_nameCache.containsKey(uid))   _nameCache[uid]   = null;
-                if (!_avatarCache.containsKey(uid)) _avatarCache[uid] = null;
-              }
-            }).catchError((e) {
-              debugPrint('❌ profiles batch ката: $e');
-            }),
+          for (final p in list) {
+            final uid = p['id'] as String;
+            final name = p['full_name'] as String?;
+            final avatar = p['avatar_url'] as String?;
+            _nameCache[uid] = name;
+            _avatarCache[uid] = avatar;
+          }
+          for (final uid in missingUserIds) {
+            if (!_nameCache.containsKey(uid)) _nameCache[uid] = null;
+            if (!_avatarCache.containsKey(uid)) _avatarCache[uid] = null;
+          }
+        }).catchError((e) {
+          debugPrint('❌ profiles batch ката: $e');
+        }),
     ]);
 
     final result = <ChatModel>[];
@@ -325,9 +324,9 @@ Future<void> sendMessage({
       }
 
       final selId = row['seller_id'] as String? ?? '';
-      final buyerAvatar  = _avatarCache[buyId];
+      final buyerAvatar = _avatarCache[buyId];
       final sellerAvatar = _avatarCache[selId];
-      if (buyerAvatar  != null) enriched['buyer_avatar']  = buyerAvatar;
+      if (buyerAvatar != null) enriched['buyer_avatar'] = buyerAvatar;
       if (sellerAvatar != null) enriched['seller_avatar'] = sellerAvatar;
 
       result.add(ChatModel.fromMap(enriched, isSeller: isSeller));

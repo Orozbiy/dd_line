@@ -7,9 +7,9 @@ import '../screens/chat_background_settings_screen.dart';
 
 class ChatBgMenuItem extends StatelessWidget {
   final ChatBackgroundProvider provider;
-  
+
   const ChatBgMenuItem({
-    super.key, 
+    super.key,
     required this.provider,
   });
 
@@ -32,39 +32,30 @@ class ChatBgMenuItem extends StatelessWidget {
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(vertical: 14), // ← 12→14 башкалар менен бирдей
           child: Row(
             children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.wallpaper_rounded,
-                  color: AppColors.primary,
-                  size: 20,
-                ),
+              // ← Контейнер жок, жөн гана Icon — CacheMenuItem/SupportMenuItem/TermsMenuItem сыяктуу
+              const Icon(
+                Icons.wallpaper_rounded,
+                color: AppColors.primary,
+                size: 20,
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 12), // ← 14→12 башкалар менен бирдей
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      loc.get('chat_background'), // Тил тандоого жараша которулат
-                      style: AppTextStyles.bodyLarge.copyWith(
-                        color: textColor,
-                        fontWeight: FontWeight.w500,
-                      ),
+                      loc.get('chat_background'),
+                      style: AppTextStyles.bodyMedium.copyWith(color: textColor),
                     ),
                     const SizedBox(height: 2),
-                    Text(
-                      provider.theme.label,
-                      style: AppTextStyles.labelSmall.copyWith(color: subColor),
-                    ),
+                 // provider.theme.label → provider.theme.localizedLabel(context)
+Text(
+  provider.theme.localizedLabel(context),
+  style: AppTextStyles.labelSmall.copyWith(color: subColor),
+),
                   ],
                 ),
               ),

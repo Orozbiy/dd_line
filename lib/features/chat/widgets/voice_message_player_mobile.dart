@@ -12,12 +12,17 @@ class VoiceMessagePlayer extends StatefulWidget {
   final String audioUrl;
   final int durationSeconds;
   final bool isMe;
+  // ── Жаңы параметрлер ──
+  final bool isRead;
+  final String formattedTime;
 
   const VoiceMessagePlayer({
     super.key,
     required this.audioUrl,
     required this.durationSeconds,
     required this.isMe,
+    this.isRead = false,
+    this.formattedTime = '',
   });
 
   @override
@@ -63,14 +68,12 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
         _progress = 0.0;
         _currentSeconds = 0;
       });
-      // Активдүү плеерди тазала
       if (_activePlayer == _player) _activePlayer = null;
     });
   }
 
   @override
   void dispose() {
-    // Эгер бул плеер активдүү болсо — тазала
     if (_activePlayer == _player) _activePlayer = null;
     _player.stop();
     _player.dispose();
@@ -80,13 +83,11 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
   Future<void> _togglePlay() async {
     if (_isLoading) return;
 
-    // ✅ ОҢДОО: эгер ойноп жатса — токтот
     if (_isPlaying) {
       await _player.pause();
       return;
     }
 
-    // ✅ ОҢДОО: башка плеер ойноп жатса — аны токтот
     if (_activePlayer != null && _activePlayer != _player) {
       await _activePlayer!.stop();
       _activePlayer = null;
@@ -94,7 +95,6 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
 
     setState(() => _isLoading = true);
     try {
-      // ✅ ОҢДОО: токтогон жерден улантуу
       if (_currentSeconds > 0 && _progress < 1.0) {
         await _player.resume();
       } else {
@@ -123,92 +123,126 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
 
   @override
   Widget build(BuildContext context) {
-    final iconColor    = widget.isMe ? Colors.white : AppColors.primary;
-    final trackColor   = widget.isMe
+    final iconColor     = widget.isMe ? Colors.white : AppColors.primary;
+    final trackColor    = widget.isMe
         ? Colors.white.withValues(alpha: 0.3)
         : AppColors.grey200;
     final progressColor = widget.isMe ? Colors.white : AppColors.primary;
+    final subColor      = widget.isMe
+        ? Colors.white.withValues(alpha: 0.70)
+        : AppColors.grey400;
+
     final displaySeconds = _currentSeconds > 0
         ? _currentSeconds
         : widget.durationSeconds;
 
     return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 180, maxWidth: 220),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // ── Play / Pause баскычы ──
-          GestureDetector(
-            onTap: _togglePlay,
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: widget.isMe
-                    ? Colors.white.withValues(alpha: 0.2)
-                    : AppColors.primary.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: _isLoading
-                  ? Padding(
-                      padding: const EdgeInsets.all(10),
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
+      constraints: const BoxConstraints(minWidth: 180, maxWidth: 240),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // ── Play / Pause баскычы ──
+            GestureDetector(
+              onTap: _togglePlay,
+              child: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: widget.isMe
+                      ? Colors.white.withValues(alpha: 0.2)
+                      : AppColors.primary.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: _isLoading
+                    ? Padding(
+                        padding: const EdgeInsets.all(10),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: iconColor,
+                        ),
+                      )
+                    : Icon(
+                        _isPlaying
+                            ? Icons.pause_rounded
+                            : Icons.play_arrow_rounded,
                         color: iconColor,
+                        size: 22,
                       ),
-                    )
-                  : Icon(
-                      _isPlaying
-                          ? Icons.pause_rounded
-                          : Icons.play_arrow_rounded,
-                      color: iconColor,
-                      size: 22,
-                    ),
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
+            const SizedBox(width: 8),
 
-          // ── Progress bar + убакыт ──
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // ✅ Басуу менен жылдыруу мүмкүнчүлүгү
-                GestureDetector(
-                  onTapDown: (details) async {
-                    final box = context.findRenderObject() as RenderBox?;
-                    if (box == null) return;
-                    final localX = details.localPosition.dx;
-                    final width  = box.size.width - 44; // play button кеми
-                    final ratio  = (localX / width).clamp(0.0, 1.0);
-                    final seekMs = (ratio * _totalSeconds * 1000).toInt();
-                    await _player.seek(Duration(milliseconds: seekMs));
-                  },
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: _progress,
-                      minHeight: 4,
-                      backgroundColor: trackColor,
-                      valueColor: AlwaysStoppedAnimation(progressColor),
+            // ── Progress bar + убакыт + птичка ──
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Progress bar
+                  GestureDetector(
+                    onTapDown: (details) async {
+                      final box = context.findRenderObject() as RenderBox?;
+                      if (box == null) return;
+                      final localX = details.localPosition.dx;
+                      final width  = box.size.width - 44;
+                      final ratio  = (localX / width).clamp(0.0, 1.0);
+                      final seekMs = (ratio * _totalSeconds * 1000).toInt();
+                      await _player.seek(Duration(milliseconds: seekMs));
+                    },
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: _progress,
+                        minHeight: 4,
+                        backgroundColor: trackColor,
+                        valueColor: AlwaysStoppedAnimation(progressColor),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  _formatDuration(displaySeconds),
-                  style: AppTextStyles.labelSmall.copyWith(
-                    fontSize: 11,
-                    color: widget.isMe
-                        ? Colors.white.withValues(alpha: 0.75)
-                        : AppColors.grey400,
+                  const SizedBox(height: 4),
+
+                  // ── Убакыт + птичка (окулду белгиси) ──
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _formatDuration(displaySeconds),
+                        style: AppTextStyles.labelSmall.copyWith(
+                          fontSize: 11,
+                          color: subColor,
+                        ),
+                      ),
+                      if (widget.formattedTime.isNotEmpty) ...[
+                        const SizedBox(width: 4),
+                        Text(
+                          '· ${widget.formattedTime}',
+                          style: AppTextStyles.labelSmall.copyWith(
+                            fontSize: 11,
+                            color: subColor,
+                          ),
+                        ),
+                      ],
+                      if (widget.isMe) ...[
+                        const SizedBox(width: 4),
+                        Icon(
+                          widget.isRead
+                              ? Icons.done_all
+                              : Icons.done,
+                          size: 14,
+                          color: widget.isRead
+                              ? Colors.white
+                              : Colors.white.withValues(alpha: 0.6),
+                        ),
+                      ],
+                    ],
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

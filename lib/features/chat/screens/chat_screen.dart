@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
@@ -20,6 +21,7 @@ import '../widgets/call_request_bubble.dart';
 import '../../../core/services/yandex_storage_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../core/chat_background_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ChatScreen extends StatefulWidget {
   final String chatId;
@@ -89,31 +91,60 @@ class _ChatScreenState extends State<ChatScreen> {
   String _myDisplayName = '';
   String _receiverDisplayName = '';
   String _sellerPhone = '';
+  String get _cacheKey => 'messages_${widget.chatId}';
 
-  @override
-  void initState() {
-    super.initState();
-    _messagesStream = _service.messagesStream(widget.chatId);
-    _msgSub = _messagesStream.listen((msgs) {
-      if (!mounted) return;
-      setState(() {
-        _cachedMessages = msgs;
-        _initialLoadDone = true;
-      });
-      final myId = _myId;
-      if (myId != null && msgs.any((m) => m.senderId != myId && !m.isRead))
-        _markRead();
+
+  Future<void> _loadMessagesCache() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_cacheKey);
+    if (raw == null || !mounted) return;
+    final list = (jsonDecode(raw) as List)
+        .map((e) => MessageModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+    if (mounted && !_initialLoadDone) {
+      setState(() => _cachedMessages = list);
+    }
+  } catch (_) {}
+}
+
+Future<void> _saveMessagesCache(List<MessageModel> msgs) async {
+  try {
+    // Акыркы 100 гана сакта — телефон эс тутумун ысырапчылабасын
+    final toSave = msgs.length > 100 ? msgs.sublist(msgs.length - 100) : msgs;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _cacheKey,
+      jsonEncode(toSave.map((m) => m.toJson()).toList()),
+    );
+  } catch (_) {}
+}
+
+ @override
+void initState() {
+  super.initState();
+  _loadMessagesCache(); // ← алгач кэш — дароо көрсөтөт
+  _messagesStream = _service.messagesStream(widget.chatId);
+  _msgSub = _messagesStream.listen((msgs) {
+    if (!mounted) return;
+    setState(() {
+      _cachedMessages = msgs;
+      _initialLoadDone = true;
     });
-    _markRead();
-    _loadMyName();
-    _msgCtrl.addListener(() {
-      final has = _msgCtrl.text.trim().isNotEmpty;
-      if (has != _hasText) setState(() => _hasText = has);
-    });
-    _requestMicPermission();
-    // Фон өзгөргөндө экранды жаңыртуу
-    ChatBackgroundProvider.instance.addListener(_onBgChanged);
-  }
+    _saveMessagesCache(msgs); // ← жаңы маалымат келгенде сакта
+    final myId = _myId;
+    if (myId != null && msgs.any((m) => m.senderId != myId && !m.isRead))
+      _markRead();
+  });
+  _markRead();
+  _loadMyName();
+  _msgCtrl.addListener(() {
+    final has = _msgCtrl.text.trim().isNotEmpty;
+    if (has != _hasText) setState(() => _hasText = has);
+  });
+  _requestMicPermission();
+  ChatBackgroundProvider.instance.addListener(_onBgChanged);
+}
 
   void _onBgChanged() {
     if (mounted) setState(() {});
@@ -145,7 +176,8 @@ class _ChatScreenState extends State<ChatScreen> {
             .eq('owner_id', myId)
             .maybeSingle();
         if (storeRow != null && mounted)
-          setState(() => _myDisplayName = storeRow['store_name'] as String? ?? '');
+          setState(
+              () => _myDisplayName = storeRow['store_name'] as String? ?? '');
 
         final buyerRow = await supabase
             .from('profiles')
@@ -153,7 +185,8 @@ class _ChatScreenState extends State<ChatScreen> {
             .eq('id', widget.buyerId)
             .maybeSingle();
         if (buyerRow != null && mounted)
-          setState(() => _receiverDisplayName = buyerRow['full_name'] as String? ?? '');
+          setState(() =>
+              _receiverDisplayName = buyerRow['full_name'] as String? ?? '');
       } else {
         final profileRow = await supabase
             .from('profiles')
@@ -161,7 +194,8 @@ class _ChatScreenState extends State<ChatScreen> {
             .eq('id', myId)
             .maybeSingle();
         if (profileRow != null && mounted)
-          setState(() => _myDisplayName = profileRow['full_name'] as String? ?? '');
+          setState(
+              () => _myDisplayName = profileRow['full_name'] as String? ?? '');
 
         if (mounted) setState(() => _receiverDisplayName = widget.sellerName);
 
@@ -201,30 +235,69 @@ class _ChatScreenState extends State<ChatScreen> {
     final myId = _myId;
     if (myId == null) return;
 
+   final isDark = Theme.of(context).brightness == Brightness.dark;
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(children: [
-          Text('📞', style: TextStyle(fontSize: 24)),
-          SizedBox(width: 8),
-          Text('Чалуу өтүнүчү', style: AppTextStyles.headingSmall),
-        ]),
-        content: const Text(
-          'Сатуучуга чалуу өтүнүчү жиберилет.\nАл кабыл алганда телефон чалынат.',
+      barrierColor: Colors.black.withValues(alpha: 0.35),
+      builder: (_) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.black.withValues(alpha: 0.55)
+                    : Colors.white.withValues(alpha: 0.65),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.15)
+                      : Colors.black.withValues(alpha: 0.08),
+                ),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(children: [
+                    Text('📞', style: TextStyle(fontSize: 24)),
+                    SizedBox(width: 8),
+                    Text('Чалуу өтүнүчү', style: AppTextStyles.headingSmall),
+                  ]),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Сатуучуга чалуу өтүнүчү жиберилет.\nАл кабыл алганда телефон чалынат.',
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(_, false),
+                        child: Text(loc.get('no'),
+                            style: const TextStyle(color: AppColors.grey500)),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(_, true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10)),
+                        ),
+                        child: const Text('Жиберүү',
+                            style: TextStyle(color: Colors.white)),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(loc.get('no'),
-                style: const TextStyle(color: AppColors.grey500)),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-            child: const Text('Жиберүү', style: TextStyle(color: Colors.white)),
-          ),
-        ],
       ),
     );
 
@@ -249,8 +322,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _scrollToBottom();
   }
 
-  String get _receiverUid =>
-      widget.isSeller ? widget.buyerId : widget.sellerId;
+  String get _receiverUid => widget.isSeller ? widget.buyerId : widget.sellerId;
 
   String get _senderDisplayName => widget.isSeller
       ? (_myDisplayName.isNotEmpty ? _myDisplayName : 'Сатуучу')
@@ -275,17 +347,17 @@ class _ChatScreenState extends State<ChatScreen> {
 
     _service
         .sendMessage(
-          chatId: widget.chatId,
-          senderId: myId,
-          text: text,
-          replyToId: replyTo?.id,
-          replyToText: replyTo != null
-              ? (replyTo.text.isNotEmpty
-                  ? replyTo.text
-                  : '📷 ${loc.get('chat_image')}')
-              : null,
-          senderIsBuyer: !widget.isSeller,
-        )
+      chatId: widget.chatId,
+      senderId: myId,
+      text: text,
+      replyToId: replyTo?.id,
+      replyToText: replyTo != null
+          ? (replyTo.text.isNotEmpty
+              ? replyTo.text
+              : '📷 ${loc.get('chat_image')}')
+          : null,
+      senderIsBuyer: !widget.isSeller,
+    )
         .then((_) async {
       _isSending = false;
 
@@ -326,41 +398,64 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<ImageSource?> _chooseImageSource() {
     final loc = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final sheetColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
 
     return showModalBottomSheet<ImageSource>(
       context: context,
-      backgroundColor: sheetColor,
+      backgroundColor: Colors.transparent,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 8),
-            Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                    color: AppColors.grey300,
-                    borderRadius: BorderRadius.circular(2))),
-            const SizedBox(height: 12),
-            ListTile(
-              leading: const Icon(Icons.camera_alt_outlined,
-                  color: AppColors.primary),
-              title: Text(loc.get('prod_img_camera'),
-                  style: AppTextStyles.labelLarge),
-              onTap: () => Navigator.pop(context, ImageSource.camera),
+      builder: (context) => ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(
+            decoration: BoxDecoration(
+              color: isDark
+                  ? Colors.black.withValues(alpha: 0.55)
+                  : Colors.white.withValues(alpha: 0.60),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(20)),
+              border: Border(
+                top: BorderSide(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.12)
+                      : Colors.black.withValues(alpha: 0.08),
+                ),
+              ),
             ),
-            ListTile(
-              leading:
-                  const Icon(Icons.photo_outlined, color: AppColors.primary),
-              title: Text(loc.get('prod_img_gallery'),
-                  style: AppTextStyles.labelLarge),
-              onTap: () => Navigator.pop(context, ImageSource.gallery),
+            child: SafeArea(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 8),
+                  Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.25)
+                              : AppColors.grey300,
+                          borderRadius: BorderRadius.circular(2))),
+                  const SizedBox(height: 12),
+                  ListTile(
+                    leading: const Icon(Icons.camera_alt_outlined,
+                        color: AppColors.primary),
+                    title: Text(loc.get('prod_img_camera'),
+                        style: AppTextStyles.labelLarge),
+                    onTap: () => Navigator.pop(context, ImageSource.camera),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.photo_outlined,
+                        color: AppColors.primary),
+                    title: Text(loc.get('prod_img_gallery'),
+                        style: AppTextStyles.labelLarge),
+                    onTap: () => Navigator.pop(context, ImageSource.gallery),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+              ),
             ),
-            const SizedBox(height: 8),
-          ],
+          ),
         ),
       ),
     );
@@ -385,8 +480,8 @@ class _ChatScreenState extends State<ChatScreen> {
       );
       if (url == null) {
         if (mounted)
-          ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(loc.get('chat_img_fail'))));
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(loc.get('chat_img_fail'))));
         return;
       }
       final replyTo = _replyingTo;
@@ -525,8 +620,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(loc.get('chat_delete_msgs_title')),
         content:
             Text('${_selectedIds.length} ${loc.get('chat_delete_msgs_body')}'),
@@ -588,8 +682,7 @@ class _ChatScreenState extends State<ChatScreen> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Билдирүүнү өзгөртүү',
             style: AppTextStyles.headingSmall),
         content: TextField(
@@ -597,20 +690,18 @@ class _ChatScreenState extends State<ChatScreen> {
           autofocus: true,
           maxLines: null,
           decoration: InputDecoration(
-            border:
-                OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide:
-                  const BorderSide(color: AppColors.primary, width: 2),
+              borderSide: const BorderSide(color: AppColors.primary, width: 2),
             ),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Жок',
-                style: TextStyle(color: AppColors.grey500)),
+            child:
+                const Text('Жок', style: TextStyle(color: AppColors.grey500)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -627,8 +718,7 @@ class _ChatScreenState extends State<ChatScreen> {
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10)),
             ),
-            child:
-                const Text('Сактоо', style: TextStyle(color: Colors.white)),
+            child: const Text('Сактоо', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -658,107 +748,132 @@ class _ChatScreenState extends State<ChatScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-    final inputBg = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF7F7F7);
-    final dividerColor =
-        isDark ? const Color(0xFF2C2C2C) : const Color(0xFFEEEEEE);
+
+    // ── Айнек стили үчүн ──
+    final glassAppBarBg = isDark
+        ? Colors.black.withValues(alpha: 0.45)
+        : Colors.white.withValues(alpha: 0.60);
+    final glassBottomBg = isDark
+        ? Colors.black.withValues(alpha: 0.40)
+        : Colors.white.withValues(alpha: 0.55);
+    final glassInputFill = isDark
+        ? Colors.white.withValues(alpha: 0.10)
+        : Colors.black.withValues(alpha: 0.06);
+    final glassButtonBg = isDark
+        ? Colors.white.withValues(alpha: 0.12)
+        : Colors.black.withValues(alpha: 0.08);
 
     return Stack(
       children: [
         // ── ФОН ТЕМАСЫ ──────────────────────────────────
-       Positioned.fill(
-  child: AnimatedSwitcher(
-    duration: const Duration(milliseconds: 400),
-    child: KeyedSubtree(
-      key: ValueKey(ChatBackgroundProvider.instance.theme),
-      child: ChatBackgroundProvider.instance.theme.buildBackground(isDark),
-    ),
-  ),
-),
+        Positioned.fill(
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 400),
+            child: KeyedSubtree(
+              key: ValueKey(ChatBackgroundProvider.instance.theme),
+              child:
+                  ChatBackgroundProvider.instance.theme.buildBackground(isDark),
+            ),
+          ),
+        ),
 
         // ── SCAFFOLD ────────────────────────────────────
         Scaffold(
           resizeToAvoidBottomInset: true,
           backgroundColor: Colors.transparent,
-          appBar: _isSelectionMode
-              ? AppBar(
-                  backgroundColor: cardColor,
-                  elevation: 0,
-                  leading: IconButton(
-                    icon:
-                        Icon(Icons.close, color: theme.colorScheme.onSurface),
-                    onPressed: _exitSelectionMode,
-                  ),
-                  title: Text(
-                      '${_selectedIds.length} ${loc.get('selected')}',
-                      style: AppTextStyles.headingSmall),
-                  actions: [
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline,
-                          color: AppColors.error),
-                      onPressed:
-                          _selectedIds.isEmpty ? null : _deleteSelected,
-                    ),
-                  ],
-                )
-              : AppBar(
-                  backgroundColor: cardColor,
-                  elevation: 0,
-                  leading: IconButton(
-                    icon: Icon(Icons.arrow_back,
-                        color: theme.colorScheme.onSurface),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                  title: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 18,
-                        backgroundImage: widget.otherAvatarUrl.isNotEmpty
-                            ? NetworkImage(widget.otherAvatarUrl)
-                            : null,
-                        backgroundColor: AppColors.grey200,
-                        child: widget.otherAvatarUrl.isEmpty
-                            ? const Icon(Icons.person,
-                                size: 18, color: AppColors.grey400)
-                            : null,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+          extendBodyBehindAppBar: true,
+          appBar: PreferredSize(
+            preferredSize: const Size.fromHeight(kToolbarHeight),
+            child: ClipRect(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                child: _isSelectionMode
+                    ? AppBar(
+                        backgroundColor: glassAppBarBg,
+                        elevation: 0,
+                        leading: IconButton(
+                          icon: Icon(Icons.close,
+                              color: theme.colorScheme.onSurface),
+                          onPressed: _exitSelectionMode,
+                        ),
+                        title: Text(
+                            '${_selectedIds.length} ${loc.get('selected')}',
+                            style: AppTextStyles.headingSmall),
+                        actions: [
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline,
+                                color: AppColors.error),
+                            onPressed:
+                                _selectedIds.isEmpty ? null : _deleteSelected,
+                          ),
+                        ],
+                      )
+                    : AppBar(
+                        backgroundColor: glassAppBarBg,
+                        elevation: 0,
+                        leading: IconButton(
+                          icon: Icon(Icons.arrow_back,
+                              color: theme.colorScheme.onSurface),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                        title: Row(
                           children: [
-                            Text(
-                              _receiverDisplayName.isNotEmpty
-                                  ? _receiverDisplayName
-                                  : (widget.isSeller
-                                      ? loc.get('chat_buyer')
-                                      : widget.sellerName),
-                              style: AppTextStyles.labelLarge,
-                              overflow: TextOverflow.ellipsis,
+                            CircleAvatar(
+                              radius: 18,
+                              backgroundImage: widget.otherAvatarUrl.isNotEmpty
+                                  ? NetworkImage(widget.otherAvatarUrl)
+                                  : null,
+                              backgroundColor: AppColors.grey200,
+                              child: widget.otherAvatarUrl.isEmpty
+                                  ? const Icon(Icons.person,
+                                      size: 18, color: AppColors.grey400)
+                                  : null,
                             ),
-                            if (widget.productName.isNotEmpty)
-                              Text(widget.productName,
-                                  style: AppTextStyles.labelSmall
-                                      .copyWith(color: AppColors.grey500),
-                                  overflow: TextOverflow.ellipsis),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _receiverDisplayName.isNotEmpty
+                                        ? _receiverDisplayName
+                                        : (widget.isSeller
+                                            ? loc.get('chat_buyer')
+                                            : widget.sellerName),
+                                    style: AppTextStyles.labelLarge,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  if (widget.productName.isNotEmpty)
+                                    Text(widget.productName,
+                                        style: AppTextStyles.labelSmall
+                                            .copyWith(color: AppColors.grey500),
+                                        overflow: TextOverflow.ellipsis),
+                                ],
+                              ),
+                            ),
                           ],
                         ),
+                        actions: [
+                          if (!widget.isSeller)
+                            IconButton(
+                              icon: const Icon(Icons.phone_callback_rounded,
+                                  color: AppColors.primary),
+                              tooltip: 'Чалуу суроо',
+                              onPressed: _sendCallRequest,
+                            ),
+                        ],
                       ),
-                    ],
-                  ),
-                  actions: [
-                    if (!widget.isSeller)
-                      IconButton(
-                        icon: const Icon(Icons.phone_callback_rounded,
-                            color: AppColors.primary),
-                        tooltip: 'Чалуу суроо',
-                        onPressed: _sendCallRequest,
-                      ),
-                  ],
-                ),
+              ),
+            ),
+          ),
           body: myId == null
               ? Center(child: Text(loc.get('chat_login_required')))
               : Column(
                   children: [
+                    // AppBar бийиктигин ээлейт (extendBodyBehindAppBar = true)
+                    SizedBox(
+                        height: kToolbarHeight +
+                            MediaQuery.of(context).padding.top),
                     ChatProductBanner(
                       productId: widget.productId,
                       productName: widget.productName,
@@ -773,8 +888,7 @@ class _ChatScreenState extends State<ChatScreen> {
                               ? Center(
                                   child: Text(loc.get('chat_empty'),
                                       style: AppTextStyles.bodyMedium
-                                          .copyWith(
-                                              color: AppColors.grey400)))
+                                          .copyWith(color: AppColors.grey400)))
                               : Column(
                                   children: [
                                     if (_isSelectionMode)
@@ -787,8 +901,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                           child: TextButton(
                                             onPressed: () =>
                                                 _selectAll(_cachedMessages),
-                                            child:
-                                                Text(loc.get('select_all')),
+                                            child: Text(loc.get('select_all')),
                                           ),
                                         ),
                                       ),
@@ -801,8 +914,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                         itemBuilder: (context, i) {
                                           final msg = _cachedMessages[
                                               _cachedMessages.length - 1 - i];
-                                          final isMe =
-                                              msg.senderId == myId;
+                                          final isMe = msg.senderId == myId;
 
                                           if (msg.isCallRequest) {
                                             return CallRequestBubble(
@@ -816,25 +928,19 @@ class _ChatScreenState extends State<ChatScreen> {
                                           return MessageBubble(
                                             message: msg,
                                             isMe: isMe,
-                                            isSelectionMode:
-                                                _isSelectionMode,
-                                            isSelected: _selectedIds
-                                                .contains(msg.id),
+                                            isSelectionMode: _isSelectionMode,
+                                            isSelected:
+                                                _selectedIds.contains(msg.id),
                                             onLongPress: () =>
                                                 _enterSelectionMode(msg.id),
                                             onTap: () =>
                                                 _toggleSelection(msg.id),
                                             onCopy: () => _copyMessage(msg),
-                                            onDelete: () =>
-                                                _deleteSingle(msg),
-                                            onReply: () =>
-                                                _startReply(msg),
-                                            onEdit: () =>
-                                                _editMessage(msg),
-                                            onReplyTap: () =>
-                                                _scrollToMessage(
-                                                    msg.replyToId,
-                                                    _cachedMessages),
+                                            onDelete: () => _deleteSingle(msg),
+                                            onReply: () => _startReply(msg),
+                                            onEdit: () => _editMessage(msg),
+                                            onReplyTap: () => _scrollToMessage(
+                                                msg.replyToId, _cachedMessages),
                                           );
                                         },
                                       ),
@@ -843,139 +949,178 @@ class _ChatScreenState extends State<ChatScreen> {
                                 ),
                     ),
 
-                    // ── Жооп берүү preview ──
+                    // ── Жооп берүү preview (айнек стили) ──
                     if (!_isSelectionMode && _replyingTo != null)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: cardColor,
-                          border: Border(
-                              top: BorderSide(color: dividerColor)),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                                width: 3,
-                                height: 36,
-                                color: AppColors.primary),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(loc.get('chat_reply'),
-                                      style: AppTextStyles.labelSmall
-                                          .copyWith(
-                                              color: AppColors.primary)),
-                                  Text(
-                                    _replyingTo!.text.isNotEmpty
-                                        ? _replyingTo!.text
-                                        : '📷 ${loc.get('chat_image')}',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: AppTextStyles.bodyMedium
-                                        .copyWith(color: AppColors.grey600),
-                                  ),
-                                ],
-                              ),
+                      ClipRect(
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: glassBottomBg,
+                              border: Border(
+                                  top: BorderSide(
+                                      color: isDark
+                                          ? Colors.white.withValues(alpha: 0.12)
+                                          : Colors.black
+                                              .withValues(alpha: 0.08))),
                             ),
-                            GestureDetector(
-                                onTap: _cancelReply,
-                                child: const Icon(Icons.close,
-                                    color: AppColors.grey400, size: 20)),
-                          ],
+                            child: Row(
+                              children: [
+                                Container(
+                                    width: 3,
+                                    height: 36,
+                                    color: AppColors.primary),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(loc.get('chat_reply'),
+                                          style: AppTextStyles.labelSmall
+                                              .copyWith(
+                                                  color: AppColors.primary)),
+                                      Text(
+                                        _replyingTo!.text.isNotEmpty
+                                            ? _replyingTo!.text
+                                            : '📷 ${loc.get('chat_image')}',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: AppTextStyles.bodyMedium
+                                            .copyWith(color: AppColors.grey600),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                GestureDetector(
+                                    onTap: _cancelReply,
+                                    child: const Icon(Icons.close,
+                                        color: AppColors.grey400, size: 20)),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
 
-                    // ── Жазуу талаасы ──
+                    // ── Жазуу талаасы (айнек стили) ──
                     if (!_isSelectionMode)
-                      Container(
-                        padding: EdgeInsets.fromLTRB(
-                            12,
-                            8,
-                            12,
-                            MediaQuery.of(context).padding.bottom + 8),
-                        decoration: BoxDecoration(
-                          color: cardColor,
-                          boxShadow: [
-                            BoxShadow(
-                                color:
-                                    Colors.black.withValues(alpha: 0.05),
-                                blurRadius: 8,
-                                offset: const Offset(0, -2))
-                          ],
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            _isSendingImage
-                                ? const SizedBox(
-                                    width: 44,
-                                    height: 44,
-                                    child: Padding(
-                                        padding: EdgeInsets.all(10),
-                                        child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: AppColors.primary)))
-                                : GestureDetector(
-                                    onTap: _pickAndSendImage,
-                                    child: Container(
-                                      width: 44,
-                                      height: 44,
-                                      decoration: BoxDecoration(
-                                          color: inputBg,
-                                          borderRadius:
-                                              BorderRadius.circular(22)),
-                                      child: const Icon(
-                                          Icons.image_outlined,
-                                          color: AppColors.grey500,
-                                          size: 22),
-                                    ),
-                                  ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: TextField(
-                                controller: _msgCtrl,
-                                minLines: 1,
-                                maxLines: 4,
-                                textInputAction: TextInputAction.send,
-                                onSubmitted: (_) => _send(),
-                                decoration: InputDecoration(
-                                  hintText: loc.get('chat_hint'),
-                                  filled: true,
-                                  fillColor: inputBg,
-                                  contentPadding:
-                                      const EdgeInsets.symmetric(
-                                          horizontal: 16, vertical: 10),
-                                  border: OutlineInputBorder(
-                                      borderRadius:
-                                          BorderRadius.circular(20),
-                                      borderSide: BorderSide.none),
+                      ClipRect(
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                          child: Container(
+                            padding: EdgeInsets.fromLTRB(12, 8, 12,
+                                MediaQuery.of(context).padding.bottom + 8),
+                            decoration: BoxDecoration(
+                              color: glassBottomBg,
+                              border: Border(
+                                top: BorderSide(
+                                  color: isDark
+                                      ? Colors.white.withValues(alpha: 0.10)
+                                      : Colors.black.withValues(alpha: 0.07),
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            _hasText
-                                ? GestureDetector(
-                                    onTap: _send,
-                                    child: Container(
-                                      width: 44,
-                                      height: 44,
-                                      decoration: BoxDecoration(
-                                          color: AppColors.primary,
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                _isSendingImage
+                                    ? const SizedBox(
+                                        width: 44,
+                                        height: 44,
+                                        child: Padding(
+                                            padding: EdgeInsets.all(10),
+                                            child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color: AppColors.primary)))
+                                    : GestureDetector(
+                                        onTap: _pickAndSendImage,
+                                        child: Container(
+                                          width: 44,
+                                          height: 44,
+                                          decoration: BoxDecoration(
+                                              color: glassButtonBg,
+                                              borderRadius:
+                                                  BorderRadius.circular(22),
+                                              border: Border.all(
+                                                color: isDark
+                                                    ? Colors.white
+                                                        .withValues(alpha: 0.15)
+                                                    : Colors.black.withValues(
+                                                        alpha: 0.10),
+                                              )),
+                                          child: const Icon(
+                                              Icons.image_outlined,
+                                              color: AppColors.grey500,
+                                              size: 22),
+                                        ),
+                                      ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: TextField(
+                                    controller: _msgCtrl,
+                                    minLines: 1,
+                                    maxLines: 4,
+                                    textInputAction: TextInputAction.send,
+                                    onSubmitted: (_) => _send(),
+                                    decoration: InputDecoration(
+                                      hintText: loc.get('chat_hint'),
+                                      filled: true,
+                                      fillColor: glassInputFill,
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                              horizontal: 16, vertical: 10),
+                                      border: OutlineInputBorder(
                                           borderRadius:
-                                              BorderRadius.circular(22)),
-                                      child: const Icon(
-                                          Icons.send_rounded,
-                                          color: Colors.white,
-                                          size: 20),
+                                              BorderRadius.circular(20),
+                                          borderSide: BorderSide(
+                                            color: isDark
+                                                ? Colors.white
+                                                    .withValues(alpha: 0.15)
+                                                : Colors.black
+                                                    .withValues(alpha: 0.10),
+                                          )),
+                                      enabledBorder: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                          borderSide: BorderSide(
+                                            color: isDark
+                                                ? Colors.white
+                                                    .withValues(alpha: 0.15)
+                                                : Colors.black
+                                                    .withValues(alpha: 0.10),
+                                          )),
+                                      focusedBorder: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                          borderSide: const BorderSide(
+                                              color: AppColors.primary,
+                                              width: 1.5)),
                                     ),
-                                  )
-                                : VoiceRecordButton(
-                                    onRecorded: _sendVoiceMessage,
-                                    onCancel: () {}),
-                          ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                _hasText
+                                    ? GestureDetector(
+                                        onTap: _send,
+                                        child: Container(
+                                          width: 44,
+                                          height: 44,
+                                          decoration: BoxDecoration(
+                                              color: AppColors.primary,
+                                              borderRadius:
+                                                  BorderRadius.circular(22)),
+                                          child: const Icon(Icons.send_rounded,
+                                              color: Colors.white, size: 20),
+                                        ),
+                                      )
+                                    : VoiceRecordButton(
+                                        onRecorded: _sendVoiceMessage,
+                                        onCancel: () {}),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                   ],

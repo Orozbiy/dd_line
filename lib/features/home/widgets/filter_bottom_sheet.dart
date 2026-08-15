@@ -123,45 +123,51 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
     return '${buf.toString()} с';
   }
 
-  Widget _priceField({
-    required TextEditingController controller,
-    required String hint,
-    required ValueChanged<String> onChanged,
-    required bool isDark,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withOpacity(0.08)
-            : Colors.black.withOpacity(0.04),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
+Widget _priceField({
+  required TextEditingController controller,
+  required String hint,
+  required ValueChanged<String> onChanged,
+  required bool isDark,
+}) {
+  return ClipRRect(
+    borderRadius: BorderRadius.circular(10),
+    child: BackdropFilter(
+      filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
           color: isDark
-              ? Colors.white.withOpacity(0.12)
-              : Colors.black.withOpacity(0.08),
-        ),
-      ),
-      child: TextField(
-        controller: controller,
-        keyboardType: TextInputType.number,
-        style: AppTextStyles.bodyMedium.copyWith(
-          color: isDark ? Colors.white : AppColors.black,
-        ),
-        onChanged: onChanged,
-        decoration: InputDecoration(
-          hintText: hint,
-          suffixText: 'с',
-          suffixStyle: TextStyle(
-            color: isDark ? AppColors.grey400 : AppColors.grey500,
+              ? Colors.white.withValues(alpha: 0.08)
+              : Colors.white.withValues(alpha: 0.55),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.12)
+                : Colors.white.withValues(alpha: 0.80),
           ),
-          border: InputBorder.none,
-          isDense: true,
-          contentPadding: const EdgeInsets.symmetric(vertical: 12),
         ),
-      ),
-    );
-  }
+        child: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: isDark ? Colors.white : AppColors.black,
+          ),
+          onChanged: onChanged,
+          decoration: InputDecoration(
+            hintText: hint,
+            suffixText: 'с',
+            suffixStyle: TextStyle(
+              color: isDark ? AppColors.grey400 : AppColors.grey500,
+            ),
+            border: InputBorder.none,
+            isDense: true,
+            contentPadding: const EdgeInsets.symmetric(vertical: 12),
+          ),
+        ),       // ← TextField жабылды
+      ),         // ← Container жабылды
+    ),           // ← BackdropFilter жабылды
+  );             // ← ClipRRect жабылды
+}
 
   @override
   Widget build(BuildContext context) {

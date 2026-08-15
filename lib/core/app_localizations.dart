@@ -866,16 +866,20 @@ class AppLocalizations {
     'paid_yes': '✅ Төлөдү',
     'paid_no': '❌ Төлөбөдү',
     'unknown': 'Белгисиз',
+    'bg_classic': 'Классикалык',
+    'bg_floral': 'Гүлдөр 🌸',
+    'bg_nature': 'Жаратылыш 🌿',
+    'bg_sunset': 'Күн батышы 🌅',
+    'bg_galaxy': 'Галактика 🌌',
+    'bg_screen_title': 'Чат фону',
+    'bg_msg_hello': 'Саламатсызбы? 👋',
+    'bg_msg_thanks': 'Жакшы, рахмат! 😊',
 
-
-  
     'chat_background': 'Чат фону',
     'cache_clear': 'Кэшти тазалоо',
-  
   };
 
   static const _ru = {
-
     'settings': 'Настройки',
     'profile': 'Профиль',
     'profile_view_edit': 'Просмотр и редактирование',
@@ -948,7 +952,7 @@ class AppLocalizations {
     'cat_1_14_3_3': 'Осенние',
     'cat_1_14_3_4': 'Зимние',
     'cat_1_14_3_5': 'Офисные',
-   
+
     'cat_1_14_3_6': 'Повседневные',
     'cat_1_14_3_7': 'Национальные',
     'cat_1_14_4': 'Детские',
@@ -1222,11 +1226,11 @@ class AppLocalizations {
     'pending_btn_home': 'Вернуться на главную',
     'rejected_title': 'Заявка отклонена',
     'rejected_desc': 'Для повторной попытки свяжитесь с администратором.',
-   
+
     'dark_mode': 'Тёмный режим',
-   
+
     'cache': 'Очистить кэш',
-  
+
     'home': 'Главная',
     'cart': 'Корзина',
     'favorites': 'Избранное',
@@ -1400,6 +1404,14 @@ class AppLocalizations {
     'shop_title': 'Управляйте своим магазином!',
     'shop_desc': 'Продавайте товары с Дордоя\nчерез DD Online по всему миру',
     'add_product': 'Добавить товар',
+    'bg_classic': 'Классический',
+    'bg_floral': 'Цветы 🌸',
+    'bg_nature': 'Природа 🌿',
+    'bg_sunset': 'Закат 🌅',
+    'bg_galaxy': 'Галактика 🌌',
+    'bg_screen_title': 'Фон чата',
+    'bg_msg_hello': 'Привет! 👋',
+    'bg_msg_thanks': 'Хорошо, спасибо! 😊',
     'my_products': 'Мои товары',
     'no_size': 'Без размера',
     'open': 'Открыто',
@@ -1760,5 +1772,3 @@ class AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
   @override
   bool shouldReload(_) => false;
 }
-
-

@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'supabase_client.dart';
 import '../services/notification_service.dart';
+import 'package:flutter/foundation.dart';
 
 /// Google Sign-In аркылуу Supabase Auth'ка кирүү/чыгуу логикасы.
 ///
@@ -51,30 +52,38 @@ class AuthService {
   /// менен синхрондоо (аты, сүрөтү, email).
   ///
   /// [authStateChanges] боюнча signedIn окуясынан кийин чакыруу керек.
-  Future<void> syncProfile() async {
-    final user = currentUser;
-    if (user == null) return;
+Future<void> syncProfile() async {
+  final user = currentUser;
+  if (user == null) return;
 
-    final identity =
-        user.identities?.where((i) => i.provider == 'google').firstOrNull;
-    final data = identity?.identityData;
+  final identity =
+      user.identities?.where((i) => i.provider == 'google').firstOrNull;
+  final data = identity?.identityData;
 
-    try {
-      await supabase.from('profiles').update({
-        'full_name': data?['full_name'] ?? data?['name'],
-        'avatar_url': data?['avatar_url'] ?? data?['picture'],
-        'email': user.email,
-        'last_active_at': DateTime.now().toIso8601String(),
-      }).eq('id', user.id);
-    } catch (_) {
-      // Профиль табылбаса (trigger кечиксе), унчукпайбыз —
-      // кийинки кирүүдө синхрондолот.
-    }
+  // Авто ат генерациялоо — профиль жок болсо
+  final autoName = data?['full_name'] as String?
+      ?? data?['name'] as String?
+      ?? user.email?.split('@').first
+      ?? 'Колдонуучу';
 
-    // ✅ ОҢДОО: Google менен кирген соң FCM токенди сакта
-    // Бул болбосо сатуучу жооп жазганда алуучуга уведомления жетпейт
-    await NotificationService().saveMyToken();
+  final autoAvatar = data?['avatar_url'] as String?
+      ?? data?['picture'] as String?;
+
+  try {
+    await supabase.from('profiles').upsert({  // update → upsert
+      'id':            user.id,
+      'full_name':     autoName,
+      'avatar_url':    autoAvatar,
+      'email':         user.email,
+      'role':          'customer',
+      'last_active_at': DateTime.now().toIso8601String(),
+    }, onConflict: 'id');
+  } catch (e) {
+    debugPrint('syncProfile ката: $e');
   }
+
+  await NotificationService().saveMyToken();
+}
 
   /// Колдонуучунун ролун (customer/seller/admin) алуу.
   Future<String> getUserRole() async {

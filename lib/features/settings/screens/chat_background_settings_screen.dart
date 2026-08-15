@@ -1,6 +1,8 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'dart:ui';
+import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
+import '../../../core/app_localizations.dart';
 import '../../../core/chat_background_provider.dart';
 
 class ChatBackgroundSettingsScreen extends StatefulWidget {
@@ -25,29 +27,40 @@ class _ChatBackgroundSettingsScreenState
   @override
   Widget build(BuildContext context) {
     final isDark    = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
     final textColor = isDark ? Colors.white : AppColors.black;
+    final loc       = AppLocalizations.of(context);
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF4F5F7),
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: cardColor,
+        backgroundColor: Colors.transparent,
         elevation: 0,
+        flexibleSpace: ClipRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+            child: Container(
+              color: isDark
+                  ? Colors.black.withValues(alpha: 0.30)
+                  : Colors.white.withValues(alpha: 0.40),
+            ),
+          ),
+        ),
         foregroundColor: textColor,
-        title: Text('Чат фону',
-            style: AppTextStyles.headingSmall.copyWith(color: textColor)),
+        title: Text(
+          loc.get('bg_screen_title'),
+          style: AppTextStyles.headingSmall.copyWith(color: textColor),
+        ),
       ),
       body: Column(
         children: [
           // ── Чоң превью ──
           SizedBox(
-            height: 200,
+            height: 220,
             width: double.infinity,
             child: Stack(
               children: [
-                Positioned.fill(
-                  child: _selected.buildBackground(isDark),
-                ),
+                Positioned.fill(child: _selected.buildBackground(isDark)),
                 // Үлгү билдирүүлөр
                 Positioned(
                   bottom: 16,
@@ -58,25 +71,42 @@ class _ChatBackgroundSettingsScreenState
                     children: [
                       Align(
                         alignment: Alignment.centerLeft,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: _selected == ChatBgTheme.galaxy
-                                ? const Color(0xFF2A2A4A)
-                                : (isDark ? const Color(0xFF2C2C2C) : Colors.white),
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(14),
-                              topRight: Radius.circular(14),
-                              bottomRight: Radius.circular(14),
-                              bottomLeft: Radius.circular(4),
+                        child: ClipRRect(
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(14),
+                            topRight: Radius.circular(14),
+                            bottomRight: Radius.circular(14),
+                            bottomLeft: Radius.circular(4),
+                          ),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? Colors.white.withValues(alpha: 0.12)
+                                    : Colors.white.withValues(alpha: 0.65),
+                                border: Border.all(
+                                  color: isDark
+                                      ? Colors.white.withValues(alpha: 0.15)
+                                      : Colors.white.withValues(alpha: 0.80),
+                                ),
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(14),
+                                  topRight: Radius.circular(14),
+                                  bottomRight: Radius.circular(14),
+                                  bottomLeft: Radius.circular(4),
+                                ),
+                              ),
+                              child: Text(
+                                loc.get('bg_msg_hello'),
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: isDark ? Colors.white : Colors.black87,
+                                ),
+                              ),
                             ),
                           ),
-                          child: Text('Саламатсызбы? 👋',
-                              style: TextStyle(
-                                  fontSize: 13,
-                                  color: _selected == ChatBgTheme.galaxy
-                                      ? Colors.white
-                                      : (isDark ? Colors.white : Colors.black87))),
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -84,17 +114,26 @@ class _ChatBackgroundSettingsScreenState
                         alignment: Alignment.centerRight,
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             color: AppColors.primary,
-                            borderRadius: BorderRadius.only(
+                            borderRadius: const BorderRadius.only(
                               topLeft: Radius.circular(14),
                               topRight: Radius.circular(14),
                               bottomLeft: Radius.circular(14),
                               bottomRight: Radius.circular(4),
                             ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.primary.withValues(alpha: 0.35),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
                           ),
-                          child: const Text('Жакшы, рахмат! 😊',
-                              style: TextStyle(fontSize: 13, color: Colors.white)),
+                          child: Text(
+                            loc.get('bg_msg_thanks'),
+                            style: const TextStyle(fontSize: 13, color: Colors.white),
+                          ),
                         ),
                       ),
                     ],
@@ -109,7 +148,12 @@ class _ChatBackgroundSettingsScreenState
           // ── Тема тизмеси ──
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: EdgeInsets.fromLTRB(
+                16,
+                8,
+                16,
+                MediaQuery.of(context).padding.bottom + 16,
+              ),
               children: ChatBgTheme.values.map((t) {
                 final isActive = t == _selected;
                 return GestureDetector(
@@ -120,61 +164,84 @@ class _ChatBackgroundSettingsScreenState
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     margin: const EdgeInsets.only(bottom: 10),
-                    decoration: BoxDecoration(
-                      color: cardColor,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: isActive ? AppColors.primary : Colors.transparent,
-                        width: 2,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        // Мини превью
-                        ClipRRect(
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(12),
-                            bottomLeft: Radius.circular(12),
-                          ),
-                          child: SizedBox(
-                            width: 72,
-                            height: 72,
-                            child: t.buildBackground(isDark),
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Text(
-                            t.label,
-                            style: AppTextStyles.bodyLarge.copyWith(
-                              color: textColor,
-                              fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: isActive
+                                ? AppColors.primary.withValues(alpha: isDark ? 0.18 : 0.10)
+                                : (isDark
+                                    ? Colors.white.withValues(alpha: 0.06)
+                                    : Colors.white.withValues(alpha: 0.55)),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: isActive
+                                  ? AppColors.primary.withValues(alpha: 0.70)
+                                  : (isDark
+                                      ? Colors.white.withValues(alpha: 0.10)
+                                      : Colors.white.withValues(alpha: 0.80)),
+                              width: isActive ? 1.5 : 1.0,
                             ),
                           ),
-                        ),
-                        if (isActive)
-                          Container(
-                            margin: const EdgeInsets.only(right: 14),
-                            padding: const EdgeInsets.all(4),
-                            decoration: const BoxDecoration(
-                              color: AppColors.primary,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(Icons.check, color: Colors.white, size: 16),
-                          )
-                        else
-                          Container(
-                            margin: const EdgeInsets.only(right: 14),
-                            width: 24,
-                            height: 24,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: isDark ? const Color(0xFF3A3A3A) : AppColors.grey300,
+                          child: Row(
+                            children: [
+                              // Мини превью
+                              ClipRRect(
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(15),
+                                  bottomLeft: Radius.circular(15),
+                                ),
+                                child: SizedBox(
+                                  width: 72,
+                                  height: 72,
+                                  child: t.buildBackground(isDark),
+                                ),
                               ),
-                            ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Text(
+                                  t.localizedLabel(context),
+                                  style: AppTextStyles.bodyLarge.copyWith(
+                                    color: isActive
+                                        ? (isDark ? Colors.white : AppColors.primary)
+                                        : textColor,
+                                    fontWeight: isActive
+                                        ? FontWeight.w600
+                                        : FontWeight.normal,
+                                  ),
+                                ),
+                              ),
+                              // Белги
+                              AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                margin: const EdgeInsets.only(right: 14),
+                                width: 24,
+                                height: 24,
+                                decoration: BoxDecoration(
+                                  color: isActive
+                                      ? AppColors.primary
+                                      : Colors.transparent,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: isActive
+                                        ? AppColors.primary
+                                        : (isDark
+                                            ? Colors.white.withValues(alpha: 0.25)
+                                            : AppColors.grey300),
+                                    width: 1.5,
+                                  ),
+                                ),
+                                child: isActive
+                                    ? const Icon(Icons.check,
+                                        color: Colors.white, size: 14)
+                                    : null,
+                              ),
+                            ],
                           ),
-                      ],
+                        ),
+                      ),
                     ),
                   ),
                 );

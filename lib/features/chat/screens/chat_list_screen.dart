@@ -360,17 +360,23 @@ class _ChatListScreenState extends State<ChatListScreen> {
                                 : AppColors.grey400,
                             size: 26,
                           )
-                        : CircleAvatar(
-                            radius: 24,
-                            backgroundImage: _avatarUrl(chat) != null
-                                ? NetworkImage(_avatarUrl(chat)!)
-                                : null,
-                            backgroundColor: AppColors.grey200,
-                            child: _avatarUrl(chat) == null
-                                ? const Icon(Icons.person,
-                                    color: AppColors.grey400, size: 22)
-                                : null,
-                          ),
+                       : CircleAvatar(
+    radius: 24,
+    backgroundImage: (_avatarUrl(chat) != null && _avatarUrl(chat)!.isNotEmpty)
+        ? NetworkImage(_avatarUrl(chat)!)
+        : null,
+    backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+    child: (_avatarUrl(chat) == null || _avatarUrl(chat)!.isEmpty)
+        ? Text(
+            _getInitial(chat),
+            style: const TextStyle(
+              color: AppColors.primary,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
+          )
+        : null,
+  ),
                     title: Text(displayName,
                         style: AppTextStyles.bodyLarge.copyWith(
                           color: isDark ? Colors.white : AppColors.black,
@@ -440,6 +446,12 @@ class _ChatListScreenState extends State<ChatListScreen> {
     if (widget.isSeller) return chat.buyerAvatar;
     return chat.sellerAvatar;
   }
+  String _getInitial(ChatModel chat) {
+  final name = widget.isSeller
+      ? (chat.buyerName.isNotEmpty ? chat.buyerName : '?')
+      : (chat.sellerName.isNotEmpty ? chat.sellerName : '?');
+  return name[0].toUpperCase();
+}
 
   String _formatTime(DateTime dt) {
     final now = DateTime.now();
