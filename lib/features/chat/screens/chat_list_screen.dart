@@ -154,13 +154,16 @@ class _ChatListScreenState extends State<ChatListScreen> {
     _exitSelectionMode();
     await _saveCache(_cachedChats);
 
-    for (final id in toDelete) {
-      try {
-        await _service.deleteChat(id, isSeller: widget.isSeller);
-      } catch (e) {
-        debugPrint('❌ deleteChat ката: $e');
-      }
-    }
+   final prefs = await SharedPreferences.getInstance();
+for (final id in toDelete) {
+  try {
+    // ← смс кэшин тазала
+    await prefs.remove('messages_$id');
+    await _service.deleteChat(id, isSeller: widget.isSeller);
+  } catch (e) {
+    debugPrint('❌ deleteChat ката: $e');
+  }
+}
   }
 
   // ════════════════════════════════════════════════════
@@ -311,17 +314,21 @@ class _ChatListScreenState extends State<ChatListScreen> {
                 onLongPressStart: (_) => _onPressStart(chat.id),
                 onLongPressEnd: (_) => _onPressEnd(),
                 onLongPressCancel: _onPressEnd,
-                onTap: _isSelectionMode
-                    ? () => _toggleSelection(chat.id)
-                    : () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                ChatScreen.fromChat(chat, isSeller: widget.isSeller),
-                          ),
-                        ),
+              onTap: _isSelectionMode
+    ? () => _toggleSelection(chat.id)
+    : () async {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                ChatScreen.fromChat(chat, isSeller: widget.isSeller),
+          ),
+        );
+        // Кайткандан кийин кэшти жаңырт (жаңы чат тизмеде чыксын)
+        if (mounted) await _loadCache();
+      },
                 child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
+                 duration: const Duration(milliseconds: 10),
                   margin: const EdgeInsets.only(bottom: 10),
                   decoration: BoxDecoration(
                     // ── Жарым өткөрүмдүү карточка ──

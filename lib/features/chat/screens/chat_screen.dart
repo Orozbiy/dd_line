@@ -73,6 +73,9 @@ class _ChatScreenState extends State<ChatScreen> {
   final _msgCtrl = TextEditingController();
   final _scrollCtrl = ScrollController();
 
+  // ── AnimatedList key ──
+  final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
+
   bool _isSendingImage = false;
   bool _hasText = false;
   bool _isSending = false;
@@ -93,58 +96,95 @@ class _ChatScreenState extends State<ChatScreen> {
   String _sellerPhone = '';
   String get _cacheKey => 'messages_${widget.chatId}';
 
+  // ════════════════════════════════════════════════════
+  // КЭШ
+  // ════════════════════════════════════════════════════
 
   Future<void> _loadMessagesCache() async {
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_cacheKey);
-    if (raw == null || !mounted) return;
-    final list = (jsonDecode(raw) as List)
-        .map((e) => MessageModel.fromJson(e as Map<String, dynamic>))
-        .toList();
-    if (mounted && !_initialLoadDone) {
-      setState(() => _cachedMessages = list);
-    }
-  } catch (_) {}
-}
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_cacheKey);
+      if (raw == null || !mounted) return;
+      final list = (jsonDecode(raw) as List)
+          .map((e) => MessageModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+      if (mounted && !_initialLoadDone) {
+        setState(() => _cachedMessages = list);
+      }
+    } catch (_) {}
+  }
 
-Future<void> _saveMessagesCache(List<MessageModel> msgs) async {
-  try {
-    // Акыркы 100 гана сакта — телефон эс тутумун ысырапчылабасын
-    final toSave = msgs.length > 100 ? msgs.sublist(msgs.length - 100) : msgs;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-      _cacheKey,
-      jsonEncode(toSave.map((m) => m.toJson()).toList()),
-    );
-  } catch (_) {}
-}
+  Future<void> _saveMessagesCache(List<MessageModel> msgs) async {
+    try {
+      final toSave =
+          msgs.length > 100 ? msgs.sublist(msgs.length - 100) : msgs;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+        _cacheKey,
+        jsonEncode(toSave.map((m) => m.toJson()).toList()),
+      );
+    } catch (_) {}
+  }
 
- @override
-void initState() {
-  super.initState();
-  _loadMessagesCache(); // ← алгач кэш — дароо көрсөтөт
-  _messagesStream = _service.messagesStream(widget.chatId);
-  _msgSub = _messagesStream.listen((msgs) {
-    if (!mounted) return;
-    setState(() {
-      _cachedMessages = msgs;
-      _initialLoadDone = true;
+  // ════════════════════════════════════════════════════
+  // INIT / DISPOSE
+  // ════════════════════════════════════════════════════
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMessagesCache();
+    _messagesStream = _service.messagesStream(widget.chatId);
+
+    _msgSub = _messagesStream.listen((msgs) {
+      if (!mounted) return;
+
+      final oldIds = _cachedMessages.map((m) => m.id).toSet();
+      final newIds = msgs.map((m) => m.id).toSet();
+
+      // ── Жаңы кошулгандар ──
+      for (final msg in msgs) {
+        if (!oldIds.contains(msg.id)) {
+          _cachedMessages.insert(0, msg);
+          _listKey.currentState?.insertItem(
+            0,
+            duration: const Duration(milliseconds: 300),
+          );
+        }
+      }
+
+      // ── Өчүрүлгөндөр — stream'ден жок болгондор ──
+      final removedIds = oldIds.difference(newIds);
+      for (final id in removedIds) {
+        final idx = _cachedMessages.indexWhere((m) => m.id == id);
+        if (idx != -1) {
+          final removed = _cachedMessages.removeAt(idx);
+          _listKey.currentState?.removeItem(
+            idx,
+            (ctx, anim) =>
+                _buildAnimatedBubble(removed, anim, myId: _myId ?? ''),
+            duration: const Duration(milliseconds: 250),
+          );
+        }
+      }
+
+      setState(() => _initialLoadDone = true);
+      _saveMessagesCache(_cachedMessages);
+      final myId = _myId;
+      if (myId != null &&
+          _cachedMessages.any((m) => m.senderId != myId && !m.isRead))
+        _markRead();
     });
-    _saveMessagesCache(msgs); // ← жаңы маалымат келгенде сакта
-    final myId = _myId;
-    if (myId != null && msgs.any((m) => m.senderId != myId && !m.isRead))
-      _markRead();
-  });
-  _markRead();
-  _loadMyName();
-  _msgCtrl.addListener(() {
-    final has = _msgCtrl.text.trim().isNotEmpty;
-    if (has != _hasText) setState(() => _hasText = has);
-  });
-  _requestMicPermission();
-  ChatBackgroundProvider.instance.addListener(_onBgChanged);
-}
+
+    _markRead();
+    _loadMyName();
+    _msgCtrl.addListener(() {
+      final has = _msgCtrl.text.trim().isNotEmpty;
+      if (has != _hasText) setState(() => _hasText = has);
+    });
+    _requestMicPermission();
+    ChatBackgroundProvider.instance.addListener(_onBgChanged);
+  }
 
   void _onBgChanged() {
     if (mounted) setState(() {});
@@ -163,6 +203,10 @@ void initState() {
     _msgSub?.cancel();
     super.dispose();
   }
+
+  // ════════════════════════════════════════════════════
+  // АТ ЖҮКТӨӨ
+  // ════════════════════════════════════════════════════
 
   Future<void> _loadMyName() async {
     try {
@@ -212,11 +256,17 @@ void initState() {
     }
   }
 
+  // ════════════════════════════════════════════════════
+  // ОКУЛДУ / SCROLL
+  // ════════════════════════════════════════════════════
+
   Future<void> _markRead() async {
     final myId = _myId;
     if (myId == null) return;
     await _service.markAsRead(
-        chatId: widget.chatId, myUserId: myId, readerIsBuyer: !widget.isSeller);
+        chatId: widget.chatId,
+        myUserId: myId,
+        readerIsBuyer: !widget.isSeller);
   }
 
   void _scrollToBottom() {
@@ -230,12 +280,16 @@ void initState() {
     }
   }
 
+  // ════════════════════════════════════════════════════
+  // ЧАЛУУ ӨТҮНҮЧҮ
+  // ════════════════════════════════════════════════════
+
   Future<void> _sendCallRequest() async {
     final loc = AppLocalizations.of(context);
     final myId = _myId;
     if (myId == null) return;
 
-   final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final confirm = await showDialog<bool>(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.35),
@@ -322,11 +376,16 @@ void initState() {
     _scrollToBottom();
   }
 
-  String get _receiverUid => widget.isSeller ? widget.buyerId : widget.sellerId;
+  String get _receiverUid =>
+      widget.isSeller ? widget.buyerId : widget.sellerId;
 
   String get _senderDisplayName => widget.isSeller
       ? (_myDisplayName.isNotEmpty ? _myDisplayName : 'Сатуучу')
       : (_myDisplayName.isNotEmpty ? _myDisplayName : 'Кардар');
+
+  // ════════════════════════════════════════════════════
+  // ЖӨНӨТҮҮ
+  // ════════════════════════════════════════════════════
 
   void _send() {
     if (_isSending) return;
@@ -394,6 +453,10 @@ void initState() {
       return null;
     });
   }
+
+  // ════════════════════════════════════════════════════
+  // СҮРӨТ / ҮНДҮК
+  // ════════════════════════════════════════════════════
 
   Future<ImageSource?> _chooseImageSource() {
     final loc = AppLocalizations.of(context);
@@ -589,6 +652,10 @@ void initState() {
     }
   }
 
+  // ════════════════════════════════════════════════════
+  // ТАНДОО РЕЖИМИ
+  // ════════════════════════════════════════════════════
+
   void _enterSelectionMode(String msgId) => setState(() {
         _isSelectionMode = true;
         _selectedIds.add(msgId);
@@ -615,6 +682,10 @@ void initState() {
     ..clear()
     ..addAll(messages.map((m) => m.id)));
 
+  // ════════════════════════════════════════════════════
+  // ӨЧҮРҮҮ — ТАНДАЛГАНДАР
+  // ════════════════════════════════════════════════════
+
   Future<void> _deleteSelected() async {
     final loc = AppLocalizations.of(context);
     final confirm = await showDialog<bool>(
@@ -622,8 +693,8 @@ void initState() {
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(loc.get('chat_delete_msgs_title')),
-        content:
-            Text('${_selectedIds.length} ${loc.get('chat_delete_msgs_body')}'),
+        content: Text(
+            '${_selectedIds.length} ${loc.get('chat_delete_msgs_body')}'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -637,13 +708,38 @@ void initState() {
         ],
       ),
     );
-    if (confirm == true) {
-      await _service.deleteMessages(_selectedIds.toList());
-      _exitSelectionMode();
+    if (confirm != true) return;
+
+    final toDelete = Set<String>.from(_selectedIds);
+    _exitSelectionMode();
+
+    // Индекси чоңдон кичинеге карай өчүр — индекс бузулбасын
+    final entries = _cachedMessages
+        .asMap()
+        .entries
+        .where((e) => toDelete.contains(e.value.id))
+        .toList()
+        .reversed
+        .toList();
+
+    for (final entry in entries) {
+      final idx = _cachedMessages.indexWhere((m) => m.id == entry.value.id);
+      if (idx == -1) continue;
+      final removed = _cachedMessages.removeAt(idx);
+      _listKey.currentState?.removeItem(
+        idx,
+        (ctx, anim) => _buildAnimatedBubble(removed, anim, myId: _myId ?? ''),
+        duration: const Duration(milliseconds: 250),
+      );
     }
+
+    await _saveMessagesCache(_cachedMessages);
+    await _service.deleteMessages(toDelete.toList());
   }
 
-  Future<void> _copyMessage(MessageModel msg) async {}
+  // ════════════════════════════════════════════════════
+  // ӨЧҮРҮҮ — ЖЕКЕ
+  // ════════════════════════════════════════════════════
 
   Future<void> _deleteSingle(MessageModel msg) async {
     final loc = AppLocalizations.of(context);
@@ -663,8 +759,64 @@ void initState() {
         ],
       ),
     );
-    if (confirm == true) await _service.deleteMessages([msg.id]);
+    if (confirm != true) return;
+
+    final idx = _cachedMessages.indexWhere((m) => m.id == msg.id);
+    if (idx != -1) {
+      final removed = _cachedMessages.removeAt(idx);
+      _listKey.currentState?.removeItem(
+        idx,
+        (ctx, anim) => _buildAnimatedBubble(removed, anim, myId: _myId ?? ''),
+        duration: const Duration(milliseconds: 250),
+      );
+    }
+    await _saveMessagesCache(_cachedMessages);
+    await _service.deleteMessages([msg.id]);
   }
+
+  // ════════════════════════════════════════════════════
+  // АНИМАЦИЯ BUBBLE ЖАРДАМЧЫ
+  // ════════════════════════════════════════════════════
+
+  Widget _buildAnimatedBubble(
+    MessageModel msg,
+    Animation<double> anim, {
+    required String myId,
+  }) {
+    final isMe = msg.senderId == myId;
+    return SizeTransition(
+      sizeFactor: CurvedAnimation(parent: anim, curve: Curves.easeOut),
+      child: FadeTransition(
+        opacity: anim,
+        child: msg.isCallRequest
+            ? CallRequestBubble(
+                message: msg,
+                isMe: isMe,
+                isSeller: widget.isSeller,
+                myPhone: _sellerPhone,
+              )
+            : MessageBubble(
+                message: msg,
+                isMe: isMe,
+                isSelectionMode: false,
+                isSelected: false,
+                onLongPress: () {},
+                onTap: () {},
+                onCopy: () {},
+                onDelete: () {},
+                onReply: () {},
+                onEdit: () {},
+                onReplyTap: () {},
+              ),
+      ),
+    );
+  }
+
+  // ════════════════════════════════════════════════════
+  // БАШКА ФУНКЦИЯЛАР
+  // ════════════════════════════════════════════════════
+
+  Future<void> _copyMessage(MessageModel msg) async {}
 
   void _editMessage(MessageModel msg) {
     final diff = DateTime.now().difference(msg.timestamp);
@@ -741,6 +893,10 @@ void initState() {
       );
   }
 
+  // ════════════════════════════════════════════════════
+  // BUILD
+  // ════════════════════════════════════════════════════
+
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
@@ -749,7 +905,6 @@ void initState() {
     final isDark = theme.brightness == Brightness.dark;
     final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
 
-    // ── Айнек стили үчүн ──
     final glassAppBarBg = isDark
         ? Colors.black.withValues(alpha: 0.45)
         : Colors.white.withValues(alpha: 0.60);
@@ -765,7 +920,7 @@ void initState() {
 
     return Stack(
       children: [
-        // ── ФОН ТЕМАСЫ ──────────────────────────────────
+        // ── ФОН ТЕМАСЫ ──
         Positioned.fill(
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 400),
@@ -777,7 +932,7 @@ void initState() {
           ),
         ),
 
-        // ── SCAFFOLD ────────────────────────────────────
+        // ── SCAFFOLD ──
         Scaffold(
           resizeToAvoidBottomInset: true,
           backgroundColor: Colors.transparent,
@@ -870,7 +1025,6 @@ void initState() {
               ? Center(child: Text(loc.get('chat_login_required')))
               : Column(
                   children: [
-                    // AppBar бийиктигин ээлейт (extendBodyBehindAppBar = true)
                     SizedBox(
                         height: kToolbarHeight +
                             MediaQuery.of(context).padding.top),
@@ -887,8 +1041,8 @@ void initState() {
                           : _cachedMessages.isEmpty
                               ? Center(
                                   child: Text(loc.get('chat_empty'),
-                                      style: AppTextStyles.bodyMedium
-                                          .copyWith(color: AppColors.grey400)))
+                                      style: AppTextStyles.bodyMedium.copyWith(
+                                          color: AppColors.grey400)))
                               : Column(
                                   children: [
                                     if (_isSelectionMode)
@@ -905,42 +1059,61 @@ void initState() {
                                           ),
                                         ),
                                       ),
+
+                                    // ── ANIMATED LIST ──
                                     Expanded(
-                                      child: ListView.builder(
+                                      child: AnimatedList(
+                                        key: _listKey,
                                         controller: _scrollCtrl,
                                         reverse: true,
                                         padding: const EdgeInsets.all(12),
-                                        itemCount: _cachedMessages.length,
-                                        itemBuilder: (context, i) {
+                                        initialItemCount:
+                                            _cachedMessages.length,
+                                        itemBuilder: (context, i, animation) {
                                           final msg = _cachedMessages[
                                               _cachedMessages.length - 1 - i];
                                           final isMe = msg.senderId == myId;
 
-                                          if (msg.isCallRequest) {
-                                            return CallRequestBubble(
-                                              message: msg,
-                                              isMe: isMe,
-                                              isSeller: widget.isSeller,
-                                              myPhone: _sellerPhone,
-                                            );
-                                          }
-
-                                          return MessageBubble(
-                                            message: msg,
-                                            isMe: isMe,
-                                            isSelectionMode: _isSelectionMode,
-                                            isSelected:
-                                                _selectedIds.contains(msg.id),
-                                            onLongPress: () =>
-                                                _enterSelectionMode(msg.id),
-                                            onTap: () =>
-                                                _toggleSelection(msg.id),
-                                            onCopy: () => _copyMessage(msg),
-                                            onDelete: () => _deleteSingle(msg),
-                                            onReply: () => _startReply(msg),
-                                            onEdit: () => _editMessage(msg),
-                                            onReplyTap: () => _scrollToMessage(
-                                                msg.replyToId, _cachedMessages),
+                                          return SizeTransition(
+                                            sizeFactor: CurvedAnimation(
+                                                parent: animation,
+                                                curve: Curves.easeOut),
+                                            child: FadeTransition(
+                                              opacity: animation,
+                                              child: msg.isCallRequest
+                                                  ? CallRequestBubble(
+                                                      message: msg,
+                                                      isMe: isMe,
+                                                      isSeller: widget.isSeller,
+                                                      myPhone: _sellerPhone,
+                                                    )
+                                                  : MessageBubble(
+                                                      message: msg,
+                                                      isMe: isMe,
+                                                      isSelectionMode:
+                                                          _isSelectionMode,
+                                                      isSelected: _selectedIds
+                                                          .contains(msg.id),
+                                                      onLongPress: () =>
+                                                          _enterSelectionMode(
+                                                              msg.id),
+                                                      onTap: () =>
+                                                          _toggleSelection(
+                                                              msg.id),
+                                                      onCopy: () =>
+                                                          _copyMessage(msg),
+                                                      onDelete: () =>
+                                                          _deleteSingle(msg),
+                                                      onReply: () =>
+                                                          _startReply(msg),
+                                                      onEdit: () =>
+                                                          _editMessage(msg),
+                                                      onReplyTap: () =>
+                                                          _scrollToMessage(
+                                                              msg.replyToId,
+                                                              _cachedMessages),
+                                                    ),
+                                            ),
                                           );
                                         },
                                       ),
@@ -949,7 +1122,7 @@ void initState() {
                                 ),
                     ),
 
-                    // ── Жооп берүү preview (айнек стили) ──
+                    // ── ЖООП PREVIEW ──
                     if (!_isSelectionMode && _replyingTo != null)
                       ClipRect(
                         child: BackdropFilter(
@@ -989,7 +1162,8 @@ void initState() {
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                         style: AppTextStyles.bodyMedium
-                                            .copyWith(color: AppColors.grey600),
+                                            .copyWith(
+                                                color: AppColors.grey600),
                                       ),
                                     ],
                                   ),
@@ -1004,13 +1178,16 @@ void initState() {
                         ),
                       ),
 
-                    // ── Жазуу талаасы (айнек стили) ──
+                    // ── ЖАЗУУ ТАЛААСЫ ──
                     if (!_isSelectionMode)
                       ClipRect(
                         child: BackdropFilter(
                           filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
                           child: Container(
-                            padding: EdgeInsets.fromLTRB(12, 8, 12,
+                            padding: EdgeInsets.fromLTRB(
+                                12,
+                                8,
+                                12,
                                 MediaQuery.of(context).padding.bottom + 8),
                             decoration: BoxDecoration(
                               color: glassBottomBg,
@@ -1045,8 +1222,8 @@ void initState() {
                                                   BorderRadius.circular(22),
                                               border: Border.all(
                                                 color: isDark
-                                                    ? Colors.white
-                                                        .withValues(alpha: 0.15)
+                                                    ? Colors.white.withValues(
+                                                        alpha: 0.15)
                                                     : Colors.black.withValues(
                                                         alpha: 0.10),
                                               )),

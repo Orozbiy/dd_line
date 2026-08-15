@@ -8,7 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:googleapis_auth/auth_io.dart';
 import 'package:http/http.dart' as http;
-
+import '../core/services/in_app_notification_banner.dart';
 import '../core/supabase_client.dart';
 import '../data/models/product_model.dart';
 import '../features/chat/screens/chat_screen.dart';
@@ -103,31 +103,54 @@ class NotificationService {
         payload = 'chat:$chatId';
       }
 
-      _localNotif.show(
-        message.messageId.hashCode,
-        title,
-        body,
-        NotificationDetails(
-          android: AndroidNotificationDetails(
-            _channel.id,
-            _channel.name,
-            channelDescription: _channel.description,
-            importance: Importance.max,
-            priority: Priority.max,
-            icon: '@mipmap/ic_launcher',
-            playSound: true,
-            enableVibration: true,
-            channelShowBadge: true,
-            styleInformation: BigTextStyleInformation(body),
+      // ── Foreground: айнек banner ──
+      final ctx = navigatorKey.currentContext;
+      if (ctx != null) {
+        InAppNotificationBanner.show(
+          context: ctx,
+          title: title,
+          body: body,
+          avatarText: title,
+          onTap: () {
+            if (payload.startsWith('chat:')) {
+              _navigateToChat(payload.substring(5));
+            } else if (payload.startsWith('product:')) {
+              _navigateToProduct(payload.substring(8));
+            } else if (payload == 'notifications') {
+              _navigateToNotifications();
+            } else if (payload.isNotEmpty) {
+              _navigateToChat(payload);
+            }
+          },
+        );
+      } else {
+        // App фондо болсо — кадимки system notification
+        _localNotif.show(
+          message.messageId.hashCode,
+          title,
+          body,
+          NotificationDetails(
+            android: AndroidNotificationDetails(
+              _channel.id,
+              _channel.name,
+              channelDescription: _channel.description,
+              importance: Importance.max,
+              priority: Priority.max,
+              icon: '@mipmap/ic_launcher',
+              playSound: true,
+              enableVibration: true,
+              channelShowBadge: true,
+              styleInformation: BigTextStyleInformation(body),
+            ),
+            iOS: const DarwinNotificationDetails(
+              presentAlert: true,
+              presentBadge: true,
+              presentSound: true,
+            ),
           ),
-          iOS: const DarwinNotificationDetails(
-            presentAlert: true,
-            presentBadge: true,
-            presentSound: true,
-          ),
-        ),
-        payload: payload,
-      );
+          payload: payload,
+        );
+      }
     });
 
     // ── BACKGROUND → FOREGROUND ──
