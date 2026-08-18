@@ -3,6 +3,8 @@ import '../../../core/supabase_client.dart';
 import '../models/chat_model.dart';
 import '../models/message_model.dart';
 
+import 'dart:async';
+import 'package:supabase_flutter/supabase_flutter.dart';
 class ChatService {
   final Map<String, Map<String, dynamic>> _productCache = {};
   final Map<String, String> _storeCache = {};
@@ -59,45 +61,42 @@ class ChatService {
   // ════════════════════════════════════════════════════
 
   Future<void> sendMessage({
-    required String chatId,
-    required String senderId,
-    String? text,
-    String? imageUrl,
-    String? audioUrl,
-    int? audioDuration,
-    String? replyToId,
-    String? replyToText,
-    required bool senderIsBuyer,
-  }) async {
-    final messageText = text ?? (imageUrl != null ? '🖼️ Сүрөт' : '🎵 Үн');
+  required String chatId,
+  required String senderId,
+  String? text,
+  String? imageUrl,
+  String? audioUrl,
+  int? audioDuration,
+  String? replyToId,
+  String? replyToText,
+  required bool senderIsBuyer,
+}) async {
+  final messageText = text ?? (imageUrl != null ? '🖼️ Сүрөт' : '🎵 Үн');
+  final unreadField = senderIsBuyer ? 'seller_unread' : 'buyer_unread';
 
-    // Алуучунун unread санын кайсы талаа экенин аныкта
-    // senderIsBuyer=true  → сатуучунун seller_unread + 1
-    // senderIsBuyer=false → кардардын   buyer_unread  + 1
-    final unreadField = senderIsBuyer ? 'seller_unread' : 'buyer_unread';
-
-    await Future.wait([
-      supabase.from('messages').insert({
-        'chat_id': chatId,
-        'sender_id': senderId,
-        'text': text,
-        'image_url': imageUrl,
-        'audio_url': audioUrl,
-        'audio_duration': audioDuration,
-        'is_read': false,
-        if (replyToId != null) 'reply_to_id': replyToId,
-        if (replyToText != null) 'reply_to_text': replyToText,
-      }),
-      supabase.rpc('increment_unread', params: {
-        'chat_id': chatId,
-        'unread_field': unreadField,
-      }),
-      supabase.from('chats').update({
-        'last_message': messageText,
-        'last_message_at': DateTime.now().toUtc().toIso8601String(),
-      }).eq('id', chatId),
-    ]);
-  }
+  await Future.wait([
+   supabase.from('messages').insert({
+  'chat_id':        chatId,
+  'sender_id':      senderId,
+  'text':           text,
+  'image_url':      imageUrl,
+  'audio_url':      audioUrl,
+  'audio_duration': audioDuration,
+  'is_read':        false,
+  'is_delivered':   false,  // ← false, алуучу алганда true болот
+  if (replyToId != null)   'reply_to_id':   replyToId,
+  if (replyToText != null) 'reply_to_text': replyToText,
+}),
+    supabase.rpc('increment_unread', params: {
+      'chat_id':    chatId,
+      'unread_field': unreadField,
+    }),
+    supabase.from('chats').update({
+      'last_message':    messageText,
+      'last_message_at': DateTime.now().toUtc().toIso8601String(),
+    }).eq('id', chatId),
+  ]);
+}
 
   // ════════════════════════════════════════════════════
   // ОКУЛДУ ДЕГЕН БЕЛГИЛӨӨ
@@ -176,14 +175,78 @@ class ChatService {
   // БИЛДИРҮҮЛӨР СТРИМУ
   // ════════════════════════════════════════════════════
 
-  Stream<List<MessageModel>> messagesStream(String chatId) {
-    return supabase
-        .from('messages')
-        .stream(primaryKey: ['id'])
-        .eq('chat_id', chatId)
-        .order('created_at', ascending: true)
-        .map((rows) => rows.map((r) => MessageModel.fromMap(r)).toList());
+ Stream<List<MessageModel>> messagesStream(String chatId) {
+  StreamController<List<MessageModel>>? controller;
+
+  Future<void> fetch() async {
+    try {
+      final rows = await supabase
+          .from('messages')
+          .select()
+          .eq('chat_id', chatId)
+          .order('created_at', ascending: true);
+      final msgs = (rows as List)
+          .map((r) => MessageModel.fromMap(r as Map<String, dynamic>))
+          .toList();
+      if (controller != null && !controller!.isClosed) {
+        controller!.add(msgs);
+      }
+    } catch (e) {
+      debugPrint('❌ messagesStream fetch ката: $e');
+    }
   }
+
+  RealtimeChannel? channel;
+
+  controller = StreamController<List<MessageModel>>(
+    onListen: () {
+      fetch();
+      channel = supabase
+          .channel('messages_$chatId')
+          .onPostgresChanges(
+            event: PostgresChangeEvent.insert,
+            schema: 'public',
+            table: 'messages',
+            filter: PostgresChangeFilter(
+              type: PostgresChangeFilterType.eq,
+              column: 'chat_id',
+              value: chatId,
+            ),
+            callback: (_) => fetch(),
+          )
+          .onPostgresChanges(
+            event: PostgresChangeEvent.update,
+            schema: 'public',
+            table: 'messages',
+            filter: PostgresChangeFilter(
+              type: PostgresChangeFilterType.eq,
+              column: 'chat_id',
+              value: chatId,
+            ),
+            callback: (_) => fetch(),
+          )
+          .onPostgresChanges(
+            event: PostgresChangeEvent.delete,
+            schema: 'public',
+            table: 'messages',
+            filter: PostgresChangeFilter(
+              type: PostgresChangeFilterType.eq,
+              column: 'chat_id',
+              value: chatId,
+            ),
+            callback: (_) => fetch(),
+          )
+          .subscribe();
+    },
+    onCancel: () {
+      if (channel != null) supabase.removeChannel(channel!);
+      controller?.close();
+      controller = null;
+    },
+  );
+
+  return controller!.stream;
+}
 
   // ════════════════════════════════════════════════════
   // ЧАТТАР СТРИМДЕРИ

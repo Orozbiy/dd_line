@@ -191,6 +191,9 @@ class UpdateChecker {
                                   mode: LaunchMode.externalApplication,
                                 );
                               }
+                              // Колдонуучу дүкөнгө кирип кайтып келгенде
+                              // флагды өчүрүп, кийинки текшерүүгө жол берүү
+                              _isShowing = false;
                             },
                             isAccent: true,
                           ),

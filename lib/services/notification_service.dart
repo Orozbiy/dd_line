@@ -303,6 +303,7 @@ class NotificationService {
           builder: (_) => _ChatScreenProxy(
             chatId:         chatId,
             sellerName:     row['seller_name'] as String? ?? 'Сатуучу',
+            productId:      productId,
             productName:    productName,
             productImage:   productImage,
             isSeller:       isSeller,
@@ -750,18 +751,20 @@ class NotificationService {
 // _ChatScreenProxy
 // ─────────────────────────────────────────────────────────────
 class _ChatScreenProxy extends StatelessWidget {
-  final String chatId;
-  final String sellerName;
-  final String productName;
-  final String productImage;
-  final bool   isSeller;
-  final String buyerId;
-  final String sellerId;
-  final String otherAvatarUrl;
+  final String  chatId;
+  final String  sellerName;
+  final String? productId;
+  final String  productName;
+  final String  productImage;
+  final bool    isSeller;
+  final String  buyerId;
+  final String  sellerId;
+  final String  otherAvatarUrl;
 
   const _ChatScreenProxy({
     required this.chatId,
     required this.sellerName,
+    this.productId,
     required this.productName,
     required this.productImage,
     required this.isSeller,
@@ -775,6 +778,7 @@ class _ChatScreenProxy extends StatelessWidget {
     return ChatScreen(
       chatId:         chatId,
       sellerName:     sellerName,
+      productId:      productId,
       productName:    productName,
       productImage:   productImage,
       isSeller:       isSeller,

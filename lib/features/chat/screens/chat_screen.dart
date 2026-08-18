@@ -22,6 +22,7 @@ import '../../../core/services/yandex_storage_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../core/chat_background_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:io';
 
 class ChatScreen extends StatefulWidget {
   final String chatId;
@@ -137,44 +138,58 @@ class _ChatScreenState extends State<ChatScreen> {
     _messagesStream = _service.messagesStream(widget.chatId);
 
     _msgSub = _messagesStream.listen((msgs) {
-      if (!mounted) return;
+  if (!mounted) return;
 
-      final oldIds = _cachedMessages.map((m) => m.id).toSet();
-      final newIds = msgs.map((m) => m.id).toSet();
+  final oldIds = _cachedMessages.map((m) => m.id).toSet();
+  final newIds = msgs.map((m) => m.id).toSet();
 
-      // ── Жаңы кошулгандар ──
-      for (final msg in msgs) {
-        if (!oldIds.contains(msg.id)) {
-          _cachedMessages.insert(0, msg);
-          _listKey.currentState?.insertItem(
-            0,
-            duration: const Duration(milliseconds: 300),
-          );
-        }
+  // ── Жаңы кошулгандар ──
+  for (final msg in msgs) {
+    if (!oldIds.contains(msg.id)) {
+      _cachedMessages.insert(0, msg);
+      _listKey.currentState?.insertItem(
+        0,
+        duration: const Duration(milliseconds: 300),
+      );
+    }
+  }
+
+  // ── ЖАҢЫРТЫЛГАНДАР — is_read, is_edited ж.б. өзгөрсө ──
+  for (final msg in msgs) {
+    final idx = _cachedMessages.indexWhere((m) => m.id == msg.id);
+    if (idx != -1) {
+      final old = _cachedMessages[idx];
+      if (old.isRead != msg.isRead ||
+          old.isEdited != msg.isEdited ||
+          old.text != msg.text ||
+          old.callStatus != msg.callStatus) {
+        _cachedMessages[idx] = msg; // ← жаңы маалымат менен алмаштыр
       }
+    }
+  }
 
-      // ── Өчүрүлгөндөр — stream'ден жок болгондор ──
-      final removedIds = oldIds.difference(newIds);
-      for (final id in removedIds) {
-        final idx = _cachedMessages.indexWhere((m) => m.id == id);
-        if (idx != -1) {
-          final removed = _cachedMessages.removeAt(idx);
-          _listKey.currentState?.removeItem(
-            idx,
-            (ctx, anim) =>
-                _buildAnimatedBubble(removed, anim, myId: _myId ?? ''),
-            duration: const Duration(milliseconds: 250),
-          );
-        }
-      }
+  // ── Өчүрүлгөндөр ──
+  final removedIds = oldIds.difference(newIds);
+  for (final id in removedIds) {
+    final idx = _cachedMessages.indexWhere((m) => m.id == id);
+    if (idx != -1) {
+      final removed = _cachedMessages.removeAt(idx);
+      _listKey.currentState?.removeItem(
+        idx,
+        (ctx, anim) =>
+            _buildAnimatedBubble(removed, anim, myId: _myId ?? ''),
+        duration: const Duration(milliseconds: 250),
+      );
+    }
+  }
 
-      setState(() => _initialLoadDone = true);
-      _saveMessagesCache(_cachedMessages);
-      final myId = _myId;
-      if (myId != null &&
-          _cachedMessages.any((m) => m.senderId != myId && !m.isRead))
-        _markRead();
-    });
+  setState(() => _initialLoadDone = true);
+  _saveMessagesCache(_cachedMessages);
+  final myId = _myId;
+  if (myId != null &&
+      _cachedMessages.any((m) => m.senderId != myId && !m.isRead))
+    _markRead();
+});
 
     _markRead();
     _loadMyName();
@@ -259,16 +274,48 @@ class _ChatScreenState extends State<ChatScreen> {
   // ════════════════════════════════════════════════════
   // ОКУЛДУ / SCROLL
   // ════════════════════════════════════════════════════
+Future<void> _markRead() async {
+  final myId = _myId;
+  if (myId == null) return;
 
-  Future<void> _markRead() async {
-    final myId = _myId;
-    if (myId == null) return;
-    await _service.markAsRead(
-        chatId: widget.chatId,
-        myUserId: myId,
-        readerIsBuyer: !widget.isSeller);
+  // Башкасынын билдирүүлөрүн delivered + read кыл
+  await Future.wait([
+    // Чаттан unread санын нөлгө түшүр
+    supabase.from('chats').update({
+      if (!widget.isSeller) 'buyer_unread':  0,
+      if (widget.isSeller)  'seller_unread': 0,
+    }).eq('id', widget.chatId),
+
+    // is_delivered = true (алуучу онлайн, алды)
+    supabase
+        .from('messages')
+        .update({'is_delivered': true})
+        .eq('chat_id', widget.chatId)
+        .eq('is_delivered', false)
+        .neq('sender_id', myId),
+
+    // is_read = true (чатта окуду)
+    supabase
+        .from('messages')
+        .update({'is_read': true})
+        .eq('chat_id', widget.chatId)
+        .eq('is_read', false)
+        .neq('sender_id', myId),
+  ]);
+
+  // Локалдык кэшти дароо жаңырт
+  if (mounted) {
+    setState(() {
+      _cachedMessages = _cachedMessages.map((m) {
+        if (m.senderId != myId) {
+          return m.copyWith(isRead: true, isDelivered: true);
+        }
+        return m;
+      }).toList();
+    });
+    await _saveMessagesCache(_cachedMessages);
   }
-
+}
   void _scrollToBottom() {
     if (_scrollCtrl.hasClients) {
       Future.delayed(const Duration(milliseconds: 100), () {
@@ -524,53 +571,57 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  Future<void> _pickAndSendImage() async {
-    final loc = AppLocalizations.of(context);
-    final myId = _myId;
-    if (myId == null) return;
-    final source = await _chooseImageSource();
-    if (source == null) return;
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(source: source);
-    if (picked == null) return;
-    setState(() => _isSendingImage = true);
-    try {
-      final bytes = await picked.readAsBytes();
-      final compressed = await compressImage(bytes);
-      final url = await YandexStorageService.instance.uploadImage(
-        compressed,
-        folder: 'chat',
-      );
-      if (url == null) {
-        if (mounted)
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text(loc.get('chat_img_fail'))));
-        return;
+Future<void> _pickAndSendImage() async {
+  final loc = AppLocalizations.of(context);
+  final myId = _myId;
+  if (myId == null) return;
+  final source = await _chooseImageSource();
+  if (source == null) return;
+  final picker = ImagePicker();
+  final picked = await picker.pickImage(source: source);
+  if (picked == null) return;
+  setState(() => _isSendingImage = true);
+  try {
+    final bytes = await picked.readAsBytes();
+    // ✅ compressChatImage — чат үчүн оптималдашырылган (800x800, quality 70)
+    final compressed = await compressChatImage(bytes);
+    final url = await YandexStorageService.instance.uploadImage(
+      compressed,
+      folder: 'chat',
+    );
+    if (url == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(loc.get('chat_img_fail'))));
       }
-      final replyTo = _replyingTo;
-      if (replyTo != null) setState(() => _replyingTo = null);
-      await _service.sendMessage(
-        chatId: widget.chatId,
-        senderId: myId,
-        imageUrl: url,
-        replyToId: replyTo?.id,
-        replyToText: replyTo != null
-            ? (replyTo.text.isNotEmpty
-                ? replyTo.text
-                : '📷 ${loc.get('chat_image')}')
-            : null,
-        senderIsBuyer: !widget.isSeller,
-      );
-      NotificationService().sendChatNotification(
-          receiverUid: _receiverUid,
-          senderName: _senderDisplayName,
-          messageText: '📷 ${loc.get('chat_image')}',
-          chatId: widget.chatId);
-      _scrollToBottom();
-    } finally {
-      if (mounted) setState(() => _isSendingImage = false);
+      return;
     }
+    final replyTo = _replyingTo;
+    if (replyTo != null) setState(() => _replyingTo = null);
+    await _service.sendMessage(
+      chatId: widget.chatId,
+      senderId: myId,
+      imageUrl: url,
+      replyToId: replyTo?.id,
+      replyToText: replyTo != null
+          ? (replyTo.text.isNotEmpty
+              ? replyTo.text
+              : '📷 ${loc.get('chat_image')}')
+          : null,
+      senderIsBuyer: !widget.isSeller,
+    );
+    NotificationService().sendChatNotification(
+      receiverUid: _receiverUid,
+      senderName: _senderDisplayName,
+      messageText: '📷 ${loc.get('chat_image')}',
+      chatId: widget.chatId,
+    );
+    _scrollToBottom();
+  } finally {
+    if (mounted) setState(() => _isSendingImage = false);
   }
+}
+ 
 
   Future<String?> _uploadToCloudinary(Uint8List bytes) async {
     try {
@@ -613,45 +664,61 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  Future<void> _sendVoiceMessage(String path, int durationSeconds) async {
-    final loc = AppLocalizations.of(context);
-    final myId = _myId;
-    if (myId == null) return;
-    setState(() => _isSendingImage = true);
-    try {
-      final url = await _uploadAudioToCloudinary(path);
-      if (url == null) {
-        if (mounted)
-          ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(loc.get('chat_audio_fail'))));
-        return;
+Future<void> _sendVoiceMessage(String path, int durationSeconds) async {
+  final loc = AppLocalizations.of(context);
+  final myId = _myId;
+  if (myId == null) return;
+  setState(() => _isSendingImage = true);
+  try {
+    // Аудио файлды bytes катары окуу
+    final file = File(path); // ← import 'dart:io'; болуш керек
+    final bytes = await file.readAsBytes();
+ 
+    // Yandex Storage'ке жүктө (Cloudinary эмес)
+    final url = await YandexStorageService.instance.uploadAudio(
+      bytes,
+      folder: 'chat_audio',
+      filename: 'audio_${DateTime.now().millisecondsSinceEpoch}.m4a',
+    );
+ 
+    if (url == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(loc.get('chat_audio_fail'))));
       }
-      final replyTo = _replyingTo;
-      if (replyTo != null) setState(() => _replyingTo = null);
-      await _service.sendMessage(
-        chatId: widget.chatId,
-        senderId: myId,
-        audioUrl: url,
-        audioDuration: durationSeconds,
-        replyToId: replyTo?.id,
-        replyToText: replyTo != null
-            ? (replyTo.text.isNotEmpty
-                ? replyTo.text
-                : '📷 ${loc.get('chat_image')}')
-            : null,
-        senderIsBuyer: !widget.isSeller,
-      );
-      NotificationService().sendChatNotification(
-          receiverUid: _receiverUid,
-          senderName: _senderDisplayName,
-          messageText: '🎤 ${loc.get('chat_voice')}',
-          chatId: widget.chatId);
-      _scrollToBottom();
-    } finally {
-      if (mounted) setState(() => _isSendingImage = false);
+      return;
     }
+ 
+    final replyTo = _replyingTo;
+    if (replyTo != null) setState(() => _replyingTo = null);
+ 
+    await _service.sendMessage(
+      chatId: widget.chatId,
+      senderId: myId,
+      audioUrl: url,
+      audioDuration: durationSeconds,
+      replyToId: replyTo?.id,
+      replyToText: replyTo != null
+          ? (replyTo.text.isNotEmpty
+              ? replyTo.text
+              : '🎵 ${loc.get('chat_audio')}')
+          : null,
+      senderIsBuyer: !widget.isSeller,
+    );
+ 
+    NotificationService().sendChatNotification(
+      receiverUid: _receiverUid,
+      senderName: _senderDisplayName,
+      messageText: '🎵 ${loc.get('chat_audio')}',
+      chatId: widget.chatId,
+    );
+ 
+    _scrollToBottom();
+  } finally {
+    if (mounted) setState(() => _isSendingImage = false);
   }
-
+}
+ 
   // ════════════════════════════════════════════════════
   // ТАНДОО РЕЖИМИ
   // ════════════════════════════════════════════════════

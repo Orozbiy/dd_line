@@ -9,6 +9,7 @@ class MessageModel {
   final int?    audioDuration;
   final DateTime timestamp;
   final bool    isRead;
+  final bool    isDelivered; // ← ЖАҢЫ: жеткирилди (2 галочка, боз)
   final String? replyToId;
   final String? replyToText;
   final String  messageType;
@@ -25,6 +26,7 @@ class MessageModel {
     this.audioDuration,
     required this.timestamp,
     required this.isRead,
+    this.isDelivered = false, // ← default false
     this.replyToId,
     this.replyToText,
     this.messageType = 'text',
@@ -49,12 +51,13 @@ class MessageModel {
       timestamp: data['created_at'] != null
           ? DateTime.parse(data['created_at'] as String).toLocal()
           : DateTime.now(),
-      isRead:      data['is_read']      as bool? ?? false,
-      replyToId:   data['reply_to_id']  as String?,
-      replyToText: data['reply_to_text'] as String?,
-      messageType: data['message_type'] as String? ?? 'text',
-      callStatus:  data['call_status']  as String?,
-      isEdited:    data['is_edited']    as bool? ?? false,
+      isRead:       data['is_read']       as bool? ?? false,
+      isDelivered:  data['is_delivered']  as bool? ?? false, // ← ЖАҢЫ
+      replyToId:    data['reply_to_id']   as String?,
+      replyToText:  data['reply_to_text'] as String?,
+      messageType:  data['message_type']  as String? ?? 'text',
+      callStatus:   data['call_status']   as String?,
+      isEdited:     data['is_edited']     as bool? ?? false,
       editedAt: data['edited_at'] != null
           ? DateTime.parse(data['edited_at'] as String).toLocal()
           : null,
@@ -76,15 +79,14 @@ class MessageModel {
     int?      audioDuration,
     DateTime? timestamp,
     bool?     isRead,
+    bool?     isDelivered,
     String?   replyToId,
     String?   replyToText,
     String?   messageType,
     String?   callStatus,
     bool?     isEdited,
     DateTime? editedAt,
-  }
-  
-  ) {
+  }) {
     return MessageModel(
       id:            id            ?? this.id,
       senderId:      senderId      ?? this.senderId,
@@ -94,13 +96,14 @@ class MessageModel {
       audioDuration: audioDuration ?? this.audioDuration,
       timestamp:     timestamp     ?? this.timestamp,
       isRead:        isRead        ?? this.isRead,
+      isDelivered:   isDelivered   ?? this.isDelivered,
       replyToId:     replyToId     ?? this.replyToId,
       replyToText:   replyToText   ?? this.replyToText,
       messageType:   messageType   ?? this.messageType,
       callStatus:    callStatus    ?? this.callStatus,
       isEdited:      isEdited      ?? this.isEdited,
       editedAt:      editedAt      ?? this.editedAt,
- );
+    );
   }
 
   // ── SharedPreferences кэш үчүн ──
@@ -113,6 +116,7 @@ class MessageModel {
     'audio_duration': audioDuration,
     'created_at':     timestamp.toUtc().toIso8601String(),
     'is_read':        isRead,
+    'is_delivered':   isDelivered,
     'reply_to_id':    replyToId,
     'reply_to_text':  replyToText,
     'message_type':   messageType,
