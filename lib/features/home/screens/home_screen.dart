@@ -169,7 +169,8 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final userId = supabase.auth.currentUser?.id;
       if (userId == null) return;
-      final all = await supabase.from('admin_notifications').select('id');
+      final all = await supabase.from('admin_notifications').select('id')
+       .isFilter('seller_id', null);
       if ((all as List).isEmpty) return;
       final allIds = all.map((r) => r['id'] as String).toSet();
       final reads = await supabase

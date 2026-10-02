@@ -31,7 +31,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       final data = await supabase
           .from('admin_notifications')
           .select()
+          .isFilter('seller_id', null) 
           .order('created_at', ascending: false);
+          
       final prefs = await SharedPreferences.getInstance();
       final saved = prefs.getStringList('read_notification_ids') ?? [];
       final loaded = List<Map<String, dynamic>>.from(data);

@@ -18,6 +18,7 @@ import 'seller_rules_screen.dart';
 import 'seller_edit_profile_screen.dart';
 import '../../chat/models/chat_model.dart';
 import 'seller_notifications_screen.dart';
+import 'seller_admin_chat_banner.dart';
 
 class SellerDashboardScreen extends StatefulWidget {
   final String uid;
@@ -740,8 +741,8 @@ const SizedBox(height: 20),
               ),
 
               // ── Админден билдирүүлөр ──
-              _AdminNotificationsBanner(isDark: isDark, sellerUid: _seller!.uid),
-              const SizedBox(height: 16),
+            SellerAdminChatBanner(isDark: isDark, sellerUid: _seller!.uid),
+const SizedBox(height: 16),
 
               SizedBox(
                 width: double.infinity, height: 50,

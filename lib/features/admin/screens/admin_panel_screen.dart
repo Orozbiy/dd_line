@@ -5,6 +5,7 @@ import '../../../core/supabase_client.dart';
 import '../../seller/models/seller_model.dart';
 import '../../seller/services/seller_service.dart';
 import '../../seller/services/subscription_service.dart';
+import 'admin_chat_with_seller.dart';
 import '../../map/screens/admin_map_picker_screen.dart';
 import 'admin_stats_screen.dart';
 import 'admin_story_manager_screen.dart';
@@ -1014,7 +1015,7 @@ GestureDetector(
                   bottom: 16,
                   child: FloatingActionButton.extended(
                     heroTag: 'send_to_seller',
-                    onPressed: () => _showSendToSellerSheet(context),
+                    onPressed: () => showAdminChatSheet(context, _allSellers),
                     backgroundColor: const Color(0xFFD97706),
                     icon: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
                     label: const Text(
@@ -1049,13 +1050,8 @@ GestureDetector(
 
   // ── Сатуучуга билдирүү жөнөтүү ──
   void _showSendToSellerSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _SendToSellerSheet(sellers: _allSellers),
-    );
-  }
+  showAdminChatSheet(context, _allSellers);
+}
 
   // ══════════════════════════════════════════════════════
   // ⏳ ӨТҮНҮЧТӨР TAB

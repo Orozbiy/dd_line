@@ -271,7 +271,9 @@ class ChatService {
         .eq('seller_id', sellerId)
         .order('last_message_at', ascending: false)
         .asyncMap((rows) {
-          final f = rows.where((r) => r['deleted_for_seller'] != true).toList();
+          final f = rows.where((r) => r['deleted_for_seller'] != true)
+          .where((r) => r['product_id'] != null).toList();
+          
           return _enrichChats(f, isSeller: true);
         });
   }
