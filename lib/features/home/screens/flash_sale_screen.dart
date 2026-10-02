@@ -10,14 +10,14 @@ import '../../../core/supabase_client.dart';
 import '../../../data/models/product_model.dart';
 import '../../product_detail/screens/product_detail_screen.dart';
 
-class FlashSaleManageScreen extends StatefulWidget {
-  const FlashSaleManageScreen({super.key});
+class FlashSaleScreen extends StatefulWidget {
+  const FlashSaleScreen({super.key});
 
   @override
-  State<FlashSaleManageScreen> createState() => _FlashSaleManageScreenState();
+  State<FlashSaleScreen> createState() => _FlashSaleScreenState();
 }
 
-class _FlashSaleManageScreenState extends State<FlashSaleManageScreen> {
+class _FlashSaleScreenState extends State<FlashSaleScreen> {
   List<Map<String, dynamic>> _items = [];
   bool _loading = true;
 
@@ -309,11 +309,11 @@ class _FlashCard extends StatelessWidget {
                       style: const TextStyle(color: AppColors.error, fontSize: 16, fontWeight: FontWeight.w800)),
                   if (discountPct > 0)
                     Text('${origPrice.toStringAsFixed(0)} с',
-                        style: TextStyle(color: isDark ? Colors.white38 : AppColors.grey400, fontSize: 11, decoration: TextDecoration.lineThrough, decorationColor: isDark ? Colors.white38 : AppColors.grey400)),
+                        style: const TextStyle(color: AppColors.grey400, fontSize: 11, decoration: TextDecoration.lineThrough, decorationColor: AppColors.grey400)),
                   if (shopName.isNotEmpty) ...[
                     const SizedBox(height: 2),
                     Text(shopName, maxLines: 1, overflow: TextOverflow.ellipsis,
-                        style: TextStyle(color: isDark ? AppColors.grey500 : AppColors.grey400, fontSize: 10)),
+                        style: const TextStyle(color: AppColors.grey400, fontSize: 10)),
                   ],
                 ],
               ),
@@ -331,8 +331,7 @@ class _FlashCard extends StatelessWidget {
 class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final loc    = AppLocalizations.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final loc = AppLocalizations.of(context);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -340,12 +339,10 @@ class _EmptyState extends StatelessWidget {
           const Text('⚡', style: TextStyle(fontSize: 64)),
           const SizedBox(height: 16),
           Text(loc.get('flash_sale_empty'),
-              style: AppTextStyles.headingSmall.copyWith(
-                  color: isDark ? Colors.white70 : AppColors.grey500)),
+              style: AppTextStyles.headingSmall.copyWith(color: AppColors.grey500)),
           const SizedBox(height: 8),
           Text(loc.get('flash_sale_empty_sub'),
-              style: AppTextStyles.bodyMedium.copyWith(
-                  color: isDark ? AppColors.grey500 : AppColors.grey400)),
+              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey400)),
         ],
       ),
     );

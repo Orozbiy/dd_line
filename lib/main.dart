@@ -20,6 +20,9 @@ import 'core/theme_provider.dart';
 import 'core/update_checker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'features/notifications/screens/notifications_screen.dart';
+import 'features/chat/screens/chat_screen.dart';
+import 'features/product_detail/screens/product_detail_screen.dart';
+import 'data/models/product_model.dart';
 import 'core/chat_background_provider.dart';
 
 @pragma('vm:entry-point')
@@ -44,6 +47,25 @@ Future<void> main() async {
 
   debugPrint('🚀 Firebase init...');
   await _initFirebase();
+
+  // Screen builders — circular import чечүү үчүн
+  NotificationService.registerScreenBuilders(
+    chatScreen: (chatId, sellerName, productId, productName, productImage,
+        isSeller, buyerId, sellerId, otherAvatarUrl) =>
+        ChatScreen(
+          chatId: chatId,
+          sellerName: sellerName,
+          productId: productId,
+          productName: productName,
+          productImage: productImage,
+          isSeller: isSeller,
+          buyerId: buyerId,
+          sellerId: sellerId,
+          otherAvatarUrl: otherAvatarUrl,
+        ),
+    productDetail: (product) => ProductDetailScreen(product: product as ProductModel),
+    notifications: () => const NotificationsScreen(),
+  );
 
   debugPrint('🚀 handleInitialMessage...');
   await NotificationService().handleInitialMessage();

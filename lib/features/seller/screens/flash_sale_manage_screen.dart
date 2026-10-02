@@ -10,14 +10,14 @@ import '../../../core/supabase_client.dart';
 import '../../../data/models/product_model.dart';
 import '../../product_detail/screens/product_detail_screen.dart';
 
-class FlashSaleScreen extends StatefulWidget {
-  const FlashSaleScreen({super.key});
+class FlashSaleManageScreen extends StatefulWidget {
+  const FlashSaleManageScreen({super.key});
 
   @override
-  State<FlashSaleScreen> createState() => _FlashSaleScreenState();
+  State<FlashSaleManageScreen> createState() => _FlashSaleManageScreenState();
 }
 
-class _FlashSaleScreenState extends State<FlashSaleScreen> {
+class _FlashSaleManageScreenState extends State<FlashSaleManageScreen> {
   List<Map<String, dynamic>> _items = [];
   bool _loading = true;
 

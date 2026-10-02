@@ -6,8 +6,6 @@ import '../../../config/theme/app_text_styles.dart';
 import '../../../core/app_localizations.dart';
 import '../../../core/supabase_client.dart';
 import '../../../data/models/product_model.dart';
-import '../../product_detail/screens/product_detail_screen.dart';
-
 // Cloudinary URL — сапаты 80%, кичине размер
 String _thumbUrl(String url, {int width = 280}) {
   if (url.isEmpty) return url;
@@ -22,12 +20,14 @@ class SimilarProductsSection extends StatefulWidget {
   final List<ProductModel> initialProducts;
   final String currentProductId;
   final String? categoryId;
+  final Widget Function(ProductModel product)? productBuilder;
 
   const SimilarProductsSection({
     super.key,
     required this.initialProducts,
     required this.currentProductId,
     this.categoryId,
+    this.productBuilder,
   });
 
   @override
@@ -62,7 +62,7 @@ class _SimilarProductsSectionState extends State<SimilarProductsSection> {
 
       List<dynamic> data = [];
 
-      // 1. Адегенде окшош категориядагы товарлар
+      // 1. Алгач окшош категориядагы товарлар
       if (widget.categoryId != null && widget.categoryId!.isNotEmpty) {
         data = await supabase
             .from('products')
@@ -73,7 +73,7 @@ class _SimilarProductsSectionState extends State<SimilarProductsSection> {
             .range(_page * _pageSize, (_page + 1) * _pageSize - 1);
       }
 
-      // 2. Окшош товар жок болсо — башка каалаган товарлар
+      // 2. Окшош товар жок же аз болсо — башка каалаган товарлар
       if (data.isEmpty) {
         data = await supabase
             .from('products')
@@ -81,7 +81,7 @@ class _SimilarProductsSectionState extends State<SimilarProductsSection> {
             .eq('is_active', true)
             .not('id', 'in', '(${existingIds.join(',')})')
             .order('views_count', ascending: false)
-            .range(0, _pageSize - 1);
+            .range(_page * _pageSize, (_page + 1) * _pageSize - 1);
       }
 
       final newItems = (data)
@@ -144,6 +144,7 @@ class _SimilarProductsSectionState extends State<SimilarProductsSection> {
                 product: _products[i],
                 isDark: isDark,
                 cur: loc.get('currency'),
+                productBuilder: widget.productBuilder,
               );
             },
           ),
@@ -176,11 +177,13 @@ class _SimilarProductCard extends StatelessWidget {
   final ProductModel product;
   final bool isDark;
   final String cur;
+  final Widget Function(ProductModel)? productBuilder;
 
   const _SimilarProductCard({
     required this.product,
     required this.isDark,
     required this.cur,
+    this.productBuilder,
   });
 
   @override
@@ -196,12 +199,14 @@ class _SimilarProductCard extends StatelessWidget {
         isDark ? const Color(0xFF23253A) : const Color(0xFFF3F4F6);
 
     return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => ProductDetailScreen(product: product),
-        ),
-      ),
+      onTap: () {
+        final screen = productBuilder?.call(product);
+        if (screen != null) {
+          Navigator.of(context, rootNavigator: true).push(
+            MaterialPageRoute(builder: (_) => screen),
+          );
+        }
+      },
       child: Container(
         decoration: BoxDecoration(
           color: cardColor,

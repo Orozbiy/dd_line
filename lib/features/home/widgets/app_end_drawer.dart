@@ -158,6 +158,7 @@ class _SidePanelOverlayState extends State<_SidePanelOverlay>
   Widget build(BuildContext context) {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     const navbarHeight = 64.0;
+    // ignore: unused_local_variable
     final totalBottom = navbarHeight + bottomPadding;
     final sw = MediaQuery.of(context).size.width;
     final panelWidth = sw * _panelRatio;
@@ -177,11 +178,11 @@ class _SidePanelOverlayState extends State<_SidePanelOverlay>
           ),
         ),
 
-        // ── Панел — оң тараптан кирет, 90% кеңдик ──
+        // ── Панел — оң тараптан кирет, 90% кеңдик, төмөнгө чейин ──
         Positioned(
           top: 0,
           right: 0,
-          bottom: totalBottom,
+          bottom: 0,
           width: panelWidth,
           child: Transform.translate(
             offset: Offset(offsetX, 0),
@@ -279,10 +280,10 @@ class _SidePanelScreenState extends State<_SidePanelScreen> {
         isDark ? const Color(0xFF2C2C2C) : const Color(0xFFEEEEEE);
     final footerColor = isDark ? AppColors.grey500 : AppColors.grey400;
 
-    // ── Панелдин фону: жарым өткөрүмдүү, айнек сымал эффект ──
+    // ── Панелдин фону: толук катуу ──
     final panelBg = isDark
-        ? Colors.black.withOpacity(0.65)   // 30% азайтылган
-        : Colors.white.withOpacity(0.65);  // 30% азайтылган
+        ? const Color(0xFF121212)
+        : const Color(0xFFF8F8F8);
 
     return Material(
       color: panelBg,
@@ -388,151 +389,41 @@ class _SidePanelScreenState extends State<_SidePanelScreen> {
                       Divider(height: 1, color: dividerColor),
                       const SizedBox(height: 16),
 
-                      // ── 🎟 Акциялар ──
+                      // ── Акциялар ──
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.opaque,
+                        child: _MenuImageCard(
+                          assetPath: 'assets/images/drawer/akcii.jpg',
+                          overlayColor: const Color(0xFF6C47FF),
+                          title: loc.get('drawer_promo_title'),
+                          subtitle: loc.get('drawer_promo_subtitle'),
                           onTap: () => _goTo(const PromotionScreen()),
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [
-                                  Color(0xFF6C47FF),
-                                  Color(0xFF4A90D9),
-                                ],
-                                begin: Alignment.centerLeft,
-                                end: Alignment.centerRight,
-                              ),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Row(
-                              children: [
-                                const Text('🎟',
-                                    style: TextStyle(fontSize: 32)),
-                                const SizedBox(width: 14),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(loc.get('drawer_promo_title'),
-                                        style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 15,
-                                            decoration: TextDecoration.none)),
-                                    const SizedBox(height: 2),
-                                    Text(loc.get('drawer_promo_subtitle'),
-                                        style: const TextStyle(
-                                            color: Colors.white70,
-                                            fontSize: 12,
-                                            decoration: TextDecoration.none)),
-                                  ],
-                                ),
-                                const Spacer(),
-                                const Icon(Icons.arrow_forward_ios_rounded,
-                                    color: Colors.white, size: 20),
-                              ],
-                            ),
-                          ),
                         ),
                       ),
 
-                      // ── ⚡ Flash Sale ──
+                      // ── Flash Sale ──
                       const SizedBox(height: 12),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: () => _goTo(const FlashSaleScreen()),
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFE05A1A),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Row(
-                              children: [
-                                const Text('⚡',
-                                    style: TextStyle(fontSize: 32)),
-                                const SizedBox(width: 14),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(loc.get('drawer_flash_title'),
-                                        style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 15,
-                                            decoration: TextDecoration.none)),
-                                    const SizedBox(height: 2),
-                                    Text(loc.get('drawer_flash_subtitle'),
-                                        style: const TextStyle(
-                                            color: Colors.white70,
-                                            fontSize: 12,
-                                            decoration: TextDecoration.none)),
-                                  ],
-                                ),
-                                const Spacer(),
-                                const Icon(Icons.arrow_forward_ios_rounded,
-                                    color: Colors.white, size: 20),
-                              ],
-                            ),
-                          ),
+                        child: _MenuImageCard(
+                          assetPath: 'assets/images/drawer/flash_sale.jpg',
+                          overlayColor: const Color(0xFFE05A1A),
+                          title: loc.get('drawer_flash_title'),
+                          subtitle: loc.get('drawer_flash_subtitle'),
+                          onTap: () => _goTo(FlashSaleScreen()),
                         ),
                       ),
 
-                      // ── ⭐ Өзгөчө товарлар ──
+                      // ── Өзгөчө товарлар ──
                       const SizedBox(height: 12),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.opaque,
+                        child: _MenuImageCard(
+                          assetPath: 'assets/images/drawer/special.jpg',
+                          overlayColor: const Color(0xFF1A6B3A),
+                          title: loc.get('drawer_featured_title'),
+                          subtitle: loc.get('drawer_featured_subtitle'),
                           onTap: () => _goTo(const FeaturedScreen()),
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [
-                                  Color(0xFF1A7A4A),
-                                  Color(0xFF2ECC71),
-                                ],
-                                begin: Alignment.centerLeft,
-                                end: Alignment.centerRight,
-                              ),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Row(
-                              children: [
-                                const Text('⭐',
-                                    style: TextStyle(fontSize: 32)),
-                                const SizedBox(width: 14),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(loc.get('drawer_featured_title'),
-                                        style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 15,
-                                            decoration: TextDecoration.none)),
-                                    const SizedBox(height: 2),
-                                    Text(loc.get('drawer_featured_subtitle'),
-                                        style: const TextStyle(
-                                            color: Colors.white70,
-                                            fontSize: 12,
-                                            decoration: TextDecoration.none)),
-                                  ],
-                                ),
-                                const Spacer(),
-                                const Icon(Icons.arrow_forward_ios_rounded,
-                                    color: Colors.white, size: 20),
-                              ],
-                            ),
-                          ),
                         ),
                       ),
 
@@ -552,6 +443,96 @@ class _SidePanelScreenState extends State<_SidePanelScreen> {
                     color: footerColor,
                     decoration: TextDecoration.none,
                   ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// МЕНЮ КАРТОЧКАСЫ — сүрөт фон менен
+// ══════════════════════════════════════════════════════
+class _MenuImageCard extends StatelessWidget {
+  final String assetPath;
+  final Color overlayColor;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _MenuImageCard({
+    required this.assetPath,
+    required this.overlayColor,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: SizedBox(
+          width: double.infinity,
+          height: 72,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // ── Фон сүрөт (локалдуу asset) ──
+              Image.asset(
+                assetPath,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(color: overlayColor),
+              ),
+              // ── Караңгы overlay ──
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      overlayColor.withOpacity(0.82),
+                      overlayColor.withOpacity(0.55),
+                    ],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                  ),
+                ),
+              ),
+              // ── Текст ──
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 18),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(title,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15,
+                                decoration: TextDecoration.none,
+                              )),
+                          const SizedBox(height: 3),
+                          Text(subtitle,
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
+                                decoration: TextDecoration.none,
+                              )),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.arrow_forward_ios_rounded,
+                        color: Colors.white70, size: 18),
+                  ],
                 ),
               ),
             ],

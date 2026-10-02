@@ -119,17 +119,33 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Future<void> _loadSimilarProducts() async {
-    if (_product.category == null || _product.category!.isEmpty) return;
     try {
-      final data = await supabase
-          .from('products')
-          .select('*, stores(store_name, owner_id)')
-          .eq('category_id', _product.category!)
-          .eq('is_active', true)
-          .limit(5);
-      final list = (data as List)
+      List<dynamic> data = [];
+      // 1. Алгач окшош категориядагы товарлар
+      if (_product.category != null && _product.category!.isNotEmpty) {
+        data = await supabase
+            .from('products')
+            .select('*, stores(store_name, owner_id)')
+            .eq('category_id', _product.category!)
+            .eq('is_active', true)
+            .neq('id', _product.id)
+            .limit(6);
+      }
+      // 2. Аз болсо — башка товарлар менен толуктайт
+      if (data.length < 4) {
+        final extra = await supabase
+            .from('products')
+            .select('*, stores(store_name, owner_id)')
+            .eq('is_active', true)
+            .neq('id', _product.id)
+            .order('views_count', ascending: false)
+            .limit(6);
+        data = [...data, ...extra];
+      }
+      final ids = <String>{};
+      final list = (data)
           .cast<Map<String, dynamic>>()
-          .where((row) => row['id'] != _product.id)
+          .where((row) => ids.add(row['id'] as String))
           .map((row) => ProductModel.fromMap(row))
           .toList();
       if (mounted) setState(() => _similarProducts = list);
@@ -306,7 +322,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     return count.toString();
   }
 
-  // ── Сүрөт галереясы (слайдер) ──
+  // ── Сүрөт галереясы (слайдер + thumbnail strip) ──
   Widget _buildImageGallery() {
     final allImages = _product.images.isNotEmpty
         ? _product.images
@@ -360,33 +376,73 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           },
         ),
 
-        // ── Индикатор (болгону 1дан кем болсо жашырылат) ──
+        // ── Thumbnail strip (болгону 2+ сүрөт болсо) ──
         if (allImages.length > 1)
           Positioned(
-            bottom: 12,
+            bottom: 0,
             left: 0,
             right: 0,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(allImages.length, (i) {
-                final active = i == _currentImageIndex;
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  margin: const EdgeInsets.symmetric(horizontal: 3),
-                  width: active ? 20 : 7,
-                  height: 7,
-                  decoration: BoxDecoration(
-                    color: active
-                        ? AppColors.primary
-                        : Colors.white.withOpacity(0.6),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                );
-              }),
+            child: Container(
+              height: 72,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withOpacity(0.55),
+                  ],
+                ),
+              ),
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                itemCount: allImages.length,
+                itemBuilder: (_, i) {
+                  final isActive = i == _currentImageIndex;
+                  return GestureDetector(
+                    onTap: () {
+                      _imagePageController.animateToPage(
+                        i,
+                        duration: const Duration(milliseconds: 280),
+                        curve: Curves.easeInOut,
+                      );
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      margin: const EdgeInsets.only(right: 8),
+                      width: isActive ? 54 : 46,
+                      height: isActive ? 54 : 46,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: isActive ? AppColors.primary : Colors.white54,
+                          width: isActive ? 2.5 : 1.5,
+                        ),
+                        boxShadow: isActive
+                            ? [BoxShadow(color: AppColors.primary.withOpacity(0.4), blurRadius: 8)]
+                            : [],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: CachedNetworkImage(
+                          imageUrl: toCloudinaryThumb(allImages[i], width: 120),
+                          fit: BoxFit.cover,
+                          placeholder: (_, __) => Container(color: Colors.white12),
+                          errorWidget: (_, __, ___) => Container(
+                            color: Colors.white12,
+                            child: const Icon(Icons.image, size: 18, color: Colors.white38),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
             ),
           ),
 
-        // ── Санагыч (мыс. "2 / 5") ──
+        // ── Санагыч "2 / 3" ──
         if (allImages.length > 1)
           Positioned(
             top: 60,
@@ -780,6 +836,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                                       containerNumber: _containerNumber,
                                                       ownerName: _sellerName,
                                                       avatarUrl: _avatarUrl,
+                                                      productBuilder: (p) => ProductDetailScreen(product: p),
                                                     ),
                                                   ),
                                                 );
@@ -1022,6 +1079,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             initialProducts: _similarProducts,
                             currentProductId: _product.id,
                             categoryId: _product.category,
+                            productBuilder: (p) => ProductDetailScreen(product: p),
                           ),
                           const SizedBox(height: 100),
                         ],

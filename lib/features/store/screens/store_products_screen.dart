@@ -8,8 +8,6 @@ import '../../../core/app_localizations.dart';
 import '../../../core/supabase_client.dart';
 import '../../../core/utils/image_utils.dart';
 import '../../../data/models/product_model.dart';
-import '../../product_detail/screens/product_detail_screen.dart';
-
 class StoreProductsScreen extends StatefulWidget {
   final String storeId;
   final String shopName;
@@ -18,6 +16,7 @@ class StoreProductsScreen extends StatefulWidget {
   final double? longitude;
   final String ownerName;
   final String? avatarUrl;
+  final Widget Function(ProductModel product)? productBuilder;
 
   const StoreProductsScreen({
     super.key,
@@ -28,6 +27,7 @@ class StoreProductsScreen extends StatefulWidget {
     this.avatarUrl,
     this.latitude,
     this.longitude,
+    this.productBuilder,
   });
 
   @override
@@ -365,6 +365,7 @@ class _StoreProductsScreenState extends State<StoreProductsScreen> {
                                     product: _products[left],
                                     isDark: isDark,
                                     loc: loc,
+                                    productBuilder: widget.productBuilder,
                                   ),
                                 ),
                                 const SizedBox(width: 10),
@@ -374,6 +375,7 @@ class _StoreProductsScreenState extends State<StoreProductsScreen> {
                                           product: _products[right],
                                           isDark: isDark,
                                           loc: loc,
+                                          productBuilder: widget.productBuilder,
                                         )
                                       : const SizedBox(),
                                 ),
@@ -395,11 +397,13 @@ class _ProductCard extends StatelessWidget {
   final ProductModel product;
   final bool isDark;
   final AppLocalizations loc;
+  final Widget Function(ProductModel)? productBuilder;
 
   const _ProductCard({
     required this.product,
     required this.isDark,
     required this.loc,
+    this.productBuilder,
   });
 
   @override
@@ -409,10 +413,12 @@ class _ProductCard extends StatelessWidget {
         product.discountedPrice! < product.price;
 
     return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => ProductDetailScreen(product: product)),
-      ),
+      onTap: () {
+        final screen = productBuilder?.call(product);
+        if (screen != null) {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+        }
+      },
       child: ClipRRect(
         borderRadius: BorderRadius.circular(14),
         child: BackdropFilter(

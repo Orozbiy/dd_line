@@ -8,6 +8,7 @@ import '../../../core/supabase_client.dart';
 
 
 import '../../store/screens/store_products_screen.dart';
+import '../../product_detail/screens/product_detail_screen.dart';
 
 class _StoreLocation {
   final String id;
@@ -202,6 +203,7 @@ class _MapScreenState extends State<MapScreen> {
           avatarUrl:       seller.avatarUrl,
           latitude:        seller.latitude,
           longitude:       seller.longitude,
+          productBuilder:  (p) => ProductDetailScreen(product: p),
         ),
       ),
     );

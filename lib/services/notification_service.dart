@@ -11,9 +11,7 @@ import 'package:http/http.dart' as http;
 import '../core/services/in_app_notification_banner.dart';
 import '../core/supabase_client.dart';
 import '../data/models/product_model.dart';
-import '../features/chat/screens/chat_screen.dart';
-import '../features/notifications/screens/notifications_screen.dart';
-import '../features/product_detail/screens/product_detail_screen.dart';
+// Screen imports removed — builders registered via registerScreenBuilders()
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -25,6 +23,23 @@ class NotificationService {
   static String? pendingChatId;
   static String? pendingProductId;
   static bool pendingNotifications = false;
+
+  // ── Screen builders (registered at app startup to avoid circular imports) ──
+  static Widget Function(String chatId, String sellerName, String? productId,
+      String productName, String productImage, bool isSeller,
+      String buyerId, String sellerId, String otherAvatarUrl)? _buildChatScreen;
+  static Widget Function(dynamic product)? _buildProductDetail;
+  static Widget Function()? _buildNotifications;
+
+  static void registerScreenBuilders({
+    required Widget Function(String, String, String?, String, String, bool, String, String, String) chatScreen,
+    required Widget Function(dynamic) productDetail,
+    required Widget Function() notifications,
+  }) {
+    _buildChatScreen = chatScreen;
+    _buildProductDetail = productDetail;
+    _buildNotifications = notifications;
+  }
 
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   final FlutterLocalNotificationsPlugin _localNotif =
@@ -300,16 +315,16 @@ class NotificationService {
 
       Navigator.of(context, rootNavigator: true).push(
         MaterialPageRoute(
-          builder: (_) => _ChatScreenProxy(
-            chatId:         chatId,
-            sellerName:     row['seller_name'] as String? ?? 'Сатуучу',
-            productId:      productId,
-            productName:    productName,
-            productImage:   productImage,
-            isSeller:       isSeller,
-            buyerId:        row['buyer_id']  as String? ?? '',
-            sellerId:       row['seller_id'] as String? ?? '',
-            otherAvatarUrl: otherAvatarUrl,
+          builder: (_) => _buildChatScreen!(
+            chatId,
+            row['seller_name'] as String? ?? 'Сатуучу',
+            productId,
+            productName,
+            productImage,
+            isSeller,
+            row['buyer_id']  as String? ?? '',
+            row['seller_id'] as String? ?? '',
+            otherAvatarUrl,
           ),
         ),
       );
@@ -357,7 +372,7 @@ class NotificationService {
       if (context == null || !context.mounted) return;
 
       Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => ProductDetailScreen(product: product)),
+        MaterialPageRoute(builder: (_) => _buildProductDetail!(product)),
       );
 
       debugPrint('✅ ProductDetailScreen navigate болду');
@@ -382,7 +397,7 @@ class NotificationService {
     if (context == null || !context.mounted) return;
 
     Navigator.of(context, rootNavigator: true).push(
-      MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+      MaterialPageRoute(builder: (_) => _buildNotifications!()),
     );
   }
 
@@ -744,47 +759,5 @@ class NotificationService {
       debugPrint('❌ _getAccessToken ката: $e');
       return null;
     }
-  }
-}
-
-// ─────────────────────────────────────────────────────────────
-// _ChatScreenProxy
-// ─────────────────────────────────────────────────────────────
-class _ChatScreenProxy extends StatelessWidget {
-  final String  chatId;
-  final String  sellerName;
-  final String? productId;
-  final String  productName;
-  final String  productImage;
-  final bool    isSeller;
-  final String  buyerId;
-  final String  sellerId;
-  final String  otherAvatarUrl;
-
-  const _ChatScreenProxy({
-    required this.chatId,
-    required this.sellerName,
-    this.productId,
-    required this.productName,
-    required this.productImage,
-    required this.isSeller,
-    required this.buyerId,
-    required this.sellerId,
-    required this.otherAvatarUrl,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ChatScreen(
-      chatId:         chatId,
-      sellerName:     sellerName,
-      productId:      productId,
-      productName:    productName,
-      productImage:   productImage,
-      isSeller:       isSeller,
-      buyerId:        buyerId,
-      sellerId:       sellerId,
-      otherAvatarUrl: otherAvatarUrl,
-    );
   }
 }

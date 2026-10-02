@@ -736,7 +736,7 @@ class AppLocalizations {
     'roulette_win_body': 'Эртең дагы айлант!',
     'roulette_win_close': 'Жабуу',
     'roulette_period': '2 айда 1 жолу жаңыланат',
-    'drawer_footer': 'Дордой базары ',
+    'drawer_footer': ' ',
     'roulette_coming_soon':
         'Оюн азыр сынак режиминде. Жакында чыныгы белектер женүүчүлөргө берилет!',
     'rules_btn_title': 'Сатуучунун алтын эрежелери',
@@ -981,13 +981,13 @@ class AppLocalizations {
     'call_request_decline_btn': '❌ Отклонить',
     'call_request_status_ok': '✅ Принят',
     'call_request_status_no': '❌ Отклонён',
-    'call_request_dialog_title': '📞 Запрос звонка',
+    'call_request_dialog_title': ' Запрос звонка',
     'call_request_dialog_body':
         'Продавцу будет отправлен запрос на звонок.\nКогда он примет — телефон позвонит.',
     'call_request_dialog_send': 'Отправить',
     'call_request_tooltip': 'Поддержки',
     'call_request_error': 'Ошибка, попробуйте ещё раз',
-    'call_request_notify_text': '📞 Запрос на звонок от пользователя',
+    'call_request_notify_text': ' Запрос на звонок от пользователя',
     // Edit message dialog
     'edit_msg_title': 'Изменить сообщение',
     'edit_msg_too_late': 'Прошло 5 минут, редактирование недоступно',
@@ -1126,7 +1126,7 @@ class AppLocalizations {
     'fav_tab_stores': 'Магазины',
     'fav_stores_empty': 'Нет сохранённых магазинов',
     'fav_stores_empty_desc': 'Сохраняйте магазины нажав ❤️',
-    "drawer_footer": "Дордой",
+    "drawer_footer": "",
     'fs_time_left': 'Осталось',
     'fs_timer_preview': 'Таймер на главном экране',
     'fs_remove': 'Удалить Flash Sale',
