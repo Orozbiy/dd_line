@@ -7,7 +7,7 @@ import '../../../core/app_localizations.dart';
 import '../../../core/utils/image_utils.dart';
 import '../../../core/supabase_client.dart';
 import '../../home/models/category_model.dart';
-import '../screens/flash_sale_manage_screen.dart';
+import 'flash_sale_manage_screen.dart';
 import '../../../core/services/yandex_storage_service.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
@@ -361,7 +361,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
         iconTheme: IconThemeData(color: isDark ? Colors.white : AppColors.grey600),
         title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(loc.get('my_products'), style: AppTextStyles.headingSmall.copyWith(color: titleColor)),
-          Text(widget.shopName, style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey500)),
+          Text(widget.shopName, style: AppTextStyles.labelSmall.copyWith(color: isDark ? Colors.white60 : AppColors.grey500)),
         ]),
         actions: [
           IconButton(
@@ -458,7 +458,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                                         child: Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                                           decoration: BoxDecoration(color: AppColors.error, borderRadius: BorderRadius.circular(6)),
-                                          child: Text('-${p['discount_percent']}%', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                                          child: Text('-${p['discount_percent']}%', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
                                         ),
                                       ),
                                   ]),
@@ -550,7 +550,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(color: isSelected ? Colors.white.withValues(alpha: 0.25) : AppColors.grey300, borderRadius: BorderRadius.circular(10)),
-            child: Text('$count', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: isSelected ? Colors.white : AppColors.grey600)),
+            child: Text('$count', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: isSelected ? Colors.white : AppColors.grey600)),
           ),
         ]),
       ),
@@ -881,7 +881,7 @@ Row(
                     isFirst ? '1 *' : '${i + 1}',
                     style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 9,
+                        fontSize: 11,
                         fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -1186,7 +1186,7 @@ Row(
             isRequired ? 'Сүрөт\nкошуу *' : '+',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 10,
+              fontSize: 12,
               color: isRequired ? AppColors.primary.withValues(alpha: 0.7) : AppColors.grey400,
             ),
           ),

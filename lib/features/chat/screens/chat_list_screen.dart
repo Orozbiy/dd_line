@@ -432,7 +432,7 @@ for (final id in toDelete) {
                               unread > 99 ? '99+' : '$unread',
                               style: const TextStyle(
                                   color: Colors.white,
-                                  fontSize: 10,
+                                  fontSize: 12,
                                   fontWeight: FontWeight.bold),
                             ),
                           ),

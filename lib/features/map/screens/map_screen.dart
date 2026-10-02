@@ -1,14 +1,13 @@
 ﻿import 'dart:ui';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../core/app_localizations.dart';
 import '../../../core/supabase_client.dart';
-import '../../../data/models/product_model.dart';
-import '../../product_detail/screens/product_detail_screen.dart';
-import '../../../core/utils/image_utils.dart';
+
+
+import '../../store/screens/store_products_screen.dart';
 
 class _StoreLocation {
   final String id;
@@ -18,6 +17,7 @@ class _StoreLocation {
   final double? latitude;
   final double? longitude;
   final String ownerId;
+  final String? avatarUrl;
 
   _StoreLocation({
     required this.id,
@@ -27,6 +27,7 @@ class _StoreLocation {
     this.latitude,
     this.longitude,
     this.ownerId = '',
+    this.avatarUrl,
   });
 
   factory _StoreLocation.fromMap(Map<String, dynamic> data) {
@@ -44,6 +45,7 @@ class _StoreLocation {
       latitude:        (data['latitude']  as num?)?.toDouble(),
       longitude:       (data['longitude'] as num?)?.toDouble(),
       ownerId:         data['owner_id']   as String? ?? '',
+      avatarUrl:       profile?['avatar_url'] as String?,
     );
   }
 }
@@ -78,7 +80,7 @@ class _MapScreenState extends State<MapScreen> {
     try {
       final data = await supabase
           .from('stores')
-          .select('*, profiles!inner(full_name, seller_status)')
+          .select('*, profiles!inner(full_name, seller_status, avatar_url)')
           .eq('is_active', true)
           .eq('profiles.seller_status', 'approved');
 
@@ -192,10 +194,14 @@ class _MapScreenState extends State<MapScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => _StoreProductsScreen(
+        builder: (_) => StoreProductsScreen(
           storeId:         seller.id,
           shopName:        seller.shopName,
           containerNumber: seller.containerNumber,
+          ownerName:       seller.ownerName,
+          avatarUrl:       seller.avatarUrl,
+          latitude:        seller.latitude,
+          longitude:       seller.longitude,
         ),
       ),
     );
@@ -611,270 +617,6 @@ class _GlassDialog extends StatelessWidget {
               ),
             ),
             child: child,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ══════════════════════════════════════════════════════
-// ДҮКӨНДҮН ТОВАРЛАРЫ ЭКРАНЫ
-// ══════════════════════════════════════════════════════
-class _StoreProductsScreen extends StatefulWidget {
-  final String storeId;
-  final String shopName;
-  final String containerNumber;
-
-  const _StoreProductsScreen({
-    required this.storeId,
-    required this.shopName,
-    required this.containerNumber,
-  });
-
-  @override
-  State<_StoreProductsScreen> createState() => _StoreProductsScreenState();
-}
-
-class _StoreProductsScreenState extends State<_StoreProductsScreen> {
-  List<ProductModel> _products = [];
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadProducts();
-  }
-
-  Future<void> _loadProducts() async {
-    try {
-      final data = await supabase
-          .from('products')
-          .select('*, stores(*)')
-          .eq('store_id', widget.storeId)
-          .eq('is_active', true)
-          .order('created_at', ascending: false);
-
-      final list = (data as List)
-          .cast<Map<String, dynamic>>()
-          .map((row) => ProductModel.fromMap(row))
-          .toList();
-
-      if (mounted) setState(() { _products = list; _isLoading = false; });
-    } catch (e) {
-      debugPrint('❌ _loadProducts: $e');
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final loc    = AppLocalizations.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor   = isDark ? const Color(0xFF121212) : const Color(0xFFF4F5F7);
-    final textColor = isDark ? Colors.white : Colors.black87;
-
-    return Scaffold(
-      backgroundColor: bgColor,
-      extendBodyBehindAppBar: true,
-
-      // ── AppBar — айнек ──
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        flexibleSpace: ClipRect(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-            child: Container(
-              color: isDark
-                  ? Colors.black.withOpacity(0.30)
-                  : Colors.white.withOpacity(0.50),
-            ),
-          ),
-        ),
-        foregroundColor: textColor,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: textColor),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(widget.shopName,
-                style:
-                    AppTextStyles.headingSmall.copyWith(color: textColor),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis),
-            if (widget.containerNumber.isNotEmpty)
-              Text('📍 ${widget.containerNumber}',
-                  style: AppTextStyles.labelSmall
-                      .copyWith(color: AppColors.primary)),
-          ],
-        ),
-      ),
-
-      body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary))
-          : _products.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text('🏪', style: TextStyle(fontSize: 48)),
-                      const SizedBox(height: 12),
-                      Text(
-                        loc.locale.languageCode == 'ru'
-                            ? 'Товаров пока нет'
-                            : 'Азырынча товар жок',
-                        style: AppTextStyles.headingSmall,
-                      ),
-                    ],
-                  ),
-                )
-              : GridView.builder(
-                  padding: EdgeInsets.fromLTRB(
-                    12,
-                    MediaQuery.of(context).padding.top + kToolbarHeight + 8,
-                    12,
-                    12,
-                  ),
-                  gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount:    2,
-                    childAspectRatio:  0.62,
-                    crossAxisSpacing:  10,
-                    mainAxisSpacing:   10,
-                  ),
-                  itemCount: _products.length,
-                  itemBuilder: (_, i) => _ProductCard(
-                    product:   _products[i],
-                    isDark:    isDark,
-                    loc:       loc,
-                  ),
-                ),
-    );
-  }
-}
-
-// ══════════════════════════════════════════════════════
-// ТОВАР КАРТОЧКАСЫ — айнек
-// ══════════════════════════════════════════════════════
-class _ProductCard extends StatelessWidget {
-  final ProductModel    product;
-  final bool            isDark;
-  final AppLocalizations loc;
-
-  const _ProductCard({
-    required this.product,
-    required this.isDark,
-    required this.loc,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cur        = loc.get('currency');
-    final hasDiscount = product.discountedPrice != null &&
-        product.discountedPrice! < product.price;
-
-    return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-            builder: (_) => ProductDetailScreen(product: product)),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(14),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-          child: Container(
-            decoration: BoxDecoration(
-              color: isDark
-                  ? Colors.white.withOpacity(0.06)
-                  : Colors.white.withOpacity(0.60),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: isDark
-                    ? Colors.white.withOpacity(0.10)
-                    : Colors.white.withOpacity(0.85),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // ── Сүрөт ──
-                ClipRRect(
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(14)),
-                  child: CachedNetworkImage(
-                    imageUrl: toCloudinaryThumb(product.imageUrl, width: 400),
-                    height:   140,
-                    width:    double.infinity,
-                    fit:      BoxFit.cover,
-                    memCacheWidth: 400,
-                    fadeInDuration: const Duration(milliseconds: 120),
-                    placeholder: (_, __) => Container(
-                      height: 140,
-                      color: isDark
-                          ? const Color(0xFF2C2C2C)
-                          : AppColors.grey100,
-                    ),
-                    errorWidget: (_, __, ___) => Container(
-                      height: 140,
-                      color: isDark
-                          ? const Color(0xFF2C2C2C)
-                          : AppColors.grey100,
-                      child: const Icon(Icons.image_not_supported_outlined,
-                          color: AppColors.grey400),
-                    ),
-                  ),
-                ),
-
-                // ── Маалымат ──
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(10),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          product.name,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTextStyles.labelMedium.copyWith(
-                            color: isDark ? Colors.white : Colors.black87,
-                          ),
-                        ),
-                        const Spacer(),
-                        if (hasDiscount) ...[
-                          Text(
-                            '${product.discountedPrice!.toStringAsFixed(0)} $cur',
-                            style: AppTextStyles.labelLarge.copyWith(
-                              color:      AppColors.error,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            '${product.price.toStringAsFixed(0)} $cur',
-                            style: AppTextStyles.labelSmall.copyWith(
-                              color:      AppColors.grey400,
-                              decoration: TextDecoration.lineThrough,
-                            ),
-                          ),
-                        ] else
-                          Text(
-                            '${product.price.toStringAsFixed(0)} $cur',
-                            style: AppTextStyles.labelLarge.copyWith(
-                              color:      AppColors.primary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
           ),
         ),
       ),

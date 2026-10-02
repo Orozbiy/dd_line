@@ -823,6 +823,12 @@ class AppLocalizations {
     'call_request_dialog_send': 'Жиберүү',
     'call_request_tooltip': 'Чалуу суроо',
     'call_request_error': 'Ката чыкты, кайра аракет кылыңыз',
+    'call_request_notify_text': '📞 Сизге чалуу өтүнүчү жиберди',
+    // Edit message dialog
+    'edit_msg_title': 'Билдирүүнү өзгөртүү',
+    'edit_msg_too_late': '5 мүнөттөн өтүп кетти, өзгөртүүгө болбойт',
+    'edit_msg_no': 'Жок',
+    'edit_msg_save': 'Сактоо',
     // Admin panel
     'status_pending': '⏳ Күтүүдө',
     'status_approved': '✅ Активдүү',
@@ -981,6 +987,12 @@ class AppLocalizations {
     'call_request_dialog_send': 'Отправить',
     'call_request_tooltip': 'Поддержки',
     'call_request_error': 'Ошибка, попробуйте ещё раз',
+    'call_request_notify_text': '📞 Запрос на звонок от пользователя',
+    // Edit message dialog
+    'edit_msg_title': 'Изменить сообщение',
+    'edit_msg_too_late': 'Прошло 5 минут, редактирование недоступно',
+    'edit_msg_no': 'Отмена',
+    'edit_msg_save': 'Сохранить',
     'suggestion': 'Отправить запрос',
     'rules_btn_title': 'Золотые правила продавца',
     'rules_btn_sub': '6 ключевых правил для успешной торговли',

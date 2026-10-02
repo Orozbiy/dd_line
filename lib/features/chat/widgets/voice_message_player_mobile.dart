@@ -210,7 +210,7 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
                       Text(
                         _formatDuration(displaySeconds),
                         style: AppTextStyles.labelSmall.copyWith(
-                          fontSize: 11,
+                          fontSize: 13,
                           color: subColor,
                         ),
                       ),
@@ -219,7 +219,7 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
                         Text(
                           '· ${widget.formattedTime}',
                           style: AppTextStyles.labelSmall.copyWith(
-                            fontSize: 11,
+                            fontSize: 13,
                             color: subColor,
                           ),
                         ),

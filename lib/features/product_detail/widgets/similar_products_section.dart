@@ -245,7 +245,7 @@ class _SimilarProductCard extends StatelessWidget {
                           '-${((1 - product.discountedPrice! / product.price) * 100).round()}%',
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 10,
+                            fontSize: 12,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -301,13 +301,13 @@ class _SimilarProductCard extends StatelessWidget {
                       Text(
                         product.rating!.toStringAsFixed(1),
                         style: AppTextStyles.labelSmall
-                            .copyWith(color: AppColors.grey500, fontSize: 11),
+                            .copyWith(color: AppColors.grey500, fontSize: 13),
                       ),
                       if ((product.ratingCount ?? 0) > 0)
                         Text(
                           ' (${product.ratingCount})',
                           style: AppTextStyles.labelSmall.copyWith(
-                              color: AppColors.grey400, fontSize: 11),
+                              color: AppColors.grey400, fontSize: 13),
                         ),
                     ]),
                   ],

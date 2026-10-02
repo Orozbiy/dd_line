@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../config/theme/app_colors.dart';
+import '../../../core/app_localizations.dart';
 import '../../../core/supabase_client.dart';
 import '../../chat/screens/chat_screen.dart';
 
@@ -225,6 +226,8 @@ class _SellerAdminChatBannerState extends State<SellerAdminChatBanner> {
   @override
   Widget build(BuildContext context) {
     final isDark = widget.isDark;
+    final loc = AppLocalizations.of(context);
+    final isRu = loc.locale.languageCode == 'ru';
     final cardBg = isDark ? const Color(0xFF1E1A2E) : const Color(0xFFFFF8F0);
     final borderColor =
         const Color(0xFFD97706).withValues(alpha: isDark ? 0.4 : 0.35);
@@ -319,7 +322,7 @@ class _SellerAdminChatBannerState extends State<SellerAdminChatBanner> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Админден билдирүүлөр',
+                    isRu ? 'Уведомления от администратора' : 'Админден билдирүүлөр',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
@@ -329,12 +332,12 @@ class _SellerAdminChatBannerState extends State<SellerAdminChatBanner> {
                   const SizedBox(height: 3),
                   Text(
                     _opening
-                        ? 'Ачылып жатат...'
+                        ? (isRu ? 'Открывается...' : 'Ачылып жатат...')
                         : !_loaded
                             ? '...'
                             : _unread > 0
-                                ? '$_unread окулбаган билдирүү бар'
-                                : 'Админ менен чатта сүйлөшүңүз',
+                                ? (isRu ? 'Есть $_unread непрочитанных' : '$_unread окулбаган билдирүү бар')
+                                : (isRu ? 'Напишите администратору в чате' : 'Админ менен чатта сүйлөшүңүз'),
                     style: TextStyle(
                       fontSize: 12,
                       color: _unread > 0 ? AppColors.error : AppColors.grey500,

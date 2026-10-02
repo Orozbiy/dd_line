@@ -585,7 +585,7 @@ class _CategoryBottomSheet extends StatelessWidget {
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
-                                    fontSize: 10,
+                                    fontSize: 12,
                                     fontWeight: isSelected
                                         ? FontWeight.w700
                                         : FontWeight.w500,

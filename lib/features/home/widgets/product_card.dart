@@ -166,7 +166,7 @@ class _ProductCardState extends State<ProductCard>
                                   child: Text('-$discountPct%',
                                       style: const TextStyle(
                                           color: Colors.white,
-                                          fontSize: 11,
+                                          fontSize: 12,
                                           fontWeight: FontWeight.bold)),
                                 ),
                               ),
@@ -186,7 +186,7 @@ class _ProductCardState extends State<ProductCard>
                                   child: const Text('Жаңы',
                                       style: TextStyle(
                                           color: Colors.white,
-                                          fontSize: 11,
+                                          fontSize: 12,
                                           fontWeight: FontWeight.bold)),
                                 ),
                               ),
@@ -261,7 +261,7 @@ class _ProductCardState extends State<ProductCard>
                               Text(
                                 '${widget.product.price.toStringAsFixed(0)} сом',
                                 style: TextStyle(
-                                  fontSize: 11,
+                                  fontSize: 13,
                                   color: ratingColor,
                                   decoration: TextDecoration.lineThrough,
                                   decorationColor: ratingColor,
@@ -295,7 +295,7 @@ class _ProductCardState extends State<ProductCard>
                                   Text(
                                     rating.toStringAsFixed(1),
                                     style: TextStyle(
-                                        fontSize: 11,
+                                        fontSize: 12,
                                         color: ratingColor,
                                         fontWeight: FontWeight.w500),
                                   ),

@@ -14,6 +14,7 @@ import '../../../core/utils/image_utils.dart';
 import '../../../data/models/product_model.dart';
 import '../../chat/screens/chat_screen.dart';
 import '../../chat/services/chat_service.dart';
+import '../../store/screens/store_products_screen.dart';
 import '../widgets/review_section.dart';
 import '../widgets/share_widget.dart';
 
@@ -45,6 +46,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   String _workStart = '';
   String _workEnd = '';
   String _workDays = '';
+  String? _avatarUrl;
   List<ProductModel> _similarProducts = [];
 
   @override
@@ -82,7 +84,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             try {
               final profile = await supabase
                   .from('profiles')
-                  .select('full_name, store_type, market_name')
+                  .select('full_name, store_type, market_name, avatar_url')
                   .eq('id', _sellerUid!)
                   .single();
               if (mounted)
@@ -90,6 +92,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   _sellerName = profile['full_name'] as String? ?? '';
                   _storeType = profile['store_type'] as String? ?? 'market';
                   _marketName = profile['market_name'] as String? ?? '';
+                  _avatarUrl = profile['avatar_url'] as String?;
                 });
             } catch (_) {}
           }
@@ -753,16 +756,34 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                             radius: 32,
                                             backgroundColor: AppColors.primary
                                                 .withValues(alpha: 0.10),
-                                            child: const Icon(
-                                              Icons.store_rounded,
-                                              size: 32,
-                                              color: AppColors.primary,
-                                            ),
+                                            backgroundImage: (_avatarUrl != null && _avatarUrl!.isNotEmpty)
+                                                ? CachedNetworkImageProvider(_avatarUrl!)
+                                                : null,
+                                            child: (_avatarUrl == null || _avatarUrl!.isEmpty)
+                                                ? const Icon(
+                                                    Icons.store_rounded,
+                                                    size: 32,
+                                                    color: AppColors.primary,
+                                                  )
+                                                : null,
                                           ),
                                           const SizedBox(height: 8),
                                           GestureDetector(
                                             onTap: () {
-                                              // TODO: seller profile navigation
+                                              if (_storeId != null) {
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (_) => StoreProductsScreen(
+                                                      storeId: _storeId!,
+                                                      shopName: _shopName,
+                                                      containerNumber: _containerNumber,
+                                                      ownerName: _sellerName,
+                                                      avatarUrl: _avatarUrl,
+                                                    ),
+                                                  ),
+                                                );
+                                              }
                                             },
                                             child: Container(
                                               padding:

@@ -261,7 +261,7 @@ class _PromoCard extends StatelessWidget {
                       child: Text('-$percent%',
                           style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 11,
+                              fontSize: 12,
                               fontWeight: FontWeight.bold)),
                     ),
                   ),

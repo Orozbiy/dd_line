@@ -152,7 +152,7 @@ class _ChatProductBannerState extends State<ChatProductBanner> {
                                         loc.get('banner_product_label'),
                                         style: const TextStyle(
                                             color: Colors.white,
-                                            fontSize: 10,
+                                            fontSize: 12,
                                             fontWeight: FontWeight.w700),
                                       ),
                                     ),
@@ -163,7 +163,7 @@ class _ChatProductBannerState extends State<ChatProductBanner> {
                                             ? loc.get('in_stock')
                                             : loc.get('out_of_stock'),
                                         style: TextStyle(
-                                          fontSize: 11,
+                                          fontSize: 13,
                                           color: inStock > 0
                                               ? AppColors.success
                                               : AppColors.error,
@@ -203,7 +203,7 @@ class _ChatProductBannerState extends State<ChatProductBanner> {
                                         Text(
                                           '${price.toStringAsFixed(0)} ${loc.get('currency')}',
                                           style: TextStyle(
-                                            fontSize: 11,
+                                            fontSize: 13,
                                             color: isDark
                                                 ? Colors.white.withValues(alpha: 0.45)
                                                 : AppColors.grey400,

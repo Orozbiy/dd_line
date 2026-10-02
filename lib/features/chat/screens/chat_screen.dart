@@ -363,15 +363,13 @@ Future<void> _markRead() async {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(children: [
-                    Text('📞', style: TextStyle(fontSize: 24)),
-                    SizedBox(width: 8),
-                    Text('Чалуу өтүнүчү', style: AppTextStyles.headingSmall),
+                  Row(children: [
+                    const Text('📞', style: TextStyle(fontSize: 24)),
+                    const SizedBox(width: 8),
+                    Text(loc.get('call_request_dialog_title'), style: AppTextStyles.headingSmall),
                   ]),
                   const SizedBox(height: 12),
-                  const Text(
-                    'Сатуучуга чалуу өтүнүчү жиберилет.\nАл кабыл алганда телефон чалынат.',
-                  ),
+                  Text(loc.get('call_request_dialog_body')),
                   const SizedBox(height: 20),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
@@ -389,8 +387,8 @@ Future<void> _markRead() async {
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10)),
                         ),
-                        child: const Text('Жиберүү',
-                            style: TextStyle(color: Colors.white)),
+                        child: Text(loc.get('call_request_dialog_send'),
+                            style: const TextStyle(color: Colors.white)),
                       ),
                     ],
                   ),
@@ -407,7 +405,7 @@ Future<void> _markRead() async {
     await supabase.from('messages').insert({
       'chat_id': widget.chatId,
       'sender_id': myId,
-      'text': '📞 Чалуу өтүнүчү',
+      'text': loc.get('call_request_title'),
       'message_type': 'call_request',
       'call_status': 'pending',
       'is_read': false,
@@ -416,7 +414,7 @@ Future<void> _markRead() async {
     NotificationService().sendChatNotification(
       receiverUid: _receiverUid,
       senderName: _senderDisplayName,
-      messageText: '📞 Сизге чалуу өтүнүчү жиберди',
+      messageText: loc.get('call_request_notify_text'),
       chatId: widget.chatId,
     );
 
@@ -886,11 +884,12 @@ Future<void> _sendVoiceMessage(String path, int durationSeconds) async {
   Future<void> _copyMessage(MessageModel msg) async {}
 
   void _editMessage(MessageModel msg) {
+    final loc = AppLocalizations.of(context);
     final diff = DateTime.now().difference(msg.timestamp);
     if (diff.inMinutes >= 5) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('5 мүнөттөн өтүп кетти, өзгөртүүгө болбойт'),
+        SnackBar(
+          content: Text(loc.get('edit_msg_too_late')),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -902,7 +901,7 @@ Future<void> _sendVoiceMessage(String path, int durationSeconds) async {
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Билдирүүнү өзгөртүү',
+        title: Text(loc.get('edit_msg_title'),
             style: AppTextStyles.headingSmall),
         content: TextField(
           controller: ctrl,
@@ -920,7 +919,7 @@ Future<void> _sendVoiceMessage(String path, int durationSeconds) async {
           TextButton(
             onPressed: () => Navigator.pop(context),
             child:
-                const Text('Жок', style: TextStyle(color: AppColors.grey500)),
+                Text(loc.get('edit_msg_no'), style: const TextStyle(color: AppColors.grey500)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -937,7 +936,7 @@ Future<void> _sendVoiceMessage(String path, int durationSeconds) async {
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10)),
             ),
-            child: const Text('Сактоо', style: TextStyle(color: Colors.white)),
+            child: Text(loc.get('edit_msg_save'), style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),

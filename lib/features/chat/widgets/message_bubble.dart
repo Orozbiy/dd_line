@@ -478,7 +478,7 @@ class MessageBubble extends StatelessWidget {
                                     Text(
                                       'өзгөртүлдү · ',
                                       style: TextStyle(
-                                        fontSize: 9,
+                                        fontSize: 11,
                                         fontStyle: FontStyle.italic,
                                         color: Colors.white
                                             .withValues(alpha: 0.80),
@@ -487,7 +487,7 @@ class MessageBubble extends StatelessWidget {
                                   Text(
                                     message.formattedTime,
                                     style: TextStyle(
-                                      fontSize: 10,
+                                      fontSize: 12,
                                       color:
                                           Colors.white.withValues(alpha: 0.90),
                                     ),
@@ -519,7 +519,7 @@ class MessageBubble extends StatelessWidget {
                               child: Text(
                                 message.formattedTime,
                                 style: TextStyle(
-                                  fontSize: 10,
+                                  fontSize: 12,
                                   color: Colors.white.withValues(alpha: 0.90),
                                 ),
                               ),
@@ -622,7 +622,7 @@ class MessageBubble extends StatelessWidget {
                               Text(
                                 'өзгөртүлдү • ',
                                 style: TextStyle(
-                                  fontSize: 10,
+                                  fontSize: 12,
                                   fontStyle: FontStyle.italic,
                                   color: isMe
                                       ? Colors.white.withValues(alpha: 0.7)

@@ -78,7 +78,8 @@ class TermsScreen extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               loc.get('terms_disclaimer'),
-              style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey400),
+              style: AppTextStyles.labelSmall.copyWith(
+                  color: isDark ? AppColors.grey500 : AppColors.grey400),
             ),
             const SizedBox(height: 40),
           ],

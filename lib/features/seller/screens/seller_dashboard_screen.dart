@@ -990,6 +990,7 @@ class _AdminNotificationsBannerState
   @override
   Widget build(BuildContext context) {
     final isDark = widget.isDark;
+    final isRu = AppLocalizations.of(context).locale.languageCode == 'ru';
     final cardBg = isDark ? const Color(0xFF1E1A2E) : const Color(0xFFFFF8F0);
     final borderColor = const Color(0xFFD97706).withValues(alpha: isDark ? 0.4 : 0.35);
 
@@ -1071,7 +1072,7 @@ class _AdminNotificationsBannerState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Админден билдирүүлөр',
+                    isRu ? 'Уведомления от администратора' : 'Админден билдирүүлөр',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
@@ -1081,8 +1082,8 @@ class _AdminNotificationsBannerState
                   const SizedBox(height: 3),
                   Text(
                     _loaded && _count > 0
-                        ? '$_count билдирүү бар'
-                        : 'Жаңы билдирүүлөрдү бул жерден окуңуз',
+                        ? (isRu ? 'Есть $_count уведомлений' : '$_count билдирүү бар')
+                        : (isRu ? 'Читайте новые уведомления здесь' : 'Жаңы билдирүүлөрдү бул жерден окуңуз'),
                     style: const TextStyle(
                       fontSize: 12,
                       color: AppColors.grey500,

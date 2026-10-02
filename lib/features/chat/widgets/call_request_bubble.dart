@@ -119,7 +119,7 @@ class CallRequestBubble extends StatelessWidget {
                                 message.formattedTime,
                                 style: AppTextStyles.labelSmall.copyWith(
                                   color: AppColors.grey400,
-                                  fontSize: 11,
+                                  fontSize: 13,
                                 ),
                               ),
                             ],

@@ -148,7 +148,7 @@ class _BuyerLeaderboardState extends State<BuyerLeaderboard> {
                         'Товарды ар 3 жолу көргөндө 1 ачкыч берилет. '
                         'Рейтинг 5 саат сайын жаңыланат.',
                         style: AppTextStyles.labelSmall
-                            .copyWith(color: AppColors.primary, fontSize: 11),
+                            .copyWith(color: AppColors.primary, fontSize: 13),
                       ),
                     ),
                   ]),
@@ -354,7 +354,7 @@ class _BuyerLeaderboardState extends State<BuyerLeaderboard> {
       ),
       child: Text(text,
           style: AppTextStyles.labelSmall
-              .copyWith(color: color, fontSize: 11)),
+              .copyWith(color: color, fontSize: 13)),
     );
   }
 }
