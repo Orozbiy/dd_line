@@ -28,7 +28,9 @@ class CategoryItem extends StatelessWidget {
         width: 80,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          color: isSelected ? color : (isDark ? const Color(0xFF1E1E2E) : Colors.white),
+          color: isSelected
+              ? color
+              : (isDark ? const Color(0xFF1E1E2E) : Colors.white),
           boxShadow: [
             BoxShadow(
               color: isSelected
@@ -39,64 +41,84 @@ class CategoryItem extends StatelessWidget {
             ),
           ],
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // ── Сүрөт бөлүгү ──
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-              child: category.imagePath != null
-                  ? Stack(
-                      children: [
-                        Image.asset(
-                          category.imagePath!,
-                          width: 80,
-                          height: 60,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => _fallbackIcon(color, isSelected),
-                        ),
-                        // Активдүү болсо — түс маскасы
-                        if (isSelected)
-                          Positioned.fill(
-                            child: Container(
-                              color: color.withValues(alpha: 0.30),
-                            ),
-                          ),
-                      ],
-                    )
-                  : _fallbackIcon(color, isSelected),
-            ),
-
-            // ── Аты ──
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 7),
-              child: Text(
-                category.name,
-                style: AppTextStyles.labelSmall.copyWith(
-                  color: isSelected
-                      ? Colors.white
-                      : (isDark ? Colors.white70 : AppColors.grey600),
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  fontSize: 11,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Stack(
+            children: [
+              // ── Сүрөт (карточканын жогору бөлүгү) ──
+              Positioned(
+                top: 0, left: 0, right: 0,
+                child: _buildImage(color, isDark),
               ),
-            ),
-          ],
+
+              // ── Бүт карточка (колонна: сүрөт + текст) ──
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Сүрөт placeholder (бийиктик ылайыктоо үчүн)
+                  const SizedBox(height: 68),
+
+                  // ── Аты ──
+                  Container(
+                    width: double.infinity,
+                    color: isSelected
+                        ? color
+                        : (isDark ? const Color(0xFF1E1E2E) : Colors.white),
+                    padding: const EdgeInsets.fromLTRB(4, 5, 4, 7),
+                    child: Text(
+                      category.name,
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: isSelected
+                            ? Colors.white
+                            : (isDark ? Colors.white70 : AppColors.grey600),
+                        fontWeight:
+                            isSelected ? FontWeight.w700 : FontWeight.w500,
+                        fontSize: 11,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+
+              // ── Активдүү болсо — жеңил түс маскасы ──
+              if (isSelected)
+                Positioned(
+                  top: 0, left: 0, right: 0,
+                  height: 68,
+                  child: Container(
+                    color: color.withValues(alpha: 0.25),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _fallbackIcon(Color color, bool isSelected) {
+  Widget _buildImage(Color color, bool isDark) {
+    if (category.imagePath == null) {
+      return _fallbackIcon(color);
+    }
+    return Image.asset(
+      category.imagePath!,
+      width: 80,
+      height: 68,
+      fit: BoxFit.contain,
+      errorBuilder: (_, __, ___) => _fallbackIcon(color),
+    );
+  }
+
+  Widget _fallbackIcon(Color color) {
     return Container(
       width: 80,
-      height: 60,
-      color: isSelected ? color.withValues(alpha: 0.25) : color.withValues(alpha: 0.10),
+      height: 68,
+      color: color.withValues(alpha: 0.10),
       child: Center(
-        child: Text(category.icon, style: const TextStyle(fontSize: 28)),
+        child: Text(category.icon, style: const TextStyle(fontSize: 30)),
       ),
     );
   }

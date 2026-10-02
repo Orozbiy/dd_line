@@ -35,6 +35,10 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
   final _searchCtrl = TextEditingController();
   String _searchQuery = '';
 
+  // Билдирүүлөр издөө
+  final _notifSearchCtrl = TextEditingController();
+  String _notifQuery = '';
+
   String? _adminCardMasked;
   // ignore: unused_field
   String? _adminCardToken;
@@ -49,12 +53,16 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
     _searchCtrl.addListener(() {
       setState(() => _searchQuery = _searchCtrl.text.toLowerCase().trim());
     });
+    _notifSearchCtrl.addListener(() {
+      setState(() => _notifQuery = _notifSearchCtrl.text.toLowerCase().trim());
+    });
   }
 
   @override
   void dispose() {
     _tabController.dispose();
     _searchCtrl.dispose();
+    _notifSearchCtrl.dispose();
     super.dispose();
   }
 
@@ -985,18 +993,37 @@ GestureDetector(
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : TabBarView(
-              controller: _tabController,
-             children: [
-  _buildPendingTab(),
-  _buildApprovedTab(),
-  _buildAllTab(),
-  _buildProductsTab(),
-  _buildPaymentsTab(),
- const AdminPhoneRequestsScreen(), 
-  _buildNotificationsTab(),   // ← ЖАҢ
- 
-],
+          : Stack(
+              children: [
+                TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildPendingTab(),
+                    _buildApprovedTab(),
+                    _buildAllTab(),
+                    _buildProductsTab(),
+                    _buildPaymentsTab(),
+                    const AdminPhoneRequestsScreen(),
+                    _buildNotificationsTab(),
+                  ],
+                ),
+
+                // ── Оң астынкы — Сатуучуга жазуу FAB ──
+                Positioned(
+                  right: 16,
+                  bottom: 16,
+                  child: FloatingActionButton.extended(
+                    heroTag: 'send_to_seller',
+                    onPressed: () => _showSendToSellerSheet(context),
+                    backgroundColor: const Color(0xFFD97706),
+                    icon: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+                    label: const Text(
+                      'Сатуучуга',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ),
+              ],
             ),
       floatingActionButton: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1020,14 +1047,72 @@ GestureDetector(
     );
   }
 
+  // ── Сатуучуга билдирүү жөнөтүү ──
+  void _showSendToSellerSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _SendToSellerSheet(sellers: _allSellers),
+    );
+  }
+
   // ══════════════════════════════════════════════════════
   // ⏳ ӨТҮНҮЧТӨР TAB
   // ══════════════════════════════════════════════════════
 
 Widget _buildNotificationsTab() {
-  return const SingleChildScrollView(
-    padding: EdgeInsets.only(top: 12, bottom: 32),
-    child: AdminNotificationSender(),
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  final fillColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF5F5F5);
+  final textColor = isDark ? Colors.white : AppColors.black;
+
+  return Column(
+    children: [
+      // ── Издөө ──
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+        child: TextField(
+          controller: _notifSearchCtrl,
+          style: TextStyle(color: textColor),
+          decoration: InputDecoration(
+            hintText: 'Билдирүүлөрдөн издөө...',
+            hintStyle: TextStyle(color: AppColors.grey400),
+            prefixIcon: Icon(Icons.search_rounded, color: AppColors.grey400),
+            suffixIcon: _notifQuery.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(Icons.close, size: 18),
+                    color: AppColors.grey400,
+                    onPressed: () {
+                      _notifSearchCtrl.clear();
+                      setState(() => _notifQuery = '');
+                    },
+                  )
+                : null,
+            filled: true,
+            fillColor: fillColor,
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide:
+                  const BorderSide(color: AppColors.primary, width: 1.5),
+            ),
+          ),
+        ),
+      ),
+
+      // ── Билдирүүлөр тизмеси ──
+      Expanded(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.only(bottom: 32),
+          child: AdminNotificationSender(searchQuery: _notifQuery),
+        ),
+      ),
+    ],
   );
 }
 
@@ -2040,6 +2125,423 @@ class _SuggestionsPanelSheetState extends State<_SuggestionsPanelSheet> {
                       ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// Сатуучуну тандоо + Билдирүү жөнөтүү
+// ══════════════════════════════════════════════════════
+class _SendToSellerSheet extends StatefulWidget {
+  final List<SellerModel> sellers;
+  const _SendToSellerSheet({required this.sellers});
+
+  @override
+  State<_SendToSellerSheet> createState() => _SendToSellerSheetState();
+}
+
+class _SendToSellerSheetState extends State<_SendToSellerSheet> {
+  final _searchCtrl = TextEditingController();
+  String _query = '';
+
+  List<SellerModel> get _filtered {
+    if (_query.isEmpty) return widget.sellers;
+    final q = _query.toLowerCase();
+    return widget.sellers.where((s) =>
+        s.shopName.toLowerCase().contains(q) ||
+        s.name.toLowerCase().contains(q) ||
+        s.containerNumber.toLowerCase().contains(q)).toList();
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  void _openCompose(SellerModel seller) {
+    Navigator.pop(context); // sheet'ти жап
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _ComposeMessageSheet(seller: seller),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final sheetBg = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final fillColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF5F5F5);
+    final textColor = isDark ? Colors.white : AppColors.black;
+    final subColor = isDark ? Colors.white60 : AppColors.grey500;
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.85,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      builder: (_, scrollCtrl) => Container(
+        decoration: BoxDecoration(
+          color: sheetBg,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          children: [
+            // Handle
+            Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 8),
+              width: 40, height: 4,
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white24 : Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+
+            // Башлык
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFD97706), Color(0xFFEF4444)],
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.send_rounded,
+                        color: Colors.white, size: 18),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Сатуучуну тандаңыз',
+                    style: AppTextStyles.headingSmall.copyWith(color: textColor),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: Icon(Icons.close, color: subColor),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+
+            // Издөө
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: TextField(
+                controller: _searchCtrl,
+                style: TextStyle(color: textColor),
+                onChanged: (v) => setState(() => _query = v.trim()),
+                decoration: InputDecoration(
+                  hintText: 'Дүкөн аты, ысым же контейнер...',
+                  hintStyle: TextStyle(color: AppColors.grey400),
+                  prefixIcon: const Icon(Icons.search_rounded,
+                      color: AppColors.grey400),
+                  suffixIcon: _query.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.close, size: 18),
+                          color: AppColors.grey400,
+                          onPressed: () {
+                            _searchCtrl.clear();
+                            setState(() => _query = '');
+                          },
+                        )
+                      : null,
+                  filled: true,
+                  fillColor: fillColor,
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 12),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 4),
+
+            // Тизме
+            Expanded(
+              child: _filtered.isEmpty
+                  ? Center(
+                      child: Text('Табылган жок',
+                          style: AppTextStyles.bodySmall
+                              .copyWith(color: subColor)),
+                    )
+                  : ListView.builder(
+                      controller: scrollCtrl,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      itemCount: _filtered.length,
+                      itemBuilder: (_, i) {
+                        final s = _filtered[i];
+                        return ListTile(
+                          onTap: () => _openCompose(s),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          leading: CircleAvatar(
+                            backgroundColor: const Color(0xFFD97706)
+                                .withValues(alpha: 0.15),
+                            child: Text(
+                              s.shopName.isNotEmpty
+                                  ? s.shopName[0].toUpperCase()
+                                  : '🏪',
+                              style: const TextStyle(
+                                  color: Color(0xFFD97706),
+                                  fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          title: Text(s.shopName,
+                              style: AppTextStyles.labelLarge
+                                  .copyWith(color: textColor)),
+                          subtitle: Text(
+                            '${s.name}  •  ${s.containerNumber}',
+                            style: AppTextStyles.labelSmall
+                                .copyWith(color: subColor),
+                          ),
+                          trailing: const Icon(
+                            Icons.chevron_right_rounded,
+                            color: AppColors.grey400,
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// Билдирүү жазуу жана жөнөтүү
+// ══════════════════════════════════════════════════════
+class _ComposeMessageSheet extends StatefulWidget {
+  final SellerModel seller;
+  const _ComposeMessageSheet({required this.seller});
+
+  @override
+  State<_ComposeMessageSheet> createState() => _ComposeMessageSheetState();
+}
+
+class _ComposeMessageSheetState extends State<_ComposeMessageSheet> {
+  final _titleCtrl = TextEditingController();
+  final _bodyCtrl = TextEditingController();
+  bool _sending = false;
+
+  @override
+  void dispose() {
+    _titleCtrl.dispose();
+    _bodyCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _send() async {
+    final title = _titleCtrl.text.trim();
+    final body = _bodyCtrl.text.trim();
+    if (title.isEmpty || body.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Аталыш жана текст жазыңыз'),
+        backgroundColor: AppColors.error,
+      ));
+      return;
+    }
+    setState(() => _sending = true);
+    try {
+      await supabase.from('admin_notifications').insert({
+        'title': title,
+        'body': body,
+        'seller_id': widget.seller.uid,
+        'created_at': DateTime.now().toIso8601String(),
+      });
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('✅ ${widget.seller.shopName} дүкөнүнө жөнөтүлдү'),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10)),
+        ));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Ката: $e'),
+          backgroundColor: AppColors.error,
+        ));
+        setState(() => _sending = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final sheetBg = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final fillColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF5F5F5);
+    final textColor = isDark ? Colors.white : AppColors.black;
+    final subColor = isDark ? Colors.white60 : AppColors.grey500;
+    final labelColor = isDark ? Colors.white70 : AppColors.grey600;
+
+    return Padding(
+      padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Container(
+        decoration: BoxDecoration(
+          color: sheetBg,
+          borderRadius:
+              const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Handle
+            Center(
+              child: Container(
+                width: 40, height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white24 : Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+
+            // Башлык
+            Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor:
+                      const Color(0xFFD97706).withValues(alpha: 0.15),
+                  child: Text(
+                    widget.seller.shopName.isNotEmpty
+                        ? widget.seller.shopName[0].toUpperCase()
+                        : '🏪',
+                    style: const TextStyle(
+                        color: Color(0xFFD97706),
+                        fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(widget.seller.shopName,
+                        style: AppTextStyles.labelLarge
+                            .copyWith(color: textColor)),
+                    Text(widget.seller.containerNumber,
+                        style: AppTextStyles.labelSmall
+                            .copyWith(color: subColor)),
+                  ],
+                ),
+                const Spacer(),
+                IconButton(
+                  icon: Icon(Icons.close, color: subColor),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Аталышы
+            Text('Аталышы',
+                style: AppTextStyles.labelMedium
+                    .copyWith(color: labelColor)),
+            const SizedBox(height: 6),
+            TextField(
+              controller: _titleCtrl,
+              style: TextStyle(color: textColor),
+              decoration: InputDecoration(
+                hintText: 'Мис: Маанилүү маалымат',
+                hintStyle: TextStyle(color: AppColors.grey400),
+                filled: true,
+                fillColor: fillColor,
+                contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 12),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                      color: AppColors.primary, width: 1.5),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Текст
+            Text('Билдирүү',
+                style: AppTextStyles.labelMedium
+                    .copyWith(color: labelColor)),
+            const SizedBox(height: 6),
+            TextField(
+              controller: _bodyCtrl,
+              maxLines: 4,
+              style: TextStyle(color: textColor),
+              decoration: InputDecoration(
+                hintText: '${widget.seller.shopName} дүкөнүнө кат жазыңыз...',
+                hintStyle: TextStyle(color: AppColors.grey400),
+                filled: true,
+                fillColor: fillColor,
+                contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 12),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                      color: AppColors.primary, width: 1.5),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Жөнөт
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton.icon(
+                onPressed: _sending ? null : _send,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFD97706),
+                  disabledBackgroundColor: AppColors.grey300,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14)),
+                  elevation: 0,
+                ),
+                icon: _sending
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                            color: Colors.white, strokeWidth: 2),
+                      )
+                    : const Icon(Icons.send_rounded,
+                        color: Colors.white, size: 18),
+                label: Text(
+                  _sending ? 'Жөнөтүлүүдө...' : 'Жөнөт',
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

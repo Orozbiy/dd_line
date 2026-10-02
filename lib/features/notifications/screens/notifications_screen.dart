@@ -34,13 +34,53 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           .order('created_at', ascending: false);
       final prefs = await SharedPreferences.getInstance();
       final saved = prefs.getStringList('read_notification_ids') ?? [];
-      setState(() {
-        _notifications = List<Map<String, dynamic>>.from(data);
-        _readIds = saved.toSet();
-      });
+      final loaded = List<Map<String, dynamic>>.from(data);
+      if (mounted) {
+        setState(() {
+          _notifications = loaded;
+          _readIds = saved.toSet();
+        });
+      }
+      // Бардык билдирүүлөрдү Supabase'те окулду деп белгиле
+      await _markAllReadInSupabase(loaded);
     } catch (_) {} finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  /// Бардык жүктөлгөн билдирүүлөрдү notification_reads таблицасына жазат.
+  /// Муну кийин home_screen'дагы _checkUnread() кызыл чекени өчүрөт.
+  Future<void> _markAllReadInSupabase(
+      List<Map<String, dynamic>> notifications) async {
+    final userId = supabase.auth.currentUser?.id;
+    if (userId == null || notifications.isEmpty) return;
+    try {
+      // Буга чейин окулгандарын ал
+      final existing = await supabase
+          .from('notification_reads')
+          .select('notification_id')
+          .eq('user_id', userId);
+      final existingIds = (existing as List)
+          .map((r) => r['notification_id'] as String)
+          .toSet();
+
+      // Жаңы окулгандарды топто
+      final toInsert = notifications
+          .map((n) => n['id'] as String)
+          .where((id) => !existingIds.contains(id))
+          .map((id) => {'notification_id': id, 'user_id': userId})
+          .toList();
+
+      if (toInsert.isNotEmpty) {
+        await supabase.from('notification_reads').insert(toInsert);
+      }
+
+      // SharedPreferences'ти да жаңылта кет
+      final prefs = await SharedPreferences.getInstance();
+      final allIds = notifications.map((n) => n['id'] as String).toList();
+      await prefs.setStringList('read_notification_ids', allIds);
+      if (mounted) setState(() => _readIds = allIds.toSet());
+    } catch (_) {}
   }
 
   Future<void> _markRead(String id) async {
@@ -48,6 +88,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     setState(() => _readIds.add(id));
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList('read_notification_ids', _readIds.toList());
+    // Supabase'те да белгиле
+    final userId = supabase.auth.currentUser?.id;
+    if (userId != null) {
+      try {
+        await supabase.from('notification_reads').upsert({
+          'notification_id': id,
+          'user_id': userId,
+        });
+      } catch (_) {}
+    }
   }
 
   String _timeAgo(String? createdAt, bool isKy) {

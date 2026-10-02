@@ -476,7 +476,7 @@ class _CategoryBottomSheet extends StatelessWidget {
     // ── Бардык item үчүн бирдей: өтө аз көгүш прозрачный фон ──
     // Тандалган: категориянын түсү, тандалбаган: жарым-өткөрүмдүү нейтрал
     const neutralBg      = Color(0xFF3B82F6); // нейтрал көгүш
-    const neutralBgAlpha = 0.06;              // өтө аз — айнек сымал
+
     const borderAlpha    = 0.18;             // border жакшы көрүнсүн
 
     return ClipRRect(
@@ -517,7 +517,7 @@ class _CategoryBottomSheet extends StatelessWidget {
                     crossAxisCount: 4,
                     mainAxisSpacing: 12,
                     crossAxisSpacing: 10,
-                    childAspectRatio: 0.72,
+                    childAspectRatio: 0.75,
                   ),
                   itemCount: categories.length,
                   itemBuilder: (_, idx) {
@@ -530,73 +530,74 @@ class _CategoryBottomSheet extends StatelessWidget {
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 180),
                         decoration: BoxDecoration(
-                          color: isSelected
-                              ? catColor.withValues(alpha: 0.15)
-                              : neutralBg.withValues(alpha: neutralBgAlpha),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
                             color: isSelected
-                                ? catColor.withValues(alpha: 0.70)
+                                ? catColor.withValues(alpha: 0.85)
                                 : neutralBg.withValues(alpha: borderAlpha),
-                            width: isSelected ? 2.0 : 1.0,
+                            width: isSelected ? 2.5 : 1.0,
                           ),
                           boxShadow: isSelected
                               ? [
                                   BoxShadow(
-                                    color: catColor.withValues(alpha: 0.25),
-                                    blurRadius: 10,
+                                    color: catColor.withValues(alpha: 0.35),
+                                    blurRadius: 12,
                                     offset: const Offset(0, 3),
                                   )
                                 ]
                               : [],
                         ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // ── Сүрөт же emoji fallback ──
-                            ClipRRect(
-                              borderRadius: const BorderRadius.vertical(
-                                  top: Radius.circular(14)),
-                              child: cat.imagePath != null
-                                  ? Stack(
-                                      children: [
-                                        Image.asset(
-                                          cat.imagePath!,
-                                          width: double.infinity,
-                                          height: 60,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (_, __, ___) =>
-                                              _catFallback(catColor, cat.icon),
-                                        ),
-                                        if (isSelected)
-                                          Positioned.fill(
-                                            child: Container(
-                                              color: catColor.withValues(alpha: 0.28),
-                                            ),
-                                          ),
-                                      ],
-                                    )
-                                  : _catFallback(catColor, cat.icon),
-                            ),
-                            // ── Аты ──
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(4, 5, 4, 6),
-                              child: Text(
-                                cat.localizedName(loc.locale.languageCode),
-                                textAlign: TextAlign.center,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: isSelected
-                                      ? FontWeight.w700
-                                      : FontWeight.w500,
-                                  color: isSelected ? catColor : textColor,
-                                  height: 1.2,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(14),
+                          child: Column(
+                            children: [
+                              // ── Жогору: сүрөт толук ──
+                              Expanded(
+                                child: Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    cat.imagePath != null
+                                        ? Image.asset(
+                                            cat.imagePath!,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (_, __, ___) =>
+                                                _catFallback(catColor, cat.icon),
+                                          )
+                                        : _catFallback(catColor, cat.icon),
+                                    if (isSelected)
+                                      Container(
+                                        color: catColor.withValues(alpha: 0.20),
+                                      ),
+                                  ],
                                 ),
                               ),
-                            ),
-                          ],
+                              // ── Ылдый: категория аты ──
+                              Container(
+                                width: double.infinity,
+                                color: isDark
+                                    ? const Color(0xFF1A1A2E)
+                                    : const Color(0xFFF0F0F0),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 3, vertical: 5),
+                                child: Text(
+                                  cat.localizedName(loc.locale.languageCode),
+                                  textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: isSelected
+                                        ? FontWeight.w700
+                                        : FontWeight.w500,
+                                    color: isSelected
+                                        ? catColor
+                                        : (isDark ? Colors.white70 : Colors.black87),
+                                    height: 1.2,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     );

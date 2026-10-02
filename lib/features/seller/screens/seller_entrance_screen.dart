@@ -143,8 +143,21 @@ class SellerEntranceScreen extends StatelessWidget {
                             width: 1.5,
                           ),
                         ),
-                        child: const Center(
-                          child: Text('🏪', style: TextStyle(fontSize: 52)),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(30),
+                          child: Image.asset(
+                            'assets/images/seller_logo.jpg',
+                            width: 120,
+                            height: 120,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => const Center(
+                              child: Icon(
+                                Icons.storefront_rounded,
+                                size: 62,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ),

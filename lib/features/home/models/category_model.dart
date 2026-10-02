@@ -308,7 +308,7 @@ class CategoryModel {
       // 9. СУЛУУЛУК
       // ══════════════════════════════════════════
       const CategoryModel(
-        id: '9', name: 'Сулуулук', nameRu: 'Красота', icon: '💄', color: 'C77DFF',  imagePath: 'assets/images/categories/beauty.png',
+        id: '9', name: 'Сулуулук', nameRu: 'Красота', icon: '💄', color: 'C77DFF',  imagePath: 'assets/images/categories/beauty.jpg',
         subcategories: [
           SubCategoryModel(id: '9_1', name: 'Баары',            nameRu: 'Все',              icon: '💄'),
           SubCategoryModel(id: '9_4', name: 'Парфюм',           nameRu: 'Парфюм',          icon: '🌸'),

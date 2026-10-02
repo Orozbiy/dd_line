@@ -17,6 +17,7 @@ import '../widgets/working_hours_sheet.dart';
 import 'seller_rules_screen.dart';
 import 'seller_edit_profile_screen.dart';
 import '../../chat/models/chat_model.dart';
+import 'seller_notifications_screen.dart';
 
 class SellerDashboardScreen extends StatefulWidget {
   final String uid;
@@ -738,6 +739,10 @@ const SizedBox(height: 20),
                 ]),
               ),
 
+              // ── Админден билдирүүлөр ──
+              _AdminNotificationsBanner(isDark: isDark, sellerUid: _seller!.uid),
+              const SizedBox(height: 16),
+
               SizedBox(
                 width: double.infinity, height: 50,
                 child: OutlinedButton(
@@ -934,6 +939,173 @@ const SizedBox(height: 20),
           ])),
           const Icon(Icons.arrow_forward_ios, color: AppColors.grey400, size: 16),
         ]),
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// Админден билдирүүлөр банери (Dashboard астында)
+// ══════════════════════════════════════════════════════
+class _AdminNotificationsBanner extends StatefulWidget {
+  final bool isDark;
+  final String sellerUid;
+  const _AdminNotificationsBanner({required this.isDark, required this.sellerUid});
+
+  @override
+  State<_AdminNotificationsBanner> createState() =>
+      _AdminNotificationsBannerState();
+}
+
+class _AdminNotificationsBannerState
+    extends State<_AdminNotificationsBanner> {
+  int _count = 0;
+  bool _loaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCount();
+  }
+
+  Future<void> _loadCount() async {
+    try {
+      final rows = await supabase
+          .from('admin_notifications')
+          .select('id')
+          .or('seller_id.is.null,seller_id.eq.${widget.sellerUid}')
+          .order('created_at', ascending: false);
+      if (mounted) {
+        setState(() {
+          _count = (rows as List).length;
+          _loaded = true;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loaded = true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = widget.isDark;
+    final cardBg = isDark ? const Color(0xFF1E1A2E) : const Color(0xFFFFF8F0);
+    final borderColor = const Color(0xFFD97706).withValues(alpha: isDark ? 0.4 : 0.35);
+
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (_) => SellerNotificationsScreen(sellerUid: widget.sellerUid)),
+      ),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        decoration: BoxDecoration(
+          color: cardBg,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: borderColor),
+          boxShadow: isDark
+              ? []
+              : [
+                  BoxShadow(
+                    color: const Color(0xFFD97706).withValues(alpha: 0.08),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+        ),
+        child: Row(
+          children: [
+            // Иконка
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFD97706), Color(0xFFEF4444)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.campaign_rounded,
+                      color: Colors.white, size: 22),
+                ),
+                if (_loaded && _count > 0)
+                  Positioned(
+                    top: -5,
+                    right: -5,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 5, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.error,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                            color: isDark
+                                ? const Color(0xFF1E1A2E)
+                                : const Color(0xFFFFF8F0),
+                            width: 1.5),
+                      ),
+                      child: Text(
+                        '$_count',
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(width: 14),
+
+            // Текст
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Админден билдирүүлөр',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white : AppColors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    _loaded && _count > 0
+                        ? '$_count билдирүү бар'
+                        : 'Жаңы билдирүүлөрдү бул жерден окуңуз',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.grey500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Жебе
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: const Color(0xFFD97706).withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 14,
+                color: Color(0xFFD97706),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

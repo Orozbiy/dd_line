@@ -20,7 +20,8 @@ import '../../../core/supabase_client.dart';
 import '../../../services/notification_service.dart';
 
 class AdminNotificationSender extends StatefulWidget {
-  const AdminNotificationSender({super.key});
+  final String searchQuery;
+  const AdminNotificationSender({super.key, this.searchQuery = ''});
 
   @override
   State<AdminNotificationSender> createState() =>
@@ -622,14 +623,35 @@ class _AdminNotificationSenderState extends State<AdminNotificationSender> {
             ),
           )
         else
-          ListView.separated(
+          Builder(builder: (_) {
+            final q = widget.searchQuery.toLowerCase().trim();
+            final filtered = q.isEmpty
+                ? _sent
+                : _sent.where((n) {
+                    final t = (n['title'] as String? ?? '').toLowerCase();
+                    final b = (n['body'] as String? ?? '').toLowerCase();
+                    return t.contains(q) || b.contains(q);
+                  }).toList();
+            if (filtered.isEmpty && q.isNotEmpty) {
+              return Padding(
+                padding: const EdgeInsets.all(32),
+                child: Center(
+                  child: Text(
+                    'Издөө боюнча эч нерсе табылган жок',
+                    style: AppTextStyles.bodySmall.copyWith(color: subColor),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              );
+            }
+            return ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-            itemCount: _sent.length,
+            itemCount: filtered.length,
             separatorBuilder: (_, __) => const SizedBox(height: 10),
             itemBuilder: (_, i) {
-              final n        = _sent[i];
+              final n        = filtered[i];
               final id       = n['id'] as String;
               final title    = n['title'] as String? ?? '';
               final body     = n['body']  as String? ?? '';
@@ -780,7 +802,8 @@ class _AdminNotificationSenderState extends State<AdminNotificationSender> {
                 ),
               );
             },
-          ),
+          );
+          }),
       ],
     );
   }
