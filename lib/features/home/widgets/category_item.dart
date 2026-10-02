@@ -18,33 +18,85 @@ class CategoryItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = Color(int.parse('0xFF${category.color}'));
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
         margin: const EdgeInsets.only(right: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        width: 80,
         decoration: BoxDecoration(
-          color: isSelected ? color : AppColors.grey100,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: isSelected
-              ? [BoxShadow(color: color.withValues(alpha: 0.35), blurRadius: 8, offset: const Offset(0, 3))]
-              : [],
+          borderRadius: BorderRadius.circular(16),
+          color: isSelected ? color : (isDark ? const Color(0xFF1E1E2E) : Colors.white),
+          boxShadow: [
+            BoxShadow(
+              color: isSelected
+                  ? color.withValues(alpha: 0.40)
+                  : Colors.black.withValues(alpha: isDark ? 0.25 : 0.08),
+              blurRadius: isSelected ? 10 : 6,
+              offset: const Offset(0, 3),
+            ),
+          ],
         ),
-        child: Row(
+        child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(category.icon, style: const TextStyle(fontSize: 18)),
-            const SizedBox(width: 6),
-            Text(
-              category.name,
-              style: AppTextStyles.labelLarge.copyWith(
-                color: isSelected ? Colors.white : AppColors.grey600,
-                fontSize: 13,
+            // ── Сүрөт бөлүгү ──
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              child: category.imagePath != null
+                  ? Stack(
+                      children: [
+                        Image.asset(
+                          category.imagePath!,
+                          width: 80,
+                          height: 60,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => _fallbackIcon(color, isSelected),
+                        ),
+                        // Активдүү болсо — түс маскасы
+                        if (isSelected)
+                          Positioned.fill(
+                            child: Container(
+                              color: color.withValues(alpha: 0.30),
+                            ),
+                          ),
+                      ],
+                    )
+                  : _fallbackIcon(color, isSelected),
+            ),
+
+            // ── Аты ──
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 7),
+              child: Text(
+                category.name,
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: isSelected
+                      ? Colors.white
+                      : (isDark ? Colors.white70 : AppColors.grey600),
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  fontSize: 11,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _fallbackIcon(Color color, bool isSelected) {
+    return Container(
+      width: 80,
+      height: 60,
+      color: isSelected ? color.withValues(alpha: 0.25) : color.withValues(alpha: 0.10),
+      child: Center(
+        child: Text(category.icon, style: const TextStyle(fontSize: 28)),
       ),
     );
   }

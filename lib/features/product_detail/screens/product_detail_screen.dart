@@ -31,6 +31,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   bool _dataLoading = true;
   bool _isChatLoading = false;
   String selectedSize = '';
+  int _currentImageIndex = 0;
+  late PageController _imagePageController;
 
   late ProductModel _product;
   String? _sellerUid;
@@ -49,6 +51,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   void initState() {
     super.initState();
     _product = widget.product;
+    _imagePageController = PageController();
     _loadFullProductData();
   }
 
@@ -275,6 +278,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   @override
   void dispose() {
+    _imagePageController.dispose();
     _similarProducts.clear();
     super.dispose();
   }
@@ -296,6 +300,108 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   String _formatCount(int count) {
     if (count >= 1000) return '${(count / 1000).toStringAsFixed(1)}к';
     return count.toString();
+  }
+
+  // ── Сүрөт галереясы (слайдер) ──
+  Widget _buildImageGallery() {
+    final allImages = _product.images.isNotEmpty
+        ? _product.images
+        : (_product.imageUrl.isNotEmpty ? [_product.imageUrl] : <String>[]);
+
+    if (allImages.isEmpty) {
+      return Container(
+        color: AppColors.grey100,
+        child: const Icon(Icons.image, size: 80, color: AppColors.grey300),
+      );
+    }
+
+    return Stack(
+      children: [
+        // ── Сүрөттөр PageView ──
+        PageView.builder(
+          controller: _imagePageController,
+          itemCount: allImages.length,
+          onPageChanged: (i) => setState(() => _currentImageIndex = i),
+          itemBuilder: (context, index) {
+            final url = allImages[index];
+            return GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                PageRouteBuilder(
+                  opaque: false,
+                  barrierColor: Colors.black,
+                  transitionDuration: const Duration(milliseconds: 250),
+                  pageBuilder: (_, __, ___) => _FullscreenImageScreen(
+                    imageUrl: url,
+                    heroTag: 'product_image_${_product.id}_$index',
+                  ),
+                ),
+              ),
+              child: Hero(
+                tag: 'product_image_${_product.id}_$index',
+                child: CachedNetworkImage(
+                  imageUrl: toCloudinaryThumb(url, width: 800),
+                  fit: BoxFit.cover,
+                  fadeInDuration: const Duration(milliseconds: 150),
+                  placeholder: (_, __) => Container(color: AppColors.grey100),
+                  errorWidget: (_, __, ___) => Container(
+                    color: AppColors.grey100,
+                    child: const Icon(Icons.image_not_supported,
+                        size: 80, color: AppColors.grey300),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+
+        // ── Индикатор (болгону 1дан кем болсо жашырылат) ──
+        if (allImages.length > 1)
+          Positioned(
+            bottom: 12,
+            left: 0,
+            right: 0,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(allImages.length, (i) {
+                final active = i == _currentImageIndex;
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  width: active ? 20 : 7,
+                  height: 7,
+                  decoration: BoxDecoration(
+                    color: active ? AppColors.primary : Colors.white.withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                );
+              }),
+            ),
+          ),
+
+        // ── Санагыч (мыс. "2 / 5") ──
+        if (allImages.length > 1)
+          Positioned(
+            top: 60,
+            right: 12,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '${_currentImageIndex + 1} / ${allImages.length}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
   }
 
   // ── Жардамчы: блокту blur менен ороо ──
@@ -441,35 +547,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               const SizedBox(width: 4),
             ],
             flexibleSpace: FlexibleSpaceBar(
-              background: _product.imageUrl.isNotEmpty
-                  ? GestureDetector(
-                      onTap: () => Navigator.push(
-                          context,
-                          PageRouteBuilder(
-                            opaque: false,
-                            barrierColor: Colors.black,
-                            transitionDuration: const Duration(milliseconds: 250),
-                            pageBuilder: (_, __, ___) => _FullscreenImageScreen(
-                                imageUrl: _product.imageUrl,
-                                heroTag: 'product_image_${_product.id}'),
-                          )),
-                      child: Hero(
-                        tag: 'product_image_${_product.id}',
-                        child: CachedNetworkImage(
-                          imageUrl: toCloudinaryThumb(_product.imageUrl, width: 800),
-                          fit: BoxFit.cover,
-                          fadeInDuration: const Duration(milliseconds: 150),
-                          placeholder: (_, __) => Container(color: AppColors.grey100),
-                          errorWidget: (_, __, ___) => Container(
-                              color: AppColors.grey100,
-                              child: const Icon(Icons.image_not_supported,
-                                  size: 80, color: AppColors.grey300)),
-                        ),
-                      ),
-                    )
-                  : Container(
-                      color: AppColors.grey100,
-                      child: const Icon(Icons.image, size: 80, color: AppColors.grey300)),
+              background: _buildImageGallery(),
             ),
           ),
 

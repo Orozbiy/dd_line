@@ -447,6 +447,7 @@ class _PillRow extends StatelessWidget {
       ),
     );
   }
+
 }
 
 // ══════════════════════════════════════════════════════════
@@ -516,7 +517,7 @@ class _CategoryBottomSheet extends StatelessWidget {
                     crossAxisCount: 4,
                     mainAxisSpacing: 12,
                     crossAxisSpacing: 10,
-                    childAspectRatio: 0.82,
+                    childAspectRatio: 0.72,
                   ),
                   itemCount: categories.length,
                   itemBuilder: (_, idx) {
@@ -529,15 +530,11 @@ class _CategoryBottomSheet extends StatelessWidget {
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 180),
                         decoration: BoxDecoration(
-                          // тандалган: категориянын түсү (жарым өткөрүмдүү)
-                          // тандалбаган: бардыгы бирдей өтө аз көгүш
                           color: isSelected
-                              ? catColor.withValues(alpha: 0.18)
+                              ? catColor.withValues(alpha: 0.15)
                               : neutralBg.withValues(alpha: neutralBgAlpha),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            // тандалган: категориянын түсү
-                            // тандалбаган: жарым-өткөрүмдүү нейтрал border
                             color: isSelected
                                 ? catColor.withValues(alpha: 0.70)
                                 : neutralBg.withValues(alpha: borderAlpha),
@@ -546,36 +543,44 @@ class _CategoryBottomSheet extends StatelessWidget {
                           boxShadow: isSelected
                               ? [
                                   BoxShadow(
-                                    color: catColor.withValues(alpha: 0.20),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
+                                    color: catColor.withValues(alpha: 0.25),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 3),
                                   )
                                 ]
                               : [],
                         ),
                         child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            // Иконка тегерек — бардыгы бирдей нейтрал
-                            Container(
-                              width: 44,
-                              height: 44,
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? catColor.withValues(alpha: 0.20)
-                                    : neutralBg.withValues(alpha: 0.10),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Center(
-                                child: Text(
-                                  cat.icon,
-                                  style: const TextStyle(fontSize: 22),
-                                ),
-                              ),
+                            // ── Сүрөт же emoji fallback ──
+                            ClipRRect(
+                              borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(14)),
+                              child: cat.imagePath != null
+                                  ? Stack(
+                                      children: [
+                                        Image.asset(
+                                          cat.imagePath!,
+                                          width: double.infinity,
+                                          height: 60,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (_, __, ___) =>
+                                              _catFallback(catColor, cat.icon),
+                                        ),
+                                        if (isSelected)
+                                          Positioned.fill(
+                                            child: Container(
+                                              color: catColor.withValues(alpha: 0.28),
+                                            ),
+                                          ),
+                                      ],
+                                    )
+                                  : _catFallback(catColor, cat.icon),
                             ),
-                            const SizedBox(height: 6),
+                            // ── Аты ──
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              padding: const EdgeInsets.fromLTRB(4, 5, 4, 6),
                               child: Text(
                                 cat.localizedName(loc.locale.languageCode),
                                 textAlign: TextAlign.center,
@@ -586,7 +591,6 @@ class _CategoryBottomSheet extends StatelessWidget {
                                   fontWeight: isSelected
                                       ? FontWeight.w700
                                       : FontWeight.w500,
-                                  // текст ар дайым окулгудай — textColor
                                   color: isSelected ? catColor : textColor,
                                   height: 1.2,
                                 ),
@@ -602,6 +606,17 @@ class _CategoryBottomSheet extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _catFallback(Color color, String icon) {
+    return Container(
+      width: double.infinity,
+      height: 60,
+      color: color.withValues(alpha: 0.12),
+      child: Center(
+        child: Text(icon, style: const TextStyle(fontSize: 26)),
       ),
     );
   }
