@@ -1,7 +1,5 @@
-import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
@@ -11,6 +9,7 @@ import '../../../core/supabase_client.dart';
 import '../../home/models/category_model.dart';
 import '../screens/flash_sale_manage_screen.dart';
 import '../../../core/services/yandex_storage_service.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class SellerProductScreen extends StatefulWidget {
   final String sellerUid;
@@ -27,8 +26,6 @@ class SellerProductScreen extends StatefulWidget {
 }
 
 class _SellerProductScreenState extends State<SellerProductScreen> {
-  static const _cloudName    = 'dedwm4krp';
-  static const _uploadPreset = 'dd-online';
 
   List<Map<String, dynamic>> _products = [];
   bool _isLoading = true;
@@ -147,29 +144,6 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
       if (!mounted) return;
       setState(() => _isLoading = false);
       _showSnack('Жүктөөдө ката: $e', isError: true);
-    }
-  }
-
-  Future<String?> _uploadToCloudinary(Uint8List bytes) async {
-    final loc = AppLocalizations.of(context);
-    try {
-      final uri     = Uri.parse('https://api.cloudinary.com/v1_1/$_cloudName/image/upload');
-      final request = http.MultipartRequest('POST', uri)
-        ..fields['upload_preset'] = _uploadPreset
-        ..files.add(http.MultipartFile.fromBytes('file', bytes, filename: 'product_${DateTime.now().millisecondsSinceEpoch}.jpg'));
-      final streamedResponse = await request.send().timeout(const Duration(seconds: 60));
-      final response         = await http.Response.fromStream(streamedResponse);
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        return data['secure_url'] as String?;
-      }
-      final errorData = jsonDecode(response.body) as Map<String, dynamic>?;
-      final errorMsg  = errorData?['error']?['message'] ?? loc.get('error');
-      if (mounted) _showSnack('${loc.get('prod_img_upload_fail')}: $errorMsg', isError: true);
-      return null;
-    } catch (e) {
-      if (mounted) _showSnack('${loc.get('prod_check_internet')}: $e', isError: true);
-      return null;
     }
   }
 
@@ -337,14 +311,12 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
     _loadProducts();
   }
 
-  /// category_id боюнча аталышты кайтарат (3-деңгээлди да колдойт)
   String _getCategoryName(String id) {
     if (id.isEmpty) return '📦 Башка';
     final parts  = id.split('_');
     final mainId = parts[0];
     try {
       final cat = _allCategories.firstWhere((c) => c.id == mainId);
-      // 3-деңгээл: 1_2_1
       if (parts.length >= 3) {
         final subId  = '${parts[0]}_${parts[1]}';
         final itemId = id;
@@ -354,7 +326,6 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
           return '${cat.icon} ${cat.name} › ${sub.icon} ${sub.name} › ${item.icon} ${item.name}';
         } catch (_) {}
       }
-      // 2-деңгээл: 1_2
       if (parts.length == 2) {
         try {
           final sub = cat.subcategories.firstWhere((s) => s.id == id);
@@ -407,7 +378,6 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
       ),
       body: Column(
         children: [
-          // ── Категория фильтр ──
           Container(
             color: catBarColor,
             padding: const EdgeInsets.symmetric(vertical: 10),
@@ -436,8 +406,6 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
             ),
           ),
           Divider(height: 1, color: divColor),
-
-          // ── Товарлар тизмеси ──
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
@@ -601,13 +569,12 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
     final extra2Ctrl = TextEditingController(text: existing?['extra2'] ?? '');
     final extra3Ctrl = TextEditingController(text: existing?['extra3'] ?? '');
 
-    // ── Учурдагы category_id'ди бөлүп алуу ──
     final existingCatId = existing?['category_id'] as String? ?? '1';
     final existingParts = existingCatId.split('_');
 
     String  selectedMainCatId  = existingParts[0];
-    String? selectedSubCatId;   // 2-деңгээл: '1_2'
-    String? selectedSubItemId;  // 3-деңгээл: '1_2_3'
+    String? selectedSubCatId;
+    String? selectedSubItemId;
 
     bool mainCatExists = false;
     try { _allCategories.firstWhere((c) => c.id == selectedMainCatId); mainCatExists = true; } catch (_) {}
@@ -623,11 +590,12 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
     List<String> selectedColors = List<String>.from(existing?['colors'] ?? []);
     List<String> selectedSizes  = List<String>.from(existing?['sizes']  ?? []);
 
-    Uint8List? imageBytes;
-    final existingImages    = List<String>.from(existing?['images'] as List? ?? []);
-    String existingImageUrl = existingImages.isNotEmpty ? existingImages.first : '';
-    bool isUploading   = false;
-    bool isLoading     = false;
+    // ── ӨЗГӨРТҮҮ 1: 3 сүрөт слоту үчүн state ──
+    final existingImages = List<String>.from(existing?['images'] as List? ?? []);
+    while (existingImages.length < 3) existingImages.add('');
+    final List<Uint8List?> newImageBytes = [null, null, null];
+    bool isUploading  = false;
+    bool isLoading    = false;
     String uploadStatus = '';
 
     final dialogBg  = isDark ? const Color(0xFF1E1E1E) : Colors.white;
@@ -637,9 +605,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
     final hintClr   = isDark ? const Color(0xFF666666) : AppColors.grey400;
     final dropBg    = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF7F7F7);
 
-    // ── Размер тизмесин кайтарат (3-деңгээлди эске алат) ──
     List<String> sizesForCategory(String mainId, [String? subId, String? subItemId]) {
-      // SubItem IDине жараша (1_2_X = эркектер + мезгил, бирок размер бирдей)
       if (subId != null) {
         switch (subId) {
           case '1_2': return _menClothSizes;
@@ -657,7 +623,6 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
       }
     }
 
-    // ── Размер Label кайтарат ──
     String sizeLabelForCategory(String mainId, [String? subId, String? subItemId]) {
       if (subId != null) {
         switch (subId) {
@@ -680,33 +645,101 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
     bool hasBeautyFields(String mainId) => ['9', '10'].contains(mainId);
     bool hasAutoFields(String mainId)   => mainId == '12';
 
-    Future<void> pickImage(StateSetter setD) async {
+    // ── ӨЗГӨРТҮҮ 2: pickImage — idx параметри менен ──
+    Future<void> pickImage(int idx, StateSetter setD) async {
+      if (kIsWeb) {
+        await showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: dialogBg,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            contentPadding: const EdgeInsets.all(16),
+            content: Column(mainAxisSize: MainAxisSize.min, children: [
+              Container(width: 40, height: 4,
+                  decoration: BoxDecoration(color: AppColors.grey300, borderRadius: BorderRadius.circular(2))),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
+                title: Text('📷  ${loc.get('prod_img_camera')}',
+                    style: AppTextStyles.labelLarge.copyWith(color: textColor)),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  try {
+                    final picked = await ImagePicker().pickImage(
+                      source: ImageSource.camera,
+                      maxWidth: 1200, maxHeight: 1200, imageQuality: 85,
+                    );
+                    if (picked == null) return;
+                    final bytes = await picked.readAsBytes();
+                    if (bytes.isNotEmpty) setD(() => newImageBytes[idx] = bytes);
+                  } catch (e) {
+                    _showSnack('${loc.get('prod_img_pick_error')}: $e', isError: true);
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined, color: AppColors.primary),
+                title: Text('🖼️  ${loc.get('prod_img_gallery')}',
+                    style: AppTextStyles.labelLarge.copyWith(color: textColor)),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  try {
+                    final picked = await ImagePicker().pickImage(
+                      source: ImageSource.gallery,
+                      maxWidth: 1200, maxHeight: 1200, imageQuality: 85,
+                    );
+                    if (picked == null) return;
+                    final bytes = await picked.readAsBytes();
+                    if (bytes.isNotEmpty) setD(() => newImageBytes[idx] = bytes);
+                  } catch (e) {
+                    _showSnack('${loc.get('prod_img_pick_error')}: $e', isError: true);
+                  }
+                },
+              ),
+            ]),
+          ),
+        );
+        return;
+      }
+
+      // МОБАЙЛ
       final source = await showModalBottomSheet<ImageSource>(
         context: context,
         backgroundColor: dialogBg,
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-        builder: (ctx) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const SizedBox(height: 8),
-          Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.grey300, borderRadius: BorderRadius.circular(2))),
-          const SizedBox(height: 12),
-          ListTile(
-            leading: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
-            title: Text('📷  ${loc.get('prod_img_camera')}', style: AppTextStyles.labelLarge.copyWith(color: textColor)),
-            onTap: () => Navigator.pop(ctx, ImageSource.camera),
-          ),
-          ListTile(
-            leading: const Icon(Icons.photo_library_outlined, color: AppColors.primary),
-            title: Text('🖼️  ${loc.get('prod_img_gallery')}', style: AppTextStyles.labelLarge.copyWith(color: textColor)),
-            onTap: () => Navigator.pop(ctx, ImageSource.gallery),
-          ),
-          const SizedBox(height: 8),
-        ])),
+        shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+        builder: (ctx) => SafeArea(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            const SizedBox(height: 8),
+            Container(width: 40, height: 4,
+                decoration: BoxDecoration(color: AppColors.grey300, borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 12),
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
+              title: Text('📷  ${loc.get('prod_img_camera')}',
+                  style: AppTextStyles.labelLarge.copyWith(color: textColor)),
+              onTap: () => Navigator.pop(ctx, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined, color: AppColors.primary),
+              title: Text('🖼️  ${loc.get('prod_img_gallery')}',
+                  style: AppTextStyles.labelLarge.copyWith(color: textColor)),
+              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+            ),
+            const SizedBox(height: 8),
+          ]),
+        ),
       );
       if (source == null) return;
       try {
-        final picker = ImagePicker();
-        final picked = await picker.pickImage(source: source);
-        if (picked != null) { final bytes = await picked.readAsBytes(); setD(() => imageBytes = bytes); }
+        final picked = await ImagePicker().pickImage(
+          source: source,
+          maxWidth: 1200, maxHeight: 1200, imageQuality: 85,
+        );
+        if (picked != null) {
+          final bytes = await picked.readAsBytes();
+          if (bytes.isNotEmpty) setD(() => newImageBytes[idx] = bytes);
+        }
       } catch (e) {
         _showSnack('${loc.get('prod_img_pick_error')}: $e', isError: true);
       }
@@ -721,7 +754,6 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
           final selectedSub  = selectedSubCatId != null
               ? mainCat.subcategories.where((s) => s.id == selectedSubCatId).firstOrNull
               : null;
-          // Эффективдүү category_id: 3-деңгээл > 2-деңгээл > 1-деңгээл
           final effectiveCatId = selectedSubItemId ?? selectedSubCatId ?? selectedMainCatId;
 
           Widget labelW(String text) => Padding(
@@ -742,7 +774,6 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                 ),
               );
 
-          // ── Dropdown жардамчы функциясы ──
           Widget dropdownW({required String? value, required List<DropdownMenuItem<String?>> items, required ValueChanged<String?> onChanged, required String hint}) =>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
@@ -762,7 +793,6 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
             child: Container(
               constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.92, maxWidth: 520),
               child: Column(mainAxisSize: MainAxisSize.min, children: [
-                // ── Баш ──
                 Container(
                   padding: const EdgeInsets.all(18),
                   decoration: const BoxDecoration(
@@ -783,23 +813,104 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                   padding: const EdgeInsets.all(18),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
 
-                    // ── Сүрөт ──
-                    labelW(loc.get('prod_field_image')),
-                    GestureDetector(
-                      onTap: () => pickImage(setD),
-                      child: Container(
-                        width: double.infinity, height: 160,
-                        decoration: BoxDecoration(
-                          color: fieldFill, borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: imageBytes != null || existingImageUrl.isNotEmpty ? AppColors.primary : AppColors.grey300, width: 1.5),
-                        ),
-                        child: imageBytes != null
-                            ? ClipRRect(borderRadius: BorderRadius.circular(13), child: Image.memory(imageBytes!, fit: BoxFit.cover))
-                            : existingImageUrl.isNotEmpty
-                                ? ClipRRect(borderRadius: BorderRadius.circular(13), child: Image.network(existingImageUrl, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _uploadPlaceholder(loc)))
-                                : _uploadPlaceholder(loc),
-                      ),
+                    // ── ӨЗГӨРТҮҮ 3: 3 сүрөт слоту UI ──
+                   labelW(loc.get('prod_field_image')),
+const SizedBox(height: 6),
+Row(
+  crossAxisAlignment: CrossAxisAlignment.start,
+  children: List.generate(3, (i) {
+    final hasNew      = newImageBytes[i] != null;
+    final hasExisting = existingImages[i].isNotEmpty;
+    final isFirst     = i == 0;
+    final borderClr   = hasNew || hasExisting
+        ? AppColors.primary
+        : (isFirst
+            ? const Color(0xFFEF4444).withValues(alpha: 0.5)
+            : AppColors.grey300);
+
+    return Expanded(
+      child: Padding(
+        padding: EdgeInsets.only(right: i < 2 ? 8.0 : 0.0),
+        child: GestureDetector(
+          onTap: () => pickImage(i, setD),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              SizedBox(
+                width: double.infinity,   // ← бүтүн туурасы
+                height: 110,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: fieldFill,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: borderClr, width: 1.5),
+                  ),
+                  child: hasNew
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(13),
+                          child: Image.memory(newImageBytes[i]!,
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              height: double.infinity),
+                        )
+                      : hasExisting
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(13),
+                              child: Image.network(existingImages[i],
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                  errorBuilder: (_, __, ___) =>
+                                      _miniPlaceholder(isFirst)),
+                            )
+                          : _miniPlaceholder(isFirst),
+                ),
+              ),
+              // Номер белгиси
+              Positioned(
+                top: 5, left: 5,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: (hasNew || hasExisting)
+                        ? AppColors.primary
+                        : (isFirst ? const Color(0xFFEF4444) : AppColors.grey400),
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                  child: Text(
+                    isFirst ? '1 *' : '${i + 1}',
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+              // Жок кылуу баскычы
+              if (hasNew || hasExisting)
+                Positioned(
+                  top: 4, right: 4,
+                  child: GestureDetector(
+                    onTap: () => setD(() {
+                      newImageBytes[i] = null;
+                      existingImages[i] = '';
+                    }),
+                    child: Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: const BoxDecoration(
+                          color: Colors.black54, shape: BoxShape.circle),
+                      child: const Icon(Icons.close,
+                          size: 12, color: Colors.white),
                     ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }),
+),
                     if (isUploading) ...[
                       const SizedBox(height: 8),
                       const LinearProgressIndicator(color: AppColors.primary),
@@ -808,19 +919,14 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                     ],
                     const SizedBox(height: 14),
 
-                    // ── Товар аты ──
                     labelW(loc.get('prod_field_name')),
                     fieldW(nameCtrl, loc.get('prod_hint_name')),
                     const SizedBox(height: 14),
 
-                    // ── Баасы ──
                     labelW(loc.get('prod_field_price')),
                     fieldW(priceCtrl, loc.get('prod_hint_price'), type: TextInputType.number),
                     const SizedBox(height: 14),
 
-                    // ══════════════════════════════════════════
-                    // 1-ДЕҢГЭЭЛ: Негизги категория
-                    // ══════════════════════════════════════════
                     labelW(loc.get('prod_field_main_cat')),
                     dropdownW(
                       value: selectedMainCatId,
@@ -841,9 +947,6 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                     ),
                     const SizedBox(height: 14),
 
-                    // ══════════════════════════════════════════
-                    // 2-ДЕҢГЭЭЛ: Орто категория (Эркектер / Аялдар / Балдар ...)
-                    // ══════════════════════════════════════════
                     if (mainCat.subcategories.isNotEmpty) ...[
                       labelW(loc.get('prod_field_sub_cat')),
                       dropdownW(
@@ -877,10 +980,6 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                       const SizedBox(height: 14),
                     ],
 
-                    // ══════════════════════════════════════════
-                    // 3-ДЕҢГЭЭЛ: Кичи категория (Жазкы / Жайкы / Күзгү ...)
-                    // Subcategory тандалганда жана subItems бар болсо гана чыгат
-                    // ══════════════════════════════════════════
                     if (selectedSub != null && selectedSub.hasSubItems) ...[
                       labelW('${selectedSub.icon} ${selectedSub.name} — ${loc.locale.languageCode == 'ru' ? 'Раздел' : 'Бөлүм'}'),
                       dropdownW(
@@ -906,7 +1005,6 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                       const SizedBox(height: 14),
                     ],
 
-                    // ── Тандалган категория жолу (breadcrumb) ──
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(10)),
@@ -919,45 +1017,38 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                     ),
                     const SizedBox(height: 14),
 
-                    // ── Түстөр ──
                     if (hasColors(selectedMainCatId)) ...[
                       labelW(loc.get('prod_field_colors')),
                       _colorPicker(selectedColors, setD, isDark, loc),
                       const SizedBox(height: 14),
                     ],
 
-                    // ── Размерлер ──
                     if (hasSizes(selectedMainCatId)) ...[
                       labelW(sizeLabelForCategory(selectedMainCatId, selectedSubCatId, selectedSubItemId)),
                       _sizePicker(sizesForCategory(selectedMainCatId, selectedSubCatId, selectedSubItemId), selectedSizes, setD, isDark),
                       const SizedBox(height: 14),
                     ],
 
-                    // ── Техника талаалары ──
                     if (hasTechFields(selectedMainCatId)) ...[
                       labelW(loc.get('prod_field_brand')), fieldW(extra1Ctrl, loc.get('prod_hint_brand_tech')), const SizedBox(height: 14),
                       labelW(loc.get('prod_field_model')), fieldW(extra2Ctrl, loc.get('prod_hint_model')),      const SizedBox(height: 14),
                       labelW(loc.get('prod_field_spec')),  fieldW(extra3Ctrl, loc.get('prod_hint_spec')),       const SizedBox(height: 14),
                     ],
 
-                    // ── Сулуулук талаалары ──
                     if (hasBeautyFields(selectedMainCatId)) ...[
                       labelW(loc.get('prod_field_brand')),  fieldW(extra1Ctrl, loc.get('prod_hint_brand_beauty')), const SizedBox(height: 14),
                       labelW(loc.get('prod_field_volume')), fieldW(extra2Ctrl, loc.get('prod_hint_volume')),       const SizedBox(height: 14),
                     ],
 
-                    // ── Авто талаалары ──
                     if (hasAutoFields(selectedMainCatId)) ...[
                       labelW(loc.get('prod_field_brand')),      fieldW(extra1Ctrl, loc.get('prod_hint_brand_auto')),  const SizedBox(height: 14),
                       labelW(loc.get('prod_field_car_compat')), fieldW(extra2Ctrl, loc.get('prod_hint_car_compat')), const SizedBox(height: 14),
                     ],
 
-                    // ── Склад ──
                     labelW(loc.get('prod_field_stock')),
                     fieldW(stockCtrl, loc.get('prod_hint_stock'), type: TextInputType.number),
                     const SizedBox(height: 14),
 
-                    // ── Сүрөттөмө ──
                     labelW(loc.get('prod_field_desc')),
                     TextField(
                       controller: descCtrl, maxLines: 3,
@@ -982,42 +1073,60 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                     ),
                     const SizedBox(height: 18),
 
-                    // ── Сактоо баскычы ──
                     SizedBox(
                       width: double.infinity, height: 52,
                       child: ElevatedButton(
                         onPressed: isLoading ? null : () async {
                           final name  = nameCtrl.text.trim();
                           final price = double.tryParse(priceCtrl.text.trim());
-                          if (name.isEmpty)                                   { _showSnack(loc.get('prod_err_name'),  isError: true); return; }
-                          if (price == null || price <= 0)                    { _showSnack(loc.get('prod_err_price'), isError: true); return; }
-                          if (imageBytes == null && existingImageUrl.isEmpty) { _showSnack(loc.get('prod_err_image'), isError: true); return; }
+                          if (name.isEmpty)        { _showSnack(loc.get('prod_err_name'),  isError: true); return; }
+                          if (price == null || price <= 0) { _showSnack(loc.get('prod_err_price'), isError: true); return; }
+
+                          // ── ӨЗГӨРТҮҮ 4а: Валидация — 1-сүрөт міндеттүү ──
+                          if (newImageBytes[0] == null && existingImages[0].isEmpty) {
+                            _showSnack(loc.get('prod_err_image'), isError: true);
+                            return;
+                          }
+
                           setD(() { isLoading = true; uploadStatus = ''; });
                           try {
-                            String imageUrl = existingImageUrl;
-                            if (imageBytes != null) {
-                              setD(() { isUploading = true; uploadStatus = loc.get('prod_uploading'); });
-                              final compressed  = await compressImage(imageBytes!);
-                              final watermarked = await addWatermark(compressed);
+                            // ── ӨЗГӨРТҮҮ 4б: 3 сүрөттү жүктөө ──
+                            setD(() { isUploading = true; uploadStatus = loc.get('prod_uploading'); });
+                            final List<String> finalImageUrls = [];
+                            bool anyUploadFailed = false;
 
-
-                            final uploaded = await YandexStorageService.instance.uploadImage(
-  watermarked,
-  folder: 'products',
-);
-
-
-                              if (uploaded == null) { setD(() { isLoading = false; isUploading = false; uploadStatus = ''; }); return; }
-                              imageUrl = uploaded;
-                              setD(() { isUploading = false; uploadStatus = loc.get('prod_uploaded'); });
+                            for (int i = 0; i < 3; i++) {
+                              if (newImageBytes[i] != null) {
+                                final Uint8List uploadBytes;
+                                if (kIsWeb) {
+                                  uploadBytes = newImageBytes[i]!;
+                                } else {
+                                  final compressed = await compressImage(newImageBytes[i]!);
+                                  uploadBytes      = await addWatermark(compressed);
+                                }
+                                final uploaded = await YandexStorageService.instance.uploadImage(
+                                  uploadBytes, folder: 'products',
+                                );
+                                if (uploaded == null) { anyUploadFailed = true; break; }
+                                finalImageUrls.add(uploaded);
+                              } else if (existingImages[i].isNotEmpty) {
+                                finalImageUrls.add(existingImages[i]);
+                              }
                             }
+
+                            if (anyUploadFailed) {
+                              setD(() { isLoading = false; isUploading = false; uploadStatus = ''; });
+                              return;
+                            }
+                            setD(() { isUploading = false; uploadStatus = loc.get('prod_uploaded'); });
+
                             setD(() => uploadStatus = loc.get('prod_saving'));
                             final storeId    = await _getOrCreateStoreId();
-                            // Эффективдүү категория ID сактайт (3-деңгээл болсо ошол)
                             final finalCatId = selectedSubItemId ?? selectedSubCatId ?? selectedMainCatId;
                             final data = {
                               'title': name, 'price': price, 'category_id': finalCatId, 'store_id': storeId,
-                              'images': [imageUrl], 'in_stock': int.tryParse(stockCtrl.text.trim()) ?? 0,
+                              'images': finalImageUrls,   // ← 3 сүрөткө чейин
+                              'in_stock': int.tryParse(stockCtrl.text.trim()) ?? 0,
                               'description': descCtrl.text.trim(), 'colors': selectedColors, 'sizes': selectedSizes,
                               'extra1': extra1Ctrl.text.trim(), 'extra2': extra2Ctrl.text.trim(), 'extra3': extra3Ctrl.text.trim(),
                               'rating': existing?['rating'] ?? 0.0,
@@ -1063,21 +1172,27 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
         child: const Center(child: Text('📦', style: TextStyle(fontSize: 28))),
       );
 
-  Widget _uploadPlaceholder(AppLocalizations loc) => Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        const Icon(Icons.add_photo_alternate_outlined, size: 40, color: AppColors.grey400),
-        const SizedBox(height: 8),
-        Text(loc.get('prod_img_tap'), style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey400)),
-        const SizedBox(height: 4),
-        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          const Icon(Icons.camera_alt_outlined, size: 14, color: AppColors.grey300),
-          const SizedBox(width: 4),
-          Text(loc.get('prod_img_camera'), style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey300)),
-          const SizedBox(width: 10),
-          const Icon(Icons.photo_library_outlined, size: 14, color: AppColors.grey300),
-          const SizedBox(width: 4),
-          Text(loc.get('prod_img_gallery'), style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey300)),
-        ]),
-      ]);
+  // ── ӨЗГӨРТҮҮ 5: Жаңы _miniPlaceholder widget ──
+  Widget _miniPlaceholder(bool isRequired) => Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.add_photo_alternate_outlined,
+            size: 26,
+            color: isRequired ? AppColors.primary.withValues(alpha: 0.7) : AppColors.grey400,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            isRequired ? 'Сүрөт\nкошуу *' : '+',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 10,
+              color: isRequired ? AppColors.primary.withValues(alpha: 0.7) : AppColors.grey400,
+            ),
+          ),
+        ],
+      );
+
 
   Widget _colorPicker(List<String> selected, StateSetter setD, bool isDark, AppLocalizations loc) {
     final unselBg   = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF7F7F7);
