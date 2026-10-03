@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:ui';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
@@ -70,9 +71,10 @@ class _ChatScreenState extends State<ChatScreen> {
   static const _cloudName = 'dedwm4krp';
   static const _uploadPreset = 'dd-online';
 
-  final _service = ChatService();
-  final _msgCtrl = TextEditingController();
+  final _service    = ChatService();
+  final _msgCtrl    = TextEditingController();
   final _scrollCtrl = ScrollController();
+  final _sfxPlayer  = AudioPlayer();
 
   // ── AnimatedList key ──
   final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
@@ -216,7 +218,16 @@ class _ChatScreenState extends State<ChatScreen> {
     _msgCtrl.dispose();
     _scrollCtrl.dispose();
     _msgSub?.cancel();
+    _sfxPlayer.dispose();
     super.dispose();
+  }
+
+  // ── Смс кеткен үн (тык) ──
+  Future<void> _playSentSound() async {
+    try {
+      await _sfxPlayer.stop();
+      await _sfxPlayer.play(AssetSource('sounds/message_sent.wav'));
+    } catch (_) {}
   }
 
   // ════════════════════════════════════════════════════
@@ -464,6 +475,7 @@ Future<void> _markRead() async {
     )
         .then((_) async {
       _isSending = false;
+      _playSentSound(); // ← текст кеткенде тык
 
       String receiverLocale = 'ky';
       try {
@@ -614,6 +626,7 @@ Future<void> _pickAndSendImage() async {
       messageText: '📷 ${loc.get('chat_image')}',
       chatId: widget.chatId,
     );
+    _playSentSound(); // ← сүрөт кеткенде тык
     _scrollToBottom();
   } finally {
     if (mounted) setState(() => _isSendingImage = false);
@@ -710,7 +723,8 @@ Future<void> _sendVoiceMessage(String path, int durationSeconds) async {
       messageText: '🎵 ${loc.get('chat_audio')}',
       chatId: widget.chatId,
     );
- 
+
+    _playSentSound(); // ← үн жаздырма кеткенде тык
     _scrollToBottom();
   } finally {
     if (mounted) setState(() => _isSendingImage = false);

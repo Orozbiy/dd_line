@@ -108,20 +108,31 @@ class _ReviewSectionState extends State<ReviewSection> {
                   // Чоң сан
                   Column(
                     children: [
-                      Text(
-                        avg > 0 ? avg.toStringAsFixed(1) : '—',
-                        style: TextStyle(
-                          fontSize: 36,
-                          fontWeight: FontWeight.w900,
-                          color: avg > 0 ? Colors.amber : subColor,
-                          height: 1,
+                      if (avg > 0) ...[
+                        Text(
+                          avg.toStringAsFixed(1),
+                          style: TextStyle(
+                            fontSize: 36,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.amber,
+                            height: 1,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        count > 0 ? '$count ${loc.get('review_count')}' : loc.get('review_no_ratings'),
-                        style: TextStyle(fontSize: 11, color: subColor),
-                      ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '$count ${loc.get('review_count')}',
+                          style: TextStyle(fontSize: 11, color: subColor),
+                        ),
+                      ] else ...[
+                        Icon(Icons.star_outline_rounded,
+                            size: 36, color: subColor),
+                        const SizedBox(height: 4),
+                        Text(
+                          loc.get('review_no_ratings'),
+                          style: TextStyle(fontSize: 11, color: subColor),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
                     ],
                   ),
                   const SizedBox(width: 16),

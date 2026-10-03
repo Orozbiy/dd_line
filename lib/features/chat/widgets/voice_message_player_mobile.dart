@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
@@ -36,6 +37,17 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
   double _progress = 0.0;
   int _currentSeconds = 0;
   int _totalSeconds = 0;
+
+  // ── Ватсаптагыдай толкун (waveform) тилкелери ──
+  // Чыныгы амплитуда жок болгондуктан, аудионун URL'ине жараша
+  // туруктуу (ар дайым бирдей) псевдо-кокустук бийиктиктер жасайбыз.
+  static const int _barCount = 27;
+  late final List<double> _barHeights = _generateBarHeights(widget.audioUrl);
+
+  static List<double> _generateBarHeights(String seed) {
+    final rnd = Random(seed.hashCode);
+    return List.generate(_barCount, (_) => 0.28 + rnd.nextDouble() * 0.72);
+  }
 
   @override
   void initState() {
@@ -180,26 +192,44 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Progress bar
-                  GestureDetector(
-                    onTapDown: (details) async {
-                      final box = context.findRenderObject() as RenderBox?;
-                      if (box == null) return;
-                      final localX = details.localPosition.dx;
-                      final width  = box.size.width - 44;
-                      final ratio  = (localX / width).clamp(0.0, 1.0);
-                      final seekMs = (ratio * _totalSeconds * 1000).toInt();
-                      await _player.seek(Duration(milliseconds: seekMs));
+                  // ── Толкун (waveform) — Ватсаптагыдай ──
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      void seekTo(double localX) {
+                        final ratio = (localX / constraints.maxWidth)
+                            .clamp(0.0, 1.0);
+                        final seekMs =
+                            (ratio * _totalSeconds * 1000).toInt();
+                        _player.seek(Duration(milliseconds: seekMs));
+                      }
+
+                      return GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTapDown: (d) => seekTo(d.localPosition.dx),
+                        onHorizontalDragUpdate: (d) =>
+                            seekTo(d.localPosition.dx),
+                        child: SizedBox(
+                          height: 22,
+                          width: double.infinity,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: List.generate(_barCount, (i) {
+                              final barProgress = i / _barCount;
+                              final played = barProgress <= _progress;
+                              return Container(
+                                width: 2.5,
+                                height: 22 * _barHeights[i],
+                                decoration: BoxDecoration(
+                                  color: played ? progressColor : trackColor,
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              );
+                            }),
+                          ),
+                        ),
+                      );
                     },
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: _progress,
-                        minHeight: 4,
-                        backgroundColor: trackColor,
-                        valueColor: AlwaysStoppedAnimation(progressColor),
-                      ),
-                    ),
                   ),
                   const SizedBox(height: 4),
 

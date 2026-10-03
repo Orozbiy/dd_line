@@ -12,6 +12,7 @@ import 'admin_story_manager_screen.dart';
 import 'admin_seller_stats_screen.dart';
 import 'admin_phone_requests_screen.dart';
 import '../widgets/admin_notification_sender.dart';
+import 'admin_complaints_screen.dart';
 
 class AdminPanelScreen extends StatefulWidget {
   const AdminPanelScreen({super.key});
@@ -1009,19 +1010,36 @@ GestureDetector(
                   ],
                 ),
 
-                // ── Оң астынкы — Сатуучуга жазуу FAB ──
+                // ── Оң астынкы — Арыздар + Сатуучуга жазуу FAB ──
                 Positioned(
                   right: 16,
                   bottom: 16,
-                  child: FloatingActionButton.extended(
-                    heroTag: 'send_to_seller',
-                    onPressed: () => showAdminChatSheet(context, _allSellers),
-                    backgroundColor: const Color(0xFFD97706),
-                    icon: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
-                    label: const Text(
-                      'Сатуучуга',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-                    ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      FloatingActionButton.extended(
+                        heroTag: 'complaints',
+                        onPressed: () => _openComplaintsPanel(),
+                        backgroundColor: const Color(0xFFEF4444),
+                        icon: const Icon(Icons.flag_rounded, color: Colors.white, size: 20),
+                        label: const Text(
+                          'Арыздар',
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      FloatingActionButton.extended(
+                        heroTag: 'send_to_seller',
+                        onPressed: () => showAdminChatSheet(context, _allSellers),
+                        backgroundColor: const Color(0xFFD97706),
+                        icon: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+                        label: const Text(
+                          'Сатуучуга',
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -1045,6 +1063,68 @@ GestureDetector(
         ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
+    );
+  }
+
+  // ── Арыздар панели ──
+  void _openComplaintsPanel() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.85,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (ctx, scrollCtrl) {
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+          final bg = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+          return Container(
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Column(
+              children: [
+                const SizedBox(height: 12),
+                Container(
+                  width: 40, height: 4,
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF3A3A3A) : Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40, height: 40,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEF4444).withOpacity(0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.flag_rounded,
+                            color: Color(0xFFEF4444), size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Арыздар',
+                        style: AppTextStyles.headingMedium.copyWith(
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Expanded(child: AdminComplaintsScreen()),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 

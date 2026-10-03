@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../product_detail/screens/product_detail_screen.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../core/app_localizations.dart';
@@ -37,11 +38,19 @@ class StoreProductsScreen extends StatefulWidget {
 class _StoreProductsScreenState extends State<StoreProductsScreen> {
   List<ProductModel> _products = [];
   bool _isLoading = true;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _loadProducts();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadProducts() async {
@@ -50,7 +59,7 @@ class _StoreProductsScreenState extends State<StoreProductsScreen> {
           .from('products')
           .select('*, stores(*)')
           .eq('store_id', widget.storeId)
-          .eq('is_active', true)
+          .or('is_active.eq.true,is_active.is.null')
           .order('created_at', ascending: false);
 
       final list = (data as List)
@@ -330,6 +339,57 @@ class _StoreProductsScreenState extends State<StoreProductsScreen> {
                   ),
                 ),
 
+                // ── Поиск ──
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(14),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? Colors.white.withOpacity(0.07)
+                                : Colors.white.withOpacity(0.85),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: isDark
+                                  ? Colors.white.withOpacity(0.12)
+                                  : Colors.white,
+                            ),
+                          ),
+                          child: TextField(
+                            controller: _searchController,
+                            onChanged: (v) => setState(() => _searchQuery = v.trim().toLowerCase()),
+                            style: AppTextStyles.bodyMedium.copyWith(color: textColor),
+                            decoration: InputDecoration(
+                              hintText: isRu ? 'Поиск товаров...' : 'Товар издөө...',
+                              hintStyle: AppTextStyles.bodyMedium.copyWith(
+                                color: isDark ? Colors.white38 : AppColors.grey400,
+                              ),
+                              prefixIcon: Icon(Icons.search_rounded,
+                                  color: isDark ? Colors.white38 : AppColors.grey400, size: 22),
+                              suffixIcon: _searchQuery.isNotEmpty
+                                  ? IconButton(
+                                      icon: Icon(Icons.close_rounded,
+                                          color: isDark ? Colors.white54 : AppColors.grey500, size: 20),
+                                      onPressed: () {
+                                        _searchController.clear();
+                                        setState(() => _searchQuery = '');
+                                      },
+                                    )
+                                  : null,
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
                 // ── Товарлар ──
                 if (_products.isEmpty)
                   SliverFillRemaining(
@@ -348,44 +408,72 @@ class _StoreProductsScreenState extends State<StoreProductsScreen> {
                     ),
                   )
                 else
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (_, rowIndex) {
-                          final left  = rowIndex * 2;
-                          final right = left + 1;
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                  Builder(
+                    builder: (_) {
+                      final filtered = _searchQuery.isEmpty
+                          ? _products
+                          : _products
+                              .where((p) => p.name.toLowerCase().contains(_searchQuery))
+                              .toList();
+
+                      if (filtered.isEmpty) {
+                        return SliverFillRemaining(
+                          child: Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                Expanded(
-                                  child: _ProductCard(
-                                    product: _products[left],
-                                    isDark: isDark,
-                                    loc: loc,
-                                    productBuilder: widget.productBuilder,
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: right < _products.length
-                                      ? _ProductCard(
-                                          product: _products[right],
-                                          isDark: isDark,
-                                          loc: loc,
-                                          productBuilder: widget.productBuilder,
-                                        )
-                                      : const SizedBox(),
+                                const Text('🔍', style: TextStyle(fontSize: 40)),
+                                const SizedBox(height: 12),
+                                Text(
+                                  isRu ? 'Ничего не найдено' : 'Эч нерсе табылган жок',
+                                  style: AppTextStyles.headingSmall,
                                 ),
                               ],
                             ),
-                          );
-                        },
-                        childCount: (_products.length / 2).ceil(),
-                      ),
-                    ),
+                          ),
+                        );
+                      }
+
+                      return SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                        sliver: SliverList(
+                          delegate: SliverChildBuilderDelegate(
+                            (_, rowIndex) {
+                              final left  = rowIndex * 2;
+                              final right = left + 1;
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 10),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      child: _ProductCard(
+                                        product: filtered[left],
+                                        isDark: isDark,
+                                        loc: loc,
+                                        productBuilder: widget.productBuilder,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: right < filtered.length
+                                          ? _ProductCard(
+                                              product: filtered[right],
+                                              isDark: isDark,
+                                              loc: loc,
+                                              productBuilder: widget.productBuilder,
+                                            )
+                                          : const SizedBox(),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                            childCount: (filtered.length / 2).ceil(),
+                          ),
+                        ),
+                      );
+                    },
                   ),
               ],
             ),
@@ -414,10 +502,9 @@ class _ProductCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
-        final screen = productBuilder?.call(product);
-        if (screen != null) {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
-        }
+        final screen = productBuilder?.call(product)
+            ?? ProductDetailScreen(product: product);
+        Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
       },
       child: ClipRRect(
         borderRadius: BorderRadius.circular(14),

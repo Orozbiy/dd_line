@@ -27,6 +27,7 @@ import '../widgets/product_card.dart';
 import 'dart:ui';
 import '../constants/home_colors.dart';
 import '../widgets/home_bottom_nav.dart';
+import '../widgets/equal_height_row.dart';
 import '../widgets/home_background.dart';
 import '../../../core/update_checker.dart';
 
@@ -699,43 +700,43 @@ if (_isSearchMode || _isNearbyMode ||
                     )
                   else ...[
                     SliverPadding(
-padding: const EdgeInsets.fromLTRB(8, 15, 8, 12),
-                      sliver: SliverGrid(
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          childAspectRatio: 0.62,
-                          crossAxisSpacing: 5,
-                          mainAxisSpacing: 5,
-                        ),
+                      padding: const EdgeInsets.fromLTRB(10, 15, 10, 12),
+                      // SliverGrid childAspectRatio колдонбойбуз — ал бардык
+                      // картага бирдей бекитилген бийиктик берип, астында
+                      // боштук калтырат. EqualHeightRow ар бир катардын
+                      // бийиктигин ошол катардагы эң узун картага ылайыктайт.
+                      sliver: SliverList(
                         delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            final product = displayedProducts[index];
-                            return RepaintBoundary(
-                              key: ValueKey(product.id),
-                              child: Padding(
-                                padding: const EdgeInsets.all(2),
-                                child: GestureDetector(
-                                  onTap: () => Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (_) => ProductDetailScreen(
-                                            product: product)),
-                                  ).then((_) => setState(() {})),
-                                  child: ProductCard(
-                                    product: product,
-                                    onTap: () => Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (_) => ProductDetailScreen(
-                                              product: product)),
-                                    ).then((_) => setState(() {})),
-                                  ),
-                                ),
+                          (context, rowIndex) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 9),
+                              child: EqualHeightRow(
+                                spacing: 9,
+                                children: [
+                                  for (var col = 0; col < 2; col++)
+                                    rowIndex * 2 + col < displayedProducts.length
+                                        ? RepaintBoundary(
+                                            key: ValueKey(
+                                                displayedProducts[rowIndex * 2 + col].id),
+                                            child: ProductCard(
+                                              product: displayedProducts[
+                                                  rowIndex * 2 + col],
+                                              onTap: () => Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (_) => ProductDetailScreen(
+                                                      product: displayedProducts[
+                                                          rowIndex * 2 + col]),
+                                                ),
+                                              ).then((_) => setState(() {})),
+                                            ),
+                                          )
+                                        : const SizedBox.shrink(),
+                                ],
                               ),
                             );
                           },
-                          childCount: displayedProducts.length,
+                          childCount: (displayedProducts.length / 2).ceil(),
                         ),
                       ),
                     ),
@@ -786,13 +787,13 @@ padding: const EdgeInsets.fromLTRB(8, 15, 8, 12),
                                     margin:
                                         const EdgeInsets.fromLTRB(8, 6, 4, 6),
                                     padding: const EdgeInsets.symmetric(
-                                        horizontal: 14, vertical: 9),
+                                        horizontal: 17, vertical: 11),
                                     decoration: BoxDecoration(
                                       color: isDark
                                           ? const Color(0xFF2C1A00)
                                               .withOpacity(0.55)
                                           : Colors.white.withOpacity(0.45),
-                                      borderRadius: BorderRadius.circular(10),
+                                      borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
                                           color: const Color(0xFFD97706)
                                               .withOpacity(0.55),
@@ -812,7 +813,7 @@ padding: const EdgeInsets.fromLTRB(8, 15, 8, 12),
                                         style: const TextStyle(
                                             color: Color(0xFFD97706),
                                             fontWeight: FontWeight.w700,
-                                            fontSize: 13)),
+                                            fontSize: 15)),
                                   ),
                                 ),
                                 // DD Online логотипи

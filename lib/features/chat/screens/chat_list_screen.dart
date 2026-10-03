@@ -176,15 +176,19 @@ for (final id in toDelete) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    // ── Арткы фон көрүнүшү үчүн transparent ──
     final appBarBg = isDark
         ? Colors.black.withOpacity(0.55)
-        : Colors.white.withOpacity(0.65);
+        : Colors.white.withOpacity(0.95);
 
-    // ── Чат карточка фону — жарым өткөрүмдүү ──
+    // ── Чат карточка фону ──
     final cardBg = isDark
         ? Colors.white.withOpacity(0.06)
-        : Colors.white.withOpacity(0.75);
+        : Colors.white;
+
+    // ── Scaffold фону: сатуучудан ачылса таза ак/кара ──
+    final scaffoldBg = isDark
+        ? const Color(0xFF121212)
+        : Colors.white;
 
     final myId = supabase.auth.currentUser?.id ?? '';
     final stream = widget.isSeller
@@ -192,9 +196,8 @@ for (final id in toDelete) {
         : _service.buyerChatsStream(myId);
 
     return Scaffold(
-      // ── Арткы HomeBackground көрүнөт ──
-      backgroundColor: Colors.transparent,
-      extendBodyBehindAppBar: true,
+      backgroundColor: scaffoldBg,
+      extendBodyBehindAppBar: false,
 
       // ── AppBar — размытие ──
       appBar: PreferredSize(
@@ -343,8 +346,8 @@ for (final id in toDelete) {
                         : Border.all(
                             color: isDark
                                 ? Colors.white.withOpacity(0.08)
-                                : Colors.black.withOpacity(0.05),
-                            width: 0.8),
+                                : const Color(0xFFE8EAED),
+                            width: 1.0),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.04),
@@ -519,7 +522,7 @@ class _ChatSkeletonListState extends State<_ChatSkeletonList>
 
         final cardBg = isDark
             ? Colors.white.withOpacity(0.06)
-            : Colors.white.withOpacity(0.75);
+            : Colors.white;
 
         return ListView.builder(
           padding: EdgeInsets.fromLTRB(
@@ -538,8 +541,8 @@ class _ChatSkeletonListState extends State<_ChatSkeletonList>
               border: Border.all(
                 color: isDark
                     ? Colors.white.withOpacity(0.08)
-                    : Colors.black.withOpacity(0.05),
-                width: 0.8,
+                    : const Color(0xFFE8EAED),
+                width: 1.0,
               ),
             ),
             child: Row(

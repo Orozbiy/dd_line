@@ -27,33 +27,35 @@ class _GlassBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    // ── Таза, фон аша өтпөгөн түстөр ──
     final Color bgColor = isMe
         ? (isDark
-            ? const Color(0xFF1A6FD4).withValues(alpha: 0.45)
-            : AppColors.primary.withValues(alpha: 0.55))
+            ? const Color(0xFF1565C0)   // dark: ачык көк
+            : const Color(0xFF1976D2))  // light: көк
         : (isDark
-            ? Colors.white.withValues(alpha: 0.10)
-            : Colors.white.withValues(alpha: 0.65));
+            ? const Color(0xFF2C2C2C)   // dark: күңүрт серый
+            : Colors.white);            // light: таза ак
 
     final Color borderColor = isMe
-        ? Colors.white.withValues(alpha: 0.30)
+        ? Colors.white.withValues(alpha: 0.15)
         : (isDark
-            ? Colors.white.withValues(alpha: 0.20)
-            : Colors.white.withValues(alpha: 0.80));
+            ? Colors.white.withValues(alpha: 0.08)
+            : Colors.black.withValues(alpha: 0.06));
 
-    return ClipRRect(
-      borderRadius: borderRadius,
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-        child: Container(
-          decoration: BoxDecoration(
-            color: bgColor,
-            borderRadius: borderRadius,
-            border: Border.all(color: borderColor, width: 1.0),
+    return Container(
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: borderRadius,
+        border: Border.all(color: borderColor, width: 0.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.08),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
-          child: child,
-        ),
+        ],
       ),
+      child: child,
     );
   }
 }
@@ -605,11 +607,13 @@ class MessageBubble extends StatelessWidget {
                           Text(
                             message.text,
                             style: AppTextStyles.bodyMedium.copyWith(
+                              fontSize: 15.5,
+                              fontWeight: FontWeight.w500,
                               color: isMe
                                   ? Colors.white
                                   : (isDark
                                       ? Colors.white
-                                      : AppColors.black),
+                                      : const Color(0xFF1A1A1A)),
                             ),
                           ),
 
@@ -633,8 +637,10 @@ class MessageBubble extends StatelessWidget {
                               message.formattedTime,
                               style: AppTextStyles.labelSmall.copyWith(
                                 color: isMe
-                                    ? Colors.white.withValues(alpha: 0.7)
-                                    : AppColors.grey400,
+                                    ? Colors.white.withValues(alpha: 0.85)
+                                    : (isDark
+                                        ? Colors.white.withValues(alpha: 0.55)
+                                        : const Color(0xFF757575)),
                               ),
                             ),
                             if (isMe) ...[

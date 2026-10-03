@@ -64,15 +64,16 @@ class _SellerNotificationsScreenState
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF121212) : const Color(0xFFF4F5F7);
-    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final bgColor   = isDark ? const Color(0xFF121212) : Colors.white;
+    final cardColor = isDark ? const Color(0xFF1E1E1E) : const Color(0xFFF7F8FA);
     final textColor = isDark ? Colors.white : AppColors.black;
-    final subColor = isDark ? Colors.white60 : AppColors.grey500;
+    final subColor  = isDark ? Colors.white60 : AppColors.grey500;
 
     return Scaffold(
       backgroundColor: bgColor,
       appBar: AppBar(
         backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: textColor),
@@ -135,12 +136,18 @@ class _SellerNotificationsScreenState
                         decoration: BoxDecoration(
                           color: cardColor,
                           borderRadius: BorderRadius.circular(16),
+                          border: isDark
+                              ? null
+                              : Border.all(
+                                  color: const Color(0xFFE8EAED),
+                                  width: 1,
+                                ),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black
-                                  .withValues(alpha: isDark ? 0.3 : 0.07),
-                              blurRadius: 10,
-                              offset: const Offset(0, 3),
+                                  .withValues(alpha: isDark ? 0.3 : 0.04),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
                             ),
                           ],
                         ),

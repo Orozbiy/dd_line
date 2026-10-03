@@ -1,9 +1,14 @@
 import 'dart:ui';
+import 'package:flutter/rendering.dart' show ScrollDirection;
 import '../widgets/similar_products_section.dart';
+import '../widgets/recommended_products_section.dart';
+import '../widgets/detail_buttons.dart';
+import '../widgets/navigation_guide_sheet.dart';
+import '../widgets/fullscreen_image_screen.dart';
+import '../widgets/complaint_sheet.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
@@ -16,6 +21,7 @@ import '../../chat/screens/chat_screen.dart';
 import '../../chat/services/chat_service.dart';
 import '../../store/screens/store_products_screen.dart';
 import '../widgets/review_section.dart';
+import '../widgets/pulse_box.dart';
 import '../widgets/share_widget.dart';
 
 class ProductDetailScreen extends StatefulWidget {
@@ -26,10 +32,21 @@ class ProductDetailScreen extends StatefulWidget {
   State<ProductDetailScreen> createState() => _ProductDetailScreenState();
 }
 
-class _ProductDetailScreenState extends State<ProductDetailScreen> {
+class _ProductDetailScreenState extends State<ProductDetailScreen>
+    with WidgetsBindingObserver {
   final _fav = FavoritesManager();
   final _chatService = ChatService();
-  bool _dataLoading = true;
+  // Тизмеден келген product маалыматы (аты, баасы, сүрөттөрү, ж.б.) толук
+  // экранды дароо көрсөтүү үчүн жетиштүү — андыктан баштапкы мааниси false:
+  // колдонуучу ачылганда спиннерге күтпөй, товарды дароо көрөт.
+  bool _dataLoading = false;
+  // Дүкөн/сатуучу маалыматы (chat/маршрут үчүн керек) фондо жүктөлөт
+  bool _sellerInfoLoading = true;
+  bool _navGuideOpen = false;
+  // Колдонуучу геолокация/жайгашкан жер жөндөөлөрүнө жөнөтүлгөн —
+  // тиркемеге кайра кайтканда (app resumed) геолокация жанык болсо,
+  // кайра баскыч басылбай эле автоматтык түрдө 2ГИС'ке өтөт
+  bool _waitingForLocationSettings = false;
   bool _isChatLoading = false;
   String selectedSize = '';
   int _currentImageIndex = 0;
@@ -47,14 +64,35 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   String _workEnd = '';
   String _workDays = '';
   String? _avatarUrl;
-  List<ProductModel> _similarProducts = [];
+
+  // ── Төмөнкү баскычтар: ылдый жылдырганда жашырынат, жогору
+  // жылдырганда же токтогондо кайра чыгат ──
+  final ValueNotifier<bool> _buttonsVisible = ValueNotifier<bool>(true);
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _product = widget.product;
     _imagePageController = PageController();
+    // shopId дароо белгилүү болсо — storeId'ти алдын ала коюп коюу
+    if (widget.product.shopId.isNotEmpty) {
+      _storeId = widget.product.shopId;
+    }
+    // Экран дароо көрүнөт (жогорудагы _product менен); калган маалымат
+    // фондо жүктөлөт. "Окшош товарлар" өзүнчө виджет катары өзү жүктөйт.
     _loadFullProductData();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // Колдонуучу геолокация/жайгашкан жер жөндөөлөрүнөн кайтты —
+    // геолокация жанык болсо, баскычты кайра баспай эле 2ГИС'ке өтөбүз
+    if (state == AppLifecycleState.resumed && _waitingForLocationSettings) {
+      _waitingForLocationSettings = false;
+      _openMapNavigation();
+    }
   }
 
   Future<void> _loadFullProductData() async {
@@ -64,38 +102,39 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           .select('*, stores(*)')
           .eq('id', widget.product.id)
           .single();
-      if (mounted) {
-        setState(() => _product = ProductModel.fromMap(data));
-        final storeData = data['stores'] as Map<String, dynamic>?;
-        if (storeData != null) {
-          setState(() {
-            _storeId = storeData['id'] as String?;
-            _sellerUid = storeData['owner_id'] as String?;
-            _shopName = storeData['store_name'] as String? ?? '';
-            _containerNumber = [
-              storeData['market'] as String? ?? '',
-              storeData['district'] as String? ?? ''
-            ].where((s) => s.isNotEmpty).join(', ');
-            _workStart = storeData['work_start'] as String? ?? '';
-            _workEnd = storeData['work_end'] as String? ?? '';
-            _workDays = storeData['work_days'] as String? ?? '';
-          });
-          if (_sellerUid != null) {
-            try {
-              final profile = await supabase
-                  .from('profiles')
-                  .select('full_name, store_type, market_name, avatar_url')
-                  .eq('id', _sellerUid!)
-                  .single();
-              if (mounted)
-                setState(() {
-                  _sellerName = profile['full_name'] as String? ?? '';
-                  _storeType = profile['store_type'] as String? ?? 'market';
-                  _marketName = profile['market_name'] as String? ?? '';
-                  _avatarUrl = profile['avatar_url'] as String?;
-                });
-            } catch (_) {}
-          }
+      if (!mounted) return;
+      setState(() => _product = ProductModel.fromMap(data));
+      final storeData = data['stores'] as Map<String, dynamic>?;
+      if (storeData != null) {
+        setState(() {
+          _storeId = storeData['id'] as String?;
+          _sellerUid = storeData['owner_id'] as String?;
+          _shopName = storeData['store_name'] as String? ?? '';
+          _containerNumber = [
+            storeData['market'] as String? ?? '',
+            storeData['district'] as String? ?? ''
+          ].where((s) => s.isNotEmpty).join(', ');
+          _workStart = storeData['work_start'] as String? ?? '';
+          _workEnd = storeData['work_end'] as String? ?? '';
+          _workDays = storeData['work_days'] as String? ?? '';
+        });
+        if (_sellerUid != null) {
+          // Сатуучунун профилин да фондо, күттүрбөй жүктөйбүз
+          supabase
+              .from('profiles')
+              .select('full_name, store_type, market_name, avatar_url')
+              .eq('id', _sellerUid!)
+              .single()
+              .then((profile) {
+            if (mounted) {
+              setState(() {
+                _sellerName = profile['full_name'] as String? ?? '';
+                _storeType = profile['store_type'] as String? ?? 'market';
+                _marketName = profile['market_name'] as String? ?? '';
+                _avatarUrl = profile['avatar_url'] as String?;
+              });
+            }
+          }).catchError((_) {});
         }
       }
 
@@ -113,48 +152,23 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     } catch (e) {
       debugPrint('❌ _loadFullProductData: $e');
     } finally {
-      await _loadSimilarProducts();
-      if (mounted) setState(() => _dataLoading = false);
-    }
-  }
-
-  Future<void> _loadSimilarProducts() async {
-    try {
-      List<dynamic> data = [];
-      // 1. Алгач окшош категориядагы товарлар
-      if (_product.category != null && _product.category!.isNotEmpty) {
-        data = await supabase
-            .from('products')
-            .select('*, stores(store_name, owner_id)')
-            .eq('category_id', _product.category!)
-            .eq('is_active', true)
-            .neq('id', _product.id)
-            .limit(6);
-      }
-      // 2. Аз болсо — башка товарлар менен толуктайт
-      if (data.length < 4) {
-        final extra = await supabase
-            .from('products')
-            .select('*, stores(store_name, owner_id)')
-            .eq('is_active', true)
-            .neq('id', _product.id)
-            .order('views_count', ascending: false)
-            .limit(6);
-        data = [...data, ...extra];
-      }
-      final ids = <String>{};
-      final list = (data)
-          .cast<Map<String, dynamic>>()
-          .where((row) => ids.add(row['id'] as String))
-          .map((row) => ProductModel.fromMap(row))
-          .toList();
-      if (mounted) setState(() => _similarProducts = list);
-    } catch (e) {
-      debugPrint('_loadSimilarProducts: $e');
+      if (mounted) setState(() => _sellerInfoLoading = false);
     }
   }
 
   Future<void> _openMapNavigation() async {
+    // Баскычты бир нече жолу катар бассаңыз да, бир гана жолу иштейт —
+    // "маршрут түзүү" экрандары катмарланып чыкпайт
+    if (_navGuideOpen) return;
+    _navGuideOpen = true;
+    try {
+      await _openMapNavigationInner();
+    } finally {
+      if (mounted) _navGuideOpen = false;
+    }
+  }
+
+  Future<void> _openMapNavigationInner() async {
     final loc = AppLocalizations.of(context);
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
@@ -165,11 +179,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       }
     }
     if (permission == LocationPermission.deniedForever) {
-      if (mounted) await Geolocator.openAppSettings();
+      if (mounted) {
+        // Жөндөөлөрдөн кайтканда (уруксат берилсе) автоматтык улантуу
+        _waitingForLocationSettings = true;
+        await Geolocator.openAppSettings();
+      }
       return;
     }
     final serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
+      // Жайгашкан жер (GPS) жөндөөлөрүнөн кайтканда, жанык болсо,
+      // баскычты кайра баспай эле автоматтык түрдө 2ГИС'ке өтөбүз
+      _waitingForLocationSettings = true;
       await Geolocator.openLocationSettings();
       return;
     }
@@ -192,7 +213,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         }
       }
       if (storeId != null) {
-        setState(() => _dataLoading = true);
+        // Бүт экранды жаппай, өзүнчө флаг менен гана белгилейбиз
         try {
           final store = await supabase
               .from('stores')
@@ -205,7 +226,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           debugPrint('❌ stores lat/lng: $e');
         }
         if (!mounted) return;
-        setState(() => _dataLoading = false);
       }
     }
 
@@ -218,7 +238,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       context: context,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (ctx) => _NavigationGuideSheet(
+      builder: (ctx) => NavigationGuideSheet(
           shopName: _shopName,
           containerNumber: _containerNumber,
           sellerLat: sellerLat!,
@@ -229,7 +249,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   Future<void> _openChat() async {
     if (_isChatLoading) return;
     final loc = AppLocalizations.of(context);
-    if (_dataLoading) {
+    if (_sellerInfoLoading) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(loc.get('loading')),
         duration: const Duration(seconds: 1),
@@ -295,10 +315,26 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     ));
   }
 
+  void _showComplaintSheet(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+    final isRu = loc.locale.languageCode == 'ru';
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => ComplaintSheet(
+        productId: _product.id,
+        productName: _product.name,
+        isRu: isRu,
+      ),
+    );
+  }
+
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _imagePageController.dispose();
-    _similarProducts.clear();
+    _buttonsVisible.dispose();
     super.dispose();
   }
 
@@ -351,7 +387,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   opaque: false,
                   barrierColor: Colors.black,
                   transitionDuration: const Duration(milliseconds: 250),
-                  pageBuilder: (_, __, ___) => _FullscreenImageScreen(
+                  pageBuilder: (_, __, ___) => FullscreenImageScreen(
                     images: allImages,
                     initialIndex: index,
                     heroTag: 'product_image_${_product.id}_$index',
@@ -394,50 +430,57 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   ],
                 ),
               ),
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                itemCount: allImages.length,
-                itemBuilder: (_, i) {
-                  final isActive = i == _currentImageIndex;
-                  return GestureDetector(
-                    onTap: () {
-                      _imagePageController.animateToPage(
-                        i,
-                        duration: const Duration(milliseconds: 280),
-                        curve: Curves.easeInOut,
-                      );
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      margin: const EdgeInsets.only(right: 8),
-                      width: isActive ? 54 : 46,
-                      height: isActive ? 54 : 46,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: isActive ? AppColors.primary : Colors.white54,
-                          width: isActive ? 2.5 : 1.5,
-                        ),
-                        boxShadow: isActive
-                            ? [BoxShadow(color: AppColors.primary.withOpacity(0.4), blurRadius: 8)]
-                            : [],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: CachedNetworkImage(
-                          imageUrl: toCloudinaryThumb(allImages[i], width: 120),
-                          fit: BoxFit.cover,
-                          placeholder: (_, __) => Container(color: Colors.white12),
-                          errorWidget: (_, __, ___) => Container(
-                            color: Colors.white12,
-                            child: const Icon(Icons.image, size: 18, color: Colors.white38),
+              // Align + оңго түздөгөн Row: аз сүрөт болсо оң четке
+              // жыйналат, көп болсо горизонталдык scroll иштейт
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: List.generate(allImages.length, (i) {
+                      final isActive = i == _currentImageIndex;
+                      return GestureDetector(
+                        onTap: () {
+                          _imagePageController.animateToPage(
+                            i,
+                            duration: const Duration(milliseconds: 280),
+                            curve: Curves.easeInOut,
+                          );
+                        },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          margin: const EdgeInsets.only(left: 8),
+                          width: isActive ? 54 : 46,
+                          height: isActive ? 54 : 46,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: isActive ? AppColors.primary : Colors.white54,
+                              width: isActive ? 2.5 : 1.5,
+                            ),
+                            boxShadow: isActive
+                                ? [BoxShadow(color: AppColors.primary.withOpacity(0.4), blurRadius: 8)]
+                                : [],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: CachedNetworkImage(
+                              imageUrl: toCloudinaryThumb(allImages[i], width: 120),
+                              fit: BoxFit.cover,
+                              placeholder: (_, __) => Container(color: Colors.white12),
+                              errorWidget: (_, __, ___) => Container(
+                                color: Colors.white12,
+                                child: const Icon(Icons.image, size: 18, color: Colors.white38),
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    ),
-                  );
-                },
+                      );
+                    }),
+                  ),
+                ),
               ),
             ),
           ),
@@ -445,8 +488,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         // ── Санагыч "2 / 3" ──
         if (allImages.length > 1)
           Positioned(
-            top: 60,
-            right: 12,
+            // ← Асты-сол жакка жылдырылды: үстүнкү жүрөк/бөлүшүү
+            // баскычтарына жакын болбошу үчүн
+            bottom: 12,
+            left: 12,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
@@ -469,8 +514,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   // ── Жардамчы: блокту blur менен ороо ──
   Widget _blurBlock(Widget child, Color cardColor) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      color: cardColor,
+      margin: const EdgeInsets.symmetric(horizontal: 12),
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.06)
+              : Colors.black.withValues(alpha: 0.05),
+        ),
+      ),
       child: child,
     );
   }
@@ -548,7 +604,23 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
     return Scaffold(
       backgroundColor: scaffoldBg,
-      body: Stack(
+      body: NotificationListener<UserScrollNotification>(
+        onNotification: (n) {
+          // ValueNotifier'ге setState эмес, түз мааниси коюлат — ошондуктан
+          // бул бүт 1500 саптык build()ди эмес, баскыч тилкесин гана
+          // кайра курат (scroll учурундагы jank четтетилет)
+          if (n.direction == ScrollDirection.reverse &&
+              _buttonsVisible.value) {
+            // ылдый жылдырып жатат (мазмун жогору жылат) → жашыр
+            _buttonsVisible.value = false;
+          } else if (n.direction != ScrollDirection.reverse &&
+              !_buttonsVisible.value) {
+            // жогору жылдырды же токтоду → кайра көрсөт
+            _buttonsVisible.value = true;
+          }
+          return false;
+        },
+        child: Stack(
         children: [
           // ── Арткы фон: dark → синий градиент, light → ак ──
           if (isDark)
@@ -632,17 +704,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           // ── Баа + аты ──
                           _blurBlock(
                             Padding(
-                              padding: const EdgeInsets.all(16),
+                              padding: const EdgeInsets.all(14),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   _buildPriceSection(loc),
-                                  const SizedBox(height: 8),
-                                  const SizedBox(height: 8),
+                                  const SizedBox(height: 10),
                                   Text(_product.name,
                                       style: AppTextStyles.headingMedium
-                                          .copyWith(fontSize: 24)),
-                                  const SizedBox(height: 8),
+                                          .copyWith(fontSize: 22, height: 1.25)),
+                                  const SizedBox(height: 10),
                                   Row(children: [
                                     if ((_product.rating ?? 0) > 0) ...[
                                       const Icon(Icons.star_rounded,
@@ -720,13 +791,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               _product.description!.isNotEmpty) ...[
                             _blurBlock(
                               Padding(
-                                padding: const EdgeInsets.all(16),
+                                padding: const EdgeInsets.all(14),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(loc.get('description'),
                                         style: AppTextStyles.headingSmall),
-                                    const SizedBox(height: 8),
+                                    const SizedBox(height: 10),
                                     Text(_product.description!,
                                         style: AppTextStyles.bodyMedium),
                                   ],
@@ -741,13 +812,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           if (_product.sizes.isNotEmpty) ...[
                             _blurBlock(
                               Padding(
-                                padding: const EdgeInsets.all(16),
+                                padding: const EdgeInsets.all(14),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(loc.get('select_size'),
                                         style: AppTextStyles.headingSmall),
-                                    const SizedBox(height: 12),
+                                    const SizedBox(height: 10),
                                     Wrap(
                                       spacing: 8,
                                       runSpacing: 8,
@@ -794,13 +865,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           // ── Сатуучу маалыматы (жаңы дизайн) ──
                           _blurBlock(
                             Padding(
-                              padding: const EdgeInsets.all(16),
+                              padding: const EdgeInsets.all(14),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(loc.get('seller'),
-                                      style: AppTextStyles.headingMedium),
-                                  const SizedBox(height: 12),
+                                      style: AppTextStyles.headingSmall),
+                                  const SizedBox(height: 10),
                                   Row(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
@@ -824,7 +895,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                                 : null,
                                           ),
                                           const SizedBox(height: 8),
-                                          GestureDetector(
+                                          PulseBox(
+                                              child: GestureDetector(
                                             onTap: () {
                                               if (_storeId != null) {
                                                 Navigator.push(
@@ -858,12 +930,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                                     : 'Кирүү',
                                                 style: const TextStyle(
                                                   color: Colors.white,
-                                                  fontSize: 12,
+                                                  fontSize: 13,
                                                   fontWeight: FontWeight.bold,
                                                 ),
                                               ),
                                             ),
-                                          ),
+                                          )),
                                         ],
                                       ),
                                       const SizedBox(width: 14),
@@ -997,16 +1069,24 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   const Divider(height: 1),
                                   const SizedBox(height: 10),
                                   GestureDetector(
-                                    onTap: () {
-                                      // TODO: report seller
-                                    },
-                                    child: Text(
-                                      ' ${loc.locale.languageCode == 'ru' ? 'Пожаловаться' : 'Арыздануу'}',
-                                      style: const TextStyle(
-                                        color: Color(0xFFEF4444),
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                    onTap: () => _showComplaintSheet(context),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.flag_outlined,
+                                            color: Color(0xFFEF4444), size: 16),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          loc.locale.languageCode == 'ru'
+                                              ? 'Пожаловаться'
+                                              : 'Арыздануу',
+                                          style: const TextStyle(
+                                            color: Color(0xFFEF4444),
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ],
@@ -1019,7 +1099,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           // ── Бөлүшүү кнопкасы ──
                           Container(
                             margin: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 4),
+                                horizontal: 12, vertical: 2),
                             decoration: BoxDecoration(
                               gradient: const LinearGradient(
                                 colors: [Color(0xFF10B981), Color(0xFF059669)],
@@ -1073,12 +1153,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
                           Padding(
                               padding:
-                                  const EdgeInsets.symmetric(horizontal: 16),
+                                  const EdgeInsets.symmetric(horizontal: 12),
                               child: ReviewSection(productId: _product.id)),
                           SimilarProductsSection(
-                            initialProducts: _similarProducts,
+                            initialProducts: const [],
                             currentProductId: _product.id,
                             categoryId: _product.category,
+                            productBuilder: (p) => ProductDetailScreen(product: p),
+                          ),
+                          // ── "Окшош товарлар" бүткөндөн кийин — бардык
+                          // товарлардан аралаштырылган чексиз тасма ──
+                          RecommendedProductsSection(
+                            currentProductId: _product.id,
                             productBuilder: (p) => ProductDetailScreen(product: p),
                           ),
                           const SizedBox(height: 100),
@@ -1087,58 +1173,73 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               ),
             ],
           ),
-        ], // ← Stack children
-      ), // ← Stack
-
-      // ── Төмөнкү баскычтар ──
-      bottomNavigationBar: Container(
-        padding: EdgeInsets.fromLTRB(
-            16, 10, 16, MediaQuery.of(context).padding.bottom + 10),
-        color: Colors.transparent,
-        child: Row(
+          // ── Төмөнкү баскычтар: Positioned — артында кара фон жок,
+          // товарлар ылдыйда көрүнүп турат ──
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            // ── ValueListenableBuilder: _buttonsVisible өзгөргөндө
+            // бул кичине тилке гана кайра курулат, бүт экран эмес ──
+            child: ValueListenableBuilder<bool>(
+              valueListenable: _buttonsVisible,
+              builder: (context, buttonsVisible, _) => Container(
+              padding: EdgeInsets.fromLTRB(
+                  16, 10, 16, MediaQuery.of(context).padding.bottom + 10),
+              color: Colors.transparent,
+              child: Row(
           children: [
+            // ── Чат баскычы: ылдый жылдырганда АСТЫГА жашырынат ──
             Expanded(
               flex: 2,
-              child: Container(
-                height: 52,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF10B981), Color(0xFF059669)],
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                  ),
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF10B981)
-                          .withValues(alpha: isDark ? 0.25 : 0.30),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                      spreadRadius: -2,
-                    ),
-                  ],
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
+              child: AnimatedSlide(
+                duration: const Duration(milliseconds: 260),
+                curve: Curves.easeOut,
+                offset: buttonsVisible ? Offset.zero : const Offset(0, 2),
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 200),
+                  opacity: buttonsVisible ? 1 : 0,
+                  // ── GradientButton: Маршрут баскычындагыдай эле
+                  // басканда кичирейип-жарчыйт (AnimatedScale) ──
+                  child: GradientButton(
+                    height: 52,
+                    borderRadius: 14,
+                    colors: const [Color(0xFF10B981), Color(0xFF059669)],
+                    pressedColors: const [Color(0xFF059669), Color(0xFF047857)],
+                    shadowColor: const Color(0xFF10B981),
                     onTap: _isChatLoading
                         ? null
                         : () async {
                             if (_isChatLoading) return;
                             await _openChat();
                           },
-                    borderRadius: BorderRadius.circular(14),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    child: Stack(
+                      alignment: Alignment.center,
                       children: [
-                        const Icon(Icons.chat_bubble_rounded,
-                            color: Colors.white, size: 18),
-                        const SizedBox(width: 6),
-                        Text(
-                          loc.locale.languageCode == 'ru' ? 'Чат' : 'Чат',
-                          style: AppTextStyles.labelMedium.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
+                        Positioned(
+                          right: -8,
+                          bottom: -12,
+                          child: Icon(Icons.shopping_bag_rounded,
+                              size: 48,
+                              color: Colors.white.withValues(alpha: 0.16)),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.chat_bubble_rounded,
+                                  color: Colors.white, size: 20),
+                              const SizedBox(width: 8),
+                              const Text(
+                                'Чат',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -1147,30 +1248,64 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            // ── Эки баскычты ачык ажыратуу үчүн кеңейтилген боштук ──
+            const SizedBox(width: 18),
+            // ── Маршрут баскычы: ылдый жылдырганда АСТЫГА жашырынат ──
             Expanded(
               flex: 3,
-              child: _GradientButton(
-                height: 52,
-                onTap: _openMapNavigation,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.near_me_rounded,
-                        color: Colors.white, size: 20),
-                    const SizedBox(width: 8),
-                    Text(
-                      loc.get('route'),
-                      style: AppTextStyles.labelLarge
-                          .copyWith(color: Colors.white, fontSize: 15),
+              child: AnimatedSlide(
+                duration: const Duration(milliseconds: 260),
+                curve: Curves.easeOut,
+                offset: buttonsVisible ? Offset.zero : const Offset(0, 2),
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 200),
+                  opacity: buttonsVisible ? 1 : 0,
+                  child: GradientButton(
+                    height: 52,
+                    onTap: _openMapNavigation,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Positioned(
+                          right: -8,
+                          bottom: -12,
+                          child: Icon(Icons.map_rounded,
+                              size: 48,
+                              color: Colors.white.withValues(alpha: 0.16)),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.near_me_rounded,
+                                  color: Colors.white, size: 20),
+                              const SizedBox(width: 8),
+                              Text(
+                                loc.get('route'),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
-          ],
-        ),
-      ),
+              ],
+              ),
+            ),
+            ), // ← ValueListenableBuilder
+          ),
+        ], // ← Stack children
+        ), // ← Stack
+      ), // ← NotificationListener
     );
   }
 
@@ -1183,13 +1318,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
     return _blurBlock(
       Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(loc.get('characteristics'),
-                style: AppTextStyles.headingMedium),
-            const SizedBox(height: 12),
+                style: AppTextStyles.headingSmall),
+            const SizedBox(height: 10),
             if (hasStock) ...[
               Row(children: [
                 Icon(
@@ -1359,425 +1494,5 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   fontWeight: FontWeight.w600),
               overflow: TextOverflow.ellipsis)),
     ]);
-  }
-}
-
-// ══════════════════════════════════════════════════════
-// 2ГИС НАВИГАЦИЯ BOTTOM SHEET
-// ══════════════════════════════════════════════════════
-class _NavigationGuideSheet extends StatefulWidget {
-  final String shopName;
-  final String containerNumber;
-  final double sellerLat;
-  final double sellerLng;
-
-  const _NavigationGuideSheet(
-      {required this.shopName,
-      required this.containerNumber,
-      required this.sellerLat,
-      required this.sellerLng});
-
-  @override
-  State<_NavigationGuideSheet> createState() => _NavigationGuideSheetState();
-}
-
-class _NavigationGuideSheetState extends State<_NavigationGuideSheet> {
-  Future<void> _open2GIS() async {
-    final loc = AppLocalizations.of(context);
-    final appUri = Uri.parse(
-        'dgis://2gis.ru/routeSearch/rsType/pedestrian/to/${widget.sellerLng},${widget.sellerLat}');
-    final playStoreUri = Uri.parse(
-        'https://play.google.com/store/apps/details?id=ru.dublgis.dgismobile');
-    final appStoreUri = Uri.parse('https://apps.apple.com/app/id481627348');
-
-    if (await canLaunchUrl(appUri)) {
-      await launchUrl(appUri);
-    } else {
-      if (!mounted) return;
-      final isIOS = Theme.of(context).platform == TargetPlatform.iOS;
-      final storeUri = isIOS ? appStoreUri : playStoreUri;
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Text(loc.get('2gis_not_installed')),
-          content: Text(loc.get('2gis_download_hint')),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: Text(loc.get('no'))),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
-                elevation: 0,
-              ),
-              onPressed: () async {
-                Navigator.pop(ctx);
-                if (await canLaunchUrl(storeUri)) {
-                  await launchUrl(storeUri,
-                      mode: LaunchMode.externalApplication);
-                }
-              },
-              child: Text(loc.get('download'),
-                  style: const TextStyle(color: Colors.white)),
-            ),
-          ],
-        ),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final sheetBg = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-    final stepBg = isDark ? const Color(0xFF2C2C2C) : Colors.grey[50]!;
-    final stepBorder = isDark ? const Color(0xFF3A3A3A) : Colors.grey[200]!;
-    final handleColor = isDark ? const Color(0xFF3A3A3A) : Colors.grey[300]!;
-
-    return Container(
-      color: sheetBg,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                    color: handleColor,
-                    borderRadius: BorderRadius.circular(2))),
-            const SizedBox(height: 20),
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  shape: BoxShape.circle),
-              child: const Icon(Icons.navigation_rounded,
-                  color: AppColors.primary, size: 32),
-            ),
-            const SizedBox(height: 16),
-            Text(widget.shopName.isNotEmpty ? widget.shopName : loc.get('shop'),
-                style: AppTextStyles.headingSmall, textAlign: TextAlign.center),
-            if (widget.containerNumber.isNotEmpty) ...[
-              const SizedBox(height: 4),
-              Text('📍 ${widget.containerNumber}',
-                  style: AppTextStyles.labelSmall
-                      .copyWith(color: AppColors.primary)),
-            ],
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                  color: stepBg,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: stepBorder)),
-              child: Column(children: [
-                _step('1', loc.get('nav_step1')),
-                const SizedBox(height: 10),
-                _step('2', loc.get('nav_step2')),
-                const SizedBox(height: 10),
-                _step('3', loc.get('nav_step3')),
-              ]),
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton.icon(
-                onPressed: _open2GIS,
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
-                    elevation: 0),
-                icon: const Icon(Icons.map_rounded, color: Colors.white),
-                label: Text(loc.get('open_2gis'),
-                    style: AppTextStyles.headingSmall
-                        .copyWith(color: Colors.white)),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _step(String num, String text) {
-    return Row(children: [
-      Container(
-          width: 24,
-          height: 24,
-          decoration: const BoxDecoration(
-              color: AppColors.primary, shape: BoxShape.circle),
-          alignment: Alignment.center,
-          child: Text(num,
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold))),
-      const SizedBox(width: 12),
-      Expanded(child: Text(text, style: AppTextStyles.bodyMedium)),
-    ]);
-  }
-}
-
-// ══════════════════════════════════════════════════════
-// FULLSCREEN IMAGE
-// ══════════════════════════════════════════════════════
-class _FullscreenImageScreen extends StatefulWidget {
-  final List<String> images;
-  final int initialIndex;
-  final String heroTag;
-  const _FullscreenImageScreen({
-    required this.images,
-    required this.initialIndex,
-    required this.heroTag,
-  });
-
-  @override
-  State<_FullscreenImageScreen> createState() => _FullscreenImageScreenState();
-}
-
-class _FullscreenImageScreenState extends State<_FullscreenImageScreen> {
-  late PageController _pageController;
-  late int _currentIndex;
-
-  @override
-  void initState() {
-    super.initState();
-    _currentIndex = widget.initialIndex;
-    _pageController = PageController(initialPage: widget.initialIndex);
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(children: [
-        PageView.builder(
-          controller: _pageController,
-          itemCount: widget.images.length,
-          onPageChanged: (i) => setState(() => _currentIndex = i),
-          itemBuilder: (context, index) {
-            final url = widget.images[index];
-            return InteractiveViewer(
-              minScale: 0.8,
-              maxScale: 5.0,
-              child: index == widget.initialIndex
-                  ? Hero(
-                      tag: widget.heroTag,
-                      child: CachedNetworkImage(
-                        imageUrl: url,
-                        width: screenSize.width,
-                        height: screenSize.height,
-                        fit: BoxFit.contain,
-                        placeholder: (_, __) => const Center(
-                            child:
-                                CircularProgressIndicator(color: Colors.white)),
-                        errorWidget: (_, __, ___) => const Center(
-                            child: Icon(Icons.image_not_supported_outlined,
-                                color: Colors.white54, size: 64)),
-                      ),
-                    )
-                  : CachedNetworkImage(
-                      imageUrl: url,
-                      width: screenSize.width,
-                      height: screenSize.height,
-                      fit: BoxFit.contain,
-                      placeholder: (_, __) => const Center(
-                          child:
-                              CircularProgressIndicator(color: Colors.white)),
-                      errorWidget: (_, __, ___) => const Center(
-                          child: Icon(Icons.image_not_supported_outlined,
-                              color: Colors.white54, size: 64)),
-                    ),
-            );
-          },
-        ),
-
-        // ── Жабуу баскычы ──
-        SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                    color: Colors.black54,
-                    borderRadius: BorderRadius.circular(20)),
-                child: const Icon(Icons.close, color: Colors.white, size: 24),
-              ),
-            ),
-          ),
-        ),
-
-        // ── Индикатор (бир нече сүрөт болгондо) ──
-        if (widget.images.length > 1)
-          Positioned(
-            bottom: 24,
-            left: 0,
-            right: 0,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(widget.images.length, (i) {
-                final active = i == _currentIndex;
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  margin: const EdgeInsets.symmetric(horizontal: 3),
-                  width: active ? 20 : 7,
-                  height: 7,
-                  decoration: BoxDecoration(
-                    color: active ? Colors.white : Colors.white38,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                );
-              }),
-            ),
-          ),
-      ]),
-    );
-  }
-}
-
-// ══════════════════════════════════════════════════════
-// АЙНЕК БАСКЫЧ
-// ══════════════════════════════════════════════════════
-class _GlassButton extends StatefulWidget {
-  final double width;
-  final double height;
-  final VoidCallback? onTap;
-  final bool isDark;
-  final Color color;
-  final Widget child;
-
-  const _GlassButton({
-    required this.width,
-    required this.height,
-    required this.onTap,
-    required this.isDark,
-    required this.color,
-    required this.child,
-  });
-
-  @override
-  State<_GlassButton> createState() => _GlassButtonState();
-}
-
-class _GlassButtonState extends State<_GlassButton> {
-  bool _pressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: widget.onTap,
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) => setState(() => _pressed = false),
-      onTapCancel: () => setState(() => _pressed = false),
-      child: AnimatedScale(
-        scale: _pressed ? 0.92 : 1.0,
-        duration: const Duration(milliseconds: 80),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
-              width: widget.width,
-              height: widget.height,
-              decoration: BoxDecoration(
-                color: widget.color.withValues(alpha: _pressed ? 0.88 : 0.80),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: widget.color.withValues(alpha: 0.80),
-                  width: 1.2,
-                ),
-              ),
-              child: Center(child: widget.child),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ══════════════════════════════════════════════════════
-// ГРАДИЕНТ БАСКЫЧ
-// ══════════════════════════════════════════════════════
-class _GradientButton extends StatefulWidget {
-  final double height;
-  final VoidCallback? onTap;
-  final Widget child;
-
-  const _GradientButton({
-    required this.height,
-    required this.onTap,
-    required this.child,
-  });
-
-  @override
-  State<_GradientButton> createState() => _GradientButtonState();
-}
-
-class _GradientButtonState extends State<_GradientButton> {
-  bool _pressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: widget.onTap,
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) => setState(() => _pressed = false),
-      onTapCancel: () => setState(() => _pressed = false),
-      child: AnimatedScale(
-        scale: _pressed ? 0.96 : 1.0,
-        duration: const Duration(milliseconds: 80),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          height: widget.height,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: _pressed
-                  ? [
-                      const Color(0xFFB45309).withOpacity(0.80),
-                      const Color(0xFFD97706).withOpacity(0.80)
-                    ]
-                  : [
-                      const Color(0xFFD97706).withOpacity(0.80),
-                      const Color(0xFFEF4444).withOpacity(0.80)
-                    ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFFD97706)
-                    .withValues(alpha: _pressed ? 0.25 : 0.40),
-                blurRadius: _pressed ? 8 : 16,
-                offset: const Offset(0, 4),
-                spreadRadius: -2,
-              ),
-            ],
-          ),
-          child: widget.child,
-        ),
-      ),
-    );
   }
 }

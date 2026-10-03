@@ -51,7 +51,7 @@ class SettingsScreen extends StatelessWidget {
         foregroundColor: textColor,
         title: Text(
           loc.get('settings'),
-          style: AppTextStyles.headingSmall.copyWith(color: textColor),
+          style: AppTextStyles.headingMedium.copyWith(color: textColor),
         ),
       ),
       body: SingleChildScrollView(

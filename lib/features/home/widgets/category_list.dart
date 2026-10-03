@@ -157,6 +157,7 @@ class _CategoryListState extends State<CategoryList> {
               _PillButton(
                 icon: Icons.grid_view_rounded,
                 emoji: cat?.icon,
+                imageAsset: 'assets/icons/icon_category_3d.png',
                 label: _selectedCategoryId != null
                     ? (cat?.localizedName(loc.locale.languageCode) ??
                         loc.get('cat_label'))
@@ -171,6 +172,7 @@ class _CategoryListState extends State<CategoryList> {
               const SizedBox(width: 8),
               _PillButton(
                 icon: Icons.fiber_new_rounded,
+                imageAsset: 'assets/icons/icon_new_products_3d.png',
                 label: loc.get('cat_newest'),
                 isActive: _filterMode == ProductFilterMode.newest,
                 activeColor: AppColors.primary,
@@ -181,6 +183,7 @@ class _CategoryListState extends State<CategoryList> {
               const SizedBox(width: 8),
               _PillButton(
                 icon: Icons.trending_up_rounded,
+                imageAsset: 'assets/icons/icon_popular_3d.png',
                 label: loc.get('cat_popular'),
                 isActive: _filterMode == ProductFilterMode.popular,
                 activeColor: const Color(0xFFD97706),
@@ -239,6 +242,8 @@ class _CategoryListState extends State<CategoryList> {
 class _PillButton extends StatelessWidget {
   final IconData icon;
   final String? emoji;
+  // 3D-стилдеги өзүнчө PNG иконка (берилсе, icon/emoji ордуна ушул көрсөтүлөт)
+  final String? imageAsset;
   final String label;
   final bool isActive;
   final Color activeColor;
@@ -250,6 +255,7 @@ class _PillButton extends StatelessWidget {
   const _PillButton({
     required this.icon,
     this.emoji,
+    this.imageAsset,
     required this.label,
     required this.isActive,
     required this.activeColor,
@@ -277,7 +283,8 @@ class _PillButton extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
+        height: 40,
+        clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           color: isActive ? activeBg : inactiveBgC,
           borderRadius: BorderRadius.circular(22),
@@ -295,30 +302,56 @@ class _PillButton extends StatelessWidget {
                 ]
               : [],
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
+        child: Stack(
+          alignment: Alignment.centerLeft,
+          clipBehavior: Clip.none,
           children: [
-            if (isActive && emoji != null)
-              Text(emoji!, style: const TextStyle(fontSize: 14))
-            else
-              Icon(icon,
-                  size: 16,
-                  color: isActive ? activeTextC : inactiveTextC),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: AppTextStyles.labelLarge.copyWith(
-                color: isActive ? activeTextC : inactiveTextC,
-                fontSize: 13,
-                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+            // ── Сүрөт — баскычтын арткы фонунда чоң, жарым-өткөрүмдүү ──
+            if (!(isActive && emoji != null) && imageAsset != null)
+              Positioned(
+                left: -6,
+                top: -10,
+                bottom: -10,
+                child: Opacity(
+                  opacity: isActive ? 0.55 : 0.40,
+                  child: Image.asset(imageAsset!, fit: BoxFit.contain),
+                ),
+              ),
+            Padding(
+              padding: EdgeInsets.only(
+                left: imageAsset != null && !(isActive && emoji != null)
+                    ? 34
+                    : 14,
+                right: 14,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (isActive && emoji != null)
+                    Text(emoji!, style: const TextStyle(fontSize: 14))
+                  else if (imageAsset == null)
+                    Icon(icon,
+                        size: 16,
+                        color: isActive ? activeTextC : inactiveTextC),
+                  if (isActive && emoji != null || imageAsset == null)
+                    const SizedBox(width: 6),
+                  Text(
+                    label,
+                    style: AppTextStyles.labelLarge.copyWith(
+                      color: isActive ? activeTextC : inactiveTextC,
+                      fontSize: 13,
+                      fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                    ),
+                  ),
+                  if (showClose) ...[
+                    const SizedBox(width: 4),
+                    Icon(Icons.close_rounded,
+                        size: 14,
+                        color: activeTextC.withOpacity(0.8)),
+                  ],
+                ],
               ),
             ),
-            if (showClose) ...[
-              const SizedBox(width: 4),
-              Icon(Icons.close_rounded,
-                  size: 14,
-                  color: activeTextC.withOpacity(0.8)),
-            ],
           ],
         ),
       ),

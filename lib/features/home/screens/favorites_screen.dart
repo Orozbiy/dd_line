@@ -10,6 +10,7 @@ import '../../../core/app_localizations.dart';
 import '../../../core/utils/favorites_manager.dart';
 import '../../../data/models/product_model.dart';
 import '../../product_detail/screens/product_detail_screen.dart';
+import '../../store/screens/store_products_screen.dart';
 import '../../../core/supabase_client.dart';
 
 class FavoritesScreen extends StatefulWidget {
@@ -252,7 +253,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
               ])
             : Text(
                 loc.get('favorites'),
-                style: AppTextStyles.headingSmall.copyWith(
+                style: AppTextStyles.headingMedium.copyWith(
                   color: isDark ? Colors.white : AppColors.black,
                 ),
               ),
@@ -365,8 +366,9 @@ class _FavoritesScreenState extends State<FavoritesScreen>
       );
     }
 
+    final topPadding = MediaQuery.of(context).padding.top + kToolbarHeight + 48 + 12;
     return GridView.builder(
-      padding: EdgeInsets.fromLTRB(8, kToolbarHeight + 48 + 12, 8, 24),
+      padding: EdgeInsets.fromLTRB(8, topPadding, 8, 24),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         childAspectRatio: 0.62,
@@ -495,8 +497,9 @@ class _FavoritesScreenState extends State<FavoritesScreen>
       );
     }
 
+    final topPadding2 = MediaQuery.of(context).padding.top + kToolbarHeight + 48 + 12;
     return ListView.builder(
-      padding: EdgeInsets.fromLTRB(16, kToolbarHeight + 48 + 12, 16, 24),
+      padding: EdgeInsets.fromLTRB(16, topPadding2, 16, 24),
       itemCount: _favoriteStores.length,
       itemBuilder: (_, i) =>
           _buildStoreCard(_favoriteStores[i], isDark, cardColor),
@@ -527,6 +530,20 @@ class _FavoritesScreenState extends State<FavoritesScreen>
         ],
       ),
       child: ListTile(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => StoreProductsScreen(
+                storeId: storeId,
+                shopName: name,
+                containerNumber: '',
+                ownerName: name,
+                avatarUrl: imageUrl,
+              ),
+            ),
+          );
+        },
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: ClipRRect(

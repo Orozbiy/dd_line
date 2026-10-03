@@ -1,105 +1,81 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'dart:math';
 
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../core/app_localizations.dart';
 import '../../../core/supabase_client.dart';
 import '../../../data/models/product_model.dart';
-// Cloudinary URL — сапаты 80%, кичине размер
+
 String _thumbUrl(String url, {int width = 280}) {
   if (url.isEmpty) return url;
   if (!url.contains('cloudinary')) return url;
-  return url.replaceFirst(
-    '/upload/',
-    '/upload/w_$width,q_80,f_auto/',
-  );
+  return url.replaceFirst('/upload/', '/upload/w_$width,q_80,f_auto/');
 }
 
-class SimilarProductsSection extends StatefulWidget {
-  final List<ProductModel> initialProducts;
+/// «Сунушталгандар» — "Окшош товарлар" бүткөндөн кийин чыгат.
+/// Категориясына карабай, БАРДЫК товарлардан аралаштырылган тизме.
+/// Бир жолу жүктөлөт — андан ары чексиз "жүктөлүп" тура бербейт.
+class RecommendedProductsSection extends StatefulWidget {
   final String currentProductId;
-  final String? categoryId;
   final Widget Function(ProductModel product)? productBuilder;
 
-  const SimilarProductsSection({
+  const RecommendedProductsSection({
     super.key,
-    required this.initialProducts,
     required this.currentProductId,
-    this.categoryId,
     this.productBuilder,
   });
 
   @override
-  State<SimilarProductsSection> createState() => _SimilarProductsSectionState();
+  State<RecommendedProductsSection> createState() =>
+      _RecommendedProductsSectionState();
 }
 
-class _SimilarProductsSectionState extends State<SimilarProductsSection> {
+class _RecommendedProductsSectionState
+    extends State<RecommendedProductsSection> {
   final List<ProductModel> _products = [];
-  bool _loading = false;
-  // ── Мурда "акырына жакындаганда дагы жүктөө" логикасы бар эле, бирок
-  // GridView.builder shrinkWrap:true менен бардык элементти дароо
-  // курат, андыктан шарт кайра-кайра туура келип, чексиз/кайталанган
-  // сурам чынжырын жаратчу. Эми бир жолу гана, чектелген санда
-  // жүктөйбүз — "чексиз жүктөлүп туруу" багы жоюлат. ──
-  static const int _maxItems = 20;
+  bool _loading = true;
+  final _rnd = Random();
+  // ── Бир жолу жүктөлүп, аралаштырылып, ушул өлчөмдө көрсөтүлөт.
+  // Мурда "акырына жакындаганда дагы жүктөө" логикасы бар эле, бирок
+  // GridView.builder shrinkWrap:true болгондуктан бардык элементтер
+  // дароо курулат да, шарт ар бир rebuild'де кайра туура келип,
+  // чексиз сурам чынжырын (жана "түбөлүк жүктөлүп" турган UI'ду)
+  // жаратчу. Андыктан эми бир жолу гана, чектелген санда жүктөйбүз.
+  static const int _maxItems = 40;
 
   @override
   void initState() {
     super.initState();
-    _products.addAll(widget.initialProducts.take(_maxItems));
-    if (_products.length < 4) {
-      _load();
-    }
+    _load();
   }
 
   Future<void> _load() async {
-    if (_loading) return;
-    setState(() => _loading = true);
-
     try {
-      final existingIds = [
-        widget.currentProductId,
-        ..._products.map((p) => p.id),
-      ];
+      final data = await supabase
+          .from('products')
+          .select('*, stores(store_name)')
+          .eq('is_active', true)
+          .neq('id', widget.currentProductId)
+          .order('created_at', ascending: false)
+          .limit(200);
 
-      List<dynamic> data = [];
-
-      // 1. Алгач окшош категориядагы товарлар
-      if (widget.categoryId != null && widget.categoryId!.isNotEmpty) {
-        data = await supabase
-            .from('products')
-            .select('*, stores(store_name)')
-            .eq('category_id', widget.categoryId!)
-            .eq('is_active', true)
-            .not('id', 'in', '(${existingIds.join(',')})')
-            .limit(_maxItems);
-      }
-
-      // 2. Окшош товар жок же аз болсо — башка каалаган товарлар
-      if (data.length < _maxItems) {
-        final extra = await supabase
-            .from('products')
-            .select('*, stores(store_name)')
-            .eq('is_active', true)
-            .not('id', 'in', '(${existingIds.join(',')})')
-            .order('views_count', ascending: false)
-            .limit(_maxItems - data.length);
-        data = [...data, ...extra];
-      }
-
-      final newItems = (data)
+      final list = (data as List)
           .cast<Map<String, dynamic>>()
           .map((row) => ProductModel.fromMap(row))
-          .toList();
+          .toList()
+        ..shuffle(_rnd);
 
       if (mounted) {
         setState(() {
-          _products.addAll(newItems);
+          _products
+            ..clear()
+            ..addAll(list.take(_maxItems));
         });
       }
     } catch (e) {
-      debugPrint('SimilarProductsSection _load: $e');
+      debugPrint('RecommendedProductsSection _load: $e');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -115,41 +91,25 @@ class _SimilarProductsSectionState extends State<SimilarProductsSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── Аталыш ──
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-          child: Text(
-            loc.locale.languageCode == 'ru' ? 'Похожие товары' : 'Окшош товарлар',
-            style: AppTextStyles.headingMedium,
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+          child: Row(
+            children: [
+              const Icon(Icons.auto_awesome_rounded,
+                  size: 18, color: AppColors.primary),
+              const SizedBox(width: 6),
+              Text(
+                loc.locale.languageCode == 'ru'
+                    ? 'Рекомендуем'
+                    : 'Сунушталгандар',
+                style: AppTextStyles.headingMedium,
+              ),
+            ],
           ),
         ),
-
-        // ── 2 колонкалуу GRID ──
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: _products.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              mainAxisSpacing: 10,
-              crossAxisSpacing: 10,
-              childAspectRatio: 0.72,
-            ),
-            itemBuilder: (context, i) => _SimilarProductCard(
-              product: _products[i],
-              isDark: isDark,
-              cur: loc.get('currency'),
-              productBuilder: widget.productBuilder,
-            ),
-          ),
-        ),
-
-        // ── Жүктөлүп жатат индикатор ──
         if (_loading)
           const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
+            padding: EdgeInsets.symmetric(vertical: 24),
             child: Center(
               child: SizedBox(
                 width: 24,
@@ -160,22 +120,40 @@ class _SimilarProductsSectionState extends State<SimilarProductsSection> {
                 ),
               ),
             ),
+          )
+        else
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _products.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: 10,
+                crossAxisSpacing: 10,
+                childAspectRatio: 0.72,
+              ),
+              itemBuilder: (context, i) => _RecommendedCard(
+                product: _products[i],
+                isDark: isDark,
+                cur: loc.get('currency'),
+                productBuilder: widget.productBuilder,
+              ),
+            ),
           ),
-
-        const SizedBox(height: 8),
       ],
     );
   }
 }
 
-// ── Жеке карточка ──
-class _SimilarProductCard extends StatelessWidget {
+class _RecommendedCard extends StatelessWidget {
   final ProductModel product;
   final bool isDark;
   final String cur;
   final Widget Function(ProductModel)? productBuilder;
 
-  const _SimilarProductCard({
+  const _RecommendedCard({
     required this.product,
     required this.isDark,
     required this.cur,
@@ -213,7 +191,6 @@ class _SimilarProductCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Сүрөт ──
             Expanded(
               child: Stack(
                 fit: StackFit.expand,
@@ -222,15 +199,13 @@ class _SimilarProductCard extends StatelessWidget {
                     imageUrl: _thumbUrl(product.imageUrl),
                     fit: BoxFit.cover,
                     fadeInDuration: const Duration(milliseconds: 120),
-                    placeholder: (_, __) =>
-                        Container(color: placeholderColor),
+                    placeholder: (_, __) => Container(color: placeholderColor),
                     errorWidget: (_, __, ___) => Container(
                       color: placeholderColor,
                       child: const Icon(Icons.image_not_supported_outlined,
                           color: AppColors.grey300),
                     ),
                   ),
-                  // Скидка badge
                   if (hasDiscount)
                     Positioned(
                       top: 8,
@@ -255,8 +230,6 @@ class _SimilarProductCard extends StatelessWidget {
                 ],
               ),
             ),
-
-            // ── Маалымат ──
             Padding(
               padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
               child: Column(

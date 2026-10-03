@@ -42,11 +42,13 @@ Future<void> main() async {
 
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 
-  debugPrint('🚀 Supabase init...');
-  await SupabaseInit.init();
-
-  debugPrint('🚀 Firebase init...');
-  await _initFirebase();
+  // ── Supabase жана Firebase бири-бирине көз каранды эмес —
+  // параллелдүү инициализациялоо старттын убактысын кыскартат ──
+  debugPrint('🚀 Supabase + Firebase init (параллелдүү)...');
+  await Future.wait([
+    SupabaseInit.init(),
+    _initFirebase(),
+  ]);
 
   // Screen builders — circular import чечүү үчүн
   NotificationService.registerScreenBuilders(
@@ -67,17 +69,15 @@ Future<void> main() async {
     notifications: () => const NotificationsScreen(),
   );
 
-  debugPrint('🚀 handleInitialMessage...');
-  await NotificationService().handleInitialMessage();
-
-  debugPrint('🚀 Cart & Favorites...');
-  await CartManager.instance.loadFromPrefs();
-  await FavoritesManager().loadFromPrefs();
-  await ChatBackgroundProvider.instance.load(); 
-
-
-
-
+  // ── Калган баштапкы жүктөөлөр бири-бирин көз карандысыз —
+  // параллелдүү аткарылат (SharedPreferences окуу + push billdirүү) ──
+  debugPrint('🚀 handleInitialMessage + Cart/Favorites/ChatBg (параллелдүү)...');
+  await Future.wait([
+    NotificationService().handleInitialMessage(),
+    CartManager.instance.loadFromPrefs(),
+    FavoritesManager().loadFromPrefs(),
+    ChatBackgroundProvider.instance.load(),
+  ]);
   debugPrint('🚀 runApp...');
   runApp(const ActiveStatusTracker(child: DDOnlineApp()));
 }

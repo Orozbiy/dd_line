@@ -8,10 +8,10 @@ import 'negotiation_badge.dart';
 
 // Cosmic Dark
 class _CardC {
-  static const card = Color(0xFF14162A);
+  static const card       = Color(0xFF14162A);
   static const cardBorder = Color(0xFF2A2560);
-  static const favBg = Color(0xFF1C1E38);
-  static const shimmer = Color(0xFF1E2040);
+  static const favBg      = Color(0xFF1C1E38);
+  static const shimmer    = Color(0xFF1E2040);
 }
 
 class ProductCard extends StatefulWidget {
@@ -24,26 +24,39 @@ class ProductCard extends StatefulWidget {
 }
 
 class _ProductCardState extends State<ProductCard>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   final _favorites = FavoritesManager();
   late AnimationController _heartController;
-  late Animation<double> _heartAnim;
+  late Animation<double>   _heartAnim;
+
+  // ── Скидка белгиси: чексиз чоңоюп-кичирейип пульсациялайт ──
+  late AnimationController _badgePulseController;
+  late Animation<double>   _badgePulseAnim;
 
   @override
   void initState() {
     super.initState();
     _heartController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 30),
+      duration: const Duration(milliseconds: 300),
     );
     _heartAnim = Tween<double>(begin: 1.0, end: 1.35).animate(
       CurvedAnimation(parent: _heartController, curve: Curves.elasticOut),
+    );
+
+    _badgePulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    )..repeat(reverse: true);
+    _badgePulseAnim = Tween<double>(begin: 1.0, end: 1.14).animate(
+      CurvedAnimation(parent: _badgePulseController, curve: Curves.easeInOut),
     );
   }
 
   @override
   void dispose() {
     _heartController.dispose();
+    _badgePulseController.dispose();
     super.dispose();
   }
 
@@ -62,12 +75,12 @@ class _ProductCardState extends State<ProductCard>
 
   @override
   Widget build(BuildContext context) {
-    final isFav = _favorites.isFavorite(widget.product.id);
-    final rating = widget.product.rating ?? 0.0;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? Colors.white : Colors.black87;
-    final ratingColor = isDark ? Colors.white60 : Colors.black54;
-    final shimmerColor = isDark ? _CardC.shimmer : const Color(0xFFE8E8E8);
+    final isFav       = _favorites.isFavorite(widget.product.id);
+    final rating      = widget.product.rating ?? 0.0;
+    final isDark      = Theme.of(context).brightness == Brightness.dark;
+    final textColor   = isDark ? Colors.white           : Colors.black87;
+    final subColor    = isDark ? Colors.white60         : Colors.black54;
+    final shimmerColor = isDark ? _CardC.shimmer        : const Color(0xFFE8E8E8);
 
     final hasDiscount = widget.product.hasPromotion &&
         widget.product.discountedPrice != null &&
@@ -80,240 +93,261 @@ class _ProductCardState extends State<ProductCard>
 
     return GestureDetector(
       onTap: widget.onTap,
-      child: ClipRect(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final cardWidth = constraints.maxWidth;
-            final cardHeight = constraints.maxHeight;
-            const infoReserved = 112.0;
-            final imgHeight =
-                (cardHeight - infoReserved).clamp(80.0, cardHeight * 0.78);
+      child: Container(
+        // ── Карта мазмунуна жараша авто бийиктик ──
+        // Эч кандай fixed height жок → mainAxisSize.min аркылуу авто кыскарат
+        decoration: BoxDecoration(
+          color: isDark ? _CardC.card : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: isDark
+              ? Border.all(color: _CardC.cardBorder, width: 0.8)
+              : null,
+          boxShadow: isDark
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFF3D2080).withValues(alpha: 0.15),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 16,
+                    offset: const Offset(0, 5),
+                    spreadRadius: -3,
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            // max: катардагы узун картага чейин созулат (фон толот)
+            mainAxisSize: MainAxisSize.max,
+            children: [
 
-            return Container(
-              decoration: BoxDecoration(
-                color: isDark ? _CardC.card : Colors.white,
-                borderRadius: BorderRadius.circular(18),
-                border: isDark
-                    ? Border.all(color: _CardC.cardBorder, width: 0.8)
-                    : null,
-                boxShadow: isDark
-                    ? [
-                        BoxShadow(
-                            color:
-                                const Color(0xFF3D2080).withValues(alpha: 0.15),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4)),
-                      ]
-                    : [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.08),
-                          blurRadius: 16,
-                          offset: const Offset(0, 5),
-                          spreadRadius: -3,
-                        ),
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.04),
-                          blurRadius: 4,
-                          offset: const Offset(0, 1),
-                        ),
-                      ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(18),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.max,
+              // ══════════════════════════════
+              // СҮРӨТ — квадрат (1:1)
+              // ══════════════════════════════
+              AspectRatio(
+                aspectRatio: 1.0,
+                child: LayoutBuilder(
+                  builder: (context, cardConstraints) {
+                    // ── Карта туурасы 2/3/4/5 колонкага жараша өзгөрөт —
+                    // скидка/"Жаңы" белгиси ошого пропорционалдуу
+                    // чоңоюп/кичирейип турушу үчүн масштаб эсептелет ──
+                    final double badgeScale = (cardConstraints.maxWidth / 170)
+                        .clamp(0.78, 1.25)
+                        .toDouble();
+                    final badgeFontSize = 14.0 * badgeScale;
+                    final badgePadH = 7.0 * badgeScale;
+                    final badgePadV = 3.0 * badgeScale;
+                    final badgeRadius = 8.0 * badgeScale;
+
+                    return Stack(
+                  fit: StackFit.expand,
                   children: [
-                    // ── Сүрөт ──
-                    ClipRRect(
-                      borderRadius:
-                          const BorderRadius.vertical(top: Radius.circular(18)),
-                      child: SizedBox(
-                        width: cardWidth,
-                        height: imgHeight,
-                        child: Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            Container(color: shimmerColor),
-                            CachedNetworkImage(
-                              imageUrl: _thumbUrl(widget.product.imageUrl),
-                              fit: BoxFit.cover,
-                              fadeInDuration: const Duration(milliseconds: 100),
-                              memCacheWidth: 300,
-                              placeholder: (_, __) => const SizedBox.shrink(),
-                              errorWidget: (_, __, ___) => Container(
-                                color: shimmerColor,
-                                child: Icon(Icons.image_not_supported_outlined,
-                                    color: isDark
-                                        ? Colors.white24
-                                        : AppColors.grey300,
-                                    size: 32),
-                              ),
-                            ),
-
-                            // Discount badge
-                            if (hasDiscount)
-                              Positioned(
-                                top: 8,
-                                left: 8,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 7, vertical: 3),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.error,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text('-$discountPct%',
-                                      style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold)),
-                                ),
-                              ),
-
-                            // New badge
-                            if (isNew && !hasDiscount)
-                              Positioned(
-                                top: 8,
-                                left: 8,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 7, vertical: 3),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.success,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: const Text('Жаңы',
-                                      style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold)),
-                                ),
-                              ),
-
-                            Positioned(
-                              top: 6,
-                              right: 6,
-                              child: GestureDetector(
-                                onTap: _toggleFavorite,
-                                child: Container(
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
-                                    color: isDark ? _CardC.favBg : Colors.white,
-                                    shape: BoxShape.circle,
-                                    border: isDark
-                                        ? Border.all(
-                                            color: _CardC.cardBorder,
-                                            width: 0.8)
-                                        : null,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black
-                                            .withValues(alpha: 0.10),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 2),
-                                        spreadRadius: -1,
-                                      ),
-                                    ],
-                                  ),
-                                  child: ScaleTransition(
-                                    scale: _heartAnim,
-                                    child: Icon(
-                                      isFav
-                                          ? Icons.favorite
-                                          : Icons.favorite_border,
-                                      color: isFav
-                                          ? Colors.red
-                                          : AppColors.grey400,
-                                      size: 18,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                    Container(color: shimmerColor),
+                    CachedNetworkImage(
+                      imageUrl: _thumbUrl(widget.product.imageUrl),
+                      fit: BoxFit.cover,
+                      fadeInDuration: const Duration(milliseconds: 120),
+                      memCacheWidth: 300,
+                      placeholder: (_, __) => const SizedBox.shrink(),
+                      errorWidget: (_, __, ___) => Container(
+                        color: shimmerColor,
+                        child: Icon(Icons.image_not_supported_outlined,
+                            color: isDark ? Colors.white24 : AppColors.grey300,
+                            size: 32),
                       ),
                     ),
 
-                    // ── Маалымат бөлүмү ──
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(10, 6, 10, 6),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              widget.product.name,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                                color: textColor,
-                                height: 1.3,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            if (hasDiscount) ...[
-                              Text(
-                                '${widget.product.price.toStringAsFixed(0)} сом',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: ratingColor,
-                                  decoration: TextDecoration.lineThrough,
-                                  decorationColor: ratingColor,
+                    // Скидка badge — чексиз пульсация менен чоңоюп-кичирейет
+                    if (hasDiscount)
+                      Positioned(
+                        top: 8, left: 8,
+                        child: ScaleTransition(
+                          scale: _badgePulseAnim,
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: badgePadH, vertical: badgePadV),
+                            decoration: BoxDecoration(
+                              color: AppColors.error,
+                              borderRadius: BorderRadius.circular(badgeRadius),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.error.withValues(alpha: 0.45),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
                                 ),
-                              ),
-                              Text(
-                                '${widget.product.discountedPrice!.toStringAsFixed(0)} сом',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.error, // ← кызыл болду
-                                ),
-                              ),
-                            ] else ...[
-                              Text(
-                                '${widget.product.price.toStringAsFixed(0)} сом',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.primary,
-                                ),
-                              ),
-                            ],
-                            const Spacer(),
-                            Row(
-                              children: [
-                                if (rating > 0) ...[
-                                  Icon(Icons.star_rounded,
-                                      size: 13, color: Colors.amber[600]),
-                                  const SizedBox(width: 2),
-                                  Text(
-                                    rating.toStringAsFixed(1),
-                                    style: TextStyle(
-                                        fontSize: 12,
-                                        color: ratingColor,
-                                        fontWeight: FontWeight.w500),
-                                  ),
-                                  const SizedBox(width: 6),
-                                ],
-                                if (widget.product.hasNegotiation)
-                                  const NegotiationBadgeSmall(),
                               ],
                             ),
-                          ],
+                            child: Text('-$discountPct%',
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: badgeFontSize,
+                                    fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                      ),
+
+                    // Жаңы badge
+                    if (isNew && !hasDiscount)
+                      Positioned(
+                        top: 8, left: 8,
+                        child: Container(
+                          padding: EdgeInsets.symmetric(
+                              horizontal: badgePadH, vertical: badgePadV),
+                          decoration: BoxDecoration(
+                            color: AppColors.success,
+                            borderRadius: BorderRadius.circular(badgeRadius),
+                          ),
+                          child: Text('Жаңы',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: badgeFontSize,
+                                  fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+
+                    // Жүрөк баскычы
+                    Positioned(
+                      top: 6, right: 6,
+                      child: GestureDetector(
+                        onTap: _toggleFavorite,
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: isDark ? _CardC.favBg : Colors.white,
+                            shape: BoxShape.circle,
+                            border: isDark
+                                ? Border.all(
+                                    color: _CardC.cardBorder, width: 0.8)
+                                : null,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.10),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: ScaleTransition(
+                            scale: _heartAnim,
+                            child: Icon(
+                              isFav ? Icons.favorite : Icons.favorite_border,
+                              color: isFav ? Colors.red : AppColors.grey400,
+                              size: 17,
+                            ),
+                          ),
                         ),
                       ),
                     ),
                   ],
-                ), // ← Column жабылат
-              ), // ← Column жабылат
-            );
-          },
+                    );
+                  },
+                ),
+              ),
+
+              // ══════════════════════════════
+              // МААЛЫМАТ — авто бийиктик
+              // ══════════════════════════════
+              Padding(
+                padding: const EdgeInsets.fromLTRB(10, 8, 10, 2),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+
+                    // Товар аты — max 2 сап, кыска болсо 1 сапта бітет
+                    Text(
+                      widget.product.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 18,   // ат
+                        fontWeight: FontWeight.w700,
+                        color: textColor,
+                        height: 1.3,
+                      ),
+                    ),
+
+                    const SizedBox(height: 5),
+
+                    // Скидкалуу баа
+                    if (hasDiscount) ...[
+                      Text(
+                        '${widget.product.price.toStringAsFixed(0)} сом',
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: subColor,
+                          decoration: TextDecoration.lineThrough,
+                          decorationColor: subColor,
+                          height: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 1),
+                      Text(
+                        '${widget.product.discountedPrice!.toStringAsFixed(0)} сом',
+                        style: const TextStyle(
+                          fontSize: 19,   // баа
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.error,
+                          height: 1.1,
+                        ),
+                      ),
+                    ] else ...[
+                      // Жөн баа
+                      Text(
+                        '${widget.product.price.toStringAsFixed(0)} сом',
+                        style: const TextStyle(
+                          fontSize: 19,   // баа
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.primary,
+                          height: 1.1,
+                        ),
+                      ),
+                    ],
+
+                    // Рейтинг — болгондо гана
+                    if (rating > 0) ...[
+                      const SizedBox(height: 2),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Icon(Icons.star_rounded,
+                              size: 16, color: Colors.amber[600]),
+                          const SizedBox(width: 2),
+                          Text(
+                            rating.toStringAsFixed(1),
+                            style: TextStyle(
+                              fontSize: 15,
+                              height: 1.1,
+                              color: subColor,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+
+                    // Торг белгиси — болгондо гана
+                    if (widget.product.hasNegotiation) ...[
+                      const SizedBox(height: 4),
+                      const NegotiationBadgeSmall(),
+                    ],
+                  ],
+                ),
+              ),
+
+            ],
+          ),
         ),
       ),
     );
