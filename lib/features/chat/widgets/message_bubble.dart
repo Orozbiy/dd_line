@@ -87,12 +87,15 @@ class _MessageStatus extends StatelessWidget {
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // Окулду → КОК галочка
+    // Окулду → ЖАЛТЫРАК АЛТЫН галочка.
+    // Эскертүү: мурда бул жерде "көк" колдонулган, бирок өз билдирүүбүз
+    // ар дайым КӨК баллон/фондо көрсөтүлөт (isMe = true), ошондуктан
+    // көк-үстүндө-көк галочка дээрлик көрүнбөй калып жүргөн — "окулду"
+    // белгиси өзгөргөн жок окшойт деп туюлган. Эми ачык-алтын түс
+    // колдонулат — ал көк баллондо да, сүрөттүн үстүндөгү кара
+    // котормодо да даана көрүнөт.
     if (isRead) {
-      final blueColor = isDark
-          ? const Color(0xFF60ABFF) // dark темада жарык көк
-          : const Color(0xFF1E88E5); // light темада стандарт көк
-      return Icon(Icons.done_all, size: 14, color: blueColor);
+      return const Icon(Icons.done_all, size: 14, color: Color(0xFFFFC94D));
     }
 
     // Жеткирилди → боз done_all

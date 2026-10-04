@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../config/theme/app_colors.dart';
+import '../../../../config/theme/dd_design.dart';
 import '../../../../config/theme/app_text_styles.dart';
 import '../../../../core/app_localizations.dart';
 import '../../../../core/supabase_client.dart';
@@ -186,9 +187,7 @@ for (final id in toDelete) {
         : Colors.white;
 
     // ── Scaffold фону: сатуучудан ачылса таза ак/кара ──
-    final scaffoldBg = isDark
-        ? const Color(0xFF121212)
-        : Colors.white;
+    final scaffoldBg = isDark ? DD.bgDark : DD.bgLight;
 
     final myId = supabase.auth.currentUser?.id ?? '';
     final stream = widget.isSeller
@@ -233,7 +232,7 @@ for (final id in toDelete) {
                                   ? loc.get('deselect_all')
                                   : loc.get('select_all'),
                               style: AppTextStyles.labelLarge
-                                  .copyWith(color: AppColors.primary),
+                                  .copyWith(color: DD.accent),
                             ),
                           );
                         },
@@ -336,12 +335,12 @@ for (final id in toDelete) {
                   decoration: BoxDecoration(
                     // ── Жарым өткөрүмдүү карточка ──
                     color: isSelected
-                        ? AppColors.primary.withValues(alpha: 0.15)
+                        ? DD.accent.withValues(alpha: 0.12)
                         : cardBg,
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(DD.rCard),
                     border: isSelected
                         ? Border.all(
-                            color: AppColors.primary.withValues(alpha: 0.4),
+                            color: DD.accent.withValues(alpha: 0.4),
                             width: 1.5)
                         : Border.all(
                             color: isDark
@@ -365,27 +364,32 @@ for (final id in toDelete) {
                             isSelected
                                 ? Icons.check_circle_rounded
                                 : Icons.radio_button_unchecked,
-                            color: isSelected
-                                ? AppColors.primary
-                                : AppColors.grey400,
+                            color: isSelected ? DD.accent : AppColors.grey400,
                             size: 26,
                           )
-                       : CircleAvatar(
-    radius: 24,
-    backgroundImage: (_avatarUrl(chat) != null && _avatarUrl(chat)!.isNotEmpty)
-        ? NetworkImage(_avatarUrl(chat)!)
-        : null,
-    backgroundColor: AppColors.primary.withValues(alpha: 0.15),
-    child: (_avatarUrl(chat) == null || _avatarUrl(chat)!.isEmpty)
-        ? Text(
-            _getInitial(chat),
-            style: const TextStyle(
-              color: AppColors.primary,
-              fontWeight: FontWeight.bold,
-              fontSize: 18,
-            ),
-          )
-        : null,
+                       : Container(
+    padding: const EdgeInsets.all(2),
+    decoration: const BoxDecoration(
+      gradient: DD.accentGradient,
+      shape: BoxShape.circle,
+    ),
+    child: CircleAvatar(
+      radius: 22,
+      backgroundImage: (_avatarUrl(chat) != null && _avatarUrl(chat)!.isNotEmpty)
+          ? NetworkImage(_avatarUrl(chat)!)
+          : null,
+      backgroundColor: DD.accent,
+      child: (_avatarUrl(chat) == null || _avatarUrl(chat)!.isEmpty)
+          ? Text(
+              _getInitial(chat),
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 17,
+              ),
+            )
+          : null,
+    ),
   ),
                     title: Text(displayName,
                         style: AppTextStyles.bodyLarge.copyWith(
@@ -428,8 +432,15 @@ for (final id in toDelete) {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: AppColors.primary,
-                              borderRadius: BorderRadius.circular(10),
+                              gradient: DD.accentGradient,
+                              borderRadius: BorderRadius.circular(DD.rPill),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: DD.accent.withValues(alpha: 0.4),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
                             ),
                             child: Text(
                               unread > 99 ? '99+' : '$unread',

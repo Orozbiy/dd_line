@@ -12,6 +12,7 @@ import 'package:geolocator/geolocator.dart';
 
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
+import '../../../config/theme/dd_design.dart';
 import '../../../core/app_localizations.dart';
 import '../../../core/supabase_client.dart';
 import '../../../core/utils/favorites_manager.dart';
@@ -253,7 +254,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(loc.get('loading')),
         duration: const Duration(seconds: 1),
-        backgroundColor: AppColors.primary,
+        backgroundColor: DD.accent,
       ));
       return;
     }
@@ -457,11 +458,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
-                              color: isActive ? AppColors.primary : Colors.white54,
+                              color: isActive ? DD.accent : Colors.white54,
                               width: isActive ? 2.5 : 1.5,
                             ),
                             boxShadow: isActive
-                                ? [BoxShadow(color: AppColors.primary.withOpacity(0.4), blurRadius: 8)]
+                                ? [BoxShadow(color: DD.accent.withOpacity(0.5), blurRadius: 8)]
                                 : [],
                           ),
                           child: ClipRRect(
@@ -516,18 +517,75 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
   Widget _blurBlock(Widget child, Color cardColor) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
       clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.06)
-              : Colors.black.withValues(alpha: 0.05),
-        ),
-      ),
+      decoration: DD.card(isDark),
       child: child,
+    );
+  }
+
+
+  // ── Секция аталышы: кызгылт сары сызык + иконка ──
+  Widget _sectionTitle(String text, IconData icon) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(children: [
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            gradient: DD.accentGradient,
+            borderRadius: BorderRadius.circular(11),
+            boxShadow: [
+              BoxShadow(
+                color: DD.accent.withValues(alpha: 0.30),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Icon(icon, color: Colors.white, size: 17),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          text,
+          style: AppTextStyles.headingSmall.copyWith(
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.3,
+            color: isDark ? Colors.white : DD.ink,
+          ),
+        ),
+      ]),
+    );
+  }
+
+  Widget _subLabel(IconData icon, String text) => Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Row(children: [
+          Icon(icon, size: 15, color: DD.accent),
+          const SizedBox(width: 6),
+          Text(text,
+              style: AppTextStyles.labelMedium.copyWith(
+                  color: AppColors.grey500, fontWeight: FontWeight.w600)),
+        ]),
+      );
+
+  // ── Кичинекей маалымат "таблетка" (рейтинг, көрүү, лайк, аралык) ──
+  Widget _metaPill(IconData icon, String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(DD.rPill),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, size: 14, color: color),
+        const SizedBox(width: 5),
+        Text(text,
+            style: AppTextStyles.labelSmall
+                .copyWith(color: color, fontWeight: FontWeight.w700)),
+      ]),
     );
   }
 
@@ -545,13 +603,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
           Row(children: [
             Text('${discounted.toStringAsFixed(0)} $cur',
                 style: AppTextStyles.headingLarge.copyWith(
-                    color: AppColors.error, fontWeight: FontWeight.bold)),
+                    color: DD.accent, fontWeight: FontWeight.w800, letterSpacing: -0.5)),
             const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                  color: AppColors.error,
-                  borderRadius: BorderRadius.circular(6)),
+                  color: DD.accent,
+                  borderRadius: BorderRadius.circular(DD.rBadge)),
               child: Text('-$pct%',
                   style: const TextStyle(
                       color: Colors.white,
@@ -576,7 +634,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
       );
     }
     return Text('${_product.price.toStringAsFixed(0)} $cur',
-        style: AppTextStyles.headingLarge.copyWith(color: AppColors.primary));
+        style: AppTextStyles.headingLarge.copyWith(
+            color: DD.accent, fontWeight: FontWeight.w800, letterSpacing: -0.5));
   }
 
   @override
@@ -588,8 +647,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
     final isDark = theme.brightness == Brightness.dark;
 
     final cardColor = Colors.transparent;
-    final chipColor = isDark ? const Color(0xFF2C2C2C) : AppColors.grey50;
-    final chipBorder = isDark ? const Color(0xFF3A3A3A) : AppColors.grey200;
+    final chipColor =
+        isDark ? const Color(0xFF1F1A16) : const Color(0xFFF7F7F9);
+    final chipBorder =
+        isDark ? const Color(0xFF3A2E26) : const Color(0xFFECECF0);
     final appBarBg = isDark
         ? Colors.black.withOpacity(0.65)
         : Colors.white.withOpacity(0.80);
@@ -599,8 +660,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
 
     // ── Арткы фон: dark → синий градиент (HomeBackground), light → ак ──
     final scaffoldBg = isDark
-        ? const Color(0xFF0D0F1A) // HomeColors.bgGrad1 — башкы фон
-        : const Color(0xFFF4F5F7); // light ак фон
+        ? DD.bgDark
+        : DD.bgLight; // light ак фон
 
     return Scaffold(
       backgroundColor: scaffoldBg,
@@ -622,24 +683,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
         },
         child: Stack(
         children: [
-          // ── Арткы фон: dark → синий градиент, light → ак ──
-          if (isDark)
-            Positioned.fill(
-              child: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Color(0xFF0D0F1A),
-                      Color(0xFF12103A),
-                      Color(0xFF0D1525),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    stops: [0.0, 0.5, 1.0],
-                  ),
-                ),
-              ),
-            ),
+          // ── Figma фон: кара/ак + кызгылт сары жарык такталары ──
+          Positioned.fill(child: _DDGlow(isDark: isDark)),
           CustomScrollView(
             slivers: [
               SliverAppBar(
@@ -688,7 +733,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                   const SizedBox(width: 4),
                 ],
                 flexibleSpace: FlexibleSpaceBar(
-                  background: _buildImageGallery(),
+                  background: ClipRRect(
+                    borderRadius: const BorderRadius.vertical(
+                        bottom: Radius.circular(28)),
+                    child: _buildImageGallery(),
+                  ),
                 ),
               ),
               SliverToBoxAdapter(
@@ -697,7 +746,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                         padding: EdgeInsets.all(32),
                         child: Center(
                             child: CircularProgressIndicator(
-                                color: AppColors.primary)))
+                                color: DD.accent)))
                     : Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -712,68 +761,44 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                                   const SizedBox(height: 10),
                                   Text(_product.name,
                                       style: AppTextStyles.headingMedium
-                                          .copyWith(fontSize: 22, height: 1.25)),
+                                          .copyWith(
+                                          fontSize: 22,
+                                          height: 1.25,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: -0.4)),
                                   const SizedBox(height: 10),
-                                  Row(children: [
-                                    if ((_product.rating ?? 0) > 0) ...[
-                                      const Icon(Icons.star_rounded,
-                                          color: Colors.amber, size: 16),
-                                      const SizedBox(width: 2),
-                                      Text(_product.rating!.toStringAsFixed(1),
-                                          style: AppTextStyles.labelMedium
-                                              .copyWith(fontSize: 16)),
-                                      if ((_product.ratingCount ?? 0) > 0)
-                                        Text(' (${_product.ratingCount})',
-                                            style: AppTextStyles.labelSmall
-                                                .copyWith(
-                                                    color: AppColors.grey400)),
-                                    ],
-                                    const Spacer(),
-                                    Icon(Icons.remove_red_eye_outlined,
-                                        size: 14, color: AppColors.grey400),
-                                    const SizedBox(width: 3),
-                                    Text(_formatCount(_product.viewsCount),
-                                        style: AppTextStyles.labelSmall
-                                            .copyWith(
-                                                color: AppColors.grey400)),
-                                    const SizedBox(width: 10),
-                                    Icon(Icons.favorite_outline,
-                                        size: 14,
-                                        color: Colors.pinkAccent
-                                            .withValues(alpha: 0.8)),
-                                    const SizedBox(width: 3),
-                                    Text(_formatCount(_product.likesCount),
-                                        style: AppTextStyles.labelSmall
-                                            .copyWith(
-                                                color: AppColors.grey400)),
-                                    if (_product
-                                        .distanceFormatted.isNotEmpty) ...[
-                                      const SizedBox(width: 10),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 10, vertical: 4),
-                                        decoration: BoxDecoration(
-                                            color: AppColors.primary
-                                                .withValues(alpha: 0.08),
-                                            borderRadius:
-                                                BorderRadius.circular(8)),
-                                        child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              const Icon(Icons.location_on,
-                                                  size: 14,
-                                                  color: AppColors.primary),
-                                              const SizedBox(width: 4),
-                                              Text(_product.distanceFormatted,
-                                                  style: AppTextStyles
-                                                      .labelSmall
-                                                      .copyWith(
-                                                          color: AppColors
-                                                              .primary)),
-                                            ]),
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    crossAxisAlignment: WrapCrossAlignment.center,
+                                    children: [
+                                      if ((_product.rating ?? 0) > 0)
+                                        _metaPill(
+                                          Icons.star_rounded,
+                                          _product.rating!.toStringAsFixed(1) +
+                                              ((_product.ratingCount ?? 0) > 0
+                                                  ? ' (${_product.ratingCount})'
+                                                  : ''),
+                                          const Color(0xFFF59E0B),
+                                        ),
+                                      _metaPill(
+                                        Icons.remove_red_eye_rounded,
+                                        _formatCount(_product.viewsCount),
+                                        const Color(0xFF6B7280),
                                       ),
+                                      _metaPill(
+                                        Icons.favorite_rounded,
+                                        _formatCount(_product.likesCount),
+                                        const Color(0xFFEC4899),
+                                      ),
+                                      if (_product.distanceFormatted.isNotEmpty)
+                                        _metaPill(
+                                          Icons.location_on_rounded,
+                                          _product.distanceFormatted,
+                                          DD.accent,
+                                        ),
                                     ],
-                                  ]),
+                                  ),
                                 ],
                               ),
                             ),
@@ -795,11 +820,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(loc.get('description'),
-                                        style: AppTextStyles.headingSmall),
+                                    _sectionTitle(loc.get('description'), Icons.notes_rounded),
                                     const SizedBox(height: 10),
                                     Text(_product.description!,
-                                        style: AppTextStyles.bodyMedium),
+                                        style: AppTextStyles.bodyMedium
+                                            .copyWith(height: 1.55)),
                                   ],
                                 ),
                               ),
@@ -816,8 +841,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(loc.get('select_size'),
-                                        style: AppTextStyles.headingSmall),
+                                    _sectionTitle(loc.get('select_size'), Icons.straighten_rounded),
                                     const SizedBox(height: 10),
                                     Wrap(
                                       spacing: 8,
@@ -834,13 +858,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                                                 horizontal: 16, vertical: 10),
                                             decoration: BoxDecoration(
                                               color: isSel
-                                                  ? AppColors.primary
+                                                  ? DD.accent
                                                   : chipColor,
                                               borderRadius:
-                                                  BorderRadius.circular(10),
+                                                  BorderRadius.circular(DD.rPill),
                                               border: Border.all(
                                                   color: isSel
-                                                      ? AppColors.primary
+                                                      ? DD.accent
                                                       : chipBorder),
                                             ),
                                             child: Text(size,
@@ -869,8 +893,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(loc.get('seller'),
-                                      style: AppTextStyles.headingSmall),
+                                  _sectionTitle(loc.get('seller'), Icons.storefront_rounded),
                                   const SizedBox(height: 10),
                                   Row(
                                     crossAxisAlignment:
@@ -879,10 +902,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                                       // ── СОЛ: Айлана аватар + Кирүү баскычы ──
                                       Column(
                                         children: [
-                                          CircleAvatar(
-                                            radius: 32,
-                                            backgroundColor: AppColors.primary
-                                                .withValues(alpha: 0.10),
+                                          Container(
+                                            padding: const EdgeInsets.all(3),
+                                            decoration: const BoxDecoration(
+                                              gradient: DD.accentGradient,
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: CircleAvatar(
+                                            radius: 30,
+                                            backgroundColor: DD.accent,
                                             backgroundImage: (_avatarUrl != null && _avatarUrl!.isNotEmpty)
                                                 ? CachedNetworkImageProvider(_avatarUrl!)
                                                 : null,
@@ -890,10 +918,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                                                 ? const Icon(
                                                     Icons.store_rounded,
                                                     size: 32,
-                                                    color: AppColors.primary,
+                                                    color: Colors.white,
                                                   )
                                                 : null,
-                                          ),
+                                          )),
                                           const SizedBox(height: 8),
                                           PulseBox(
                                               child: GestureDetector(
@@ -920,9 +948,23 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                                                       horizontal: 14,
                                                       vertical: 5),
                                               decoration: BoxDecoration(
-                                                color: AppColors.primary,
+                                                gradient: const LinearGradient(
+                                                  colors: [
+                                                    Color(0xFF10B981),
+                                                    Color(0xFF059669)
+                                                  ],
+                                                ),
                                                 borderRadius:
-                                                    BorderRadius.circular(20),
+                                                    BorderRadius.circular(DD.rPill),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: const Color(0xFF10B981)
+                                                        .withValues(alpha: 0.40),
+                                                    blurRadius: 10,
+                                                    offset: const Offset(0, 3),
+                                                    spreadRadius: -2,
+                                                  ),
+                                                ],
                                               ),
                                               child: Text(
                                                 loc.locale.languageCode == 'ru'
@@ -989,7 +1031,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                                                       vertical: 4),
                                               decoration: BoxDecoration(
                                                 color: _storeType == 'market'
-                                                    ? AppColors.primary
+                                                    ? DD.accent
                                                         .withValues(alpha: 0.1)
                                                     : const Color(0xFF10B981)
                                                         .withValues(alpha: 0.1),
@@ -997,7 +1039,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                                                     BorderRadius.circular(20),
                                                 border: Border.all(
                                                   color: _storeType == 'market'
-                                                      ? AppColors.primary
+                                                      ? DD.accent
                                                           .withValues(
                                                               alpha: 0.4)
                                                       : const Color(0xFF10B981)
@@ -1013,7 +1055,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                                                 style: AppTextStyles.labelSmall
                                                     .copyWith(
                                                   color: _storeType == 'market'
-                                                      ? AppColors.primary
+                                                      ? DD.accent
                                                       : const Color(0xFF10B981),
                                                   fontWeight: FontWeight.w600,
                                                 ),
@@ -1034,6 +1076,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                                                         : const Color(
                                                             0xFFF87171),
                                                     shape: BoxShape.circle,
+                                                    boxShadow: [
+                                                      BoxShadow(
+                                                        color: (_isOpenNow()
+                                                                ? const Color(0xFF10B981)
+                                                                : const Color(0xFFF87171))
+                                                            .withValues(alpha: 0.6),
+                                                        blurRadius: 6,
+                                                      ),
+                                                    ],
                                                   ),
                                                 ),
                                                 const SizedBox(width: 6),
@@ -1066,27 +1117,45 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                                   ),
                                   // ── Арыздануу баскычы ──
                                   const SizedBox(height: 14),
-                                  const Divider(height: 1),
-                                  const SizedBox(height: 10),
+                                  Divider(
+                                      height: 1,
+                                      color: isDark
+                                          ? Colors.white.withOpacity(0.08)
+                                          : const Color(0xFFEDEDF0)),
+                                  const SizedBox(height: 12),
                                   GestureDetector(
                                     onTap: () => _showComplaintSheet(context),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        const Icon(Icons.flag_outlined,
-                                            color: Color(0xFFEF4444), size: 16),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          loc.locale.languageCode == 'ru'
-                                              ? 'Пожаловаться'
-                                              : 'Арыздануу',
-                                          style: const TextStyle(
-                                            color: Color(0xFFEF4444),
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.bold,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 14, vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFEF4444)
+                                            .withValues(alpha: 0.08),
+                                        borderRadius:
+                                            BorderRadius.circular(DD.rPill),
+                                        border: Border.all(
+                                            color: const Color(0xFFEF4444)
+                                                .withValues(alpha: 0.35)),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(Icons.flag_outlined,
+                                              color: Color(0xFFEF4444),
+                                              size: 16),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            loc.locale.languageCode == 'ru'
+                                                ? 'Пожаловаться'
+                                                : 'Арыздануу',
+                                            style: const TextStyle(
+                                              color: Color(0xFFEF4444),
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -1099,17 +1168,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                           // ── Бөлүшүү кнопкасы ──
                           Container(
                             margin: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 2),
+                                horizontal: 16, vertical: 2),
                             decoration: BoxDecoration(
                               gradient: const LinearGradient(
-                                colors: [Color(0xFF10B981), Color(0xFF059669)],
+                                colors: [DD.accent2, DD.accent],
                                 begin: Alignment.centerLeft,
                                 end: Alignment.centerRight,
                               ),
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(DD.rPill),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFF10B981)
+                                  color: DD.accent
                                       .withValues(alpha: isDark ? 0.25 : 0.35),
                                   blurRadius: 12,
                                   offset: const Offset(0, 4),
@@ -1122,7 +1191,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                               child: InkWell(
                                 onTap: () =>
                                     ShareWidget.show(context, _product),
-                                borderRadius: BorderRadius.circular(16),
+                                borderRadius: BorderRadius.circular(DD.rPill),
                                 child: Padding(
                                   padding:
                                       const EdgeInsets.symmetric(vertical: 14),
@@ -1203,7 +1272,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                   // басканда кичирейип-жарчыйт (AnimatedScale) ──
                   child: GradientButton(
                     height: 52,
-                    borderRadius: 14,
+                    borderRadius: DD.rPill,
                     colors: const [Color(0xFF10B981), Color(0xFF059669)],
                     pressedColors: const [Color(0xFF059669), Color(0xFF047857)],
                     shadowColor: const Color(0xFF10B981),
@@ -1262,6 +1331,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                   opacity: buttonsVisible ? 1 : 0,
                   child: GradientButton(
                     height: 52,
+                    borderRadius: DD.rPill,
+                    colors: const [DD.accent2, DD.accent],
+                    pressedColors: const [DD.accent, Color(0xFFC2371E)],
+                    shadowColor: DD.accent,
                     onTap: _openMapNavigation,
                     child: Stack(
                       alignment: Alignment.center,
@@ -1322,36 +1395,42 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(loc.get('characteristics'),
-                style: AppTextStyles.headingSmall),
+            _sectionTitle(loc.get('characteristics'), Icons.tune_rounded),
             const SizedBox(height: 10),
             if (hasStock) ...[
-              Row(children: [
-                Icon(
-                    (_product.inStock ?? 0) > 0
-                        ? Icons.check_circle_outline
-                        : Icons.cancel_outlined,
-                    size: 16,
-                    color: (_product.inStock ?? 0) > 0
-                        ? AppColors.success
-                        : AppColors.error),
-                const SizedBox(width: 6),
-                Text(
-                  (_product.inStock ?? 0) > 0
-                      ? '${loc.get('in_stock')}: ${_product.inStock} ${loc.get('pcs')}'
-                      : loc.get('out_of_stock'),
-                  style: AppTextStyles.labelMedium.copyWith(
-                      color: (_product.inStock ?? 0) > 0
-                          ? AppColors.success
-                          : AppColors.error),
-                ),
-              ]),
-              const SizedBox(height: 10),
+              Builder(builder: (_) {
+                final ok = (_product.inStock ?? 0) > 0;
+                final c = ok ? AppColors.success : AppColors.error;
+                return Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: c.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(DD.rPill),
+                    border: Border.all(color: c.withValues(alpha: 0.35)),
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(
+                        ok
+                            ? Icons.check_circle_rounded
+                            : Icons.cancel_rounded,
+                        size: 16,
+                        color: c),
+                    const SizedBox(width: 6),
+                    Text(
+                      ok
+                          ? '${loc.get('in_stock')}: ${_product.inStock} ${loc.get('pcs')}'
+                          : loc.get('out_of_stock'),
+                      style: AppTextStyles.labelMedium
+                          .copyWith(color: c, fontWeight: FontWeight.w700),
+                    ),
+                  ]),
+                );
+              }),
+              const SizedBox(height: 14),
             ],
             if (hasColors) ...[
-              Text('🎨 ${loc.get('colors')}',
-                  style: AppTextStyles.labelMedium
-                      .copyWith(color: AppColors.grey500)),
+              _subLabel(Icons.palette_outlined, loc.get('colors')),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
@@ -1426,10 +1505,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                   final hex = colorHexMap[ky];
                   return Container(
                     padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                     decoration: BoxDecoration(
                       color: chipColor,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(DD.rPill),
                       border: Border.all(color: chipBorder),
                     ),
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -1454,9 +1533,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
               const SizedBox(height: 10),
             ],
             if (hasSizes) ...[
-              Text('📐 ${loc.get('sizes')}',
-                  style: AppTextStyles.labelMedium
-                      .copyWith(color: AppColors.grey500)),
+              _subLabel(Icons.straighten_rounded, loc.get('sizes')),
               const SizedBox(height: 8),
               Wrap(
                   spacing: 8,
@@ -1495,4 +1572,53 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
               overflow: TextOverflow.ellipsis)),
     ]);
   }
+}
+
+// ══════════════════════════════════════════════════════
+// ФОН — Figma "blur gradient": кара/ак + кызгылт сары жарык
+// ══════════════════════════════════════════════════════
+class _DDGlow extends StatelessWidget {
+  final bool isDark;
+  const _DDGlow({required this.isDark});
+
+  @override
+  Widget build(BuildContext context) =>
+      IgnorePointer(child: CustomPaint(painter: _DDGlowPainter(isDark)));
+}
+
+class _DDGlowPainter extends CustomPainter {
+  final bool isDark;
+  _DDGlowPainter(this.isDark);
+
+  void _blob(Canvas c, Offset o, double r, Color color) {
+    final paint = Paint();
+    paint.shader = RadialGradient(colors: [color, color.withOpacity(0)])
+        .createShader(Rect.fromCircle(center: o, radius: r));
+    c.drawCircle(o, r, paint);
+  }
+
+  @override
+  void paint(Canvas canvas, Size s) {
+    if (isDark) {
+      final bgPaint = Paint();
+      bgPaint.shader = const LinearGradient(
+        colors: [Color(0xFF000000), Color(0xFF0E0604), Color(0xFF000000)],
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+      ).createShader(Offset.zero & s);
+      canvas.drawRect(Offset.zero & s, bgPaint);
+      _blob(canvas, Offset(s.width * 0.1, s.height * 0.38), s.width * 0.85,
+          DD.accent2.withOpacity(0.20));
+      _blob(canvas, Offset(s.width * 0.95, s.height * 0.78), s.width * 0.95,
+          DD.accent.withOpacity(0.18));
+    } else {
+      _blob(canvas, Offset(s.width * 0.2, s.height * 0.36), s.width * 0.8,
+          DD.accent2.withOpacity(0.10));
+      _blob(canvas, Offset(s.width * 0.95, s.height * 0.72), s.width * 0.9,
+          DD.accent.withOpacity(0.08));
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DDGlowPainter o) => o.isDark != isDark;
 }

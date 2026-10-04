@@ -78,12 +78,17 @@ class _PromotionScreenState extends State<PromotionScreen> {
               color: isDark ? Colors.white : AppColors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(loc.get('promo_title')),
+        title: Text(
+          loc.get('promo_title'),
+          // Күндүзгү режимде кара, түнкү режимде ак
+          style: AppTextStyles.headingMedium.copyWith(
+            color: isDark ? Colors.white : AppColors.black,
+          ),
+        ),
         backgroundColor: cardColor,
         foregroundColor: isDark ? Colors.white : AppColors.black,
         elevation: 0,
         centerTitle: true,
-        titleTextStyle: AppTextStyles.headingMedium,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
           child: Container(height: 1, color: dividerColor),

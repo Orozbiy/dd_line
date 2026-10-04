@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
+import '../../../config/theme/dd_design.dart';
 import '../../../core/app_localizations.dart';
 import '../../../core/utils/favorites_manager.dart';
 import '../../../data/models/product_model.dart';
@@ -26,6 +27,8 @@ import '../screens/favorites_screen.dart';
 import '../widgets/product_card.dart';
 import 'dart:ui';
 import '../constants/home_colors.dart';
+import '../widgets/home_bottom_nav.dart';
+// ignore: duplicate_import
 import '../widgets/home_bottom_nav.dart';
 import '../widgets/equal_height_row.dart';
 import '../widgets/home_background.dart';
@@ -518,10 +521,10 @@ class _HomeScreenState extends State<HomeScreen> {
     bool active = false,
     Color? activeColor,
     double padding = 13,
-    double radius = 14,
+    double radius = 18,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final color = activeColor ?? AppColors.primary;
+    final color = activeColor ?? DD.accent;
     return _IosBtn(
       onTap: onTap,
       active: active,
@@ -581,7 +584,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   }
                 }
               },
-              color: AppColors.primary,
+              color: DD.accent,
               displacement: 80,
               child: CustomScrollView(
                 controller: _scrollController,
@@ -663,7 +666,7 @@ if (_isSearchMode || _isNearbyMode ||
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             const CircularProgressIndicator(
-                                color: AppColors.primary, strokeWidth: 3),
+                                color: DD.accent, strokeWidth: 3),
                             const SizedBox(height: 16),
                             Text(loc.get('loading'),
                                 style: const TextStyle(
@@ -753,7 +756,9 @@ if (_isSearchMode || _isNearbyMode ||
             top: 0,
             left: 0,
             right: 0,
-            child: ClipRect(
+            child: ClipRRect(
+              borderRadius:
+                  const BorderRadius.vertical(bottom: Radius.circular(24)),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
                 child: Container(
@@ -789,29 +794,22 @@ if (_isSearchMode || _isNearbyMode ||
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 17, vertical: 11),
                                     decoration: BoxDecoration(
-                                      color: isDark
-                                          ? const Color(0xFF2C1A00)
-                                              .withOpacity(0.55)
-                                          : Colors.white.withOpacity(0.45),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                          color: const Color(0xFFD97706)
-                                              .withOpacity(0.55),
-                                          width: 1.2),
-                                      boxShadow: isDark
-                                          ? []
-                                          : [
-                                              BoxShadow(
-                                                color: const Color(0xFFD97706)
-                                                    .withOpacity(0.15),
-                                                blurRadius: 8,
-                                                offset: const Offset(0, 2),
-                                              ),
-                                            ],
+                                      color: DD.accent,
+                                      borderRadius:
+                                          BorderRadius.circular(DD.rPill),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: DD.accent.withOpacity(
+                                              isDark ? 0.35 : 0.30),
+                                          blurRadius: 12,
+                                          offset: const Offset(0, 4),
+                                          spreadRadius: -2,
+                                        ),
+                                      ],
                                     ),
                                     child: Text(loc.get('shop'),
                                         style: const TextStyle(
-                                            color: Color(0xFFD97706),
+                                            color: Colors.white,
                                             fontWeight: FontWeight.w700,
                                             fontSize: 15)),
                                   ),
@@ -824,19 +822,16 @@ if (_isSearchMode || _isNearbyMode ||
                                       child: ShaderMask(
                                         shaderCallback: (bounds) =>
                                             const LinearGradient(
-                                          colors: [
-                                            Color(0xFFD97706),
-                                            Color(0xFFEF4444)
-                                          ],
+                                          colors: [DD.accent2, DD.accent],
                                           begin: Alignment.centerLeft,
                                           end: Alignment.centerRight,
                                         ).createShader(bounds),
                                         child: const Text('DD Online',
                                             style: TextStyle(
                                                 fontSize: 26,
-                                                fontWeight: FontWeight.w900,
+                                                fontWeight: FontWeight.w800,
                                                 color: Colors.white,
-                                                letterSpacing: 1.0)),
+                                                letterSpacing: -0.8)),
                                       ),
                                     ),
                                   ),
@@ -905,7 +900,7 @@ if (_isSearchMode || _isNearbyMode ||
                                       height: 22,
                                       child: CircularProgressIndicator(
                                           strokeWidth: 2,
-                                          color: AppColors.primary))
+                                          color: DD.accent))
                                   : Icon(Icons.near_me_rounded,
                                       color: _isNearbyMode
                                           ? Colors.white
@@ -1186,16 +1181,16 @@ class _MenuFabState extends State<_MenuFab> {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                const Color(0xFFD97706).withOpacity(0.70),
-                const Color(0xFFEF4444).withOpacity(0.70),
+                DD.accent2.withOpacity(0.90),
+                DD.accent.withOpacity(0.90),
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(DD.rPill),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFFD97706).withOpacity(0.45),
+                color: DD.accent.withOpacity(0.45),
                 blurRadius: 14,
                 offset: const Offset(0, 5),
               ),

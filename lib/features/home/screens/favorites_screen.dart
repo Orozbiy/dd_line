@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:ui';
 import '../../../config/theme/app_colors.dart';
+import '../../../config/theme/dd_design.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../core/app_localizations.dart';
 import '../../../core/utils/favorites_manager.dart';
@@ -221,8 +222,8 @@ class _FavoritesScreenState extends State<FavoritesScreen>
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isKy = loc.locale.languageCode == 'ky';
 
-    final bgColor = isDark ? const Color(0xFF121212) : const Color(0xFFF4F5F7);
-    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final bgColor = isDark ? DD.bgDark : DD.bgLight;
+    final cardColor = isDark ? const Color(0xFF15120F) : Colors.white;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -292,7 +293,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
   }
 
   Widget _buildTabBar(AppLocalizations loc, bool isDark, Color cardColor) {
-    final activeColor = AppColors.primary;
+    final activeColor = DD.accent;
     final inactiveColor = isDark ? const Color(0xFF888888) : AppColors.grey400;
 
     return Container(
@@ -303,6 +304,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
         unselectedLabelColor: inactiveColor,
         indicatorColor: activeColor,
         indicatorWeight: 3,
+        indicatorSize: TabBarIndicatorSize.label,
         labelStyle: AppTextStyles.labelMedium.copyWith(fontWeight: FontWeight.w600),
         unselectedLabelStyle: AppTextStyles.labelMedium,
         tabs: [
@@ -341,7 +343,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(DD.rPill),
       ),
       child: Text(
         '$count',
@@ -520,7 +522,11 @@ class _FavoritesScreenState extends State<FavoritesScreen>
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: cardColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(DD.rCard),
+        border: Border.all(
+            color: isDark
+                ? DD.accent2.withValues(alpha: 0.14)
+                : const Color(0xFFF0F0F2)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.06),
@@ -579,7 +585,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
             });
           },
           child: const Icon(Icons.favorite_rounded,
-              color: AppColors.error, size: 22),
+              color: Color(0xFFEF4444), size: 22),
         ),
       ),
     );
@@ -590,11 +596,11 @@ class _FavoritesScreenState extends State<FavoritesScreen>
       width: 52,
       height: 52,
       decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(10),
+        gradient: DD.accentGradient,
+        borderRadius: BorderRadius.circular(14),
       ),
       child: const Icon(Icons.store_rounded,
-          color: AppColors.primary, size: 26),
+          color: Colors.white, size: 26),
     );
   }
 

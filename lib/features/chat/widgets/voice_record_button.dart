@@ -515,7 +515,8 @@ class _BlinkingDotState extends State<_BlinkingDot>
     _ctrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
-    )..repeat(reverse: true);
+    );
+    _ctrl.repeat(reverse: true);
   }
 
   @override

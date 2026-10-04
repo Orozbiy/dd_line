@@ -1075,7 +1075,16 @@ Future<void> _sendVoiceMessage(String path, int durationSeconds) async {
                                         : (widget.isSeller
                                             ? loc.get('chat_buyer')
                                             : widget.sellerName),
-                                    style: AppTextStyles.labelLarge,
+                                    // Күндүзгү режимде кара, түнкүдө ак
+                                    // (мурда теманын тартмасы менен кээде
+                                    // ак болуп, ак фондо көрүнбөй калып
+                                    // калчу)
+                                    style: AppTextStyles.labelLarge.copyWith(
+                                      color: isDark
+                                          ? Colors.white
+                                          : AppColors.black,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   if (widget.productName.isNotEmpty)
@@ -1320,8 +1329,19 @@ Future<void> _sendVoiceMessage(String path, int durationSeconds) async {
                                     maxLines: 4,
                                     textInputAction: TextInputAction.send,
                                     onSubmitted: (_) => _send(),
+                                    // ← Жазылган текст күндүзгү/түнкү режимде ар дайым көрүнүктүү
+                                    style: TextStyle(
+                                      color: isDark ? Colors.white : AppColors.black,
+                                      fontSize: 15,
+                                    ),
+                                    cursorColor: AppColors.primary,
                                     decoration: InputDecoration(
                                       hintText: loc.get('chat_hint'),
+                                      hintStyle: TextStyle(
+                                        color: isDark
+                                            ? Colors.white.withValues(alpha: 0.45)
+                                            : AppColors.grey400,
+                                      ),
                                       filled: true,
                                       fillColor: glassInputFill,
                                       contentPadding:

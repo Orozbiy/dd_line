@@ -1,6 +1,7 @@
 ﻿import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
+import '../../../config/theme/dd_design.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../core/app_localizations.dart';
 import '../../../core/chat_background_provider.dart';
@@ -84,12 +85,16 @@ class SettingsScreen extends StatelessWidget {
                         width: 46,
                         height: 46,
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFD97706), Color(0xFFEF4444)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
+                          gradient: DD.accentGradient,
                           borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                              color: DD.accent.withValues(alpha: 0.35),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                              spreadRadius: -4,
+                            ),
+                          ],
                         ),
                         child: const Icon(Icons.person_rounded, color: Colors.white, size: 24),
                       ),
@@ -189,7 +194,7 @@ class SettingsScreen extends StatelessWidget {
                         child: Row(
                           children: [
                             const Icon(Icons.chat_bubble_outline_rounded,
-                                color: AppColors.primary, size: 20),
+                                color: DD.accent, size: 20),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(

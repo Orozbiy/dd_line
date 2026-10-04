@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../config/theme/app_colors.dart';
+import '../../../config/theme/dd_design.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../core/app_localizations.dart';
 import '../../../core/supabase_client.dart';
@@ -216,7 +217,7 @@ class _MapScreenState extends State<MapScreen> {
   Widget build(BuildContext context) {
     final loc    = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF121212) : const Color(0xFFF4F5F7);
+    final bgColor = isDark ? DD.bgDark : DD.bgLight;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -254,16 +255,15 @@ class _MapScreenState extends State<MapScreen> {
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 10, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: AppColors.primary.withOpacity(0.12),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                      color:
-                                          AppColors.primary.withOpacity(0.25)),
+                                  gradient: DD.accentGradient,
+                                  borderRadius: BorderRadius.circular(DD.rPill),
                                 ),
                                 child: Text(
                                   '${_sellers.length} ${loc.get('map_store_count')}',
                                   style: AppTextStyles.labelSmall
-                                      .copyWith(color: AppColors.primary),
+                                      .copyWith(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w800),
                                 ),
                               ),
                             ),
@@ -287,7 +287,7 @@ class _MapScreenState extends State<MapScreen> {
                             hintStyle: AppTextStyles.bodyMedium
                                 .copyWith(color: AppColors.grey400),
                             prefixIcon: const Icon(Icons.search,
-                                color: AppColors.grey400, size: 20),
+                                color: DD.accent, size: 20),
                             suffixIcon: _searchController.text.isNotEmpty
                                 ? GestureDetector(
                                     onTap: () {
@@ -412,7 +412,7 @@ class _MapScreenState extends State<MapScreen> {
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: isSelected
-                    ? AppColors.primary
+                    ? DD.accent
                     : isDark
                         ? Colors.white.withOpacity(0.10)
                         : Colors.white.withOpacity(0.80),
@@ -427,11 +427,7 @@ class _MapScreenState extends State<MapScreen> {
                     Container(
                       width: 48, height: 48,
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFD97706), Color(0xFFEF4444)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
+                        gradient: DD.accentGradient,
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Center(
@@ -461,7 +457,7 @@ class _MapScreenState extends State<MapScreen> {
                           Row(
                             children: [
                               const Icon(Icons.location_on_outlined,
-                                  size: 13, color: AppColors.primary),
+                                  size: 13, color: DD.accent),
                               const SizedBox(width: 4),
                               Expanded(
                                 child: Text(
@@ -536,23 +532,23 @@ class _MapScreenState extends State<MapScreen> {
                                     _openStoreProducts(seller),
                                 style: OutlinedButton.styleFrom(
                                   backgroundColor:
-                                      AppColors.primary.withOpacity(0.08),
+                                      DD.accent.withOpacity(0.08),
                                   side: const BorderSide(
-                                      color: AppColors.primary, width: 1.5),
+                                      color: DD.accent, width: 1.5),
                                   shape: RoundedRectangleBorder(
                                       borderRadius:
-                                          BorderRadius.circular(12)),
+                                          BorderRadius.circular(DD.rPill)),
                                 ),
                                 icon: const Icon(
                                     Icons.storefront_rounded,
                                     size: 18,
-                                    color: AppColors.primary),
+                                    color: DD.accent),
                                 label: Text(
                                   loc.locale.languageCode == 'ru'
                                       ? 'Товары'
                                       : 'Товарлар',
                                   style: AppTextStyles.labelLarge
-                                      .copyWith(color: AppColors.primary),
+                                      .copyWith(color: DD.accent, fontWeight: FontWeight.w700),
                                 ),
                               ),
                             ),
@@ -567,10 +563,12 @@ class _MapScreenState extends State<MapScreen> {
                           child: ElevatedButton.icon(
                             onPressed: () => _open2GIS(seller),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
+                              backgroundColor: DD.accent,
                               elevation: 0,
                               shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12)),
+                                  borderRadius: BorderRadius.circular(DD.rPill)),
+                            ).copyWith(
+                              backgroundColor: WidgetStateProperty.all(DD.accent),
                             ),
                             icon: const Icon(Icons.navigation_rounded,
                                 size: 18, color: Colors.white),
