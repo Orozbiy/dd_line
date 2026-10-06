@@ -13,7 +13,6 @@ class VoiceMessagePlayer extends StatefulWidget {
   final String audioUrl;
   final int durationSeconds;
   final bool isMe;
-  // ── Жаңы параметрлер ──
   final bool isRead;
   final String formattedTime;
 
@@ -31,16 +30,14 @@ class VoiceMessagePlayer extends StatefulWidget {
 }
 
 class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
-  final _player = AudioPlayer();
+  late final AudioPlayer _player;
   bool _isPlaying = false;
   bool _isLoading = false;
+  bool _audioContextSet = false;
   double _progress = 0.0;
   int _currentSeconds = 0;
   int _totalSeconds = 0;
 
-  // ── Ватсаптагыдай толкун (waveform) тилкелери ──
-  // Чыныгы амплитуда жок болгондуктан, аудионун URL'ине жараша
-  // туруктуу (ар дайым бирдей) псевдо-кокустук бийиктиктер жасайбыз.
   static const int _barCount = 27;
   late final List<double> _barHeights = _generateBarHeights(widget.audioUrl);
 
@@ -49,14 +46,40 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
     return List.generate(_barCount, (_) => 0.28 + rnd.nextDouble() * 0.72);
   }
 
+  /// Эски URL форматын жаңыга конвертациялоо:
+  /// https://dd-online-media.s3.eu-central-003.backblazeb2.com/KEY
+  ///   → https://s3.eu-central-003.backblazeb2.com/dd-online-media/KEY
+  static String _normalizeUrl(String url) {
+    final oldPattern = RegExp(
+      r'^https://dd-online-media\.s3\.eu-central-003\.backblazeb2\.com/(.+)$',
+    );
+    final match = oldPattern.firstMatch(url);
+    if (match != null) {
+      final key = match.group(1)!;
+      return 'https://s3.eu-central-003.backblazeb2.com/dd-online-media/$key';
+    }
+    return url;
+  }
+
   @override
   void initState() {
     super.initState();
+    _player = AudioPlayer();
     _totalSeconds = widget.durationSeconds;
 
+    _player.setReleaseMode(ReleaseMode.stop);
+
+    // PlayerState өзгөргөндө UI жаңыртуу
     _player.onPlayerStateChanged.listen((state) {
       if (!mounted) return;
-      setState(() => _isPlaying = state == PlayerState.playing);
+      setState(() {
+        _isPlaying = state == PlayerState.playing;
+        if (state == PlayerState.playing ||
+            state == PlayerState.stopped ||
+            state == PlayerState.paused) {
+          _isLoading = false;
+        }
+      });
     });
 
     _player.onPositionChanged.listen((pos) {
@@ -70,13 +93,14 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
 
     _player.onDurationChanged.listen((d) {
       if (!mounted) return;
-      setState(() => _totalSeconds = d.inSeconds);
+      setState(() => _totalSeconds = d.inSeconds > 0 ? d.inSeconds : _totalSeconds);
     });
 
     _player.onPlayerComplete.listen((_) {
       if (!mounted) return;
       setState(() {
         _isPlaying = false;
+        _isLoading = false;
         _progress = 0.0;
         _currentSeconds = 0;
       });
@@ -92,39 +116,91 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
     super.dispose();
   }
 
+  /// AudioContext биринчи ойнотуудан мурун бир жолу орнотулат
+  Future<void> _ensureAudioContext() async {
+    if (_audioContextSet) return;
+    try {
+      await _player.setAudioContext(AudioContext(
+        android: AudioContextAndroid(
+          isSpeakerphoneOn: true,
+          stayAwake: false,
+          contentType: AndroidContentType.music,
+          usageType: AndroidUsageType.media,
+          audioFocus: AndroidAudioFocus.gain,
+        ),
+        iOS: AudioContextIOS(
+          category: AVAudioSessionCategory.playback,
+        ),
+      ));
+      _audioContextSet = true;
+    } catch (_) {
+      // AudioContext орнотуу кетсе да ойнотуу улантылат
+    }
+  }
+
   Future<void> _togglePlay() async {
     if (_isLoading) return;
+    if (widget.audioUrl.isEmpty) return;
 
+    // Ойноп жатса — пауза
     if (_isPlaying) {
       await _player.pause();
       return;
     }
 
+    // Башка плеер ойнотулуп жатса — аны токтот
     if (_activePlayer != null && _activePlayer != _player) {
       await _activePlayer!.stop();
       _activePlayer = null;
     }
 
     setState(() => _isLoading = true);
+
     try {
-      if (_currentSeconds > 0 && _progress < 1.0) {
+      // AudioContext бир жолу орнотулат (await менен!)
+      await _ensureAudioContext();
+
+      final currentState = _player.state;
+      if (currentState == PlayerState.paused &&
+          _currentSeconds > 0 &&
+          _progress < 0.99) {
+        // Паузадан улантуу
         await _player.resume();
       } else {
-        await _player.play(UrlSource(widget.audioUrl));
+        // Жаңыдан баштоо
+        if (_progress >= 0.99) {
+          setState(() {
+            _progress = 0.0;
+            _currentSeconds = 0;
+          });
+        }
+        // URL нормализациялоо (эски bucket-subdomain → жаңы path формат)
+        final playUrl = _normalizeUrl(widget.audioUrl);
+        await _player.play(UrlSource(playUrl));
       }
       _activePlayer = _player;
     } catch (e) {
       if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _isPlaying = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Үн ойнотулбай жатат: $e'),
             backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
     }
+
+    // 8 секунд ичинде ойнобосо — loading өчүр (timeout)
+    Future.delayed(const Duration(seconds: 8), () {
+      if (mounted && _isLoading) {
+        setState(() => _isLoading = false);
+      }
+    });
   }
 
   String _formatDuration(int seconds) {
@@ -186,13 +262,13 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
             ),
             const SizedBox(width: 8),
 
-            // ── Progress bar + убакыт + птичка ──
+            // ── Progress bar + убакыт ──
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // ── Толкун (waveform) — Ватсаптагыдай ──
+                  // ── Толкун (waveform) ──
                   LayoutBuilder(
                     builder: (context, constraints) {
                       void seekTo(double localX) {
@@ -233,7 +309,7 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
                   ),
                   const SizedBox(height: 4),
 
-                  // ── Убакыт + птичка (окулду белгиси) ──
+                  // ── Убакыт + птичка ──
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [

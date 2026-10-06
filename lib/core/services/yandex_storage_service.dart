@@ -14,8 +14,13 @@ class YandexStorageService {
   static const _host        = 's3.eu-central-003.backblazeb2.com';
   static const _endpoint    = 'https://$_host';
 
+  // Backblaze B2 S3-compatible URL форматы:
+  // PUT: https://s3.{region}.backblazeb2.com/{bucket}/{key}
+  // GET: https://{bucket}.s3.{region}.backblazeb2.com/{key}
+  //   же: https://s3.{region}.backblazeb2.com/{bucket}/{key}  (экөө тең иштейт)
+  // Биз PUT менен бирдей форматты колдонобуз — ишенимдүүрөөк
   static String publicUrl(String objectKey) =>
-      'https://$_bucket.$_host/$objectKey';
+      '$_endpoint/$_bucket/$objectKey';
 
   Future<String?> uploadImage(
     Uint8List bytes, {
@@ -88,7 +93,7 @@ class YandexStorageService {
       return null;
     } catch (e) {
       print('❌ Backblaze exception: $e');
-      return null;
+      rethrow; // Жогорку деңгээлге катаны жибер
     }
   }
 

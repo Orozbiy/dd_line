@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:ui';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
@@ -208,7 +209,7 @@ class _VoiceRecordButtonState extends State<VoiceRecordButton> {
 
     widget.onRecordingEnd?.call();
 
-    if (cancelled || path == null || duration < 1) {
+    if (cancelled || path == null) {
       // Жокко чыгарылганда үн жана дирилдөө
       HapticFeedback.lightImpact();
       _playSound('sounds/record_cancel.wav');
@@ -216,10 +217,32 @@ class _VoiceRecordButtonState extends State<VoiceRecordButton> {
       return;
     }
 
+    // Файл өлчөмүн текшер — микрофон уруксаты жок болсо файл бош болот
+    final fileSize = await File(path).length().catchError((_) => 0);
+    if (fileSize < 1000) {
+      // 1KB'дан аз → микрофон иштеген жок
+      HapticFeedback.lightImpact();
+      _playSound('sounds/record_cancel.wav');
+      widget.onCancel?.call();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Микрофонго уруксат бериңиз: Жөндөөлөр → Тиркемелер → DD Online → Уруксаттар → Микрофон'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 5),
+          ),
+        );
+      }
+      return;
+    }
+
     // Жөнөтүлгөндө үн жана дирилдөө
     HapticFeedback.selectionClick();
     _playSound('sounds/record_stop.wav');
-    widget.onRecorded(path, duration);
+    // Эгер таймер 0 болсо, файл узундугунан эсептейбиз
+    final actualDuration = duration > 0 ? duration : 1;
+    widget.onRecorded(path, actualDuration);
   }
 
   String _formatDuration(Duration d) {
