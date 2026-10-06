@@ -61,9 +61,40 @@ class _VoiceRecordButtonState extends State<VoiceRecordButton> {
     super.dispose();
   }
 
+  bool _sfxContextSet = false;
+
+  /// Добуш эффекттеринин AudioContext'и аудио ФОКУСТУ СУРАБАЙ турган
+  /// кылып орнотулат (AndroidAudioFocus.none). Мунусуз record_start.wav
+  /// сыяктуу эффект ойнотулганда ал аудио фокусту талап кылып, активдүү
+  /// микрофон жаздыруу сессиясын үзүп/тосуп коёт — жаздыруу экранда
+  /// "9 секунд" көрсөтсө да, чыныгы жазылган аудио болгону ~1.3 секунд
+  /// болуп калган маселе ушундан болгон.
+  Future<void> _ensureSfxContext() async {
+    if (_sfxContextSet) return;
+    try {
+      await _player.setAudioContext(AudioContext(
+        android: AudioContextAndroid(
+          isSpeakerphoneOn: true,
+          stayAwake: false,
+          contentType: AndroidContentType.sonification,
+          usageType: AndroidUsageType.assistanceSonification,
+          audioFocus: AndroidAudioFocus.none,
+        ),
+        iOS: AudioContextIOS(
+          category: AVAudioSessionCategory.ambient,
+          options: const {AVAudioSessionOptions.mixWithOthers},
+        ),
+      ));
+      _sfxContextSet = true;
+    } catch (e) {
+      debugPrint('🎤⚠️ SFX AudioContext орнотулбады: $e');
+    }
+  }
+
   // ── Үн эффекттери ──
   Future<void> _playSound(String asset) async {
     try {
+      await _ensureSfxContext();
       await _player.stop();
       await _player.play(AssetSource(asset));
     } catch (_) {}
@@ -249,6 +280,34 @@ class _VoiceRecordButtonState extends State<VoiceRecordButton> {
             backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
             duration: Duration(seconds: 5),
+          ),
+        );
+      }
+      return;
+    }
+
+    // Жаздыруу убактылуу үзгүлтүккө учурабадыбы текшер — 64kbps AAC'де
+    // 1 секундга болжол менен ~8000 байт туура келет. Эгер чыныгы файл
+    // экрандагы секундга салыштырмалуу өтө аз болсо (мисалы, аудио фокус
+    // башка добуш эффекти тарабынан тартылып кетип, жаздыруу бир
+    // секунддан кийин үнсүз калган учурда) — таймер жүрсө да чыныгы
+    // аудио жазылбай калганын билдирет. Мындай билдирүүнү жөнөтпөйбүз.
+    final expectedMinBytes = duration * 8000 * 0.3; // 30% толеранс
+    if (duration >= 3 && fileSize < expectedMinBytes) {
+      debugPrint(
+          '🎤⚠️ Жаздыруу үзгүлтүккө учураган көрүнөт: ${duration}s үчүн '
+          '~${(duration * 8000 / 1024).toStringAsFixed(0)}KB күтүлгөн, '
+          'бирок чыныгысы ${(fileSize / 1024).toStringAsFixed(1)}KB');
+      HapticFeedback.lightImpact();
+      _playSound('sounds/record_cancel.wav');
+      widget.onCancel?.call();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Жаздыруу үзгүлтүккө учурады, кайра аракет кылыңыз'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 4),
           ),
         );
       }
