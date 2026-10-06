@@ -1,7 +1,10 @@
+import 'dart:io';
 import 'dart:math';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../core/services/yandex_storage_service.dart';
@@ -39,6 +42,13 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
   double _progress = 0.0;
   int _currentSeconds = 0;
   int _totalSeconds = 0;
+
+  // Жергиликтүү кэшке толук жүктөп алынган аудио файлдын жолу.
+  // Тармак (HTTP) аркылуу агым түрүндө ойнотуу Backblaze B2'нин
+  // presigned URL'дери менен ExoPlayer'де туура иштебей, бир нече
+  // миллисекунд ("зыың") үн чыгарып токтоп калчу — ошон үчүн ойнотуудан
+  // мурун файлды ТОЛУК жүктөп алып, андан кийин локалдык файлдан ойнотобуз.
+  String? _localFilePath;
 
   static const int _barCount = 27;
   late final List<double> _barHeights = _generateBarHeights(widget.audioUrl);
@@ -144,6 +154,55 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
     }
   }
 
+  /// Аудиону ОЙНОТУУДАН МУРУН толук жүктөп алып, телефондо убактылуу
+  /// файлга сактайт — ошондон кийин GANA ойнотулат.
+  ///
+  /// МААНИЛҮҮ: мурда UrlSource(presignedUrl) аркылуу ТҮЗ агым (stream)
+  /// түрүндө ойнотулчу. Android'деги ExoPlayer Backblaze B2'нин
+  /// presigned URL'дериндеги HTTP Range сурамдарын туура иштете албай,
+  /// бир аз буфер алгандан кийин ("зыың" деген кыска добуш) агымды
+  /// "бүттү" деп токтоткузуп коёт эле — аудио толук ойнолбой калчу.
+  /// Файлды толук жүктөп, локалдык файлдан ойнотуу бул көйгөйдү
+  /// толугу менен айланып өтөт.
+  Future<String?> _ensureLocalFile() async {
+    final existing = _localFilePath;
+    if (existing != null && await File(existing).exists()) {
+      debugPrint('🔊 Жергиликтүү кэштен колдонулат: $existing');
+      return existing;
+    }
+
+    try {
+      final playUrl = _getPlayUrl();
+      debugPrint('🔊⬇️ Толук жүктөлүп алынат: $playUrl');
+      final response = await http
+          .get(Uri.parse(playUrl))
+          .timeout(const Duration(seconds: 25));
+
+      if (response.statusCode != 200) {
+        debugPrint(
+            '🔊❌ Жүктөө катасы: HTTP ${response.statusCode}, body=${response.body}');
+        return null;
+      }
+      if (response.bodyBytes.isEmpty) {
+        debugPrint('🔊❌ Жүктөлгөн файл бош (0 байт)');
+        return null;
+      }
+
+      final dir = await getTemporaryDirectory();
+      final safeName = 'voice_cache_${widget.audioUrl.hashCode}.m4a';
+      final file = File('${dir.path}/$safeName');
+      await file.writeAsBytes(response.bodyBytes, flush: true);
+
+      debugPrint(
+          '🔊✅ Жергиликтүү файлга сакталды: ${file.path} (${response.bodyBytes.length}B)');
+      _localFilePath = file.path;
+      return file.path;
+    } catch (e) {
+      debugPrint('🔊❌ Жүктөп алуу катасы: $e');
+      return null;
+    }
+  }
+
   Future<void> _togglePlay() async {
     debugPrint('🔊 _togglePlay чакырылды. isLoading=$_isLoading isPlaying=$_isPlaying url=${widget.audioUrl}');
     if (_isLoading) return;
@@ -188,10 +247,16 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
             _currentSeconds = 0;
           });
         }
-        // Presigned URL — жеке bucket үчүн (1 саат жарактуу)
-        final playUrl = _getPlayUrl();
-        debugPrint('🔊▶️ play() чакырылат: $playUrl');
-        await _player.play(UrlSource(playUrl));
+        // Аудионун толук файлын жүктөп алабыз, андан кийин ЛОКАЛДЫК
+        // файлдан ойнотобуз (ExoPlayer'дин B2 presigned URL менен
+        // стрим кылуудагы "зыың" маселесин айланып өтүү үчүн).
+        final localPath = await _ensureLocalFile();
+        if (localPath == null) {
+          throw Exception(
+              'Аудио жүктөлбөдү (интернет байланышын текшериңиз)');
+        }
+        debugPrint('🔊▶️ play() чакырылат (локалдык файл): $localPath');
+        await _player.play(DeviceFileSource(localPath));
         debugPrint('🔊✅ play() ийгиликтүү чакырылды');
       }
       _activePlayer = _player;
