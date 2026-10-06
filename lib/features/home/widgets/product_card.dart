@@ -287,16 +287,32 @@ class _ProductCardState extends State<ProductCard>
                       final isWholesale = widget.product.pricingType == 'wholesale';
                       final isNegotiation = isWholesale && widget.product.wholesaleMode == 'negotiation';
 
-                      // Negotiation: баа жок, "Келишим түрүндө" текст гана
+                      // Negotiation: баа жок — "Келишим түрүндө  Оптом"
                       if (isNegotiation) {
-                        return Text(
-                          loc.get('prod_price_negotiation'),
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF059669),
-                            height: 1.1,
-                          ),
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                          textBaseline: TextBaseline.alphabetic,
+                          children: [
+                            Text(
+                              loc.get('prod_price_negotiation'),
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF059669),
+                                height: 1.1,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              loc.get('prod_badge_wholesale'),
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF7C3AED),
+                                height: 1.1,
+                              ),
+                            ),
+                          ],
                         );
                       }
 
@@ -337,7 +353,7 @@ class _ProductCardState extends State<ProductCard>
                                 ),
                                 const SizedBox(width: 6),
                                 Text(pricingLabel,
-                                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: pricingColor, height: 1.1)),
+                                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: pricingColor, height: 1.1)),
                               ],
                             ),
                           ],
@@ -358,7 +374,7 @@ class _ProductCardState extends State<ProductCard>
                             ),
                             const SizedBox(width: 6),
                             Text(pricingLabel,
-                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: pricingColor, height: 1.1)),
+                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: pricingColor, height: 1.1)),
                           ],
                         );
                       }
