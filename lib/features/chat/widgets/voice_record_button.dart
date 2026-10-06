@@ -80,9 +80,13 @@ class _VoiceRecordButtonState extends State<VoiceRecordButton> {
           usageType: AndroidUsageType.assistanceSonification,
           audioFocus: AndroidAudioFocus.none,
         ),
+        // AVAudioSessionCategory.ambient'те mixWithOthers'ти ОШЭНДЕН
+        // ЭЛЕ өзү иштейт (анык коюуга болбойт — assertion катасы берет,
+        // анткени mixWithOthers опциясын ачык коюу ТЕК playback /
+        // playAndRecord / multiRoute категорияларында гана уруксат
+        // берилет). Ошон үчүн options'ту такыр коюбайбыз.
         iOS: AudioContextIOS(
           category: AVAudioSessionCategory.ambient,
-          options: const {AVAudioSessionOptions.mixWithOthers},
         ),
       ));
       _sfxContextSet = true;
