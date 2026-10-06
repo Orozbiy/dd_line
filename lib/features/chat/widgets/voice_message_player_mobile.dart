@@ -3,6 +3,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
+import '../../../core/services/yandex_storage_service.dart';
 
 // ══════════════════════════════════════════════════════
 // Глобалдык активдүү плеер — бир эле убакта бир гана
@@ -44,21 +45,6 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
   static List<double> _generateBarHeights(String seed) {
     final rnd = Random(seed.hashCode);
     return List.generate(_barCount, (_) => 0.28 + rnd.nextDouble() * 0.72);
-  }
-
-  /// Эски URL форматын жаңыга конвертациялоо:
-  /// https://dd-online-media.s3.eu-central-003.backblazeb2.com/KEY
-  ///   → https://s3.eu-central-003.backblazeb2.com/dd-online-media/KEY
-  static String _normalizeUrl(String url) {
-    final oldPattern = RegExp(
-      r'^https://dd-online-media\.s3\.eu-central-003\.backblazeb2\.com/(.+)$',
-    );
-    final match = oldPattern.firstMatch(url);
-    if (match != null) {
-      final key = match.group(1)!;
-      return 'https://s3.eu-central-003.backblazeb2.com/dd-online-media/$key';
-    }
-    return url;
   }
 
   @override
@@ -138,6 +124,15 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
     }
   }
 
+  /// Presigned URL алуу — жеке bucket үчүн убактылуу signed URL
+  String _getPlayUrl() {
+    try {
+      return YandexStorageService.instance.presignedUrl(widget.audioUrl);
+    } catch (_) {
+      return widget.audioUrl;
+    }
+  }
+
   Future<void> _togglePlay() async {
     if (_isLoading) return;
     if (widget.audioUrl.isEmpty) return;
@@ -174,8 +169,8 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
             _currentSeconds = 0;
           });
         }
-        // URL нормализациялоо (эски bucket-subdomain → жаңы path формат)
-        final playUrl = _normalizeUrl(widget.audioUrl);
+        // Presigned URL — жеке bucket үчүн (1 саат жарактуу)
+        final playUrl = _getPlayUrl();
         await _player.play(UrlSource(playUrl));
       }
       _activePlayer = _player;
