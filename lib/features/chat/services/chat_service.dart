@@ -74,6 +74,11 @@ class ChatService {
   final messageText = text ?? (imageUrl != null ? '🖼️ Сүрөт' : '🎵 Үн');
   final unreadField = senderIsBuyer ? 'seller_unread' : 'buyer_unread';
 
+  // Алуучу мурун чатты өз тарабынан "өчүрсө" (soft-delete), жаны билдирүү
+  // келгенде анын тарабынан чат кайра көрүнсүн — тарыхы серверде бузулбай сакталат.
+  final recipientDeletedField =
+      senderIsBuyer ? 'deleted_for_seller' : 'deleted_for_buyer';
+
   await Future.wait([
    supabase.from('messages').insert({
   'chat_id':        chatId,
@@ -94,6 +99,7 @@ class ChatService {
     supabase.from('chats').update({
       'last_message':    messageText,
       'last_message_at': DateTime.now().toUtc().toIso8601String(),
+      recipientDeletedField: false,
     }).eq('id', chatId),
   ]);
 }
@@ -126,16 +132,23 @@ class ChatService {
   }
 
   // ════════════════════════════════════════════════════
-  // SOFT-DELETE
+  // SOFT-DELETE — бир тараптык өчүрүү
   // ════════════════════════════════════════════════════
-
+  //
+  // МААНИЛҮҮ: мурда бул метод 'messages' жана 'chats' сапта тарын
+  // ЭКИ ТАРАПТАН ТЕН биротоло өчүрүп жиберчү — демек экинчи колдонуучу
+  // да өз тарабынан чатты жоготуп коёт эле (realtime DELETE аркылуу).
+  // Азыр чат ЖАЛГЫЗ ошол колдонуучунун тизмесинен жашырылат
+  // (deleted_for_buyer / deleted_for_seller = true), ал эми серверде
+  // бардык билдирүүлөр бузулбай сакталат — экинчи тарап өз тарабынан
+  // толук тарыхты көрө алат. Эгер экинчи тарап кайра жазса, sendMessage()
+  // ичинде бул флаг автоматтык түрдө false кылынып, чат кайра тизмеге чыгат.
   Future<void> deleteChat(String chatId, {required bool isSeller}) async {
     try {
-      // 2 тараптан тең өчүр — messages да, chat да
-      await Future.wait([
-        supabase.from('messages').delete().eq('chat_id', chatId),
-        supabase.from('chats').delete().eq('id', chatId),
-      ]);
+      await supabase.from('chats').update({
+        if (isSeller) 'deleted_for_seller': true,
+        if (!isSeller) 'deleted_for_buyer': true,
+      }).eq('id', chatId);
     } catch (e) {
       debugPrint('❌ deleteChat ката: $e');
       rethrow;
@@ -143,9 +156,16 @@ class ChatService {
   }
 
   // ════════════════════════════════════════════════════
-  // ТАНДАЛГАН БИЛДИРҮҮЛӨРДҮ ӨЧҮРҮҮ
+  // ТАНДАЛГАН БИЛДИРҮҮЛӨРДҮ ӨЧҮРҮҮ (ЭСКИ — эки тараптан өчүрөт)
   // ════════════════════════════════════════════════════
-
+  //
+  // ЭСКЕРТҮҮ: бул метод серверден биротоло өчүрөт — демек экинчи
+  // колдонуучунун чатынан да ошол билдирүү жоголот. Азыр колдонмо
+  // билдирүү деңгээлиндеги "өчүрүүнү" ChatScreen ичинде ЛОКАЛДУУ
+  // (ар колдонуучу үчүн өзүнчө жашыруу) жасайт, бул метод чакырылбайт.
+  // Эски чалуулар үчүн гана калтырылды.
+  @Deprecated('Экинчи тарапта да өчүрүп жиберет. Ордуна ChatScreen ичиндеги '
+      'локалдык жашыруу (_hideMessagesLocally) колдонулат.')
   Future<void> deleteMessages(List<String> messageIds) async {
     if (messageIds.isEmpty) return;
     await supabase.from('messages').delete().inFilter('id', messageIds);
@@ -175,18 +195,25 @@ class ChatService {
   // БИЛДИРҮҮЛӨР СТРИМУ
   // ════════════════════════════════════════════════════
 
- Stream<List<MessageModel>> messagesStream(String chatId) {
+ Stream<List<MessageModel>> messagesStream(String chatId, {int limit = 80}) {
   StreamController<List<MessageModel>>? controller;
 
   Future<void> fetch() async {
     try {
+      // Чат ачылганда БААРЫН эмес, акыркы [limit] билдирүүнү гана алабыз —
+      // телефондогу локалдуу кэш баары бир толук тарыхты көрсөтүп турат,
+      // бул жерде тек гана жаны/өзгөргөн билдирүүлөрдү дал кылуу үчүн
+      // интернеттен алынуучу маалымат көлөмү чектелет.
       final rows = await supabase
           .from('messages')
           .select()
           .eq('chat_id', chatId)
-          .order('created_at', ascending: true);
+          .order('created_at', ascending: false)
+          .limit(limit);
       final msgs = (rows as List)
           .map((r) => MessageModel.fromMap(r as Map<String, dynamic>))
+          .toList()
+          .reversed
           .toList();
       if (controller != null && !controller!.isClosed) {
         controller!.add(msgs);

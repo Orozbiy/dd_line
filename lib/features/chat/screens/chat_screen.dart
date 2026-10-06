@@ -681,28 +681,52 @@ Future<void> _sendVoiceMessage(String path, int durationSeconds) async {
   if (myId == null) return;
   setState(() => _isSendingImage = true);
   try {
-    // Аудио файлды bytes катары окуу
-    final file = File(path); // ← import 'dart:io'; болуш керек
+    final file = File(path);
     final bytes = await file.readAsBytes();
- 
-    // Yandex Storage'ке жүктө (Cloudinary эмес)
-    final url = await YandexStorageService.instance.uploadAudio(
-      bytes,
-      folder: 'chat_audio',
-      filename: 'audio_${DateTime.now().millisecondsSinceEpoch}.m4a',
-    );
- 
-    if (url == null) {
+
+    String? url;
+    try {
+      url = await YandexStorageService.instance.uploadAudio(
+        bytes,
+        folder: 'chat_audio',
+        filename: 'audio_${DateTime.now().millisecondsSinceEpoch}.m4a',
+      );
+    } catch (e) {
       if (mounted) {
+        final isNetworkError = e.toString().contains('SocketException') ||
+            e.toString().contains('Failed host lookup') ||
+            e.toString().contains('No address associated');
         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(loc.get('chat_audio_fail'))));
+          SnackBar(
+            content: Text(
+              isNetworkError
+                  ? 'Интернет туташуусу жок. Тармакты текшериңиз.'
+                  : loc.get('chat_audio_fail'),
+            ),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
       return;
     }
- 
+
+    if (url == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(loc.get('chat_audio_fail')),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
+
     final replyTo = _replyingTo;
     if (replyTo != null) setState(() => _replyingTo = null);
- 
+
     await _service.sendMessage(
       chatId: widget.chatId,
       senderId: myId,
@@ -716,7 +740,7 @@ Future<void> _sendVoiceMessage(String path, int durationSeconds) async {
           : null,
       senderIsBuyer: !widget.isSeller,
     );
- 
+
     NotificationService().sendChatNotification(
       receiverUid: _receiverUid,
       senderName: _senderDisplayName,
@@ -724,7 +748,7 @@ Future<void> _sendVoiceMessage(String path, int durationSeconds) async {
       chatId: widget.chatId,
     );
 
-    _playSentSound(); // ← үн жаздырма кеткенде тык
+    _playSentSound();
     _scrollToBottom();
   } finally {
     if (mounted) setState(() => _isSendingImage = false);
