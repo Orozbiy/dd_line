@@ -72,20 +72,28 @@ class _VoiceRecordButtonState extends State<VoiceRecordButton> {
   // ── Уруксат текшерүү ──
   Future<bool> _checkAndRequestPermission() async {
     var status = await Permission.microphone.status;
+    debugPrint('🎤 Микрофон уруксат статусу: $status');
+
     if (status.isGranted) return true;
 
     if (status.isPermanentlyDenied) {
+      debugPrint('🎤❌ Микрофон уруксаты түбөлүктүү тыюу салынган — колдонуучу жөндөөлөрдөн кол менен берүүсү керек');
       if (mounted) _showPermissionDialog();
       return false;
     }
 
+    debugPrint('🎤 Микрофон уруксаты сурап жатат...');
     status = await Permission.microphone.request();
+    debugPrint('🎤 Микрофон уруксат жооп: $status');
+
     if (status.isGranted) return true;
 
     if (mounted) {
       if (status.isPermanentlyDenied) {
+        debugPrint('🎤❌ Колдонуучу микрофонду түбөлүктүү жокко чыгарды');
         _showPermissionDialog();
       } else {
+        debugPrint('🎤❌ Колдонуучу микрофонду жокко чыгарды (статус: $status)');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Үн жаздыруу үчүн микрофонго уруксат бериңиз'),
@@ -135,15 +143,22 @@ class _VoiceRecordButtonState extends State<VoiceRecordButton> {
     final dir  = await getTemporaryDirectory();
     final path = '${dir.path}/voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
     _recordedPath = path;
+    debugPrint('🎤 Жаздыруу башталат: $path');
 
-    await _recorder.start(
-      const RecordConfig(
-        encoder: AudioEncoder.aacLc,
-        bitRate: 64000,
-        sampleRate: 44100,
-      ),
-      path: path,
-    );
+    try {
+      await _recorder.start(
+        const RecordConfig(
+          encoder: AudioEncoder.aacLc,
+          bitRate: 64000,
+          sampleRate: 44100,
+        ),
+        path: path,
+      );
+      debugPrint('🎤✅ Жаздыруу башталды');
+    } catch (e) {
+      debugPrint('🎤❌ Жаздыруу башталбады: $e');
+      rethrow;
+    }
 
     if (!mounted) return;
     setState(() {
@@ -196,6 +211,7 @@ class _VoiceRecordButtonState extends State<VoiceRecordButton> {
 
     final path     = await _recorder.stop();
     final duration = _elapsed.inSeconds;
+    debugPrint('🎤 Жаздыруу токтоду: path=$path, duration=${duration}s');
 
     if (!mounted) return;
     setState(() {
@@ -219,8 +235,10 @@ class _VoiceRecordButtonState extends State<VoiceRecordButton> {
 
     // Файл өлчөмүн текшер — микрофон уруксаты жок болсо файл бош болот
     final fileSize = await File(path).length().catchError((_) => 0);
+    debugPrint('🎤 Аудио файл өлчөмү: ${fileSize}B (${(fileSize / 1024).toStringAsFixed(1)}KB)');
     if (fileSize < 1000) {
       // 1KB'дан аз → микрофон иштеген жок
+      debugPrint('🎤❌ Аудио файл өтө кичине (${fileSize}B) — микрофон уруксаты жок же жаздыруу иштеген жок');
       HapticFeedback.lightImpact();
       _playSound('sounds/record_cancel.wav');
       widget.onCancel?.call();
@@ -238,6 +256,7 @@ class _VoiceRecordButtonState extends State<VoiceRecordButton> {
     }
 
     // Жөнөтүлгөндө үн жана дирилдөө
+    debugPrint('🎤✅ Аудио жөнөтүлүп жатат: ${fileSize}B, ${duration}s');
     HapticFeedback.selectionClick();
     _playSound('sounds/record_stop.wav');
     // Эгер таймер 0 болсо, файл узундугунан эсептейбиз

@@ -14,7 +14,15 @@ class YandexStorageService {
   static const _host        = 's3.eu-central-003.backblazeb2.com';
   static const _endpoint    = 'https://$_host';
 
-  /// Объект key'ин URL'ден чыгарат
+  // Backblaze B2 S3-compatible URL форматы:
+  // PUT: https://s3.{region}.backblazeb2.com/{bucket}/{key}
+  // GET: https://{bucket}.s3.{region}.backblazeb2.com/{key}
+  //   же: https://s3.{region}.backblazeb2.com/{bucket}/{key}  (экөө тең иштейт)
+  // Биз PUT менен бирдей форматты колдонобуз — ишенимдүүрөөк
+  static String publicUrl(String objectKey) =>
+      '$_endpoint/$_bucket/$objectKey';
+
+  /// Объект key'ин URL'ден чыгарат (эски/жаңы форматтардын экөөнү тең колдойт)
   /// https://s3.eu-central-003.backblazeb2.com/dd-online-media/chat/audio.m4a
   ///   → chat/audio.m4a
   /// https://dd-online-media.s3.eu-central-003.backblazeb2.com/chat/audio.m4a
@@ -37,24 +45,20 @@ class YandexStorageService {
     return null;
   }
 
-  /// Объект key'ден толук URL жасайт (сактоо үчүн)
-  static String publicUrl(String objectKey) =>
-      '$_endpoint/$_bucket/$objectKey';
-
-  /// Presigned GET URL — убактылуу signed URL (audio ойнотуу үчүн)
+  /// Presigned GET URL — убактылуу signed URL (жеке bucket'тен ойнотуу/жүктөп алуу үчүн)
   /// [url] — Supabase'де сакталган толук URL же objectKey
   /// [expiresSeconds] — канча секунд жарактуу (default: 3600 = 1 саат)
   String presignedUrl(String url, {int expiresSeconds = 3600}) {
-    // URL'ден objectKey чыгар
+    // URL'ден objectKey чыгар (же болбосо, URL'дин өзү objectKey катары эсептелет)
     final objectKey = extractObjectKey(url) ?? url;
 
-    final now         = DateTime.now().toUtc();
-    final dateStr     = _dateStr(now);
-    final timeStr     = _timeStr(now);
+    final now          = DateTime.now().toUtc();
+    final dateStr      = _dateStr(now);
+    final timeStr      = _timeStr(now);
     final canonicalUri = '/$_bucket/${_uriEncode(objectKey)}';
-    final credential  = '$_accessKeyId/$dateStr/$_region/s3/aws4_request';
+    final credential   = '$_accessKeyId/$dateStr/$_region/s3/aws4_request';
 
-    // Query параметрлер (алфавит боюнча сорттолгон!)
+    // Query параметрлер (алфавит боюнча сорттолгон болушу керек!)
     final queryParams = {
       'X-Amz-Algorithm':     'AWS4-HMAC-SHA256',
       'X-Amz-Credential':    credential,
@@ -156,11 +160,11 @@ class YandexStorageService {
 
       final uri = Uri.parse('$_endpoint/$_bucket/$objectKey');
       final response = await http.put(uri, headers: {
-        'Content-Type':          contentType,
-        'Host':                  _host,
+        'Content-Type':         contentType,
+        'Host':                 _host,
         'x-amz-content-sha256': bodyHash,
-        'x-amz-date':           timeStr,
-        'Authorization':         authorization,
+        'x-amz-date':          timeStr,
+        'Authorization':        authorization,
       }, body: body).timeout(const Duration(seconds: 90));
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -170,7 +174,7 @@ class YandexStorageService {
       return null;
     } catch (e) {
       print('❌ Backblaze exception: $e');
-      rethrow;
+      rethrow; // Жогорку деңгээлге катаны жибер
     }
   }
 

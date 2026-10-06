@@ -99,9 +99,38 @@ class _ChatScreenState extends State<ChatScreen> {
   String _sellerPhone = '';
   String get _cacheKey => 'messages_${widget.chatId}';
 
+  // ── Бул колдонуучу ГАНА жашырган билдирүүлөр (локалдык, экинчи
+  //    тарапка тийбейт — сервердеги маалымат бузулбайт) ──
+  String get _hiddenKey => 'hidden_msgs_${widget.chatId}';
+  final Set<String> _hiddenMessageIds = {};
+
   // ════════════════════════════════════════════════════
   // КЭШ
   // ════════════════════════════════════════════════════
+
+  Future<void> _loadHiddenIds() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getStringList(_hiddenKey);
+      if (raw != null) _hiddenMessageIds.addAll(raw);
+    } catch (_) {}
+  }
+
+  Future<void> _saveHiddenIds() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(_hiddenKey, _hiddenMessageIds.toList());
+    } catch (_) {}
+  }
+
+  /// Билдирүүлөрдү ЖАЛГЫЗ ушул колдонуучу үчүн жашырат.
+  /// Сервердеги саптар тийилбейт — экинчи тарап өз чатында аларды
+  /// көрүп турат (факт эки тарапта тең сакталат).
+  Future<void> _hideMessagesLocally(List<String> ids) async {
+    _hiddenMessageIds.addAll(ids);
+    await _saveHiddenIds();
+    await _saveMessagesCache(_cachedMessages);
+  }
 
   Future<void> _loadMessagesCache() async {
     try {
@@ -110,6 +139,7 @@ class _ChatScreenState extends State<ChatScreen> {
       if (raw == null || !mounted) return;
       final list = (jsonDecode(raw) as List)
           .map((e) => MessageModel.fromJson(e as Map<String, dynamic>))
+          .where((m) => !_hiddenMessageIds.contains(m.id))
           .toList();
       if (mounted && !_initialLoadDone) {
         setState(() => _cachedMessages = list);
@@ -119,8 +149,11 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Future<void> _saveMessagesCache(List<MessageModel> msgs) async {
     try {
-      final toSave =
-          msgs.length > 100 ? msgs.sublist(msgs.length - 100) : msgs;
+      final visible =
+          msgs.where((m) => !_hiddenMessageIds.contains(m.id)).toList();
+      final toSave = visible.length > 100
+          ? visible.sublist(visible.length - 100)
+          : visible;
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(
         _cacheKey,
@@ -136,11 +169,34 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
-    _loadMessagesCache();
+    _initChat();
+    _markRead();
+    _loadMyName();
+    _msgCtrl.addListener(() {
+      final has = _msgCtrl.text.trim().isNotEmpty;
+      if (has != _hasText) setState(() => _hasText = has);
+    });
+    _requestMicPermission();
+    ChatBackgroundProvider.instance.addListener(_onBgChanged);
+  }
+
+  Future<void> _initChat() async {
+    // Жашырылган (локалдык "өчүрүлгөн") id'лерди биринчи жүктөп алабыз,
+    // андан кийин гана кэш/стримди ачабыз — болбосо мурда жашырылган
+    // билдирүүлөр бир паска кайра көрүнүп кетет.
+    await _loadHiddenIds();
+    await _loadMessagesCache();
+
     _messagesStream = _service.messagesStream(widget.chatId);
 
-    _msgSub = _messagesStream.listen((msgs) {
+    _msgSub = _messagesStream.listen((rawMsgs) {
   if (!mounted) return;
+
+  // Бул колдонуучу жашырган билдирүүлөр сервердеги жоопто да
+  // кайта-кайта келет (башка колдонуучу тарабынан өчүрүлбөгөндүктөн) —
+  // аларды бул жерде дайыма сузуп салабыз.
+  final msgs =
+      rawMsgs.where((m) => !_hiddenMessageIds.contains(m.id)).toList();
 
   final oldIds = _cachedMessages.map((m) => m.id).toSet();
   final newIds = msgs.map((m) => m.id).toSet();
@@ -192,15 +248,6 @@ class _ChatScreenState extends State<ChatScreen> {
       _cachedMessages.any((m) => m.senderId != myId && !m.isRead))
     _markRead();
 });
-
-    _markRead();
-    _loadMyName();
-    _msgCtrl.addListener(() {
-      final has = _msgCtrl.text.trim().isNotEmpty;
-      if (has != _hasText) setState(() => _hasText = has);
-    });
-    _requestMicPermission();
-    ChatBackgroundProvider.instance.addListener(_onBgChanged);
   }
 
   void _onBgChanged() {
@@ -836,8 +883,8 @@ Future<void> _sendVoiceMessage(String path, int durationSeconds) async {
       );
     }
 
-    await _saveMessagesCache(_cachedMessages);
-    await _service.deleteMessages(toDelete.toList());
+    // Локалдык жашыруу — серверге, демек экинчи тарапка тийбейт.
+    await _hideMessagesLocally(toDelete.toList());
   }
 
   // ════════════════════════════════════════════════════
@@ -873,8 +920,8 @@ Future<void> _sendVoiceMessage(String path, int durationSeconds) async {
         duration: const Duration(milliseconds: 250),
       );
     }
-    await _saveMessagesCache(_cachedMessages);
-    await _service.deleteMessages([msg.id]);
+    // Локалдык жашыруу — серверге, демек экинчи тарапка тийбейт.
+    await _hideMessagesLocally([msg.id]);
   }
 
   // ════════════════════════════════════════════════════

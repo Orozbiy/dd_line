@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
@@ -57,6 +58,7 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
 
     // PlayerState өзгөргөндө UI жаңыртуу
     _player.onPlayerStateChanged.listen((state) {
+      debugPrint('🔊 PlayerState: $state');
       if (!mounted) return;
       setState(() {
         _isPlaying = state == PlayerState.playing;
@@ -78,11 +80,13 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
     });
 
     _player.onDurationChanged.listen((d) {
+      debugPrint('🔊 Duration changed: ${d.inMilliseconds}ms');
       if (!mounted) return;
       setState(() => _totalSeconds = d.inSeconds > 0 ? d.inSeconds : _totalSeconds);
     });
 
     _player.onPlayerComplete.listen((_) {
+      debugPrint('🔊 Playback complete');
       if (!mounted) return;
       setState(() {
         _isPlaying = false;
@@ -92,6 +96,8 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
       });
       if (_activePlayer == _player) _activePlayer = null;
     });
+
+    _player.onLog.listen((msg) => debugPrint('🔊 audioplayers log: $msg'));
   }
 
   @override
@@ -119,7 +125,9 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
         ),
       ));
       _audioContextSet = true;
-    } catch (_) {
+      debugPrint('🔊✅ AudioContext орнотулду');
+    } catch (e) {
+      debugPrint('🔊❌ AudioContext катасы: $e');
       // AudioContext орнотуу кетсе да ойнотуу улантылат
     }
   }
@@ -127,19 +135,27 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
   /// Presigned URL алуу — жеке bucket үчүн убактылуу signed URL
   String _getPlayUrl() {
     try {
-      return YandexStorageService.instance.presignedUrl(widget.audioUrl);
-    } catch (_) {
+      final signed = YandexStorageService.instance.presignedUrl(widget.audioUrl);
+      debugPrint('🔊 Presigned URL: $signed');
+      return signed;
+    } catch (e) {
+      debugPrint('🔊❌ Presigned URL жасалбады: $e, түп URL колдонулат');
       return widget.audioUrl;
     }
   }
 
   Future<void> _togglePlay() async {
+    debugPrint('🔊 _togglePlay чакырылды. isLoading=$_isLoading isPlaying=$_isPlaying url=${widget.audioUrl}');
     if (_isLoading) return;
-    if (widget.audioUrl.isEmpty) return;
+    if (widget.audioUrl.isEmpty) {
+      debugPrint('🔊❌ audioUrl бош!');
+      return;
+    }
 
     // Ойноп жатса — пауза
     if (_isPlaying) {
       await _player.pause();
+      debugPrint('🔊 Пауза коюлду');
       return;
     }
 
@@ -156,10 +172,13 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
       await _ensureAudioContext();
 
       final currentState = _player.state;
+      debugPrint('🔊 Учурдагы player.state = $currentState, currentSeconds=$_currentSeconds, progress=$_progress');
+
       if (currentState == PlayerState.paused &&
           _currentSeconds > 0 &&
           _progress < 0.99) {
         // Паузадан улантуу
+        debugPrint('🔊 Паузадан улантылат (resume)');
         await _player.resume();
       } else {
         // Жаңыдан баштоо
@@ -171,10 +190,13 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
         }
         // Presigned URL — жеке bucket үчүн (1 саат жарактуу)
         final playUrl = _getPlayUrl();
+        debugPrint('🔊▶️ play() чакырылат: $playUrl');
         await _player.play(UrlSource(playUrl));
+        debugPrint('🔊✅ play() ийгиликтүү чакырылды');
       }
       _activePlayer = _player;
-    } catch (e) {
+    } catch (e, st) {
+      debugPrint('🔊❌ Ойнотуу катасы: $e\n$st');
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -193,6 +215,7 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
     // 8 секунд ичинде ойнобосо — loading өчүр (timeout)
     Future.delayed(const Duration(seconds: 8), () {
       if (mounted && _isLoading) {
+        debugPrint('🔊⏱️ Timeout — loading өчүрүлдү (аудио 8 сек ичинде башталбады)');
         setState(() => _isLoading = false);
       }
     });
