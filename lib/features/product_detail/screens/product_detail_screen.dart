@@ -633,9 +633,77 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
         ],
       );
     }
-    return Text('${_product.price.toStringAsFixed(0)} $cur',
-        style: AppTextStyles.headingLarge.copyWith(
-            color: DD.accent, fontWeight: FontWeight.w800, letterSpacing: -0.5));
+    final isWholesale = _product.pricingType == 'wholesale';
+    final isNegotiation = isWholesale && _product.wholesaleMode == 'negotiation';
+    final hasWholesalePrice = isWholesale && !isNegotiation && _product.wholesalePrice != null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Negotiation: баа жок — текст гана
+        if (isNegotiation)
+          Text(
+            loc.get('prod_price_negotiation'),
+            style: AppTextStyles.headingLarge.copyWith(
+                color: const Color(0xFF059669), fontWeight: FontWeight.w800, letterSpacing: -0.5),
+          )
+        else
+          Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+            Text('${_product.price.toStringAsFixed(0)} $cur',
+                style: AppTextStyles.headingLarge.copyWith(
+                    color: isWholesale ? const Color(0xFF7C3AED) : DD.accent,
+                    fontWeight: FontWeight.w800, letterSpacing: -0.5)),
+            const SizedBox(width: 10),
+            Text(
+              isWholesale ? loc.get('prod_badge_wholesale') : loc.get('prod_badge_retail'),
+              style: TextStyle(
+                color: isWholesale ? const Color(0xFF7C3AED) : DD.accent,
+                fontSize: 13, fontWeight: FontWeight.w600,
+              ),
+            ),
+          ]),
+        // Оптом маалыматы
+        if (isWholesale) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: isNegotiation
+                  ? const Color(0xFF059669).withValues(alpha: 0.08)
+                  : const Color(0xFF7C3AED).withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isNegotiation
+                    ? const Color(0xFF059669).withValues(alpha: 0.35)
+                    : const Color(0xFF7C3AED).withValues(alpha: 0.35),
+              ),
+            ),
+            child: Row(children: [
+              Icon(isNegotiation ? Icons.handshake_outlined : Icons.price_change_outlined,
+                  color: isNegotiation ? const Color(0xFF059669) : const Color(0xFF7C3AED),
+                  size: 18),
+              const SizedBox(width: 10),
+              Expanded(child: isNegotiation
+                  ? Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(loc.get('prod_detail_negotiation_title'),
+                          style: const TextStyle(color: Color(0xFF059669), fontWeight: FontWeight.w700, fontSize: 13)),
+                      Text(loc.get('prod_detail_negotiation_sub'),
+                          style: TextStyle(color: const Color(0xFF059669).withValues(alpha: 0.75), fontSize: 12)),
+                    ])
+                  : hasWholesalePrice
+                      ? Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text(loc.get('prod_detail_wholesale_price_label'),
+                              style: TextStyle(color: const Color(0xFF7C3AED).withValues(alpha: 0.75), fontSize: 12)),
+                          Text('${_product.wholesalePrice!.toStringAsFixed(0)} $cur',
+                              style: const TextStyle(color: Color(0xFF7C3AED), fontWeight: FontWeight.w800, fontSize: 16)),
+                        ])
+                      : Text(loc.get('prod_detail_wholesale_contact'),
+                          style: const TextStyle(color: Color(0xFF7C3AED), fontSize: 12))),
+            ]),
+          ),
+        ],
+      ],
+    );
   }
 
   @override

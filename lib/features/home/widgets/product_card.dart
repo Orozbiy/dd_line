@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
+import '../../../core/app_localizations.dart';
 import '../../../core/utils/favorites_manager.dart';
 import '../../../data/models/product_model.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -280,40 +281,88 @@ class _ProductCardState extends State<ProductCard>
 
                     const SizedBox(height: 5),
 
-                    // Скидкалуу баа
-                    if (hasDiscount) ...[
-                      Text(
-                        '${widget.product.price.toStringAsFixed(0)} сом',
-                        style: TextStyle(
-                          fontSize: 15,
-                          color: subColor,
-                          decoration: TextDecoration.lineThrough,
-                          decorationColor: subColor,
-                          height: 1.2,
-                        ),
-                      ),
-                      const SizedBox(height: 1),
-                      Text(
-                        '${widget.product.discountedPrice!.toStringAsFixed(0)} сом',
-                        style: const TextStyle(
-                          fontSize: 19,   // баа
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.error,
-                          height: 1.1,
-                        ),
-                      ),
-                    ] else ...[
-                      // Жөн баа
-                      Text(
-                        '${widget.product.price.toStringAsFixed(0)} сом',
-                        style: const TextStyle(
-                          fontSize: 19,   // баа
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.primary,
-                          height: 1.1,
-                        ),
-                      ),
-                    ],
+                    // Баа же Келишим
+                    Builder(builder: (context) {
+                      final loc = AppLocalizations.of(context);
+                      final isWholesale = widget.product.pricingType == 'wholesale';
+                      final isNegotiation = isWholesale && widget.product.wholesaleMode == 'negotiation';
+
+                      // Negotiation: баа жок, "Келишим түрүндө" текст гана
+                      if (isNegotiation) {
+                        return Text(
+                          loc.get('prod_price_negotiation'),
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF059669),
+                            height: 1.1,
+                          ),
+                        );
+                      }
+
+                      final pricingLabel = isWholesale
+                          ? loc.get('prod_badge_wholesale')
+                          : loc.get('prod_badge_retail');
+                      final pricingColor = isWholesale
+                          ? const Color(0xFF7C3AED)
+                          : AppColors.primary;
+
+                      if (hasDiscount) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${widget.product.price.toStringAsFixed(0)} сом',
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: subColor,
+                                decoration: TextDecoration.lineThrough,
+                                decorationColor: subColor,
+                                height: 1.2,
+                              ),
+                            ),
+                            const SizedBox(height: 1),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.baseline,
+                              textBaseline: TextBaseline.alphabetic,
+                              children: [
+                                Text(
+                                  '${widget.product.discountedPrice!.toStringAsFixed(0)} сом',
+                                  style: const TextStyle(
+                                    fontSize: 19,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppColors.error,
+                                    height: 1.1,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(pricingLabel,
+                                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: pricingColor, height: 1.1)),
+                              ],
+                            ),
+                          ],
+                        );
+                      } else {
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                          textBaseline: TextBaseline.alphabetic,
+                          children: [
+                            Text(
+                              '${widget.product.price.toStringAsFixed(0)} сом',
+                              style: TextStyle(
+                                fontSize: 19,
+                                fontWeight: FontWeight.w800,
+                                color: pricingColor,
+                                height: 1.1,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(pricingLabel,
+                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: pricingColor, height: 1.1)),
+                          ],
+                        );
+                      }
+                    }),
 
                     // Рейтинг — болгондо гана
                     if (rating > 0) ...[

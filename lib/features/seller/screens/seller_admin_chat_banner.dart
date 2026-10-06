@@ -107,6 +107,7 @@ class _SellerAdminChatBannerState extends State<SellerAdminChatBanner> {
   }
 
   Future<void> _openOrCreateChat() async {
+    final loc = AppLocalizations.of(context);
     if (_opening) return;
     setState(() => _opening = true);
 
@@ -151,8 +152,8 @@ class _SellerAdminChatBannerState extends State<SellerAdminChatBanner> {
       if (adminId == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Админ табылган жок. Кийинчерээк кайталаңыз.'),
+            SnackBar(
+              content: Text(loc.get('admin_not_found')),
               backgroundColor: AppColors.error,
             ),
           );
@@ -213,7 +214,7 @@ class _SellerAdminChatBannerState extends State<SellerAdminChatBanner> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Ката: $e'),
+            content: Text('${loc.get('error')}: $e'),
             backgroundColor: AppColors.error,
           ),
         );

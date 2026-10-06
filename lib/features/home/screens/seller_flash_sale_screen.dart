@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../config/theme/app_colors.dart';
+import '../../../core/app_localizations.dart';
 import '../../../core/supabase_client.dart';
 
 class SellerFlashSaleScreen extends StatefulWidget {
@@ -97,6 +98,7 @@ class _SellerFlashSaleScreenState extends State<SellerFlashSaleScreen> {
   }
 
   void _showAddBottomSheet() async {
+    final loc = AppLocalizations.of(context);
     // Сатуучунун флеш сатуудагысыз товарларын жүктө
     // ignore: unused_local_variable
     final now = DateTime.now().toUtc().toIso8601String();
@@ -112,8 +114,8 @@ class _SellerFlashSaleScreenState extends State<SellerFlashSaleScreen> {
     if (!mounted) return;
 
     if (available.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Кошуу үчүн товар жок'),
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(loc.get('promo_no_products_to_add')),
         backgroundColor: AppColors.warning,
       ));
       return;
@@ -150,6 +152,7 @@ class _SellerFlashSaleScreenState extends State<SellerFlashSaleScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isDark ? const Color(0xFF0F0F0F) : const Color(0xFFF5F5F5);
 
@@ -162,9 +165,9 @@ class _SellerFlashSaleScreenState extends State<SellerFlashSaleScreen> {
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          '⚡ Убактылуу акция',
-          style: TextStyle(
+        title: Text(
+          '⚡ ${loc.get('flash_sale_title')}',
+          style: const TextStyle(
               color: Colors.white, fontWeight: FontWeight.bold, fontSize: 17),
         ),
         centerTitle: true,
@@ -172,7 +175,7 @@ class _SellerFlashSaleScreenState extends State<SellerFlashSaleScreen> {
           IconButton(
             icon: const Icon(Icons.add_circle_outline, color: Colors.white),
             onPressed: _showAddBottomSheet,
-            tooltip: 'Товар кош',
+            tooltip: loc.get('add_product_btn'),
           ),
         ],
       ),
@@ -180,7 +183,7 @@ class _SellerFlashSaleScreenState extends State<SellerFlashSaleScreen> {
         onPressed: _showAddBottomSheet,
         backgroundColor: const Color(0xFFDC2626),
         icon: const Icon(Icons.bolt_rounded, color: Colors.white),
-        label: const Text('Товар кош',
+        label: Text(loc.get('add_product_btn'),
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
       ),
       body: _loading
@@ -221,6 +224,7 @@ class _MiniTimer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final h = remaining.inHours.toString().padLeft(2, '0');
     final m = (remaining.inMinutes % 60).toString().padLeft(2, '0');
     final s = (remaining.inSeconds % 60).toString().padLeft(2, '0');
@@ -239,7 +243,7 @@ class _MiniTimer extends StatelessWidget {
           const Icon(Icons.timer_outlined, color: Colors.white70, size: 18),
           const SizedBox(width: 8),
           Text(
-            'Эң жакын акция бүтөт: $h:$m:$s',
+            '${loc.get('flash_sale_ends_label')}: $h:$m:$s',
             style: const TextStyle(
                 color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15),
           ),
@@ -259,6 +263,7 @@ class _FlashProductTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final name = item['title'] as String? ?? '';
     final images = List<String>.from(item['images'] as List? ?? []);
     final imageUrl = images.isNotEmpty ? images.first : '';
@@ -366,7 +371,7 @@ class _FlashProductTile extends StatelessWidget {
                     const Icon(Icons.timer_outlined,
                         size: 12, color: AppColors.error),
                     const SizedBox(width: 3),
-                    Text('$h саат $mn мин калды',
+                    Text('$h ${loc.get('unit_hour_short')} $mn ${loc.get('unit_minute_short')} ${loc.get('time_left_suffix')}',
                         style: const TextStyle(
                             color: AppColors.error, fontSize: 11)),
                   ]),
@@ -379,7 +384,7 @@ class _FlashProductTile extends StatelessWidget {
             icon: const Icon(Icons.close_rounded,
                 color: AppColors.error, size: 20),
             onPressed: onRemove,
-            tooltip: 'Акциядан алып салуу',
+            tooltip: loc.get('remove_from_promo_tooltip'),
           ),
         ],
       ),
@@ -418,6 +423,7 @@ class _AddFlashSheetState extends State<_AddFlashSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final sheetBg = isDark ? const Color(0xFF1A1A1A) : Colors.white;
     final subColor = isDark ? Colors.white70 : const Color(0xFF555555);
@@ -450,7 +456,7 @@ class _AddFlashSheetState extends State<_AddFlashSheet> {
                 const Icon(Icons.bolt_rounded,
                     color: AppColors.error, size: 22),
                 const SizedBox(width: 8),
-                Text('Убактылуу акцияга кош',
+                Text(loc.get('flash_sale_add_title'),
                     style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w800,
@@ -462,7 +468,7 @@ class _AddFlashSheetState extends State<_AddFlashSheet> {
             // ── Товар тизмеси ──
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-              child: Text('Товарды тандаңыз',
+              child: Text(loc.get('promo_select_product'),
                   style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -537,7 +543,7 @@ class _AddFlashSheetState extends State<_AddFlashSheet> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Акция баасы (с)',
+                    Text(loc.get('promo_price_label'),
                         style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
@@ -553,7 +559,7 @@ class _AddFlashSheetState extends State<_AddFlashSheet> {
                           ],
                           onChanged: (_) => setState(() {}),
                           decoration: InputDecoration(
-                            hintText: 'Акция бааны киргиз',
+                            hintText: loc.get('promo_price_hint'),
                             filled: true,
                             fillColor: isDark
                                 ? const Color(0xFF2A2A2A)
@@ -588,7 +594,7 @@ class _AddFlashSheetState extends State<_AddFlashSheet> {
                       Padding(
                         padding: const EdgeInsets.only(top: 4),
                         child: Text(
-                            'Баштапкы баа: ${_origPrice.toStringAsFixed(0)} с',
+                            '${loc.get('promo_original_price_label')}: ${_origPrice.toStringAsFixed(0)} с',
                             style: TextStyle(fontSize: 11, color: subColor)),
                       ),
                   ],
@@ -603,7 +609,7 @@ class _AddFlashSheetState extends State<_AddFlashSheet> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Убакыт',
+                    Text(loc.get('time_label'),
                         style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
@@ -628,7 +634,7 @@ class _AddFlashSheetState extends State<_AddFlashSheet> {
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
-                              h < 24 ? '$h саат' : '${h ~/ 24} күн',
+                              h < 24 ? '$h ${loc.get('unit_hour_short')}' : '${h ~/ 24} ${loc.get('unit_day_short')}',
                               style: TextStyle(
                                 color: isActive ? Colors.white : subColor,
                                 fontWeight: isActive
@@ -682,7 +688,7 @@ class _AddFlashSheetState extends State<_AddFlashSheet> {
                                     color: Colors.white),
                                 const SizedBox(width: 8),
                                 Text(
-                                    'Акцияга кош ($_hours ${_hours < 24 ? 'саат' : 'саат'})',
+                                    '${loc.get('promo_add_to_sale_btn')} ($_hours ${loc.get('unit_hour_short')})',
                                     style: const TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.w800,
@@ -707,22 +713,23 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Text('⚡', style: TextStyle(fontSize: 64)),
           const SizedBox(height: 16),
-          const Text('Убактылуу акция жок',
+          Text(loc.get('flash_sale_empty_title'),
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
-          const Text('Товарга убакыт менен арзандатуу кош',
+          Text(loc.get('flash_sale_empty_subtitle'),
               style: TextStyle(color: AppColors.grey400, fontSize: 14)),
           const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: onAdd,
             icon: const Icon(Icons.bolt_rounded),
-            label: const Text('Товар кош'),
+            label: Text(loc.get('add_product_btn')),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.error,
               foregroundColor: Colors.white,

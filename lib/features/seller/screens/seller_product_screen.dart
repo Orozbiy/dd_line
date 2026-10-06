@@ -652,8 +652,12 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                                   Text(p['title'] as String? ?? '', style: AppTextStyles.labelLarge.copyWith(color: prodNameColor), maxLines: 2, overflow: TextOverflow.ellipsis),
                                   const SizedBox(height: 4),
-                                  Text('${(p['price'] as num?)?.toStringAsFixed(0) ?? 0} ${loc.get('currency')}',
-                                      style: AppTextStyles.labelMedium.copyWith(color: AppColors.primary)),
+                                  Row(children: [
+                                    Text('${(p['price'] as num?)?.toStringAsFixed(0) ?? 0} ${loc.get('currency')}',
+                                        style: AppTextStyles.labelMedium.copyWith(color: AppColors.primary)),
+                                    const SizedBox(width: 6),
+                                    _pricingBadge(p, loc, isDark),
+                                  ]),
                                   const SizedBox(height: 2),
                                   Text(_getCategoryName(p['category_id'] as String? ?? ''),
                                       style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey500)),
@@ -746,13 +750,18 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
     final loc    = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final nameCtrl   = TextEditingController(text: existing?['title'] ?? '');
-    final priceCtrl  = TextEditingController(text: existing?['price']?.toString() ?? '');
-    final descCtrl   = TextEditingController(text: existing?['description'] ?? '');
-    final stockCtrl  = TextEditingController(text: existing?['in_stock']?.toString() ?? '');
-    final extra1Ctrl = TextEditingController(text: existing?['extra1'] ?? '');
-    final extra2Ctrl = TextEditingController(text: existing?['extra2'] ?? '');
-    final extra3Ctrl = TextEditingController(text: existing?['extra3'] ?? '');
+    final nameCtrl         = TextEditingController(text: existing?['title'] ?? '');
+    final priceCtrl        = TextEditingController(text: existing?['price']?.toString() ?? '');
+    final wholesalePriceCtrl = TextEditingController(text: existing?['wholesale_price']?.toString() ?? '');
+    final descCtrl         = TextEditingController(text: existing?['description'] ?? '');
+    final stockCtrl        = TextEditingController(text: existing?['in_stock']?.toString() ?? '');
+    final extra1Ctrl       = TextEditingController(text: existing?['extra1'] ?? '');
+    final extra2Ctrl       = TextEditingController(text: existing?['extra2'] ?? '');
+    final extra3Ctrl       = TextEditingController(text: existing?['extra3'] ?? '');
+
+    // ── Баа тиби state ──
+    String pricingType    = existing?['pricing_type'] as String? ?? 'retail';
+    String wholesaleMode  = existing?['wholesale_mode'] as String? ?? 'price';
 
     final existingCatId = existing?['category_id'] as String? ?? '1';
     final existingParts = existingCatId.split('_');
@@ -1108,9 +1117,165 @@ Row(
                     fieldW(nameCtrl, loc.get('prod_hint_name')),
                     const SizedBox(height: 14),
 
-                    labelW(loc.get('prod_field_price')),
-                    fieldW(priceCtrl, loc.get('prod_hint_price'), type: TextInputType.number),
+                    // ── PRICING TYPE SELECTOR ──
+                    labelW(loc.get('pricing_type_label')),
+                    Row(children: [
+                      Expanded(child: GestureDetector(
+                        onTap: () => setD(() => pricingType = 'retail'),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(
+                            color: pricingType == 'retail'
+                                ? AppColors.primary
+                                : (isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF0F0F0)),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: pricingType == 'retail' ? AppColors.primary : Colors.transparent,
+                              width: 2,
+                            ),
+                          ),
+                          child: Column(children: [
+                            Icon(Icons.person_rounded,
+                                color: pricingType == 'retail' ? Colors.white : (isDark ? Colors.white60 : AppColors.grey500),
+                                size: 20),
+                            const SizedBox(height: 4),
+                            Text(loc.get('pricing_retail'),
+                                style: TextStyle(
+                                  color: pricingType == 'retail' ? Colors.white : (isDark ? Colors.white60 : AppColors.grey600),
+                                  fontWeight: FontWeight.w700, fontSize: 13)),
+                          ]),
+                        ),
+                      )),
+                      const SizedBox(width: 10),
+                      Expanded(child: GestureDetector(
+                        onTap: () => setD(() => pricingType = 'wholesale'),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(
+                            color: pricingType == 'wholesale'
+                                ? const Color(0xFF7C3AED)
+                                : (isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF0F0F0)),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: pricingType == 'wholesale' ? const Color(0xFF7C3AED) : Colors.transparent,
+                              width: 2,
+                            ),
+                          ),
+                          child: Column(children: [
+                            Icon(Icons.store_rounded,
+                                color: pricingType == 'wholesale' ? Colors.white : (isDark ? Colors.white60 : AppColors.grey500),
+                                size: 20),
+                            const SizedBox(height: 4),
+                            Text(loc.get('pricing_wholesale'),
+                                style: TextStyle(
+                                  color: pricingType == 'wholesale' ? Colors.white : (isDark ? Colors.white60 : AppColors.grey600),
+                                  fontWeight: FontWeight.w700, fontSize: 13)),
+                          ]),
+                        ),
+                      )),
+                    ]),
                     const SizedBox(height: 14),
+
+                    // ── RETAIL: баасын жаз ──
+                    if (pricingType == 'retail') ...[
+                      labelW(loc.get('pricing_retail_price_label')),
+                      fieldW(priceCtrl, loc.get('pricing_hint_retail'), type: TextInputType.number),
+                      const SizedBox(height: 14),
+                    ],
+
+                    // ── WHOLESALE: Kelishim же Baasy ──
+                    if (pricingType == 'wholesale') ...[
+                      labelW(loc.get('pricing_wholesale_mode_label')),
+                      Row(children: [
+                        Expanded(child: GestureDetector(
+                          onTap: () => setD(() => wholesaleMode = 'price'),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            decoration: BoxDecoration(
+                              color: wholesaleMode == 'price'
+                                  ? const Color(0xFF7C3AED).withValues(alpha: 0.12)
+                                  : (isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF7F7F7)),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: wholesaleMode == 'price' ? const Color(0xFF7C3AED) : (isDark ? const Color(0xFF3C3C3C) : const Color(0xFFE0E0E0)),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                              Icon(Icons.price_change_outlined,
+                                  color: wholesaleMode == 'price' ? const Color(0xFF7C3AED) : (isDark ? Colors.white54 : AppColors.grey500),
+                                  size: 16),
+                              const SizedBox(width: 6),
+                              Text(loc.get('pricing_wholesale_by_price'),
+                                  style: TextStyle(
+                                    color: wholesaleMode == 'price' ? const Color(0xFF7C3AED) : (isDark ? Colors.white60 : AppColors.grey600),
+                                    fontWeight: FontWeight.w600, fontSize: 12)),
+                            ]),
+                          ),
+                        )),
+                        const SizedBox(width: 8),
+                        Expanded(child: GestureDetector(
+                          onTap: () => setD(() => wholesaleMode = 'negotiation'),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            decoration: BoxDecoration(
+                              color: wholesaleMode == 'negotiation'
+                                  ? const Color(0xFF059669).withValues(alpha: 0.12)
+                                  : (isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF7F7F7)),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: wholesaleMode == 'negotiation' ? const Color(0xFF059669) : (isDark ? const Color(0xFF3C3C3C) : const Color(0xFFE0E0E0)),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                              Icon(Icons.handshake_outlined,
+                                  color: wholesaleMode == 'negotiation' ? const Color(0xFF059669) : (isDark ? Colors.white54 : AppColors.grey500),
+                                  size: 16),
+                              const SizedBox(width: 6),
+                              Text(loc.get('pricing_wholesale_by_negotiation'),
+                                  style: TextStyle(
+                                    color: wholesaleMode == 'negotiation' ? const Color(0xFF059669) : (isDark ? Colors.white60 : AppColors.grey600),
+                                    fontWeight: FontWeight.w600, fontSize: 12)),
+                            ]),
+                          ),
+                        )),
+                      ]),
+                      const SizedBox(height: 12),
+
+                      // Базалык баа — negotiation болсо жашырылат
+                      if (wholesaleMode != 'negotiation') ...[
+                        labelW(loc.get('pricing_retail_price_label')),
+                        fieldW(priceCtrl, loc.get('pricing_hint_retail'), type: TextInputType.number),
+                        const SizedBox(height: 10),
+                      ],
+
+                      if (wholesaleMode == 'price') ...[
+                        labelW(loc.get('pricing_wholesale_price_label')),
+                        fieldW(wholesalePriceCtrl, loc.get('pricing_hint_wholesale'), type: TextInputType.number),
+                        const SizedBox(height: 10),
+                      ] else ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF0D1F18) : const Color(0xFFF0FDF4),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFF059669).withValues(alpha: 0.4)),
+                          ),
+                          child: Row(children: [
+                            const Icon(Icons.handshake_outlined, color: Color(0xFF059669), size: 18),
+                            const SizedBox(width: 10),
+                            Expanded(child: Text(loc.get('pricing_negotiation_hint'),
+                                style: AppTextStyles.labelSmall.copyWith(color: const Color(0xFF059669)))),
+                          ]),
+                        ),
+                        const SizedBox(height: 10),
+                      ],
+                    ],
 
                     labelW(loc.get('prod_field_main_cat')),
                     dropdownW(
@@ -1264,8 +1429,13 @@ Row(
                         onPressed: isLoading ? null : () async {
                           final name  = nameCtrl.text.trim();
                           final price = double.tryParse(priceCtrl.text.trim());
-                          if (name.isEmpty)        { _showSnack(loc.get('prod_err_name'),  isError: true); return; }
-                          if (price == null || price <= 0) { _showSnack(loc.get('prod_err_price'), isError: true); return; }
+                          if (name.isEmpty) { _showSnack(loc.get('prod_err_name'), isError: true); return; }
+                          // negotiation болгондо баа талап кылынбайт
+                          final needsPrice = !(pricingType == 'wholesale' && wholesaleMode == 'negotiation');
+                          if (needsPrice && (price == null || price <= 0)) { _showSnack(loc.get('prod_err_retail_price'), isError: true); return; }
+                          final wholesalePr = pricingType == 'wholesale' && wholesaleMode == 'price'
+                              ? double.tryParse(wholesalePriceCtrl.text.trim())
+                              : null;
 
                           // ── ӨЗГӨРТҮҮ 4а: Валидация — 1-сүрөт міндеттүү ──
                           if (newImageBytes[0] == null && existingImages[0].isEmpty) {
@@ -1308,13 +1478,21 @@ Row(
                             setD(() => uploadStatus = loc.get('prod_saving'));
                             final storeId    = await _getOrCreateStoreId();
                             final finalCatId = selectedSubItemId ?? selectedSubCatId ?? selectedMainCatId;
+                            // negotiation болгондо баа 0 болот
+                            final finalPrice = (pricingType == 'wholesale' && wholesaleMode == 'negotiation')
+                                ? 0.0
+                                : (price ?? 0.0);
                             final data = {
-                              'title': name, 'price': price, 'category_id': finalCatId, 'store_id': storeId,
+                              'title': name, 'price': finalPrice, 'category_id': finalCatId, 'store_id': storeId,
                               'images': finalImageUrls,   // ← 3 сүрөткө чейин
                               'in_stock': int.tryParse(stockCtrl.text.trim()) ?? 0,
                               'description': descCtrl.text.trim(), 'colors': selectedColors, 'sizes': selectedSizes,
                               'extra1': extra1Ctrl.text.trim(), 'extra2': extra2Ctrl.text.trim(), 'extra3': extra3Ctrl.text.trim(),
                               'rating': existing?['rating'] ?? 0.0,
+                              // ── Баа тиби ──
+                              'pricing_type': pricingType,
+                              'wholesale_mode': wholesaleMode,
+                              'wholesale_price': wholesalePr,
                             };
                             if (existing != null) {
                               await supabase.from('products').update(data).eq('id', existing['id'] as String);
@@ -1348,6 +1526,57 @@ Row(
           );
         },
       ),
+    );
+  }
+
+  Widget _pricingBadge(Map<String, dynamic> p, AppLocalizations loc, bool isDark) {
+    final type = p['pricing_type'] as String? ?? 'retail';
+    if (type == 'wholesale') {
+      final mode = p['wholesale_mode'] as String? ?? 'price';
+      if (mode == 'negotiation') {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: const Color(0xFF059669).withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: const Color(0xFF059669).withValues(alpha: 0.4)),
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            const Icon(Icons.handshake_outlined, color: Color(0xFF059669), size: 10),
+            const SizedBox(width: 3),
+            Text(loc.get('prod_badge_negotiation'),
+                style: const TextStyle(color: Color(0xFF059669), fontSize: 10, fontWeight: FontWeight.w700)),
+          ]),
+        );
+      }
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: const Color(0xFF7C3AED).withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: const Color(0xFF7C3AED).withValues(alpha: 0.4)),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          const Icon(Icons.store_rounded, color: Color(0xFF7C3AED), size: 10),
+          const SizedBox(width: 3),
+          Text(loc.get('prod_badge_wholesale'),
+              style: const TextStyle(color: Color(0xFF7C3AED), fontSize: 10, fontWeight: FontWeight.w700)),
+        ]),
+      );
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        const Icon(Icons.person_rounded, color: AppColors.primary, size: 10),
+        const SizedBox(width: 3),
+        Text(loc.get('prod_badge_retail'),
+            style: TextStyle(color: AppColors.primary, fontSize: 10, fontWeight: FontWeight.w700)),
+      ]),
     );
   }
 

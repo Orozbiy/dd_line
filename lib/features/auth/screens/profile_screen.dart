@@ -104,6 +104,193 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _deleteAvatar() async {
+    final loc = AppLocalizations.of(context);
+    setState(() => _isUploadingPhoto = true);
+    try {
+      final user = supabase.auth.currentUser;
+      if (user == null) return;
+      final storagePath = 'avatars/${user.id}.jpg';
+      try {
+        await supabase.storage.from('product-images').remove([storagePath]);
+      } catch (e) {
+        debugPrint('_deleteAvatar storage remove error: $e');
+      }
+      await supabase
+          .from('profiles')
+          .update({'avatar_url': null}).eq('id', user.id);
+      setState(() => _avatarUrl = null);
+      if (mounted) _showSnack(loc.get('profile_photo_deleted'), success: true);
+    } catch (e) {
+      if (mounted)
+        _showSnack('${AppLocalizations.of(context).get('error')}: $e');
+    } finally {
+      if (mounted) setState(() => _isUploadingPhoto = false);
+    }
+  }
+
+  void _onAvatarTap() {
+    if (_avatarUrl == null) {
+      _pickAndUploadAvatar();
+      return;
+    }
+    _showAvatarOptionsSheet();
+  }
+
+  void _showAvatarOptionsSheet() {
+    final loc    = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (_) => ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(
+            decoration: BoxDecoration(
+              color: isDark
+                  ? Colors.white.withOpacity(0.08)
+                  : Colors.white.withOpacity(0.85),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(24)),
+              border: Border.all(
+                color: isDark
+                    ? Colors.white.withOpacity(0.12)
+                    : Colors.white.withOpacity(0.9),
+              ),
+            ),
+            padding: EdgeInsets.fromLTRB(
+                12, 12, 12, MediaQuery.of(context).padding.bottom + 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40, height: 4,
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                        color: isDark
+                            ? Colors.white.withOpacity(0.2)
+                            : AppColors.grey300,
+                        borderRadius: BorderRadius.circular(2)),
+                  ),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.photo_camera_outlined,
+                      color: AppColors.primary),
+                  title: Text(loc.get('profile_change_photo'),
+                      style: AppTextStyles.labelLarge.copyWith(
+                          color: isDark ? Colors.white : AppColors.black)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickAndUploadAvatar();
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.delete_outline,
+                      color: AppColors.error),
+                  title: Text(loc.get('profile_delete_photo'),
+                      style: AppTextStyles.labelLarge
+                          .copyWith(color: AppColors.error)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _confirmDeleteAvatar();
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _confirmDeleteAvatar() {
+    final loc = AppLocalizations.of(context);
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: Colors.transparent,
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white.withOpacity(0.08)
+                    : Colors.white.withOpacity(0.80),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white.withOpacity(0.12)
+                      : Colors.white.withOpacity(0.9),
+                ),
+              ),
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(loc.get('profile_delete_photo'),
+                      style: AppTextStyles.headingSmall),
+                  const SizedBox(height: 10),
+                  Text(loc.get('profile_delete_photo_confirm'),
+                      style: AppTextStyles.bodyMedium
+                          .copyWith(color: AppColors.grey500)),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(
+                                color: AppColors.grey300, width: 1),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10)),
+                          ),
+                          child: Text(loc.get('no'),
+                              style: const TextStyle(
+                                  color: AppColors.grey500)),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _deleteAvatar();
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                AppColors.error.withOpacity(0.15),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10)),
+                          ),
+                          child: Text(loc.get('yes'),
+                              style: const TextStyle(
+                                  color: AppColors.error)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _saveProfile() async {
     final loc      = AppLocalizations.of(context);
     final fullName = _fullNameController.text.trim();
@@ -439,7 +626,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           Stack(
                             children: [
                               GestureDetector(
-                                onTap: _pickAndUploadAvatar,
+                                onTap: _onAvatarTap,
                                 child: Container(
                                   width: 96, height: 96,
                                   decoration: BoxDecoration(
@@ -488,7 +675,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               Positioned(
                                 bottom: 0, right: 0,
                                 child: GestureDetector(
-                                  onTap: _pickAndUploadAvatar,
+                                  onTap: _onAvatarTap,
                                   child: Container(
                                     width: 30, height: 30,
                                     decoration: BoxDecoration(

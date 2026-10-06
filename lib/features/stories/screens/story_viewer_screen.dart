@@ -8,6 +8,7 @@ import '../models/story_model.dart';
 import '../services/story_service.dart';
 import '../widgets/story_progress_bar.dart';
 import '../widgets/story_like_button.dart';
+import '../../../core/app_localizations.dart';
 
 class StoryViewerScreen extends StatefulWidget {
   final List<StoryModel> stories;
@@ -502,14 +503,14 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
       );
     }
 
-    return const Center(
+    return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          CircularProgressIndicator(color: Colors.white),
-          SizedBox(height: 12),
-          Text('Видео жүктөлүп жатат...',
-              style: TextStyle(color: Colors.white70, fontSize: 13)),
+          const CircularProgressIndicator(color: Colors.white),
+          const SizedBox(height: 12),
+          Text('${AppLocalizations.of(context).get('video_loading')}...',
+              style: const TextStyle(color: Colors.white70, fontSize: 13)),
         ],
       ),
     );

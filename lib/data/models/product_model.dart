@@ -26,6 +26,10 @@ class ProductModel {
   final int viewsCount;
   final int likesCount;
   final bool hasNegotiation;
+  // ✅ ЖАҢЫ: баа тиби (retail / wholesale)
+  final String pricingType;    // 'retail' | 'wholesale'
+  final String wholesaleMode;  // 'price' | 'negotiation'
+  final double? wholesalePrice;
 
   ProductModel({
     required this.id,
@@ -54,6 +58,9 @@ class ProductModel {
     this.viewsCount = 0, // ✅ ЖАҢЫ
     this.likesCount = 0, // ✅ ЖАҢЫ
     this.hasNegotiation = false,
+    this.pricingType = 'retail',
+    this.wholesaleMode = 'price',
+    this.wholesalePrice,
   });
 
   /// Товар 10 күндөн жаш болсо — "Жаңы" badge көрсөтүлөт
@@ -98,6 +105,9 @@ class ProductModel {
       // ✅ ЖАҢЫ
       viewsCount: (data['views_count'] as num?)?.toInt() ?? 0,
       likesCount: (data['likes_count'] as num?)?.toInt() ?? 0,
+      pricingType: data['pricing_type'] as String? ?? 'retail',
+      wholesaleMode: data['wholesale_mode'] as String? ?? 'price',
+      wholesalePrice: (data['wholesale_price'] as num?)?.toDouble(),
     );
   }
 
@@ -121,6 +131,9 @@ class ProductModel {
       'discounted_price': discountedPrice,
       'has_promotion': hasPromotion,
       'has_negotiation': hasNegotiation,
+      'pricing_type': pricingType,
+      'wholesale_mode': wholesaleMode,
+      if (wholesalePrice != null) 'wholesale_price': wholesalePrice,
       if (latitude != null) 'latitude': latitude,
       if (longitude != null) 'longitude': longitude,
       if (region != null) 'region': region,
@@ -166,7 +179,9 @@ class ProductModel {
     int? viewsCount, // ✅ ЖАҢЫ
     int? likesCount, // ✅ ЖАҢЫ
     bool? hasNegotiation,
-
+    String? pricingType,
+    String? wholesaleMode,
+    double? wholesalePrice,
   }) {
     return ProductModel(
       id: id ?? this.id,
@@ -195,7 +210,9 @@ class ProductModel {
       viewsCount: viewsCount ?? this.viewsCount, // ✅ ЖАҢЫ
       likesCount: likesCount ?? this.likesCount,
       hasNegotiation: hasNegotiation ?? this.hasNegotiation,
-       // ✅ ЖАҢЫ
+      pricingType: pricingType ?? this.pricingType,
+      wholesaleMode: wholesaleMode ?? this.wholesaleMode,
+      wholesalePrice: wholesalePrice ?? this.wholesalePrice,
     );
   }
 }

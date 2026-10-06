@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
+import '../../../core/app_localizations.dart';
 import '../../../core/utils/image_utils.dart';
 import '../models/message_model.dart';
 import '../widgets/voice_message_player_mobile.dart';
@@ -231,6 +232,7 @@ class MessageBubble extends StatelessWidget {
     HapticFeedback.mediumImpact();
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final loc = AppLocalizations.of(context);
 
     showModalBottomSheet(
       context: context,
@@ -299,7 +301,7 @@ class MessageBubble extends StatelessWidget {
                     ),
                   _ActionButton(
                     icon: Icons.reply_rounded,
-                    label: 'Жооп берүү',
+                    label: loc.get('msg_action_reply'),
                     color: AppColors.grey500,
                     isDark: isDark,
                     onTap: () {
@@ -309,7 +311,7 @@ class MessageBubble extends StatelessWidget {
                   ),
                   _ActionButton(
                     icon: Icons.select_all_rounded,
-                    label: 'Тандоо',
+                    label: loc.get('msg_action_select'),
                     color: AppColors.grey500,
                     isDark: isDark,
                     onTap: () {
@@ -320,7 +322,7 @@ class MessageBubble extends StatelessWidget {
                   if (message.text.isNotEmpty)
                     _ActionButton(
                       icon: Icons.copy_rounded,
-                      label: 'Көчүрүү',
+                      label: loc.get('msg_action_copy'),
                       color: AppColors.primary,
                       isDark: isDark,
                       onTap: () {
@@ -331,7 +333,7 @@ class MessageBubble extends StatelessWidget {
                   if (isMe && message.text.isNotEmpty)
                     _ActionButton(
                       icon: Icons.edit_rounded,
-                      label: 'Өзгөртүү',
+                      label: loc.get('msg_action_edit'),
                       color: const Color(0xFF6C63FF),
                       isDark: isDark,
                       onTap: () {
@@ -341,7 +343,7 @@ class MessageBubble extends StatelessWidget {
                     ),
                   _ActionButton(
                     icon: Icons.delete_rounded,
-                    label: 'Өчүрүү',
+                    label: loc.get('msg_action_delete'),
                     color: AppColors.error,
                     isDark: isDark,
                     onTap: () {
@@ -366,6 +368,7 @@ class MessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final loc = AppLocalizations.of(context);
 
     if (message.messageType == 'system') {
       return _SystemMessage(text: message.text);
@@ -481,7 +484,7 @@ class MessageBubble extends StatelessWidget {
                                 children: [
                                   if (message.isEdited)
                                     Text(
-                                      'өзгөртүлдү · ',
+                                      '${loc.get('msg_edited')} · ',
                                       style: TextStyle(
                                         fontSize: 11,
                                         fontStyle: FontStyle.italic,
@@ -627,7 +630,7 @@ class MessageBubble extends StatelessWidget {
                           children: [
                             if (message.isEdited)
                               Text(
-                                'өзгөртүлдү • ',
+                                '${loc.get('msg_edited')} • ',
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontStyle: FontStyle.italic,

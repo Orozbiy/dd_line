@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../data/models/product_model.dart';
+import '../../../core/app_localizations.dart';
 
 class ShareWidget {
   static const _playStore =
@@ -28,9 +29,9 @@ class ShareWidget {
     final origin = box != null ? box.localToGlobal(Offset.zero) & box.size : null;
 
     final messenger = ScaffoldMessenger.maybeOf(context);
-    messenger?.showSnackBar(const SnackBar(
-      content: Text('Сүрөт даярдалып жатат...'),
-      duration: Duration(seconds: 2),
+    messenger?.showSnackBar(SnackBar(
+      content: Text('${AppLocalizations.of(context).get('image_preparing')}...'),
+      duration: const Duration(seconds: 2),
     ));
 
     final file = await _prepareImage(product);

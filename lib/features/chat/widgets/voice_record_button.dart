@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:ui';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +8,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
+import '../../../core/app_localizations.dart';
 
 class VoiceRecordButton extends StatefulWidget {
   final void Function(String path, int durationSeconds) onRecorded;
@@ -61,44 +61,9 @@ class _VoiceRecordButtonState extends State<VoiceRecordButton> {
     super.dispose();
   }
 
-  bool _sfxContextSet = false;
-
-  /// Добуш эффекттеринин AudioContext'и аудио ФОКУСТУ СУРАБАЙ турган
-  /// кылып орнотулат (AndroidAudioFocus.none). Мунусуз record_start.wav
-  /// сыяктуу эффект ойнотулганда ал аудио фокусту талап кылып, активдүү
-  /// микрофон жаздыруу сессиясын үзүп/тосуп коёт — жаздыруу экранда
-  /// "9 секунд" көрсөтсө да, чыныгы жазылган аудио болгону ~1.3 секунд
-  /// болуп калган маселе ушундан болгон.
-  Future<void> _ensureSfxContext() async {
-    if (_sfxContextSet) return;
-    try {
-      await _player.setAudioContext(AudioContext(
-        android: AudioContextAndroid(
-          isSpeakerphoneOn: true,
-          stayAwake: false,
-          contentType: AndroidContentType.sonification,
-          usageType: AndroidUsageType.assistanceSonification,
-          audioFocus: AndroidAudioFocus.none,
-        ),
-        // AVAudioSessionCategory.ambient'те mixWithOthers'ти ОШЭНДЕН
-        // ЭЛЕ өзү иштейт (анык коюуга болбойт — assertion катасы берет,
-        // анткени mixWithOthers опциясын ачык коюу ТЕК playback /
-        // playAndRecord / multiRoute категорияларында гана уруксат
-        // берилет). Ошон үчүн options'ту такыр коюбайбыз.
-        iOS: AudioContextIOS(
-          category: AVAudioSessionCategory.ambient,
-        ),
-      ));
-      _sfxContextSet = true;
-    } catch (e) {
-      debugPrint('🎤⚠️ SFX AudioContext орнотулбады: $e');
-    }
-  }
-
   // ── Үн эффекттери ──
   Future<void> _playSound(String asset) async {
     try {
-      await _ensureSfxContext();
       await _player.stop();
       await _player.play(AssetSource(asset));
     } catch (_) {}
@@ -107,28 +72,20 @@ class _VoiceRecordButtonState extends State<VoiceRecordButton> {
   // ── Уруксат текшерүү ──
   Future<bool> _checkAndRequestPermission() async {
     var status = await Permission.microphone.status;
-    debugPrint('🎤 Микрофон уруксат статусу: $status');
-
     if (status.isGranted) return true;
 
     if (status.isPermanentlyDenied) {
-      debugPrint('🎤❌ Микрофон уруксаты түбөлүктүү тыюу салынган — колдонуучу жөндөөлөрдөн кол менен берүүсү керек');
       if (mounted) _showPermissionDialog();
       return false;
     }
 
-    debugPrint('🎤 Микрофон уруксаты сурап жатат...');
     status = await Permission.microphone.request();
-    debugPrint('🎤 Микрофон уруксат жооп: $status');
-
     if (status.isGranted) return true;
 
     if (mounted) {
       if (status.isPermanentlyDenied) {
-        debugPrint('🎤❌ Колдонуучу микрофонду түбөлүктүү жокко чыгарды');
         _showPermissionDialog();
       } else {
-        debugPrint('🎤❌ Колдонуучу микрофонду жокко чыгарды (статус: $status)');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Үн жаздыруу үчүн микрофонго уруксат бериңиз'),
@@ -142,25 +99,23 @@ class _VoiceRecordButtonState extends State<VoiceRecordButton> {
   }
 
   void _showPermissionDialog() {
+    final loc = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Микрофон уруксаты'),
-        content: const Text(
-          'Үн жаздыруу үчүн микрофонго уруксат керек.\n'
-          'Жөндөөлөр → Тиркемелер → DD Online → Уруксаттар',
-        ),
+        title: Text(loc.get('voice_mic_permission_title')),
+        content: Text(loc.get('voice_mic_permission_body')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Жок'),
+            child: Text(loc.get('no')),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               openAppSettings();
             },
-            child: const Text('Жөндөөлөргө өтүү'),
+            child: Text(loc.get('voice_mic_permission_settings')),
           ),
         ],
       ),
@@ -178,22 +133,15 @@ class _VoiceRecordButtonState extends State<VoiceRecordButton> {
     final dir  = await getTemporaryDirectory();
     final path = '${dir.path}/voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
     _recordedPath = path;
-    debugPrint('🎤 Жаздыруу башталат: $path');
 
-    try {
-      await _recorder.start(
-        const RecordConfig(
-          encoder: AudioEncoder.aacLc,
-          bitRate: 64000,
-          sampleRate: 44100,
-        ),
-        path: path,
-      );
-      debugPrint('🎤✅ Жаздыруу башталды');
-    } catch (e) {
-      debugPrint('🎤❌ Жаздыруу башталбады: $e');
-      rethrow;
-    }
+    await _recorder.start(
+      const RecordConfig(
+        encoder: AudioEncoder.aacLc,
+        bitRate: 64000,
+        sampleRate: 44100,
+      ),
+      path: path,
+    );
 
     if (!mounted) return;
     setState(() {
@@ -246,7 +194,6 @@ class _VoiceRecordButtonState extends State<VoiceRecordButton> {
 
     final path     = await _recorder.stop();
     final duration = _elapsed.inSeconds;
-    debugPrint('🎤 Жаздыруу токтоду: path=$path, duration=${duration}s');
 
     if (!mounted) return;
     setState(() {
@@ -260,7 +207,7 @@ class _VoiceRecordButtonState extends State<VoiceRecordButton> {
 
     widget.onRecordingEnd?.call();
 
-    if (cancelled || path == null) {
+    if (cancelled || path == null || duration < 1) {
       // Жокко чыгарылганда үн жана дирилдөө
       HapticFeedback.lightImpact();
       _playSound('sounds/record_cancel.wav');
@@ -268,63 +215,10 @@ class _VoiceRecordButtonState extends State<VoiceRecordButton> {
       return;
     }
 
-    // Файл өлчөмүн текшер — микрофон уруксаты жок болсо файл бош болот
-    final fileSize = await File(path).length().catchError((_) => 0);
-    debugPrint('🎤 Аудио файл өлчөмү: ${fileSize}B (${(fileSize / 1024).toStringAsFixed(1)}KB)');
-    if (fileSize < 1000) {
-      // 1KB'дан аз → микрофон иштеген жок
-      debugPrint('🎤❌ Аудио файл өтө кичине (${fileSize}B) — микрофон уруксаты жок же жаздыруу иштеген жок');
-      HapticFeedback.lightImpact();
-      _playSound('sounds/record_cancel.wav');
-      widget.onCancel?.call();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Микрофонго уруксат бериңиз: Жөндөөлөр → Тиркемелер → DD Online → Уруксаттар → Микрофон'),
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-            duration: Duration(seconds: 5),
-          ),
-        );
-      }
-      return;
-    }
-
-    // Жаздыруу убактылуу үзгүлтүккө учурабадыбы текшер — 64kbps AAC'де
-    // 1 секундга болжол менен ~8000 байт туура келет. Эгер чыныгы файл
-    // экрандагы секундга салыштырмалуу өтө аз болсо (мисалы, аудио фокус
-    // башка добуш эффекти тарабынан тартылып кетип, жаздыруу бир
-    // секунддан кийин үнсүз калган учурда) — таймер жүрсө да чыныгы
-    // аудио жазылбай калганын билдирет. Мындай билдирүүнү жөнөтпөйбүз.
-    final expectedMinBytes = duration * 8000 * 0.3; // 30% толеранс
-    if (duration >= 3 && fileSize < expectedMinBytes) {
-      debugPrint(
-          '🎤⚠️ Жаздыруу үзгүлтүккө учураган көрүнөт: ${duration}s үчүн '
-          '~${(duration * 8000 / 1024).toStringAsFixed(0)}KB күтүлгөн, '
-          'бирок чыныгысы ${(fileSize / 1024).toStringAsFixed(1)}KB');
-      HapticFeedback.lightImpact();
-      _playSound('sounds/record_cancel.wav');
-      widget.onCancel?.call();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Жаздыруу үзгүлтүккө учурады, кайра аракет кылыңыз'),
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-            duration: Duration(seconds: 4),
-          ),
-        );
-      }
-      return;
-    }
-
     // Жөнөтүлгөндө үн жана дирилдөө
-    debugPrint('🎤✅ Аудио жөнөтүлүп жатат: ${fileSize}B, ${duration}s');
     HapticFeedback.selectionClick();
     _playSound('sounds/record_stop.wav');
-    // Эгер таймер 0 болсо, файл узундугунан эсептейбиз
-    final actualDuration = duration > 0 ? duration : 1;
-    widget.onRecorded(path, actualDuration);
+    widget.onRecorded(path, duration);
   }
 
   String _formatDuration(Duration d) {
