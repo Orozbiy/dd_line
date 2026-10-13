@@ -2075,25 +2075,137 @@ class _SuggestionsPanelSheetState extends State<_SuggestionsPanelSheet> {
   List<Map<String, dynamic>> _suggestions = [];
   bool _loading = true;
 
+  // Тандоо режими (белгилеп өчүрүү үчүн)
+  bool _selectMode = false;
+  final Set<String> _selected = {};
+
+  // Sheet ичинде snackbar көрүнүшү үчүн өзүнчө messenger
+  final _messengerKey = GlobalKey<ScaffoldMessengerState>();
+
   @override
   void initState() {
     super.initState();
     _load();
   }
 
+  String _idOf(Map<String, dynamic> s) => s['id'].toString();
+
   Future<void> _load() async {
-    final rows = await supabase
-        .from('buyer_suggestions')
-        .select()
-        .order('created_at', ascending: false);
-    if (mounted) {
+    try {
+      final rows = await supabase
+          .from('buyer_suggestions')
+          .select()
+          .order('created_at', ascending: false);
+      if (!mounted) return;
       setState(() {
         _suggestions = (rows as List)
             .map((r) => Map<String, dynamic>.from(r as Map))
             .toList();
+        _selected.removeWhere((id) => !_suggestions.any((s) => _idOf(s) == id));
         _loading = false;
       });
+    } catch (e) {
+      debugPrint('❌ _SuggestionsPanelSheet._load: $e');
+      if (mounted) setState(() => _loading = false);
     }
+  }
+
+  void _snack(String msg, {bool error = false}) {
+    if (!mounted) return;
+    (_messengerKey.currentState ?? ScaffoldMessenger.of(context)).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: error ? AppColors.error : AppColors.success,
+      ),
+    );
+  }
+
+  Future<void> _markRead(List<String> ids) async {
+    if (ids.isEmpty) return;
+    try {
+      await supabase
+          .from('buyer_suggestions')
+          .update({'is_read': true}).inFilter('id', ids);
+      if (!mounted) return;
+      setState(() {
+        for (final s in _suggestions) {
+          if (ids.contains(_idOf(s))) s['is_read'] = true;
+        }
+      });
+    } catch (e) {
+      debugPrint('❌ suggestions markRead: $e');
+      _snack('Ката: $e', error: true);
+    }
+  }
+
+  Future<void> _delete(List<String> ids) async {
+    if (ids.isEmpty) return;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Өчүрүү', style: AppTextStyles.headingSmall),
+        content: Text(
+          ids.length == 1
+              ? 'Бул билдирүүнү өчүрөсүзбү?'
+              : '${ids.length} билдирүүнү өчүрөсүзбү?',
+          style: AppTextStyles.bodyMedium,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Жок', style: TextStyle(color: AppColors.grey500)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Өчүрүү', style: TextStyle(color: AppColors.error)),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+
+    try {
+      final deleted = await supabase
+          .from('buyer_suggestions')
+          .delete()
+          .inFilter('id', ids)
+          .select('id');
+      if (deleted.isEmpty) {
+        _snack(
+          'Өчүрүлгөн жок. Supabase\'де SQL миграцияны (delete уруксаты) иштетиңиз.',
+          error: true,
+        );
+        return;
+      }
+      if (!mounted) return;
+      setState(() {
+        _suggestions.removeWhere((s) => ids.contains(_idOf(s)));
+        _selected.removeAll(ids);
+        if (_selected.isEmpty) _selectMode = false;
+      });
+      _snack('Өчүрүлдү: ${deleted.length}');
+    } catch (e) {
+      debugPrint('❌ suggestions delete: $e');
+      _snack('Ката: $e', error: true);
+    }
+  }
+
+  void _toggle(String id) {
+    setState(() {
+      if (_selected.contains(id)) {
+        _selected.remove(id);
+      } else {
+        _selected.add(id);
+      }
+    });
+  }
+
+  void _exitSelectMode() {
+    setState(() {
+      _selectMode = false;
+      _selected.clear();
+    });
   }
 
   String _typeLabel(String? type) {
@@ -2105,6 +2217,218 @@ class _SuggestionsPanelSheetState extends State<_SuggestionsPanelSheet> {
     }
   }
 
+  Widget _buildHeader() {
+    final allIds = _suggestions.map(_idOf).toList();
+    final allSelected = allIds.isNotEmpty && allIds.every(_selected.contains);
+    final unread =
+        _suggestions.where((s) => !(s['is_read'] as bool? ?? false)).length;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 12, 8, 12),
+      decoration: const BoxDecoration(
+        color: Color(0xFF1E40AF),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: _selectMode
+          ? Row(
+              children: [
+                IconButton(
+                  tooltip: 'Жабуу',
+                  icon: const Icon(Icons.close, color: Colors.white),
+                  onPressed: _exitSelectMode,
+                ),
+                Expanded(
+                  child: Text(
+                    'Тандалды: ${_selected.length}',
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold),
+                  ),
+                ),
+                IconButton(
+                  tooltip: allSelected ? 'Тандоону алып салуу' : 'Баарын тандоо',
+                  icon: Icon(allSelected ? Icons.deselect : Icons.select_all,
+                      color: Colors.white),
+                  onPressed: () => setState(() {
+                    if (allSelected) {
+                      _selected.clear();
+                    } else {
+                      _selected.addAll(allIds);
+                    }
+                  }),
+                ),
+                IconButton(
+                  tooltip: 'Окулду деп белгилөө',
+                  icon: Icon(Icons.done_all_rounded,
+                      color: _selected.isEmpty ? Colors.white38 : Colors.white),
+                  onPressed: _selected.isEmpty
+                      ? null
+                      : () => _markRead(_selected.toList()),
+                ),
+                IconButton(
+                  tooltip: 'Өчүрүү',
+                  icon: Icon(Icons.delete_outline_rounded,
+                      color: _selected.isEmpty
+                          ? Colors.white38
+                          : const Color(0xFFFCA5A5)),
+                  onPressed: _selected.isEmpty
+                      ? null
+                      : () => _delete(_selected.toList()),
+                ),
+              ],
+            )
+          : Row(
+              children: [
+                const Text('💬', style: TextStyle(fontSize: 22)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    unread > 0
+                        ? 'Кардарлар билдирүүлөрү ($unread жаңы)'
+                        : 'Кардарлар билдирүүлөрү',
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold),
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Тандоо',
+                  icon: const Icon(Icons.checklist_rounded, color: Colors.white),
+                  onPressed: _suggestions.isEmpty
+                      ? null
+                      : () => setState(() => _selectMode = true),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white70),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+    );
+  }
+
+  Widget _buildItem(Map<String, dynamic> s) {
+    final id = _idOf(s);
+    final isRead = s['is_read'] as bool? ?? false;
+    final isSelected = _selected.contains(id);
+    final time = DateTime.tryParse(s['created_at'] as String? ?? '')?.toLocal();
+    final timeStr = time != null
+        ? '${time.day}/${time.month} ${time.hour}:${time.minute.toString().padLeft(2, '0')}'
+        : '';
+
+    return GestureDetector(
+      onTap: () {
+        if (_selectMode) {
+          _toggle(id);
+        } else if (!isRead) {
+          _markRead([id]);
+        }
+      },
+      onLongPress: () {
+        if (!_selectMode) {
+          setState(() {
+            _selectMode = true;
+            _selected.add(id);
+          });
+        }
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? const Color(0xFF1E40AF).withValues(alpha: 0.35)
+              : const Color(0xFF334155),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isSelected
+                ? Colors.lightBlueAccent
+                : (isRead ? Colors.transparent : Colors.greenAccent.withValues(alpha: 0.6)),
+            width: isSelected ? 1.6 : 1,
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (_selectMode) ...[
+              Checkbox(
+                value: isSelected,
+                activeColor: Colors.lightBlueAccent,
+                side: const BorderSide(color: Colors.white54),
+                onChanged: (_) => _toggle(id),
+              ),
+              const SizedBox(width: 4),
+            ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          _typeLabel(s['type'] as String?),
+                          style: const TextStyle(
+                              color: Colors.lightBlue, fontSize: 11),
+                        ),
+                      ),
+                      if (!isRead) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.green,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Text('Жаңы',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold)),
+                        ),
+                      ],
+                      const Spacer(),
+                      Text(timeStr,
+                          style: const TextStyle(
+                              color: Colors.white38, fontSize: 11)),
+                      if (!_selectMode)
+                        InkWell(
+                          onTap: () => _delete([id]),
+                          borderRadius: BorderRadius.circular(12),
+                          child: const Padding(
+                            padding: EdgeInsets.only(left: 8),
+                            child: Icon(Icons.delete_outline_rounded,
+                                color: Color(0xFFFCA5A5), size: 20),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text('👤 ${s['user_name'] ?? 'Белгисиз'}',
+                      style: const TextStyle(
+                          color: Colors.white70, fontSize: 12)),
+                  const SizedBox(height: 4),
+                  Text(s['message'] as String? ?? '',
+                      style:
+                          const TextStyle(color: Colors.white, fontSize: 14)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -2113,94 +2437,36 @@ class _SuggestionsPanelSheetState extends State<_SuggestionsPanelSheet> {
         color: Color(0xFF1E293B),
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-            decoration: const BoxDecoration(
-              color: Color(0xFF1E40AF),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            ),
-            child: Row(
+      child: ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        child: ScaffoldMessenger(
+          key: _messengerKey,
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            body: Column(
               children: [
-                const Text('💬', style: TextStyle(fontSize: 22)),
-                const SizedBox(width: 10),
-                const Expanded(
-                  child: Text('Кардарлар билдирүүлөрү',
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold)),
-                ),
-                GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: const Icon(Icons.close, color: Colors.white70),
+                _buildHeader(),
+                Expanded(
+                  child: _loading
+                      ? const Center(
+                          child: CircularProgressIndicator(color: Colors.white))
+                      : _suggestions.isEmpty
+                          ? const Center(
+                              child: Text('Билдирүү жок',
+                                  style: TextStyle(color: Colors.white54)))
+                          : RefreshIndicator(
+                              onRefresh: _load,
+                              child: ListView.builder(
+                                padding: const EdgeInsets.all(12),
+                                itemCount: _suggestions.length,
+                                itemBuilder: (_, i) => _buildItem(_suggestions[i]),
+                              ),
+                            ),
                 ),
               ],
             ),
           ),
-          Expanded(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator(color: Colors.white))
-                : _suggestions.isEmpty
-                    ? const Center(
-                        child: Text('Билдирүү жок',
-                            style: TextStyle(color: Colors.white54)))
-                    : ListView.builder(
-                        padding: const EdgeInsets.all(12),
-                        itemCount: _suggestions.length,
-                        itemBuilder: (_, i) {
-                          final s = _suggestions[i];
-                          final time = DateTime.tryParse(s['created_at'] as String? ?? '');
-                          final timeStr = time != null
-                              ? '${time.day}/${time.month} ${time.hour}:${time.minute.toString().padLeft(2, '0')}'
-                              : '';
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 10),
-                            padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF334155),
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 8, vertical: 3),
-                                      decoration: BoxDecoration(
-                                        color: Colors.blue.withValues(alpha: 0.2),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Text(
-                                        _typeLabel(s['type'] as String?),
-                                        style: const TextStyle(
-                                            color: Colors.lightBlue, fontSize: 11),
-                                      ),
-                                    ),
-                                    const Spacer(),
-                                    Text(timeStr,
-                                        style: const TextStyle(
-                                            color: Colors.white38, fontSize: 11)),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                Text('👤 ${s['user_name'] ?? 'Белгисиз'}',
-                                    style: const TextStyle(
-                                        color: Colors.white70, fontSize: 12)),
-                                const SizedBox(height: 4),
-                                Text(s['message'] as String? ?? '',
-                                    style: const TextStyle(
-                                        color: Colors.white, fontSize: 14)),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-          ),
-        ],
+        ),
       ),
     );
   }

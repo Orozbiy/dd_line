@@ -65,6 +65,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
   String _workEnd = '';
   String _workDays = '';
   String? _avatarUrl;
+  // Дүкөндүн координаттары (stores таблицасынан). null/0 болсо — локация коюлган эмес
+  double? _storeLat;
+  double? _storeLng;
+
+  bool get _hasStoreLocation =>
+      _storeLat != null &&
+      _storeLng != null &&
+      !(_storeLat == 0 && _storeLng == 0);
 
   // ── Төмөнкү баскычтар: ылдый жылдырганда жашырынат, жогору
   // жылдырганда же токтогондо кайра чыгат ──
@@ -118,6 +126,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
           _workStart = storeData['work_start'] as String? ?? '';
           _workEnd = storeData['work_end'] as String? ?? '';
           _workDays = storeData['work_days'] as String? ?? '';
+          _storeLat = (storeData['latitude'] as num?)?.toDouble();
+          _storeLng = (storeData['longitude'] as num?)?.toDouble();
         });
         if (_sellerUid != null) {
           // Сатуучунун профилин да фондо, күттүрбөй жүктөйбүз
@@ -171,6 +181,56 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
 
   Future<void> _openMapNavigationInner() async {
     final loc = AppLocalizations.of(context);
+
+    // ── 1) АЛДЫ МЕНЕН сатуучу локация койгонбу — текшеребиз.
+    // Койбосо маршрут иштебейт (GPS/уруксат да сурабайбыз). ──
+    double? sellerLat = _storeLat;
+    double? sellerLng = _storeLng;
+
+    if (sellerLat == null || sellerLng == null) {
+      // Дүкөн маалыматы али жүктөлө элек болушу мүмкүн — stores'тан алабыз
+      String? storeId = _storeId;
+      if (storeId == null) {
+        try {
+          final row = await supabase
+              .from('products')
+              .select('store_id')
+              .eq('id', _product.id)
+              .single();
+          storeId = row['store_id'] as String?;
+        } catch (e) {
+          debugPrint('❌ store_id алуу: $e');
+        }
+      }
+      if (storeId != null) {
+        try {
+          final store = await supabase
+              .from('stores')
+              .select('latitude, longitude')
+              .eq('id', storeId)
+              .single();
+          sellerLat = (store['latitude'] as num?)?.toDouble();
+          sellerLng = (store['longitude'] as num?)?.toDouble();
+          if (mounted) {
+            setState(() {
+              _storeLat = sellerLat;
+              _storeLng = sellerLng;
+            });
+          }
+        } catch (e) {
+          debugPrint('❌ stores lat/lng: $e');
+        }
+      }
+    }
+
+    if (sellerLat == null ||
+        sellerLng == null ||
+        (sellerLat == 0 && sellerLng == 0)) {
+      if (mounted) _showSnack(loc.get('location_unknown'));
+      return;
+    }
+
+    // ── 2) Колдонуучунун GPS уруксаттары ──
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
@@ -195,45 +255,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
       await Geolocator.openLocationSettings();
       return;
     }
-
-    double? sellerLat = _product.latitude;
-    double? sellerLng = _product.longitude;
-
-    if (sellerLat == null || sellerLng == null) {
-      String? storeId = _storeId;
-      if (storeId == null) {
-        try {
-          final row = await supabase
-              .from('products')
-              .select('store_id')
-              .eq('id', _product.id)
-              .single();
-          storeId = row['store_id'] as String?;
-        } catch (e) {
-          debugPrint('❌ store_id алуу: $e');
-        }
-      }
-      if (storeId != null) {
-        // Бүт экранды жаппай, өзүнчө флаг менен гана белгилейбиз
-        try {
-          final store = await supabase
-              .from('stores')
-              .select('latitude, longitude')
-              .eq('id', storeId)
-              .single();
-          sellerLat = (store['latitude'] as num?)?.toDouble();
-          sellerLng = (store['longitude'] as num?)?.toDouble();
-        } catch (e) {
-          debugPrint('❌ stores lat/lng: $e');
-        }
-        if (!mounted) return;
-      }
-    }
-
-    if (sellerLat == null || sellerLng == null) {
-      if (mounted) _showSnack(loc.get('location_unknown'));
-      return;
-    }
+    if (!mounted) return;
 
     await showModalBottomSheet(
       context: context,
@@ -327,6 +349,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
         productId: _product.id,
         productName: _product.name,
         isRu: isRu,
+        storeId: _storeId,
+        sellerId: _sellerUid,
+        shopName: _shopName,
+        sellerName: _sellerName,
+        containerNumber: _containerNumber,
       ),
     );
   }
@@ -1004,6 +1031,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                                                       containerNumber: _containerNumber,
                                                       ownerName: _sellerName,
                                                       avatarUrl: _avatarUrl,
+                                                      latitude: _storeLat,
+                                                      longitude: _storeLng,
                                                       productBuilder: (p) => ProductDetailScreen(product: p),
                                                     ),
                                                   ),
@@ -1400,9 +1429,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                   child: GradientButton(
                     height: 52,
                     borderRadius: DD.rPill,
-                    colors: const [DD.accent2, DD.accent],
-                    pressedColors: const [DD.accent, Color(0xFFC2371E)],
-                    shadowColor: DD.accent,
+                    colors: (!_sellerInfoLoading && !_hasStoreLocation)
+                        ? const [Color(0xFF9CA3AF), Color(0xFF6B7280)]
+                        : const [DD.accent2, DD.accent],
+                    pressedColors: (!_sellerInfoLoading && !_hasStoreLocation)
+                        ? const [Color(0xFF6B7280), Color(0xFF4B5563)]
+                        : const [DD.accent, Color(0xFFC2371E)],
+                    shadowColor: (!_sellerInfoLoading && !_hasStoreLocation)
+                        ? const Color(0xFF6B7280)
+                        : DD.accent,
                     onTap: _openMapNavigation,
                     child: Stack(
                       alignment: Alignment.center,

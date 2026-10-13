@@ -270,8 +270,24 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   // ── Смс кеткен үн (тык) ──
+  bool _sfxContextSet = false;
+
   Future<void> _playSentSound() async {
     try {
+      if (!_sfxContextSet) {
+        // Аудио фокусту талап кылбайт — башка ойноп жаткан үндү үзбөйт
+        await _sfxPlayer.setAudioContext(AudioContext(
+          android: AudioContextAndroid(
+            isSpeakerphoneOn: false,
+            stayAwake: false,
+            contentType: AndroidContentType.sonification,
+            usageType: AndroidUsageType.assistanceSonification,
+            audioFocus: AndroidAudioFocus.none,
+          ),
+          iOS: AudioContextIOS(category: AVAudioSessionCategory.ambient),
+        ));
+        _sfxContextSet = true;
+      }
       await _sfxPlayer.stop();
       await _sfxPlayer.play(AssetSource('sounds/message_sent.wav'));
     } catch (_) {}

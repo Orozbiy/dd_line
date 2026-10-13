@@ -61,9 +61,39 @@ class _VoiceRecordButtonState extends State<VoiceRecordButton> {
     super.dispose();
   }
 
+  bool _sfxContextSet = false;
+
+  /// Добуш эффекттеринин AudioContext'и аудио ФОКУСТУ СУРАБАЙ турган
+  /// кылып орнотулат (AndroidAudioFocus.none). Мунусуз record_start.wav
+  /// ойнотулганда Android аудио фокусту башка колдонмого/сессияга алып,
+  /// микрофон жаздырууну үзүп коёт — жаздыруу экранда "9 секунд"
+  /// көрсөтсө да, чыныгы файл ~1 секунд (8KB) гана болуп калат жана
+  /// алуучуда "зыың" деп токтойт.
+  Future<void> _ensureSfxContext() async {
+    if (_sfxContextSet) return;
+    try {
+      await _player.setAudioContext(AudioContext(
+        android: AudioContextAndroid(
+          isSpeakerphoneOn: false,
+          stayAwake: false,
+          contentType: AndroidContentType.sonification,
+          usageType: AndroidUsageType.assistanceSonification,
+          audioFocus: AndroidAudioFocus.none,
+        ),
+        iOS: AudioContextIOS(
+          category: AVAudioSessionCategory.ambient,
+        ),
+      ));
+      _sfxContextSet = true;
+    } catch (e) {
+      debugPrint('🎤⚠️ SFX AudioContext орнотулбады: $e');
+    }
+  }
+
   // ── Үн эффекттери ──
   Future<void> _playSound(String asset) async {
     try {
+      await _ensureSfxContext();
       await _player.stop();
       await _player.play(AssetSource(asset));
     } catch (_) {}

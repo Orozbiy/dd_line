@@ -41,10 +41,38 @@ class _StoreProductsScreenState extends State<StoreProductsScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
+  // Дүкөндүн координаттары — stores таблицасынан ЖАҢЫ окулат.
+  // Сатуучу локациясын койсо гана "Маршрут" иштейт.
+  double? _lat;
+  double? _lng;
+
+  bool get _hasLocation =>
+      _lat != null && _lng != null && !(_lat == 0 && _lng == 0);
+
   @override
   void initState() {
     super.initState();
+    _lat = widget.latitude;
+    _lng = widget.longitude;
+    _loadStoreLocation();
     _loadProducts();
+  }
+
+  Future<void> _loadStoreLocation() async {
+    try {
+      final row = await supabase
+          .from('stores')
+          .select('latitude, longitude')
+          .eq('id', widget.storeId)
+          .maybeSingle();
+      if (!mounted) return;
+      setState(() {
+        _lat = (row?['latitude'] as num?)?.toDouble();
+        _lng = (row?['longitude'] as num?)?.toDouble();
+      });
+    } catch (e) {
+      debugPrint('❌ _loadStoreLocation: $e');
+    }
   }
 
   @override
@@ -278,7 +306,7 @@ class _StoreProductsScreenState extends State<StoreProductsScreen> {
                                   const SizedBox(height: 8),
                                   GestureDetector(
                                     onTap: () {
-                                      if (widget.latitude != null && widget.longitude != null) {
+                                      if (_hasLocation) {
                                         showModalBottomSheet(
                                           context: context,
                                           shape: const RoundedRectangleBorder(
@@ -287,32 +315,36 @@ class _StoreProductsScreenState extends State<StoreProductsScreen> {
                                           builder: (_) => _NavigationGuideSheet(
                                             shopName: widget.shopName,
                                             containerNumber: widget.containerNumber,
-                                            sellerLat: widget.latitude!,
-                                            sellerLng: widget.longitude!,
+                                            sellerLat: _lat!,
+                                            sellerLng: _lng!,
                                           ),
                                         );
                                       } else {
                                         ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text(isRu ? 'Координаты не указаны' : 'Координаттар жок')),
+                                          SnackBar(content: Text(isRu ? 'Продавец не указал своё местоположение' : 'Сатуучу жайгашкан жерин белгилеген эмес')),
                                         );
                                       }
                                     },
                                     child: Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                       decoration: BoxDecoration(
-                                        gradient: const LinearGradient(
-                                          colors: [Color(0xFFD97706), Color(0xFFEF4444)],
+                                        gradient: LinearGradient(
+                                          colors: _hasLocation
+                                              ? const [Color(0xFFD97706), Color(0xFFEF4444)]
+                                              : [Colors.grey.shade500, Colors.grey.shade600],
                                           begin: Alignment.topLeft,
                                           end: Alignment.bottomRight,
                                         ),
                                         borderRadius: BorderRadius.circular(10),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: const Color(0xFFD97706).withOpacity(0.35),
-                                            blurRadius: 8,
-                                            offset: const Offset(0, 3),
-                                          ),
-                                        ],
+                                        boxShadow: _hasLocation
+                                            ? [
+                                                BoxShadow(
+                                                  color: const Color(0xFFD97706).withOpacity(0.35),
+                                                  blurRadius: 8,
+                                                  offset: const Offset(0, 3),
+                                                ),
+                                              ]
+                                            : null,
                                       ),
                                       child: Column(
                                         children: [

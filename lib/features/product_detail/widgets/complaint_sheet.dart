@@ -2,22 +2,39 @@
 // АРЫЗ ФОРМАСЫ BOTTOM SHEET
 // product_detail_screen.dart файлынан бөлүнүп чыгарылды.
 // ══════════════════════════════════════════════════════
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show FileOptions;
 import '../../../core/supabase_client.dart';
+import '../../../core/utils/image_utils.dart';
 
 class ComplaintSheet extends StatefulWidget {
   final String productId;
   final String productName;
   final bool isRu;
 
+  // Арыз кайсы сатуучуга/дүкөнгө айтылып жатканы (админ панелинде көрүнөт)
+  final String? storeId;
+  final String? sellerId;
+  final String shopName;
+  final String sellerName;
+  final String containerNumber;
+
   const ComplaintSheet({
     super.key,
     required this.productId,
     required this.productName,
     required this.isRu,
+    this.storeId,
+    this.sellerId,
+    this.shopName = '',
+    this.sellerName = '',
+    this.containerNumber = '',
   });
 
   @override
@@ -31,6 +48,59 @@ class _ComplaintSheetState extends State<ComplaintSheet> {
   final _nameCtrl    = TextEditingController();
   String? _selectedTopic;
   bool _isSending = false;
+
+  // Скриншот (милдеттүү эмес)
+  Uint8List? _screenshotBytes;
+
+  Future<void> _pickScreenshot() async {
+    try {
+      final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
+      if (picked == null) return;
+      final bytes = await picked.readAsBytes();
+      if (!mounted) return;
+      setState(() => _screenshotBytes = bytes);
+    } catch (e) {
+      debugPrint('❌ pick screenshot: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(widget.isRu
+            ? 'Не удалось выбрать фото'
+            : 'Сүрөттү тандоо мүмкүн болгон жок'),
+        backgroundColor: AppColors.error,
+      ));
+    }
+  }
+
+  /// Скриншотту Backblaze'ке жүктөп, URL кайтарат (скриншот жок болсо null).
+  Future<String?> _uploadScreenshot() async {
+    final raw = _screenshotBytes;
+    if (raw == null) return null;
+    Uint8List bytes = raw;
+    try {
+      bytes = await compressImage(raw, quality: 80, maxWidth: 1280, maxHeight: 1280);
+    } catch (e) {
+      debugPrint('⚠️ screenshot compress: $e (түп нускасы жүктөлөт)');
+    }
+    // Supabase Storage → "complaint-screenshots" bucket (public)
+    final uid = supabase.auth.currentUser?.id ?? 'guest';
+    final path = '$uid/${DateTime.now().millisecondsSinceEpoch}.jpg';
+    try {
+      await supabase.storage.from('complaint-screenshots').uploadBinary(
+            path,
+            bytes,
+            fileOptions: const FileOptions(
+              contentType: 'image/jpeg',
+              upsert: false,
+            ),
+          );
+    } catch (e) {
+      debugPrint('❌ screenshot upload: $e');
+      throw Exception(widget.isRu
+          ? 'Не удалось загрузить скриншот'
+          : 'Скриншотту жүктөө мүмкүн болгон жок');
+    }
+    return supabase.storage.from('complaint-screenshots').getPublicUrl(path);
+  }
 
   final List<Map<String, String>> _topics = [
     {'ky': 'Жалган сүрөт/маалымат', 'ru': 'Ложное фото/описание'},
@@ -76,8 +146,15 @@ class _ComplaintSheetState extends State<ComplaintSheet> {
     setState(() => _isSending = true);
     try {
       final user = supabase.auth.currentUser;
+      final screenshotUrl = await _uploadScreenshot();
       await supabase.from('complaints').insert({
         'product_id':   widget.productId,
+        'store_id':         widget.storeId,
+        'seller_id':        widget.sellerId,
+        'shop_name':        widget.shopName,
+        'seller_name':      widget.sellerName,
+        'container_number': widget.containerNumber,
+        'screenshot_url':   screenshotUrl,
         'user_id':      user?.id,
         'sender_name':  _nameCtrl.text.trim().isNotEmpty ? _nameCtrl.text.trim() : (user?.email ?? ''),
         'sender_email': _emailCtrl.text.trim(),
@@ -174,6 +251,33 @@ class _ComplaintSheetState extends State<ComplaintSheet> {
                   ),
                 ],
               ),
+              if (widget.shopName.isNotEmpty || widget.sellerName.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: fillColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.storefront_rounded, size: 18, color: subColor),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '${widget.isRu ? 'Кому' : 'Кимге'}: '
+                          '${widget.shopName.isNotEmpty ? widget.shopName : widget.sellerName}'
+                          '${widget.containerNumber.isNotEmpty ? ' • ${widget.containerNumber}' : ''}',
+                          style: AppTextStyles.labelMedium.copyWith(color: textColor),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 20),
 
               // ── Тема ──
@@ -267,6 +371,73 @@ class _ComplaintSheetState extends State<ComplaintSheet> {
                   contentPadding: const EdgeInsets.all(14),
                 ),
               ),
+              const SizedBox(height: 12),
+
+              // ── Скриншот ──
+              Text(
+                widget.isRu ? 'Скриншот (необязательно)' : 'Скриншот (милдеттүү эмес)',
+                style: AppTextStyles.labelMedium.copyWith(color: subColor),
+              ),
+              const SizedBox(height: 8),
+              if (_screenshotBytes == null)
+                GestureDetector(
+                  onTap: _isSending ? null : _pickScreenshot,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 18),
+                    decoration: BoxDecoration(
+                      color: fillColor,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isDark ? Colors.white12 : AppColors.grey200,
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        const Icon(Icons.add_photo_alternate_outlined,
+                            color: Color(0xFFEF4444), size: 28),
+                        const SizedBox(height: 6),
+                        Text(
+                          widget.isRu ? 'Добавить скриншот' : 'Скриншот кошуу',
+                          style: AppTextStyles.labelMedium
+                              .copyWith(color: textColor),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.memory(
+                        _screenshotBytes!,
+                        width: double.infinity,
+                        height: 180,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: GestureDetector(
+                        onTap: _isSending
+                            ? null
+                            : () => setState(() => _screenshotBytes = null),
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: const BoxDecoration(
+                            color: Colors.black54,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.close,
+                              color: Colors.white, size: 18),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               const SizedBox(height: 12),
 
               // ── Аты ──
