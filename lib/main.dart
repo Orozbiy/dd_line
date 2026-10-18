@@ -235,9 +235,21 @@ class _SplashRouterState extends State<SplashRouter> {
     });
   }
 
+  /// Эки форматты тең колдойт:
+  ///  • https://dd-online-web.web.app/product/<id>  → pathSegments = [product, <id>]
+  ///  • ddonline://product/<id>                     → host = product, pathSegments = [<id>]
+  static String? _extractProductId(Uri uri) {
+    final seg = uri.pathSegments.where((s) => s.isNotEmpty).toList();
+    if (uri.scheme == 'ddonline' && uri.host == 'product' && seg.isNotEmpty) {
+      return seg.first;
+    }
+    if (seg.length >= 2 && seg[0] == 'product') return seg[1];
+    return null;
+  }
+
   void _handleDeepLink(Uri uri) {
-    if (uri.pathSegments.length >= 2 && uri.pathSegments[0] == 'product') {
-      final productId = uri.pathSegments[1];
+    final productId = _extractProductId(uri);
+    if (productId != null) {
       debugPrint('🔗 Product deep link: $productId');
       WidgetsBinding.instance.addPostFrameCallback((_) {
         NotificationService().navigateToProductPublic(productId);
@@ -250,9 +262,9 @@ class _SplashRouterState extends State<SplashRouter> {
     final initialUri = await _appLinks.getInitialLink();
     if (initialUri != null) {
       debugPrint('🔗 Initial deep link: $initialUri');
-      if (initialUri.pathSegments.length >= 2 &&
-          initialUri.pathSegments[0] == 'product') {
-        NotificationService.pendingProductId = initialUri.pathSegments[1];
+      final productId = _extractProductId(initialUri);
+      if (productId != null) {
+        NotificationService.pendingProductId = productId;
       }
     }
   } catch (_) {}

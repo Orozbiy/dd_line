@@ -8,6 +8,7 @@ import '../models/story_model.dart';
 import '../services/story_service.dart';
 import '../widgets/story_progress_bar.dart';
 import '../widgets/story_like_button.dart';
+import '../widgets/story_comments_sheet.dart';
 import '../../../core/app_localizations.dart';
 
 class StoryViewerScreen extends StatefulWidget {
@@ -55,6 +56,10 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
 
   // ── Viewed IDs ──
   Set<String> _viewedIds = {};
+
+  // ── Комментарий саны (storyId → сан) ──
+  final Map<String, int> _commentCounts = {};
+  bool _commentsOpen = false;
 
   @override
   void initState() {
@@ -150,6 +155,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
 
     final story = _stories[index];
     _markViewed(story.id);
+    _loadCommentCount(story.id);
 
     if (story.isVideo) {
       setState(() => _isVideoStory = true);
@@ -314,6 +320,31 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
   }
 
   // ─────────────────────────────────────────────
+  // Комментарийлер
+  // ─────────────────────────────────────────────
+  Future<void> _loadCommentCount(String storyId) async {
+    final n = await StoryService.instance.commentsCount(storyId);
+    if (mounted) setState(() => _commentCounts[storyId] = n);
+  }
+
+  Future<void> _openComments({bool autofocus = false}) async {
+    if (_commentsOpen) return;
+    _commentsOpen = true;
+    final story = _stories[_currentIndex];
+    _pause();
+    await showStoryComments(
+      context,
+      storyId: story.id,
+      autofocus: autofocus,
+      onCountChanged: (n) {
+        if (mounted) setState(() => _commentCounts[story.id] = n);
+      },
+    );
+    _commentsOpen = false;
+    if (mounted) _resume();
+  }
+
+  // ─────────────────────────────────────────────
   // Лайк
   // ─────────────────────────────────────────────
   Future<void> _toggleLike() async {
@@ -339,6 +370,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
 
     return Scaffold(
       backgroundColor: Colors.black,
+      resizeToAvoidBottomInset: false,
       body: GestureDetector(
         onTapUp: (details) {
           final x = details.globalPosition.dx;
@@ -430,15 +462,61 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
               ),
             ),
 
-            // ── Лайк баскычы ──
+            // ── Төмөнкү панель: комментарий + лайк ──
             Positioned(
               bottom: 0, left: 0, right: 0,
               child: SafeArea(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
                     children: [
+                      // Комментарий жазуу (басканда астынан барак чыгат)
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => _openComments(autofocus: true),
+                          child: Container(
+                            height: 44,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            alignment: Alignment.centerLeft,
+                            decoration: BoxDecoration(
+                              color: Colors.black38,
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(color: Colors.white54),
+                            ),
+                            child: const Text('Комментарий жазуу...',
+                                style: TextStyle(
+                                    color: Colors.white70, fontSize: 14)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      // Комментарий иконкасы + саны
+                      GestureDetector(
+                        onTap: () => _openComments(),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: Colors.black38,
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.mode_comment_outlined,
+                                  color: Colors.white, size: 22),
+                              if ((_commentCounts[story.id] ?? 0) > 0) ...[
+                                const SizedBox(width: 6),
+                                Text('${_commentCounts[story.id]}',
+                                    style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600)),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
                       StoryLikeButton(
                         isLiked:    story.isLikedByMe,
                         likesCount: story.likesCount,
@@ -491,9 +569,12 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     }
 
     if (_videoReady && _videoCtrl != null && _videoCtrl!.value.isInitialized) {
+      // Тик (9:16) видео — толук экранга; жатык (landscape) видео кесилбейт
+      final vs = _videoCtrl!.value.size;
+      final landscape = vs.width > vs.height;
       return SizedBox.expand(
         child: FittedBox(
-          fit: BoxFit.cover,
+          fit: landscape ? BoxFit.contain : BoxFit.cover,
           child: SizedBox(
             width:  _videoCtrl!.value.size.width,
             height: _videoCtrl!.value.size.height,

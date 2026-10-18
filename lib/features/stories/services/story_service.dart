@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/supabase_client.dart';
 import '../models/story_model.dart';
+import '../models/story_comment_model.dart';
 
 class StoryService {
   // ─────────────────────────────────────────────
@@ -13,6 +14,7 @@ class StoryService {
 
   static const _storiesTable  = 'stories';
   static const _likesTable    = 'story_likes';
+  static const _commentsTable = 'story_comments';
   static const _storageBucket = 'stories';
 
   // ─────────────────────────────────────────────
@@ -228,6 +230,79 @@ class StoryService {
     } catch (e) {
       debugPrint('❌ StoryService.toggleLike: $e');
       return (liked: story.isLikedByMe, newCount: story.likesCount);
+    }
+  }
+
+  // ─────────────────────────────────────────────
+  // Комментарийлер
+  // ─────────────────────────────────────────────
+  Future<List<StoryCommentModel>> fetchComments(String storyId) async {
+    try {
+      final List<Map<String, dynamic>> rows = await supabase
+          .from(_commentsTable)
+          .select()
+          .eq('story_id', storyId)
+          .order('created_at', ascending: false);
+      return rows.map(StoryCommentModel.fromMap).toList();
+    } catch (e) {
+      debugPrint('❌ StoryService.fetchComments: $e');
+      return [];
+    }
+  }
+
+  Future<int> commentsCount(String storyId) async {
+    try {
+      final rows = await supabase
+          .from(_commentsTable)
+          .select('id')
+          .eq('story_id', storyId);
+      return (rows as List).length;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  Future<StoryCommentModel?> addComment(String storyId, String text) async {
+    final user = supabase.auth.currentUser;
+    if (user == null) return null;
+    try {
+      String name = 'Колдонуучу';
+      String? avatar;
+      try {
+        final prof = await supabase
+            .from('profiles')
+            .select('full_name, avatar_url')
+            .eq('id', user.id)
+            .maybeSingle();
+        name = (prof?['full_name'] as String?) ?? user.email?.split('@').first ?? name;
+        avatar = prof?['avatar_url'] as String?;
+      } catch (_) {}
+
+      final row = await supabase
+          .from(_commentsTable)
+          .insert({
+            'story_id': storyId,
+            'user_id': user.id,
+            'user_name': name,
+            'avatar_url': avatar,
+            'text': text.trim(),
+          })
+          .select()
+          .single();
+      return StoryCommentModel.fromMap(row);
+    } catch (e) {
+      debugPrint('❌ StoryService.addComment: $e');
+      return null;
+    }
+  }
+
+  Future<bool> deleteComment(String commentId) async {
+    try {
+      await supabase.from(_commentsTable).delete().eq('id', commentId);
+      return true;
+    } catch (e) {
+      debugPrint('❌ StoryService.deleteComment: $e');
+      return false;
     }
   }
 }

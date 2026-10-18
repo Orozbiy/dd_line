@@ -211,6 +211,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
     final isDark  = Theme.of(context).brightness == Brightness.dark;
     final sheetBg = isDark ? const Color(0xFF1E1E1E) : Colors.white;
     final titleColor = isDark ? Colors.white : AppColors.black;
+    String query = '';
 
     showModalBottomSheet(
       context: context,
@@ -224,7 +225,10 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
         initialChildSize: 0.7,
         maxChildSize: 0.95,
         minChildSize: 0.4,
-        builder: (_, scrollCtrl) => Column(
+        builder: (_, scrollCtrl) => StatefulBuilder(builder: (ctx, setSheet) {
+          final filtered = _products.where((p) =>
+              ((p['title'] as String?) ?? '').toLowerCase().contains(query.toLowerCase().trim())).toList();
+          return Column(
           children: [
             const SizedBox(height: 8),
             Container(
@@ -256,9 +260,27 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
               ]),
             ),
             const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+              child: TextField(
+                onChanged: (v) => setSheet(() => query = v),
+                decoration: InputDecoration(
+                  hintText: 'Товар издөө...',
+                  prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                  isDense: true,
+                  filled: true,
+                  fillColor: isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF5F5F5),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                ),
+              ),
+            ),
             Divider(height: 1, color: isDark ? const Color(0xFF2C2C2C) : const Color(0xFFEEEEEE)),
             Expanded(
-              child: _products.isEmpty
+              child: filtered.isEmpty
                   ? Center(
                       child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                         const Text('📦', style: TextStyle(fontSize: 48)),
@@ -269,9 +291,9 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                   : ListView.builder(
                       controller: scrollCtrl,
                       padding: const EdgeInsets.symmetric(vertical: 8),
-                      itemCount: _products.length,
+                      itemCount: filtered.length,
                       itemBuilder: (ctx, i) {
-                        final p = _products[i];
+                        final p = filtered[i];
                         final images = List<String>.from(p['images'] as List? ?? []);
                         final imageUrl = images.isNotEmpty ? images.first : '';
                         final hasDiscount = (p['discount_percent'] as num? ?? 0) > 0;
@@ -343,7 +365,8 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                     ),
             ),
           ],
-        ),
+          );
+        }),
       ),
     );
   }
@@ -1999,6 +2022,13 @@ class _AddFlashSheetState extends State<_AddFlashSheet> {
   final _priceCtrl = TextEditingController();
   int _hours = 24;
   bool _saving = false;
+  String _query = '';
+
+  List<Map<String, dynamic>> get _filteredProducts => widget.products
+      .where((p) => ((p['title'] as String?) ?? '')
+          .toLowerCase()
+          .contains(_query.toLowerCase().trim()))
+      .toList();
 
   @override
   void dispose() { _priceCtrl.dispose(); super.dispose(); }
@@ -2014,7 +2044,9 @@ class _AddFlashSheetState extends State<_AddFlashSheet> {
     final sheetBg = isDark ? const Color(0xFF1A1A1A) : Colors.white;
     final subColor = isDark ? Colors.white70 : const Color(0xFF555555);
 
+    final filtered = _filteredProducts;
     return Container(
+      height: MediaQuery.of(context).size.height * 0.92,
       decoration: BoxDecoration(
         color: sheetBg,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -2047,14 +2079,34 @@ class _AddFlashSheetState extends State<_AddFlashSheet> {
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
               child: Text('Товарды тандаңыз', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: subColor)),
             ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+              child: TextField(
+                onChanged: (v) => setState(() => _query = v),
+                decoration: InputDecoration(
+                  hintText: 'Товар издөө...',
+                  prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                  isDense: true,
+                  filled: true,
+                  fillColor: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF5F5F5),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                ),
+              ),
+            ),
             SizedBox(
-              height: 100,
-              child: ListView.builder(
+              height: 120,
+              child: filtered.isEmpty
+                  ? Center(child: Text('Товар табылган жок', style: TextStyle(color: subColor)))
+                  : ListView.builder(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: widget.products.length,
+                itemCount: filtered.length,
                 itemBuilder: (_, i) {
-                  final p = widget.products[i];
+                  final p = filtered[i];
                   final imgs = List<String>.from(p['images'] as List? ?? []);
                   final img = imgs.isNotEmpty ? imgs.first : '';
                   final isSelected = _selected?['id'] == p['id'];

@@ -97,6 +97,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // DD Online блогунун бийиктиги: toolbar(52px)
   static const double _titleBarHeight = 75.0;
+  // Sticky header'дин чыныгы бийиктиги (категория ачылганда өзгөрөт)
+  final GlobalKey _headerKey = GlobalKey();
+  double? _headerH;
+
+  void _measureHeader() {
+    final box = _headerKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) return;
+    final h = box.size.height;
+    if (_headerH == null || (_headerH! - h).abs() > 0.5) {
+      setState(() => _headerH = h);
+    }
+  }
 
   int get _filterCount {
     int c = 0;
@@ -553,6 +565,10 @@ class _HomeScreenState extends State<HomeScreen> {
     // search(44+8padding) + divider(1) + pills(44) = ~97
     const double _searchCatH = 97.0;
 
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _measureHeader();
+    });
+
     return _HomeBodySlider(
       onOpenPanel: () => openSidePanel(context),
       child: Stack(
@@ -592,12 +608,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 slivers: [
                   // ── Жогоруда бош орун (sticky header бийиктиги) ──
                   SliverToBoxAdapter(
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 250),
-                      curve: Curves.easeInOut,
-                      height: _titleVisible
-                          ? _titleBarHeight + _searchCatH
-                          : _searchCatH,
+                    child: SizedBox(
+                      height: _headerH ??
+                          (_titleVisible
+                              ? _titleBarHeight + _searchCatH
+                              : _searchCatH),
                     ),
                   ),
 
@@ -756,7 +771,15 @@ if (_isSearchMode || _isNearbyMode ||
             top: 0,
             left: 0,
             right: 0,
-            child: ClipRRect(
+            child: NotificationListener<SizeChangedLayoutNotification>(
+              onNotification: (_) {
+                WidgetsBinding.instance
+                    .addPostFrameCallback((_) => mounted ? _measureHeader() : null);
+                return true;
+              },
+              child: SizeChangedLayoutNotifier(
+                key: _headerKey,
+                child: ClipRRect(
               borderRadius:
                   const BorderRadius.vertical(bottom: Radius.circular(24)),
               child: BackdropFilter(
@@ -967,6 +990,8 @@ if (_isSearchMode || _isNearbyMode ||
                 ), // ← Container
               ), // ← BackdropFilter
             ),
+              ), // ← SizeChangedLayoutNotifier
+            ), // ← NotificationListener
           ), // ← ClipRect
         ],
       ),
