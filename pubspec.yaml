@@ -55,7 +55,7 @@ flutter_launcher_icons:
 flutter:
   uses-material-design: true
   assets:
-    - assets/service_account.json
+    
     - assets/icon/
     - assets/icons/
     - assets/images/
