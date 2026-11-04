@@ -27,7 +27,17 @@
 		<key>LSRequiresIPhoneOS</key>
 		<true/>
 		<key>NSLocationWhenInUseUsageDescription</key>
-		<string>Маршрут түзүү үчүн жайгашкан жериңиз керек</string>
+		<string>Базардагы контейнерге маршрут түзүү үчүн жайгашкан жериңиз керек</string>
+		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+		<string>Базардагы контейнерге маршрут түзүү үчүн жайгашкан жериңиз керек</string>
+		<key>NSCameraUsageDescription</key>
+		<string>Дүкөнүңүздүн сүрөтүн тартуу үчүн камераңызга кирүү керек</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>Дүкөнүңүздүн сүрөттөрүн жүктөө үчүн галереяңызга кирүү керек</string>
+		<key>NSPhotoLibraryAddUsageDescription</key>
+		<string>Тартылган сүрөттөрдү галереяга сактоо үчүн уруксат керек</string>
+		<key>NSMicrophoneUsageDescription</key>
+		<string>Үн жазуу үчүн микрофонго кирүү керек</string>
 		<key>CFBundleURLTypes</key>
 		<array>
 			<dict>
