@@ -5,7 +5,6 @@ workflows:
     instance_type: mac_mini_m2
     integrations:
       app_store_connect: Codemagic Key  
-      
     environment:
       flutter: stable
       xcode: latest
@@ -13,8 +12,6 @@ workflows:
         distribution_type: app_store
         bundle_identifier: com.ddonline.app
     scripts:
-      - name: Set up code signing settings
-        scripts:
       - name: Build ipa for testing
         script: |
           flutter build ipa --release --export-options-plist=ios/ExportOptions.plist
