@@ -14,8 +14,7 @@ workflows:
         bundle_identifier: com.ddonline.app
     scripts:
       - name: Set up code signing settings
-        script: |
-          app-store-connect fetch-signing-files com.ddonline.app --type IOS_APP_STORE
+        scripts:
       - name: Build ipa for testing
         script: |
           flutter build ipa --release --export-options-plist=ios/ExportOptions.plist
