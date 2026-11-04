@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
@@ -27,6 +28,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   late Animation<Offset> _slideAnim;
 
   bool _isLoading = false;
+  bool _isAppleLoading = false;
   StreamSubscription<AuthState>? _authSub;
 
   @override
@@ -89,6 +91,22 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
+        final loc = AppLocalizations.of(context);
+        _showSnack('${loc.get('login_error')}: $e', isError: true);
+      }
+    }
+  }
+
+  Future<void> _handleAppleSignIn() async {
+    setState(() => _isAppleLoading = true);
+    try {
+      await AuthService.instance.signInWithApple();
+      if (mounted) setState(() => _isAppleLoading = false);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isAppleLoading = false);
+        // Колдонуучу өзү жаптырса — ката көрсөтпө
+        if (e.toString().contains('canceled') || e.toString().contains('AuthorizationErrorCode.canceled')) return;
         final loc = AppLocalizations.of(context);
         _showSnack('${loc.get('login_error')}: $e', isError: true);
       }
@@ -207,8 +225,14 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
                       const Spacer(flex: 2),
 
-                      // ── GOOGLE КИРҮҮ БАСКЫЧЫ (GLASSMORPHISM) ──
+                      // ── GOOGLE КИРҮҮ БАСКЫЧЫ ──
                       _buildGoogleButton(loc),
+
+                      const SizedBox(height: 12),
+
+                      // ── APPLE КИРҮҮ БАСКЫЧЫ (iOS гана) ──
+                      if (defaultTargetPlatform == TargetPlatform.iOS)
+                        _buildAppleButton(),
 
                       const SizedBox(height: 16),
 
@@ -320,6 +344,57 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     );
   }
 }
+
+  Widget _buildAppleButton() {
+    return GestureDetector(
+      onTap: _isAppleLoading ? null : _handleAppleSignIn,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 18),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: _isAppleLoading ? 0.10 : 0.18),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.40),
+                width: 1.5,
+              ),
+            ),
+            child: _isAppleLoading
+                ? const Center(
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2.5,
+                      ),
+                    ),
+                  )
+                : const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.apple, color: Colors.white, size: 24),
+                      SizedBox(width: 12),
+                      Text(
+                        'Apple менен кирүү',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+        ),
+      ),
+    );
+  }
 
 // ══════════════════════════════════════════════════════
 // АНИМАЦИЯЛАНГАН ФОНДУК ГРАДИЕНТ

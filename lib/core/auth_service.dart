@@ -1,3 +1,7 @@
+import 'dart:convert';
+import 'dart:math';
+import 'package:crypto/crypto.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'supabase_client.dart';
 import '../services/notification_service.dart';
@@ -84,6 +88,39 @@ Future<void> syncProfile() async {
 
   await NotificationService().saveMyToken();
 }
+
+  /// Apple аккаунту аркылуу Supabase'ге кирүү (iOS гана).
+  Future<void> signInWithApple() async {
+    // 1. nonce жаса — Apple жана Supabase экөөнө бирдей жиберилет
+    final rawNonce = _generateNonce();
+    final hashedNonce = sha256.convert(utf8.encode(rawNonce)).toString();
+
+    // 2. Apple'дан credential ал
+    final credential = await SignInWithApple.getAppleIDCredential(
+      scopes: [
+        AppleIDAuthorizationScopes.email,
+        AppleIDAuthorizationScopes.fullName,
+      ],
+      nonce: hashedNonce,
+    );
+
+    final idToken = credential.identityToken;
+    if (idToken == null) throw AuthException('Apple identity token жок');
+
+    // 3. Supabase'ге кир
+    await supabase.auth.signInWithIdToken(
+      provider: OAuthProvider.apple,
+      idToken: idToken,
+      nonce: rawNonce,
+    );
+  }
+
+  /// Криптографиялык коопсуз nonce жасоо
+  String _generateNonce([int length = 32]) {
+    const charset = '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+    final random = Random.secure();
+    return List.generate(length, (_) => charset[random.nextInt(charset.length)]).join();
+  }
 
   /// Колдонуучунун ролун (customer/seller/admin) алуу.
   Future<String> getUserRole() async {
