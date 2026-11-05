@@ -343,7 +343,6 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       ),
     );
   }
-}
 
   Widget _buildAppleButton() {
     return GestureDetector(
@@ -395,6 +394,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       ),
     );
   }
+}
 
 // ══════════════════════════════════════════════════════
 // АНИМАЦИЯЛАНГАН ФОНДУК ГРАДИЕНТ
