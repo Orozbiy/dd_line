@@ -21,7 +21,7 @@ workflows:
           pod install --repo-update
       - name: Set up code signing settings on Xcode project
         script: |
-          xcode-project use-profiles --profile-name "DD Online ios_app_store"
+          xcode-project use-profiles
       - name: Build ipa
         script: |
           flutter build ipa --release \
