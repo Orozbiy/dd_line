@@ -6,6 +6,7 @@ import '../../../core/utils/favorites_manager.dart';
 import '../../../data/models/product_model.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'negotiation_badge.dart';
+import '../../../core/widgets/shimmer_loading.dart';
 
 // Cosmic Dark
 class _CardC {
@@ -160,7 +161,7 @@ class _ProductCardState extends State<ProductCard>
                       fit: BoxFit.cover,
                       fadeInDuration: const Duration(milliseconds: 120),
                       memCacheWidth: 300,
-                      placeholder: (_, __) => const SizedBox.shrink(),
+                      placeholder: (_, __) => const ShimmerLoading(),
                       errorWidget: (_, __, ___) => Container(
                         color: shimmerColor,
                         child: Icon(Icons.image_not_supported_outlined,
