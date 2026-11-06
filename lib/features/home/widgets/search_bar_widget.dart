@@ -6,11 +6,13 @@ import '../../../core/app_localizations.dart';
 class SearchBarWidget extends StatefulWidget {
   final Function(String) onChanged;
   final Function()? onClear;
+  final TextEditingController? controller;
 
   const SearchBarWidget({
     super.key,
     required this.onChanged,
     this.onClear,
+    this.controller,
   });
 
   @override
@@ -21,18 +23,25 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
   late TextEditingController _controller;
   late FocusNode _focusNode;  // ← КОШ
 
+  bool _ownsController = false;
+
   @override
   void initState() {
     super.initState();
-    _controller = TextEditingController();
-    _focusNode = FocusNode();  // ← КОШ
+    if (widget.controller != null) {
+      _controller = widget.controller!;
+    } else {
+      _controller = TextEditingController();
+      _ownsController = true;
+    }
+    _focusNode = FocusNode();
     _controller.addListener(() => setState(() {}));
   }
 
   @override
   void dispose() {
-    _controller.dispose();
-    _focusNode.dispose();  // ← КОШ
+    if (_ownsController) _controller.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -41,8 +50,8 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
     final loc    = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final fillColor   = isDark
-        ? const Color(0xFF2C2C2C).withOpacity(0.55)
-        : AppColors.grey50.withOpacity(0.55);
+        ? const Color(0xFF2C2C2C).withValues(alpha: 0.55)
+        : AppColors.grey50.withValues(alpha: 0.55);
     final borderColor = isDark ? const Color(0xFF3A3A3A) : AppColors.grey200;
 
     return TextFormField(

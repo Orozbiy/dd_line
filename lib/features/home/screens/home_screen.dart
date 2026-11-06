@@ -75,6 +75,8 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLocating = false;
   bool _isSearchMode = false;
   Timer? _debounce;
+  final TextEditingController _searchController = TextEditingController();
+  List<ProductModel> _searchResults = []; // издөө натыйжаларынын оригиналы
 
   ProductFilterMode _filterMode = ProductFilterMode.all;
 
@@ -205,6 +207,7 @@ class _HomeScreenState extends State<HomeScreen> {
     fav.removeListener(_onFavChanged);
     _debounce?.cancel();
     _chatSub?.cancel();
+    _searchController.dispose();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
@@ -271,12 +274,14 @@ class _HomeScreenState extends State<HomeScreen> {
       );
       _hasMore = products.length == _pageSize;
       _offset = products.length;
-      if (mounted)
+      if (mounted) {
         setState(() {
           allProducts = products;
           displayedProducts = List.from(products);
           _isLoading = false;
         });
+        _applyFilters(); // баа/сорттоо фильтрин колдонуу
+      }
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -288,19 +293,24 @@ class _HomeScreenState extends State<HomeScreen> {
       _isNearbyMode = false;
       _isSearchMode = false;
       _offset = 0;
-      _hasMore = false;
+      _hasMore = true;
     });
     try {
       final products = await ProductRepository.instance.fetchPopular(
         categoryId: _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
         limit: _pageSize,
+        offset: 0,
       );
-      if (mounted)
+      _hasMore = products.length == _pageSize;
+      _offset = products.length;
+      if (mounted) {
         setState(() {
           allProducts = products;
           displayedProducts = List.from(products);
           _isLoading = false;
         });
+        _applyFilters(); // баа/сорттоо фильтрин колдонуу
+      }
     } catch (e) {
       debugPrint('❌ loadPopular: $e');
       if (mounted) setState(() => _isLoading = false);
@@ -308,6 +318,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _onFilterModeChanged(ProductFilterMode mode) {
+    // ── Издөө режиминде турса — издөөнү тазалоо ──
+    if (_isSearchMode || _searchQuery.isNotEmpty) {
+      _searchController.clear();
+      _searchQuery = '';
+      _debounce?.cancel();
+    }
     setState(() => _filterMode = mode);
     switch (mode) {
       case ProductFilterMode.newest:
@@ -367,6 +383,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadNearbyProducts() async {
+    // ── Издөөнү тазалоо ──
+    if (_searchQuery.isNotEmpty) {
+      _searchController.clear();
+      _searchQuery = '';
+      _debounce?.cancel();
+    }
     setState(() => _isLocating = true);
     final position = await ProductRepository.instance.getCurrentPosition();
     if (position == null) {
@@ -425,7 +447,8 @@ class _HomeScreenState extends State<HomeScreen> {
         _isSearchMode = true;
         _isNearbyMode = false;
         _hasMore = false;
-        _filterMode = ProductFilterMode.all;
+        // _filterMode өзгөртпөйбүз — издөө тазалангандан кийин
+        // мурунку режимге (popular/newest/all) кайтуу үчүн
       });
       try {
         final results = await ProductRepository.instance.searchProducts(
@@ -434,10 +457,12 @@ class _HomeScreenState extends State<HomeScreen> {
               _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
         );
         if (!mounted) return;
+        _searchResults = results;
         setState(() {
-          displayedProducts = results;
+          displayedProducts = List.from(results);
           _isLoading = false;
         });
+        _applyFilters(); // баа фильтрин издөө натыйжаларына колдонуу
       } catch (e) {
         debugPrint('❌ searchProducts: $e');
         if (!mounted) return;
@@ -453,17 +478,35 @@ class _HomeScreenState extends State<HomeScreen> {
     _searchQuery = '';
     _debounce?.cancel();
     setState(() => _isSearchMode = false);
-    _loadProducts();
+    // ── Мурунку фильтр режимин калыбына келтирүү ──
+    switch (_filterMode) {
+      case ProductFilterMode.newest:
+        _loadNewest();
+        break;
+      case ProductFilterMode.popular:
+        _loadPopular();
+        break;
+      case ProductFilterMode.all:
+        _loadProducts();
+        break;
+    }
   }
 
   void _applyFilters() {
-    if (_isSearchMode) return;
-    List<ProductModel> result = List.from(allProducts);
-    result = result
+    // ── Издөө режиминде да, кадимки режимде да фильтр колдонулат ──
+    List<ProductModel> source;
+    if (_isSearchMode) {
+      source = List.from(_searchResults);
+    } else {
+      source = List.from(allProducts);
+    }
+
+    List<ProductModel> result = source
         .where((p) =>
             p.price >= _filter.priceRange.start &&
             p.price <= _filter.priceRange.end)
         .toList();
+
     switch (_filter.sortBy) {
       case 'price_asc':
         result.sort((a, b) => a.price.compareTo(b.price));
@@ -584,7 +627,10 @@ class _HomeScreenState extends State<HomeScreen> {
             },
             child: RefreshIndicator(
               onRefresh: () async {
-                if (_isNearbyMode) {
+                if (_isSearchMode && _searchQuery.isNotEmpty) {
+                  // ── Издөө режиминде — издөөнү кайра жүргүзүү ──
+                  _onSearchChanged(_searchQuery);
+                } else if (_isNearbyMode) {
                   await _loadNearbyProducts();
                 } else {
                   switch (_filterMode) {
@@ -908,6 +954,7 @@ if (_isSearchMode || _isNearbyMode ||
                           children: [
                             Expanded(
                                 child: SearchBarWidget(
+                                    controller: _searchController,
                                     onChanged: _onSearchChanged,
                                     onClear: _onSearchClear)),
                             const SizedBox(width: 8),
@@ -973,6 +1020,9 @@ if (_isSearchMode || _isNearbyMode ||
 
                       // ── CategoryList (дайыма туруктуу) ──
                       CategoryList(
+                        currentFilterMode: _isSearchMode || _isNearbyMode
+                            ? ProductFilterMode.all
+                            : _filterMode,
                         onCategorySelected: (id) {
                           setState(() => _selectedCategoryId = id);
                           if (_isSearchMode && _searchQuery.isNotEmpty) {
