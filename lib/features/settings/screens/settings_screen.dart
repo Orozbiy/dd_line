@@ -15,6 +15,7 @@ import '../widgets/cache_menu_item.dart';
 import '../widgets/support_menu_item.dart';
 import '../widgets/terms_menu_item.dart';
 import '../../home/widgets/suggestion_button.dart';
+import 'delete_account_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -227,6 +228,72 @@ class SettingsScreen extends StatelessWidget {
                     Divider(height: 1, color: divColor),
                     const TermsMenuItem(),
                   ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // ── Аккаунтту өчүрүү ──
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const DeleteAccountScreen()),
+                  ),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: AppColors.error.withValues(alpha: isDark ? 0.08 : 0.05),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: AppColors.error.withValues(alpha: isDark ? 0.20 : 0.15),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: AppColors.error.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.person_remove_outlined,
+                              color: AppColors.error, size: 18),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                loc.get('delete_account_btn'),
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  color: AppColors.error,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                loc.get('delete_account_subtitle'),
+                                style: AppTextStyles.labelSmall.copyWith(
+                                  color: AppColors.error.withValues(alpha: 0.6),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(Icons.chevron_right,
+                            color: AppColors.error.withValues(alpha: 0.4), size: 20),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
