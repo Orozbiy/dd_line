@@ -152,7 +152,7 @@ class _HomeBottomNavState extends State<HomeBottomNav> {
                             GestureRecognizerFactoryWithHandlers<
                                 LongPressGestureRecognizer>(
                           () => LongPressGestureRecognizer(
-                            duration: const Duration(milliseconds: 20),
+                            duration: const Duration(milliseconds: 300),
                           ),
                           (LongPressGestureRecognizer instance) {
                             instance.onLongPressStart = (d) {
@@ -248,7 +248,7 @@ class _HomeBottomNavState extends State<HomeBottomNav> {
             ),
           ),
         ),
-      ),
+      
     );
   }
 }
