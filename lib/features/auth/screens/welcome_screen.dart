@@ -225,14 +225,11 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
                       const Spacer(flex: 2),
 
-                      // ── GOOGLE КИРҮҮ БАСКЫЧЫ ──
-                      _buildGoogleButton(loc),
-
-                      const SizedBox(height: 12),
-
-                      // ── APPLE КИРҮҮ БАСКЫЧЫ (iOS гана) ──
+                      // ── iOS: Apple гана, Android/Web: Google гана ──
                       if (defaultTargetPlatform == TargetPlatform.iOS)
-                        _buildAppleButton(),
+                        _buildAppleButton()
+                      else
+                        _buildGoogleButton(loc),
 
                       const SizedBox(height: 16),
 
