@@ -1008,14 +1008,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                                             backgroundColor: DD.accent,
                                             backgroundImage: (_avatarUrl != null && _avatarUrl!.isNotEmpty)
                                                 ? CachedNetworkImageProvider(_avatarUrl!)
-                                                : null,
-                                            child: (_avatarUrl == null || _avatarUrl!.isEmpty)
-                                                ? const Icon(
-                                                    Icons.store_rounded,
-                                                    size: 32,
-                                                    color: Colors.white,
-                                                  )
-                                                : null,
+                                                : const AssetImage('assets/icon/app_icon.png') as ImageProvider,
                                           )),
                                           const SizedBox(height: 8),
                                           PulseBox(
