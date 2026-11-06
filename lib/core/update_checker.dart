@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -27,7 +28,9 @@ class UpdateChecker {
 
       final latestVersion = data['latest_version'] as String;
       final minVersion    = data['min_version'] as String;
-      final storeUrl      = data['play_store_url'] as String;
+      final storeUrl      = Platform.isIOS
+          ? (data['app_store_url'] as String? ?? data['play_store_url'] as String)
+          : data['play_store_url'] as String;
 
       final isOutdated  = _isOlder(currentVersion, latestVersion);
       final isMandatory = _isOlder(currentVersion, minVersion);
