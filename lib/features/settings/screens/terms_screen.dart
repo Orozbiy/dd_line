@@ -24,8 +24,8 @@ class TermsScreen extends StatelessWidget {
             filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
             child: Container(
               color: isDark
-                  ? Colors.black.withValues(alpha: 0.30)
-                  : Colors.white.withValues(alpha: 0.40),
+                  ? Colors.black.withOpacity(0.30)
+                  : Colors.white.withOpacity(0.40),
             ),
           ),
         ),
@@ -130,13 +130,13 @@ class TermsScreen extends StatelessWidget {
           width: double.infinity,
           decoration: BoxDecoration(
             color: isDark
-                ? Colors.white.withValues(alpha: 0.06)
-                : Colors.white.withValues(alpha: 0.55),
+                ? Colors.white.withOpacity(0.06)
+                : Colors.white.withOpacity(0.55),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isDark
-                  ? Colors.white.withValues(alpha: 0.10)
-                  : Colors.white.withValues(alpha: 0.80),
+                  ? Colors.white.withOpacity(0.10)
+                  : Colors.white.withOpacity(0.80),
               width: 1,
             ),
           ),

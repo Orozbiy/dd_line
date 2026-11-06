@@ -566,7 +566,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
             borderRadius: BorderRadius.circular(11),
             boxShadow: [
               BoxShadow(
-                color: DD.accent.withValues(alpha: 0.30),
+                color: DD.accent.withOpacity(0.30),
                 blurRadius: 10,
                 offset: const Offset(0, 3),
               ),
@@ -603,7 +603,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
+        color: color.withOpacity(0.12),
         borderRadius: BorderRadius.circular(DD.rPill),
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -696,13 +696,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
               color: isNegotiation
-                  ? const Color(0xFF059669).withValues(alpha: 0.08)
-                  : const Color(0xFF7C3AED).withValues(alpha: 0.08),
+                  ? const Color(0xFF059669).withOpacity(0.08)
+                  : const Color(0xFF7C3AED).withOpacity(0.08),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isNegotiation
-                    ? const Color(0xFF059669).withValues(alpha: 0.35)
-                    : const Color(0xFF7C3AED).withValues(alpha: 0.35),
+                    ? const Color(0xFF059669).withOpacity(0.35)
+                    : const Color(0xFF7C3AED).withOpacity(0.35),
               ),
             ),
             child: Row(children: [
@@ -715,12 +715,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                       Text(loc.get('prod_detail_negotiation_title'),
                           style: const TextStyle(color: Color(0xFF059669), fontWeight: FontWeight.w700, fontSize: 13)),
                       Text(loc.get('prod_detail_negotiation_sub'),
-                          style: TextStyle(color: const Color(0xFF059669).withValues(alpha: 0.75), fontSize: 12)),
+                          style: TextStyle(color: const Color(0xFF059669).withOpacity(0.75), fontSize: 12)),
                     ])
                   : hasWholesalePrice
                       ? Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                           Text(loc.get('prod_detail_wholesale_price_label'),
-                              style: TextStyle(color: const Color(0xFF7C3AED).withValues(alpha: 0.75), fontSize: 12)),
+                              style: TextStyle(color: const Color(0xFF7C3AED).withOpacity(0.75), fontSize: 12)),
                           Text('${_product.wholesalePrice!.toStringAsFixed(0)} $cur',
                               style: const TextStyle(color: Color(0xFF7C3AED), fontWeight: FontWeight.w800, fontSize: 16)),
                         ])
@@ -1049,7 +1049,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                                                 boxShadow: [
                                                   BoxShadow(
                                                     color: const Color(0xFF10B981)
-                                                        .withValues(alpha: 0.40),
+                                                        .withOpacity(0.40),
                                                     blurRadius: 10,
                                                     offset: const Offset(0, 3),
                                                     spreadRadius: -2,
@@ -1122,19 +1122,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                                               decoration: BoxDecoration(
                                                 color: _storeType == 'market'
                                                     ? DD.accent
-                                                        .withValues(alpha: 0.1)
+                                                        .withOpacity(0.1)
                                                     : const Color(0xFF10B981)
-                                                        .withValues(alpha: 0.1),
+                                                        .withOpacity(0.1),
                                                 borderRadius:
                                                     BorderRadius.circular(20),
                                                 border: Border.all(
                                                   color: _storeType == 'market'
                                                       ? DD.accent
-                                                          .withValues(
-                                                              alpha: 0.4)
+                                                          .withOpacity(0.4)
                                                       : const Color(0xFF10B981)
-                                                          .withValues(
-                                                              alpha: 0.4),
+                                                          .withOpacity(0.4),
                                                 ),
                                               ),
                                               child: Text(
@@ -1171,7 +1169,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                                                         color: (_isOpenNow()
                                                                 ? const Color(0xFF10B981)
                                                                 : const Color(0xFFF87171))
-                                                            .withValues(alpha: 0.6),
+                                                            .withOpacity(0.6),
                                                         blurRadius: 6,
                                                       ),
                                                     ],
@@ -1220,12 +1218,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                                           horizontal: 14, vertical: 8),
                                       decoration: BoxDecoration(
                                         color: const Color(0xFFEF4444)
-                                            .withValues(alpha: 0.08),
+                                            .withOpacity(0.08),
                                         borderRadius:
                                             BorderRadius.circular(DD.rPill),
                                         border: Border.all(
                                             color: const Color(0xFFEF4444)
-                                                .withValues(alpha: 0.35)),
+                                                .withOpacity(0.35)),
                                       ),
                                       child: Row(
                                         mainAxisSize: MainAxisSize.min,
@@ -1269,7 +1267,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                               boxShadow: [
                                 BoxShadow(
                                   color: DD.accent
-                                      .withValues(alpha: isDark ? 0.25 : 0.35),
+                                      .withOpacity(isDark ? 0.25 : 0.35),
                                   blurRadius: 12,
                                   offset: const Offset(0, 4),
                                   spreadRadius: -2,
@@ -1380,7 +1378,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                           bottom: -12,
                           child: Icon(Icons.shopping_bag_rounded,
                               size: 48,
-                              color: Colors.white.withValues(alpha: 0.16)),
+                              color: Colors.white.withOpacity(0.16)),
                         ),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -1440,7 +1438,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                           bottom: -12,
                           child: Icon(Icons.map_rounded,
                               size: 48,
-                              color: Colors.white.withValues(alpha: 0.16)),
+                              color: Colors.white.withOpacity(0.16)),
                         ),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -1501,9 +1499,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: c.withValues(alpha: 0.10),
+                    color: c.withOpacity(0.10),
                     borderRadius: BorderRadius.circular(DD.rPill),
-                    border: Border.all(color: c.withValues(alpha: 0.35)),
+                    border: Border.all(color: c.withOpacity(0.35)),
                   ),
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
                     Icon(
@@ -1616,7 +1614,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                             color: Color(hex),
                             shape: BoxShape.circle,
                             border: Border.all(
-                                color: Colors.grey.withValues(alpha: 0.4)),
+                                color: Colors.grey.withOpacity(0.4)),
                           ),
                         ),
                         const SizedBox(width: 6),

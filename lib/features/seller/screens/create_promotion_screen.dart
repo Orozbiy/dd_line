@@ -258,8 +258,8 @@ class _SelectedProductPanel extends StatelessWidget {
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3), width: 1.5),
-        boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.08), blurRadius: 12, offset: const Offset(0, 4))],
+        border: Border.all(color: AppColors.primary.withOpacity(0.3), width: 1.5),
+        boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.08), blurRadius: 12, offset: const Offset(0, 4))],
       ),
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -279,7 +279,7 @@ class _SelectedProductPanel extends StatelessWidget {
             if (hasPromotion)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(color: AppColors.error.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                decoration: BoxDecoration(color: AppColors.error.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
                 child: Text('-${(product['discount_percent'] as num?)?.toStringAsFixed(0)}%',
                     style: AppTextStyles.labelSmall.copyWith(color: AppColors.error)),
               ),
@@ -308,7 +308,7 @@ class _SelectedProductPanel extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: AppColors.success.withValues(alpha: isDark ? 0.12 : 0.08),
+                color: AppColors.success.withOpacity(isDark ? 0.12 : 0.08),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Row(children: [
@@ -365,7 +365,7 @@ class _ProductListTile extends StatelessWidget {
     final hasPromo = product['has_promotion'] == true;
 
     final unselBg     = isDark ? const Color(0xFF1E1E1E) : AppColors.white;
-    final selBg       = AppColors.primary.withValues(alpha: isDark ? 0.12 : 0.06);
+    final selBg       = AppColors.primary.withOpacity(isDark ? 0.12 : 0.06);
     final unselBorder = isDark ? const Color(0xFF2C2C2C) : AppColors.grey200;
     final nameColor   = isDark ? Colors.white : AppColors.black;
 

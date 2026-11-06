@@ -254,9 +254,9 @@ class _AdminStoryManagerScreenState extends State<AdminStoryManagerScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.08),
+          color: color.withOpacity(0.08),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withValues(alpha: 0.25)),
+          border: Border.all(color: color.withOpacity(0.25)),
         ),
         child: Row(
           children: [
@@ -375,9 +375,9 @@ class _AdminStoryManagerScreenState extends State<AdminStoryManagerScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -387,7 +387,7 @@ class _AdminStoryManagerScreenState extends State<AdminStoryManagerScreen> {
                   fontWeight: FontWeight.bold, color: color, fontSize: 14)),
           const SizedBox(width: 4),
           Text(label,
-              style: TextStyle(fontSize: 12, color: color.withValues(alpha: 0.8))),
+              style: TextStyle(fontSize: 12, color: color.withOpacity(0.8))),
         ],
       ),
     );

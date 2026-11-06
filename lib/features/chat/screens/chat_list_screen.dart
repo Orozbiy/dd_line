@@ -335,12 +335,12 @@ for (final id in toDelete) {
                   decoration: BoxDecoration(
                     // ── Жарым өткөрүмдүү карточка ──
                     color: isSelected
-                        ? DD.accent.withValues(alpha: 0.12)
+                        ? DD.accent.withOpacity(0.12)
                         : cardBg,
                     borderRadius: BorderRadius.circular(DD.rCard),
                     border: isSelected
                         ? Border.all(
-                            color: DD.accent.withValues(alpha: 0.4),
+                            color: DD.accent.withOpacity(0.4),
                             width: 1.5)
                         : Border.all(
                             color: isDark
@@ -349,7 +349,7 @@ for (final id in toDelete) {
                             width: 1.0),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.04),
+                        color: Colors.black.withOpacity(isDark ? 0.15 : 0.04),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -436,7 +436,7 @@ for (final id in toDelete) {
                               borderRadius: BorderRadius.circular(DD.rPill),
                               boxShadow: [
                                 BoxShadow(
-                                  color: DD.accent.withValues(alpha: 0.4),
+                                  color: DD.accent.withOpacity(0.4),
                                   blurRadius: 6,
                                   offset: const Offset(0, 2),
                                 ),

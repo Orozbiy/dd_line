@@ -50,8 +50,8 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
     final loc    = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final fillColor   = isDark
-        ? const Color(0xFF2C2C2C).withValues(alpha: 0.55)
-        : AppColors.grey50.withValues(alpha: 0.55);
+        ? const Color(0xFF2C2C2C).withOpacity(0.55)
+        : AppColors.grey50.withOpacity(0.55);
     final borderColor = isDark ? const Color(0xFF3A3A3A) : AppColors.grey200;
 
     return TextFormField(

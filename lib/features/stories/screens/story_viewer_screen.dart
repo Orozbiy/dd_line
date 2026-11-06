@@ -629,7 +629,7 @@ class _VideoProgressBar extends StatelessWidget {
                       : i == currentIndex
                           ? progress
                           : 0.0,
-                  backgroundColor: Colors.white.withValues(alpha: 0.4),
+                  backgroundColor: Colors.white.withOpacity(0.4),
                   valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               ),

@@ -34,8 +34,8 @@ class CategoryItem extends StatelessWidget {
           boxShadow: [
             BoxShadow(
               color: isSelected
-                  ? color.withValues(alpha: 0.40)
-                  : Colors.black.withValues(alpha: isDark ? 0.25 : 0.08),
+                  ? color.withOpacity(0.40)
+                  : Colors.black.withOpacity(isDark ? 0.25 : 0.08),
               blurRadius: isSelected ? 10 : 6,
               offset: const Offset(0, 3),
             ),
@@ -89,7 +89,7 @@ class CategoryItem extends StatelessWidget {
                   top: 0, left: 0, right: 0,
                   height: 68,
                   child: Container(
-                    color: color.withValues(alpha: 0.25),
+                    color: color.withOpacity(0.25),
                   ),
                 ),
             ],
@@ -116,7 +116,7 @@ class CategoryItem extends StatelessWidget {
     return Container(
       width: 80,
       height: 68,
-      color: color.withValues(alpha: 0.10),
+      color: color.withOpacity(0.10),
       child: Center(
         child: Text(category.icon, style: const TextStyle(fontSize: 30)),
       ),

@@ -260,15 +260,15 @@ class _AdminPhoneRequestsScreenState
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isPending
-              ? AppColors.primary.withValues(alpha: 0.4)
+              ? AppColors.primary.withOpacity(0.4)
               : isApproved
-                  ? AppColors.success.withValues(alpha: 0.3)
-                  : AppColors.error.withValues(alpha: 0.3),
+                  ? AppColors.success.withOpacity(0.3)
+                  : AppColors.error.withOpacity(0.3),
           width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+            color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -286,7 +286,7 @@ class _AdminPhoneRequestsScreenState
                   width: 42,
                   height: 42,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1E40AF).withValues(alpha: 0.1),
+                    color: const Color(0xFF1E40AF).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Center(
@@ -319,10 +319,10 @@ class _AdminPhoneRequestsScreenState
                       horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: isPending
-                        ? AppColors.primary.withValues(alpha: 0.1)
+                        ? AppColors.primary.withOpacity(0.1)
                         : isApproved
-                            ? AppColors.success.withValues(alpha: 0.1)
-                            : AppColors.error.withValues(alpha: 0.1),
+                            ? AppColors.success.withOpacity(0.1)
+                            : AppColors.error.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -406,7 +406,7 @@ class _AdminPhoneRequestsScreenState
                       height: 28,
                       decoration: BoxDecoration(
                         color:
-                            AppColors.primary.withValues(alpha: 0.15),
+                            AppColors.primary.withOpacity(0.15),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Icon(Icons.phone_android,
@@ -419,7 +419,7 @@ class _AdminPhoneRequestsScreenState
                         Text('Жаңы номер',
                             style: AppTextStyles.labelSmall.copyWith(
                                 color: AppColors.primary
-                                    .withValues(alpha: 0.7),
+                                    .withOpacity(0.7),
                                 fontSize: 10)),
                         Text(
                           r['new_phone'] as String? ?? '—',
@@ -464,7 +464,7 @@ class _AdminPhoneRequestsScreenState
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                             color:
-                                AppColors.error.withValues(alpha: 0.3)),
+                                AppColors.error.withOpacity(0.3)),
                       ),
                       child: Center(
                         child: Text('❌  Четке кагуу',
@@ -487,7 +487,7 @@ class _AdminPhoneRequestsScreenState
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                             color: AppColors.success
-                                .withValues(alpha: 0.3)),
+                                .withOpacity(0.3)),
                       ),
                       child: Center(
                         child: Text('✅  Бекитүү',

@@ -201,9 +201,9 @@ void _showChangePhoneSheet() {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.08),
+                color: AppColors.primary.withOpacity(0.08),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+                border: Border.all(color: AppColors.primary.withOpacity(0.2)),
               ),
               child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 const Icon(Icons.info_outline, size: 16, color: AppColors.primary),
@@ -320,7 +320,7 @@ void _showChangePhoneSheet() {
                   decoration: BoxDecoration(
                     color: const Color(0xFFEEFFF5),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
+                    border: Border.all(color: AppColors.success.withOpacity(0.3)),
                   ),
                   child: Row(children: [
                     const Icon(Icons.credit_card, color: AppColors.success, size: 20),
@@ -458,7 +458,7 @@ void _showChangePhoneSheet() {
     final cardBg       = isDark ? const Color(0xFF1E1E1E) : Colors.white;
     final sectionColor = isDark ? Colors.white : AppColors.black;
     final contactBg    = isDark ? const Color(0xFF1A2E1A) : const Color(0xFFF0FFF4);
-    final contactBorder= const Color(0xFF22C55E).withValues(alpha: isDark ? 0.4 : 0.3);
+    final contactBorder= const Color(0xFF22C55E).withOpacity(isDark ? 0.4 : 0.3);
     final contactText  = isDark ? const Color(0xFF86EFAC) : const Color(0xFF374151);
 
     if (_isLoading) {
@@ -518,7 +518,7 @@ void _showChangePhoneSheet() {
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(18),
-                  boxShadow: [BoxShadow(color: const Color(0xFFD97706).withValues(alpha: 0.3), blurRadius: 16, offset: const Offset(0, 6))],
+                  boxShadow: [BoxShadow(color: const Color(0xFFD97706).withOpacity(0.3), blurRadius: 16, offset: const Offset(0, 6))],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -527,7 +527,7 @@ void _showChangePhoneSheet() {
                       Container(
                         width: 52, height: 52,
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
+                          color: Colors.white.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(14),
                         ),
                         child: Center(child: Text(
@@ -588,13 +588,13 @@ GestureDetector(
       color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
       borderRadius: BorderRadius.circular(14),
       border: Border.all(
-        color: const Color(0xFFD97706).withValues(alpha: 0.5),
+        color: const Color(0xFFD97706).withOpacity(0.5),
       ),
       boxShadow: isDark
           ? []
           : [
               BoxShadow(
-                color: const Color(0xFFD97706).withValues(alpha: 0.08),
+                color: const Color(0xFFD97706).withOpacity(0.08),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -606,7 +606,7 @@ GestureDetector(
         Container(
           width: 42, height: 42,
           decoration: BoxDecoration(
-            color: const Color(0xFFD97706).withValues(alpha: 0.12),
+            color: const Color(0xFFD97706).withOpacity(0.12),
             borderRadius: BorderRadius.circular(10),
           ),
           alignment: Alignment.center,
@@ -643,7 +643,7 @@ GestureDetector(
         Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: const Color(0xFFD97706).withValues(alpha: 0.12),
+            color: const Color(0xFFD97706).withOpacity(0.12),
             borderRadius: BorderRadius.circular(8),
           ),
           child: const Icon(
@@ -790,7 +790,7 @@ const SizedBox(height: 16),
   //     statusText   = loc.get('sub_status_paused');
   //     subtitleText = _seller?.cardMasked ?? '';
   //   } else {
-  //     borderColor  = AppColors.error.withValues(alpha: 0.5);
+  //     borderColor  = AppColors.error.withOpacity(0.5);
   //     bgColor      = isDark ? const Color(0xFF2B0D0D) : const Color(0xFFFFF1F0);
   //     statusText   = loc.get('sub_status_none');
   //     subtitleText = loc.get('sub_link_hint');
@@ -803,8 +803,8 @@ const SizedBox(height: 16),
   //       decoration: BoxDecoration(
   //         color: bgColor,
   //         borderRadius: BorderRadius.circular(14),
-  //         border: Border.all(color: borderColor.withValues(alpha: 0.5)),
-  //         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
+  //         border: Border.all(color: borderColor.withOpacity(0.5)),
+  //         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
   //       ),
   //       child: Row(children: [
   //         const Text('💳', style: TextStyle(fontSize: 26)),
@@ -843,7 +843,7 @@ const SizedBox(height: 16),
             color: cardBg,
             borderRadius: BorderRadius.circular(14),
             boxShadow: [BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
+              color: Colors.black.withOpacity(0.04),
               blurRadius: 8,
               offset: const Offset(0, 2),
             )],
@@ -928,7 +928,7 @@ const SizedBox(height: 16),
         decoration: BoxDecoration(
           color: cardBg,
           borderRadius: BorderRadius.circular(14),
-          boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
+          boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
         ),
         child: Row(children: [
           Text(icon, style: const TextStyle(fontSize: 26)),
@@ -992,7 +992,7 @@ class _AdminNotificationsBannerState
     final isDark = widget.isDark;
     final isRu = AppLocalizations.of(context).locale.languageCode == 'ru';
     final cardBg = isDark ? const Color(0xFF1E1A2E) : const Color(0xFFFFF8F0);
-    final borderColor = const Color(0xFFD97706).withValues(alpha: isDark ? 0.4 : 0.35);
+    final borderColor = const Color(0xFFD97706).withOpacity(isDark ? 0.4 : 0.35);
 
     return GestureDetector(
       onTap: () => Navigator.push(
@@ -1011,7 +1011,7 @@ class _AdminNotificationsBannerState
               ? []
               : [
                   BoxShadow(
-                    color: const Color(0xFFD97706).withValues(alpha: 0.08),
+                    color: const Color(0xFFD97706).withOpacity(0.08),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -1097,7 +1097,7 @@ class _AdminNotificationsBannerState
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: const Color(0xFFD97706).withValues(alpha: 0.12),
+                color: const Color(0xFFD97706).withOpacity(0.12),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Icon(

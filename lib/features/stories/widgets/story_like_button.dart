@@ -59,7 +59,7 @@ class _StoryLikeButtonState extends State<StoryLikeButton>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.35),
+          color: Colors.black.withOpacity(0.35),
           borderRadius: BorderRadius.circular(24),
         ),
         child: Row(

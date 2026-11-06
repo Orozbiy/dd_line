@@ -203,12 +203,12 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
     final savedBg =
         isDark ? const Color(0xFF0D2B1A) : const Color(0xFFF0FFF4);
     final savedBorder =
-        const Color(0xFF22C55E).withValues(alpha: isDark ? 0.5 : 0.4);
+        const Color(0xFF22C55E).withOpacity(isDark ? 0.5 : 0.4);
 
     final instrBg =
-        AppColors.primary.withValues(alpha: isDark ? 0.12 : 0.08);
+        AppColors.primary.withOpacity(isDark ? 0.12 : 0.08);
     final instrBorder =
-        AppColors.primary.withValues(alpha: isDark ? 0.3 : 0.2);
+        AppColors.primary.withOpacity(isDark ? 0.3 : 0.2);
     final instrText =
         isDark ? const Color(0xFFCCCCCC) : AppColors.grey600;
 
@@ -275,10 +275,10 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF16A34A).withValues(alpha: 0.1),
+                  color: const Color(0xFF16A34A).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                      color: const Color(0xFF16A34A).withValues(alpha: 0.3)),
+                      color: const Color(0xFF16A34A).withOpacity(0.3)),
                 ),
                 child: Column(children: [
                   if (_countdown > 0) ...[

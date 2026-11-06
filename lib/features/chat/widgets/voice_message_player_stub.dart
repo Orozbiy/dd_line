@@ -29,11 +29,11 @@ class VoiceMessagePlayer extends StatelessWidget {
   Widget build(BuildContext context) {
     final iconColor     = isMe ? Colors.white : AppColors.primary;
     final trackColor    = isMe
-        ? Colors.white.withValues(alpha: 0.3)
+        ? Colors.white.withOpacity(0.3)
         : AppColors.grey200;
     final progressColor = isMe ? Colors.white : AppColors.primary;
     final subColor      = isMe
-        ? Colors.white.withValues(alpha: 0.70)
+        ? Colors.white.withOpacity(0.70)
         : AppColors.grey400;
 
     return ConstrainedBox(
@@ -48,8 +48,8 @@ class VoiceMessagePlayer extends StatelessWidget {
               height: 36,
               decoration: BoxDecoration(
                 color: isMe
-                    ? Colors.white.withValues(alpha: 0.2)
-                    : AppColors.primary.withValues(alpha: 0.1),
+                    ? Colors.white.withOpacity(0.2)
+                    : AppColors.primary.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(Icons.play_arrow_rounded, color: iconColor, size: 22),
@@ -97,7 +97,7 @@ class VoiceMessagePlayer extends StatelessWidget {
                           size: 14,
                           color: isRead
                               ? Colors.white
-                              : Colors.white.withValues(alpha: 0.6),
+                              : Colors.white.withOpacity(0.6),
                         ),
                       ],
                     ],

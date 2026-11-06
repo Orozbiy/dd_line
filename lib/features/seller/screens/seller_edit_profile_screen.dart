@@ -184,7 +184,7 @@ class _SellerEditProfileScreenState extends State<SellerEditProfileScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFD97706),
                         disabledBackgroundColor:
-                            const Color(0xFFD97706).withValues(alpha: 0.5),
+                            const Color(0xFFD97706).withOpacity(0.5),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14)),
                       ),
@@ -266,7 +266,7 @@ class _SellerEditProfileScreenState extends State<SellerEditProfileScreen> {
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
           color: isSelected
-              ? const Color(0xFFD97706).withValues(alpha: 0.1)
+              ? const Color(0xFFD97706).withOpacity(0.1)
               : cardBg,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(

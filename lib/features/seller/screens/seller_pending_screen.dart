@@ -86,7 +86,7 @@ if (seller.status == SellerStatus.approved) {
                   borderRadius: BorderRadius.circular(30),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFFD97706).withValues(alpha: 0.3),
+                      color: const Color(0xFFD97706).withOpacity(0.3),
                       blurRadius: 20,
                       offset: const Offset(0, 8),
                     ),
@@ -156,8 +156,8 @@ class SellerRejectedScreen extends StatelessWidget {
     final bgColor    = isDark ? const Color(0xFF121212) : Colors.white;
     final titleColor = isDark ? Colors.white : AppColors.black;
     final iconBg     = isDark
-        ? AppColors.error.withValues(alpha: 0.2)
-        : AppColors.error.withValues(alpha: 0.1);
+        ? AppColors.error.withOpacity(0.2)
+        : AppColors.error.withOpacity(0.1);
 
     return Scaffold(
       backgroundColor: bgColor,

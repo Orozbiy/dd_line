@@ -342,7 +342,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
+        color: color.withOpacity(0.15),
         borderRadius: BorderRadius.circular(DD.rPill),
       ),
       child: Text(
@@ -428,8 +428,8 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                       color: isSelected
                           ? AppColors.primary
                           : (isDark2
-                              ? Colors.white.withValues(alpha: 0.15)
-                              : Colors.black.withValues(alpha: 0.08)),
+                              ? Colors.white.withOpacity(0.15)
+                              : Colors.black.withOpacity(0.08)),
                       shape: BoxShape.circle,
                       border: Border.all(
                         color: isSelected
@@ -439,7 +439,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.15),
+                          color: Colors.black.withOpacity(0.15),
                           blurRadius: 4,
                         ),
                       ],
@@ -457,7 +457,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                   child: Container(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(14),
-                      color: Colors.black.withValues(alpha: 0.18),
+                      color: Colors.black.withOpacity(0.18),
                     ),
                   ),
                 ),
@@ -525,11 +525,11 @@ class _FavoritesScreenState extends State<FavoritesScreen>
         borderRadius: BorderRadius.circular(DD.rCard),
         border: Border.all(
             color: isDark
-                ? DD.accent2.withValues(alpha: 0.14)
+                ? DD.accent2.withOpacity(0.14)
                 : const Color(0xFFF0F0F2)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.06),
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.06),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),

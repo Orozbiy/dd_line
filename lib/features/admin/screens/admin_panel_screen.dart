@@ -574,7 +574,7 @@ Future<void> _loadData() async {
                                   child: Container(
                                     decoration: BoxDecoration(
                                       color: isSelected
-                                          ? AppColors.primary.withValues(alpha: 0.08)
+                                          ? AppColors.primary.withOpacity(0.08)
                                           : Colors.transparent,
                                       borderRadius: BorderRadius.circular(10),
                                     ),
@@ -610,7 +610,7 @@ Future<void> _loadData() async {
                           color: isDark ? const Color(0xFF2C1010) : const Color(0xFFFFEEEE),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.06),
+                              color: Colors.black.withOpacity(0.06),
                               blurRadius: 12,
                               offset: const Offset(0, -4),
                             ),
@@ -710,10 +710,10 @@ Future<void> _loadData() async {
                       decoration: BoxDecoration(
                         color: isDark
                             ? const Color(0xFF0A2C1A)
-                            : AppColors.success.withValues(alpha: 0.08),
+                            : AppColors.success.withOpacity(0.08),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                            color: AppColors.success.withValues(alpha: 0.3)),
+                            color: AppColors.success.withOpacity(0.3)),
                       ),
                       child: Row(
                         children: [
@@ -923,8 +923,8 @@ Future<void> _loadData() async {
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: _adminCardMasked != null
-                    ? Colors.white.withValues(alpha: 0.2)
-                    : AppColors.error.withValues(alpha: 0.8),
+                    ? Colors.white.withOpacity(0.2)
+                    : AppColors.error.withOpacity(0.8),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Row(
@@ -1218,7 +1218,7 @@ Widget _buildNotificationsTab() {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
+              color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
               blurRadius: 8,
               offset: const Offset(0, 2))
         ],
@@ -1384,15 +1384,15 @@ Widget _buildNotificationsTab() {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isBlocked
-                ? AppColors.grey400.withValues(alpha: 0.4)
+                ? AppColors.grey400.withOpacity(0.4)
                 : paid
-                    ? AppColors.success.withValues(alpha: 0.3)
-                    : AppColors.error.withValues(alpha: 0.3),
+                    ? AppColors.success.withOpacity(0.3)
+                    : AppColors.error.withOpacity(0.3),
             width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
+                color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
                 blurRadius: 8,
                 offset: const Offset(0, 2))
           ],
@@ -1560,7 +1560,7 @@ Widget _buildNotificationsTab() {
             borderRadius: BorderRadius.circular(14),
             boxShadow: [
               BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+                  color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
                   blurRadius: 6,
                   offset: const Offset(0, 2))
             ],
@@ -1669,7 +1669,7 @@ Widget _buildNotificationsTab() {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: isBlocked
-              ? AppColors.error.withValues(alpha: 0.4)
+              ? AppColors.error.withOpacity(0.4)
               : (isDark ? const Color(0xFF2C2C2C) : AppColors.grey200),
           width: isBlocked ? 1.5 : 1,
         ),
@@ -1789,8 +1789,8 @@ Widget _buildNotificationsTab() {
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
                   color: _adminCardMasked != null
-                      ? AppColors.success.withValues(alpha: 0.4)
-                      : AppColors.error.withValues(alpha: 0.4),
+                      ? AppColors.success.withOpacity(0.4)
+                      : AppColors.error.withOpacity(0.4),
                 ),
               ),
               child: Row(
@@ -1845,7 +1845,7 @@ Widget _buildNotificationsTab() {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.15),
+        color: Colors.white.withOpacity(0.15),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Column(
@@ -1879,8 +1879,8 @@ Widget _buildNotificationsTab() {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: paid
-              ? AppColors.success.withValues(alpha: 0.3)
-              : AppColors.error.withValues(alpha: 0.3),
+              ? AppColors.success.withOpacity(0.3)
+              : AppColors.error.withOpacity(0.3),
         ),
       ),
       child: Row(
@@ -2006,7 +2006,7 @@ Widget _buildNotificationsTab() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
+          color: color.withOpacity(0.1),
           borderRadius: BorderRadius.circular(20)),
       child: Text(label, style: AppTextStyles.labelSmall.copyWith(color: color)),
     );
@@ -2339,13 +2339,13 @@ class _SuggestionsPanelSheetState extends State<_SuggestionsPanelSheet> {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: isSelected
-              ? const Color(0xFF1E40AF).withValues(alpha: 0.35)
+              ? const Color(0xFF1E40AF).withOpacity(0.35)
               : const Color(0xFF334155),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isSelected
                 ? Colors.lightBlueAccent
-                : (isRead ? Colors.transparent : Colors.greenAccent.withValues(alpha: 0.6)),
+                : (isRead ? Colors.transparent : Colors.greenAccent.withOpacity(0.6)),
             width: isSelected ? 1.6 : 1,
           ),
         ),
@@ -2371,7 +2371,7 @@ class _SuggestionsPanelSheetState extends State<_SuggestionsPanelSheet> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: Colors.blue.withValues(alpha: 0.2),
+                          color: Colors.blue.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -2628,7 +2628,7 @@ class _SendToSellerSheetState extends State<_SendToSellerSheet> {
                               borderRadius: BorderRadius.circular(12)),
                           leading: CircleAvatar(
                             backgroundColor: const Color(0xFFD97706)
-                                .withValues(alpha: 0.15),
+                                .withOpacity(0.15),
                             child: Text(
                               s.shopName.isNotEmpty
                                   ? s.shopName[0].toUpperCase()
@@ -2763,7 +2763,7 @@ class _ComposeMessageSheetState extends State<_ComposeMessageSheet> {
               children: [
                 CircleAvatar(
                   backgroundColor:
-                      const Color(0xFFD97706).withValues(alpha: 0.15),
+                      const Color(0xFFD97706).withOpacity(0.15),
                   child: Text(
                     widget.seller.shopName.isNotEmpty
                         ? widget.seller.shopName[0].toUpperCase()

@@ -296,11 +296,11 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
   Widget build(BuildContext context) {
     final iconColor     = widget.isMe ? Colors.white : AppColors.primary;
     final trackColor    = widget.isMe
-        ? Colors.white.withValues(alpha: 0.3)
+        ? Colors.white.withOpacity(0.3)
         : AppColors.grey200;
     final progressColor = widget.isMe ? Colors.white : AppColors.primary;
     final subColor      = widget.isMe
-        ? Colors.white.withValues(alpha: 0.70)
+        ? Colors.white.withOpacity(0.70)
         : AppColors.grey400;
 
     final displaySeconds = _currentSeconds > 0
@@ -322,8 +322,8 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
                 height: 36,
                 decoration: BoxDecoration(
                   color: widget.isMe
-                      ? Colors.white.withValues(alpha: 0.2)
-                      : AppColors.primary.withValues(alpha: 0.1),
+                      ? Colors.white.withOpacity(0.2)
+                      : AppColors.primary.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
                 child: _isLoading
@@ -422,7 +422,7 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
                           size: 14,
                           color: widget.isRead
                               ? Colors.white
-                              : Colors.white.withValues(alpha: 0.6),
+                              : Colors.white.withOpacity(0.6),
                         ),
                       ],
                     ],

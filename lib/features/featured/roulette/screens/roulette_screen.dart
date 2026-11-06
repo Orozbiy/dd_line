@@ -229,12 +229,12 @@ class _RouletteScreenState extends State<RouletteScreen>
             ),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: const Color(0xFFFFD700).withValues(alpha: 0.6),
+              color: const Color(0xFFFFD700).withOpacity(0.6),
               width: 1.5,
             ),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFFFFD700).withValues(alpha: 0.3),
+                color: const Color(0xFFFFD700).withOpacity(0.3),
                 blurRadius: 30,
                 spreadRadius: 5,
               ),
@@ -265,7 +265,7 @@ class _RouletteScreenState extends State<RouletteScreen>
               Text(
                 loc.get('roulette_win_body'),
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.7),
+                  color: Colors.white.withOpacity(0.7),
                   fontSize: 14,
                 ),
               ),
@@ -372,13 +372,13 @@ class _RouletteScreenState extends State<RouletteScreen>
                       boxShadow: [
                         BoxShadow(
                           color: const Color(0xFFFFD700)
-                              .withValues(alpha: 0.08 + glowVal * 0.12),
+                              .withOpacity(0.08 + glowVal * 0.12),
                           blurRadius:   60 + glowVal * 40,
                           spreadRadius: 10 + glowVal * 15,
                         ),
                         BoxShadow(
                           color: const Color(0xFFFFA500)
-                              .withValues(alpha: 0.05 + glowVal * 0.08),
+                              .withOpacity(0.05 + glowVal * 0.08),
                           blurRadius:   100 + glowVal * 50,
                           spreadRadius: 20,
                         ),
@@ -395,7 +395,7 @@ class _RouletteScreenState extends State<RouletteScreen>
                       gradient: RadialGradient(
                         colors: [
                           const Color(0xFFFFD700)
-                              .withValues(alpha: 0.05 + glowVal * 0.08),
+                              .withOpacity(0.05 + glowVal * 0.08),
                           Colors.transparent,
                         ],
                       ),
@@ -422,7 +422,7 @@ class _RouletteScreenState extends State<RouletteScreen>
                       ? [
                           BoxShadow(
                             color: const Color(0xFFFFD700)
-                                .withValues(alpha: 0.2 + _glowAnim.value * 0.25),
+                                .withOpacity(0.2 + _glowAnim.value * 0.25),
                             blurRadius:   20 + _glowAnim.value * 15,
                             spreadRadius: 2,
                           ),
@@ -484,13 +484,13 @@ class _RouletteScreenState extends State<RouletteScreen>
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    const Color(0xFFFFD700).withValues(alpha: 0.08),
-                    const Color(0xFFFFA500).withValues(alpha: 0.05),
+                    const Color(0xFFFFD700).withOpacity(0.08),
+                    const Color(0xFFFFA500).withOpacity(0.05),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: const Color(0xFFFFD700).withValues(alpha: 0.2),
+                  color: const Color(0xFFFFD700).withOpacity(0.2),
                 ),
               ),
               child: Row(
@@ -501,7 +501,7 @@ class _RouletteScreenState extends State<RouletteScreen>
                     child: Text(
                       AppLocalizations.of(context).get('roulette_coming_soon'),
                       style: TextStyle(
-                        color: const Color(0xFFFFD700).withValues(alpha: 0.85),
+                        color: const Color(0xFFFFD700).withOpacity(0.85),
                         fontSize: 12,
                         height: 1.4,
                       ),
@@ -559,7 +559,7 @@ class _RouletteScreenState extends State<RouletteScreen>
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.3),
+                            color: Colors.black.withOpacity(0.3),
                             blurRadius: 8,
                           )
                         ],
@@ -583,7 +583,7 @@ class _RouletteScreenState extends State<RouletteScreen>
         color: const Color(0xFF1a1a2e),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: const Color(0xFFFFD700).withValues(alpha: 0.15),
+          color: const Color(0xFFFFD700).withOpacity(0.15),
         ),
       ),
       child: Column(
@@ -609,7 +609,7 @@ class _RouletteScreenState extends State<RouletteScreen>
             ]),
           ),
           Divider(height: 1,
-              color: const Color(0xFFFFD700).withValues(alpha: 0.15)),
+              color: const Color(0xFFFFD700).withOpacity(0.15)),
           Expanded(
             child: _top100.isEmpty
                 ? Center(
@@ -635,12 +635,12 @@ class _RouletteScreenState extends State<RouletteScreen>
     return Container(
       decoration: BoxDecoration(
         color: isMe
-            ? const Color(0xFFFFD700).withValues(alpha: 0.07)
+            ? const Color(0xFFFFD700).withOpacity(0.07)
             : Colors.transparent,
         border: isMe
             ? Border(
                 left: BorderSide(
-                  color: const Color(0xFFFFD700).withValues(alpha: 0.5),
+                  color: const Color(0xFFFFD700).withOpacity(0.5),
                   width: 2,
                 ),
               )
@@ -679,12 +679,12 @@ class _RouletteScreenState extends State<RouletteScreen>
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
             color: isMe
-                ? const Color(0xFFFFD700).withValues(alpha: 0.15)
-                : Colors.white.withValues(alpha: 0.06),
+                ? const Color(0xFFFFD700).withOpacity(0.15)
+                : Colors.white.withOpacity(0.06),
             borderRadius: BorderRadius.circular(20),
             border: isMe
                 ? Border.all(
-                    color: const Color(0xFFFFD700).withValues(alpha: 0.4))
+                    color: const Color(0xFFFFD700).withOpacity(0.4))
                 : null,
           ),
           child: Text(
@@ -719,13 +719,13 @@ class _RouletteScreenState extends State<RouletteScreen>
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: const Color(0xFFFFD700)
-                .withValues(alpha: 0.3 + _glowAnim.value * 0.3),
+                .withOpacity(0.3 + _glowAnim.value * 0.3),
             width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
               color: const Color(0xFFFFD700)
-                  .withValues(alpha: 0.08 + _glowAnim.value * 0.12),
+                  .withOpacity(0.08 + _glowAnim.value * 0.12),
               blurRadius: 20 + _glowAnim.value * 10,
               spreadRadius: 2,
             ),
@@ -749,7 +749,7 @@ class _RouletteScreenState extends State<RouletteScreen>
                   overflow: TextOverflow.ellipsis),
               Text('${loc.get('roulette_my_rank')}: #${e.rank}',
                   style: TextStyle(
-                      color: const Color(0xFFFFD700).withValues(alpha: 0.7),
+                      color: const Color(0xFFFFD700).withOpacity(0.7),
                       fontSize: 12)),
             ],
           ),
@@ -769,7 +769,7 @@ class _RouletteScreenState extends State<RouletteScreen>
             ),
             Text(loc.get('roulette_pts'),
                 style: TextStyle(
-                    color: const Color(0xFFFFD700).withValues(alpha: 0.6),
+                    color: const Color(0xFFFFD700).withOpacity(0.6),
                     fontSize: 11)),
           ],
         ),
@@ -821,7 +821,7 @@ class _ArrowPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     // Көлөкө
     final shadowPaint = Paint()
-      ..color = Colors.black.withValues(alpha: 0.4)
+      ..color = Colors.black.withOpacity(0.4)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
     final shadowPath = Path()
       ..moveTo(size.width / 2, size.height + 2)
@@ -851,7 +851,7 @@ class _ArrowPainter extends CustomPainter {
     canvas.drawPath(
       path,
       Paint()
-        ..color = Colors.white.withValues(alpha: 0.8)
+        ..color = Colors.white.withOpacity(0.8)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.2,
     );
@@ -896,7 +896,7 @@ class _WheelPainter extends CustomPainter {
         Rect.fromCircle(center: center, radius: radius),
         startAngle, sweepAngle, true,
         Paint()
-          ..color = Colors.white.withValues(alpha: 0.9)
+          ..color = Colors.white.withOpacity(0.9)
           ..style = PaintingStyle.stroke
           ..strokeWidth = 2,
       );
@@ -935,7 +935,7 @@ class _WheelPainter extends CustomPainter {
     canvas.drawCircle(
       center, radius,
       Paint()
-        ..color = const Color(0xFFFFD700).withValues(alpha: 0.8)
+        ..color = const Color(0xFFFFD700).withOpacity(0.8)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 3.5,
     );
@@ -944,7 +944,7 @@ class _WheelPainter extends CustomPainter {
     canvas.drawCircle(
       center, radius - 4,
       Paint()
-        ..color = Colors.white.withValues(alpha: 0.15)
+        ..color = Colors.white.withOpacity(0.15)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2,
     );

@@ -145,7 +145,7 @@ class _SellerNotificationsScreenState
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black
-                                  .withValues(alpha: isDark ? 0.3 : 0.04),
+                                  .withOpacity(isDark ? 0.3 : 0.04),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),

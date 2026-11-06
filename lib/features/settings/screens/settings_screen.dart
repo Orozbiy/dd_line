@@ -28,11 +28,11 @@ class SettingsScreen extends StatelessWidget {
     final textColor  = isDark ? Colors.white : AppColors.black;
     final subColor   = isDark ? const Color(0xFFAAAAAA) : AppColors.grey500;
     final cardBg     = isDark
-        ? Colors.white.withValues(alpha: 0.06)
-        : Colors.white.withValues(alpha: 0.55);
+        ? Colors.white.withOpacity(0.06)
+        : Colors.white.withOpacity(0.55);
     final cardBorder = isDark
-        ? Colors.white.withValues(alpha: 0.10)
-        : Colors.white.withValues(alpha: 0.80);
+        ? Colors.white.withOpacity(0.10)
+        : Colors.white.withOpacity(0.80);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -45,8 +45,8 @@ class SettingsScreen extends StatelessWidget {
             filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
             child: Container(
               color: isDark
-                  ? Colors.black.withValues(alpha: 0.30)
-                  : Colors.white.withValues(alpha: 0.40),
+                  ? Colors.black.withOpacity(0.30)
+                  : Colors.white.withOpacity(0.40),
             ),
           ),
         ),
@@ -90,7 +90,7 @@ class SettingsScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(14),
                           boxShadow: [
                             BoxShadow(
-                              color: DD.accent.withValues(alpha: 0.35),
+                              color: DD.accent.withOpacity(0.35),
                               blurRadius: 12,
                               offset: const Offset(0, 4),
                               spreadRadius: -4,
@@ -172,16 +172,16 @@ class SettingsScreen extends StatelessWidget {
                             child: Container(
                               decoration: BoxDecoration(
                                 color: isDark
-                                    ? Colors.black.withValues(alpha: 0.55)
-                                    : Colors.white.withValues(alpha: 0.60),
+                                    ? Colors.black.withOpacity(0.55)
+                                    : Colors.white.withOpacity(0.60),
                                 borderRadius: const BorderRadius.vertical(
                                   top: Radius.circular(24),
                                 ),
                                 border: Border(
                                   top: BorderSide(
                                     color: isDark
-                                        ? Colors.white.withValues(alpha: 0.12)
-                                        : Colors.black.withValues(alpha: 0.08),
+                                        ? Colors.white.withOpacity(0.12)
+                                        : Colors.black.withOpacity(0.08),
                                   ),
                                 ),
                               ),
@@ -249,10 +249,10 @@ class SettingsScreen extends StatelessWidget {
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                     decoration: BoxDecoration(
-                      color: AppColors.error.withValues(alpha: isDark ? 0.08 : 0.05),
+                      color: AppColors.error.withOpacity(isDark ? 0.08 : 0.05),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: AppColors.error.withValues(alpha: isDark ? 0.20 : 0.15),
+                        color: AppColors.error.withOpacity(isDark ? 0.20 : 0.15),
                       ),
                     ),
                     child: Row(
@@ -261,7 +261,7 @@ class SettingsScreen extends StatelessWidget {
                           width: 36,
                           height: 36,
                           decoration: BoxDecoration(
-                            color: AppColors.error.withValues(alpha: 0.12),
+                            color: AppColors.error.withOpacity(0.12),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: const Icon(Icons.person_remove_outlined,
@@ -283,14 +283,14 @@ class SettingsScreen extends StatelessWidget {
                               Text(
                                 loc.get('delete_account_subtitle'),
                                 style: AppTextStyles.labelSmall.copyWith(
-                                  color: AppColors.error.withValues(alpha: 0.6),
+                                  color: AppColors.error.withOpacity(0.6),
                                 ),
                               ),
                             ],
                           ),
                         ),
                         Icon(Icons.chevron_right,
-                            color: AppColors.error.withValues(alpha: 0.4), size: 20),
+                            color: AppColors.error.withOpacity(0.4), size: 20),
                       ],
                     ),
                   ),

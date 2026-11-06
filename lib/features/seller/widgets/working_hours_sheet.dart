@@ -102,8 +102,8 @@ class _WorkingHoursSheetState extends State<WorkingHoursSheet> {
     final headColor  = isDark ? Colors.white : AppColors.black;
     final chipUnsel  = isDark ? const Color(0xFF2C2C2C) : AppColors.grey100;
     final chipText   = isDark ? Colors.white70 : AppColors.grey600;
-    final previewBg  = AppColors.primary.withValues(alpha: isDark ? 0.12 : 0.07);
-    final previewBdr = AppColors.primary.withValues(alpha: isDark ? 0.3 : 0.2);
+    final previewBg  = AppColors.primary.withOpacity(isDark ? 0.12 : 0.07);
+    final previewBdr = AppColors.primary.withOpacity(isDark ? 0.3 : 0.2);
 
     return Container(
       decoration: BoxDecoration(

@@ -350,9 +350,9 @@ class _RecordingBar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
         color: isCancelling
-            ? AppColors.error.withValues(alpha: 0.1)
+            ? AppColors.error.withOpacity(0.1)
             : isLocking
-                ? AppColors.primary.withValues(alpha: 0.1)
+                ? AppColors.primary.withOpacity(0.1)
                 : const Color(0xFFF7F7F7),
         borderRadius: BorderRadius.circular(22),
       ),
@@ -430,7 +430,7 @@ class _LockedRecordingBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFF0F0F0),
         borderRadius: BorderRadius.circular(26),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -516,7 +516,7 @@ class _IconBtn extends StatelessWidget {
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
+          color: color.withOpacity(0.1),
           shape: BoxShape.circle,
         ),
         child: Icon(icon, color: color, size: 22),

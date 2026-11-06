@@ -64,15 +64,15 @@ class DarkModeToggle extends StatelessWidget {
           PopupMenuButton<AppThemeMode>(
             onSelected: (mode) => provider.setMode(mode),
             color: isDark
-                ? Colors.black.withValues(alpha: 0.65)
-                : Colors.white.withValues(alpha: 0.75),
+                ? Colors.black.withOpacity(0.65)
+                : Colors.white.withOpacity(0.75),
             elevation: 0,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
               side: BorderSide(
                 color: isDark
-                    ? Colors.white.withValues(alpha: 0.15)
-                    : Colors.white.withValues(alpha: 0.50),
+                    ? Colors.white.withOpacity(0.15)
+                    : Colors.white.withOpacity(0.50),
               ),
             ),
             icon: Icon(

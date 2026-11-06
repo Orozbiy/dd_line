@@ -320,7 +320,7 @@ class _AdminChatSellerSheetState extends State<_AdminChatSellerSheet> {
                             children: [
                               CircleAvatar(
                                 backgroundColor: const Color(0xFF1E40AF)
-                                    .withValues(alpha: 0.15),
+                                    .withOpacity(0.15),
                                 child: Text(
                                   s.shopName.isNotEmpty
                                       ? s.shopName[0].toUpperCase()

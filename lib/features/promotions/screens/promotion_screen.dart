@@ -80,7 +80,7 @@ class _PromotionScreenState extends State<PromotionScreen> {
             filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
             child: Container(
               decoration: BoxDecoration(
-                color: (isDark ? DD.bgDark : Colors.white).withValues(alpha: isDark ? 0.75 : 0.85),
+                color: (isDark ? DD.bgDark : Colors.white).withOpacity(isDark ? 0.75 : 0.85),
                 border: Border(
                   bottom: BorderSide(color: isDark ? Colors.white.withOpacity(0.08) : const Color(0xFFEDEDF0)),
                 ),

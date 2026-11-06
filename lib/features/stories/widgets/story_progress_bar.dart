@@ -55,13 +55,13 @@ class _SingleBar extends StatelessWidget {
                 animation: progress!,
                 builder: (_, __) => LinearProgressIndicator(
                   value: progress!.value,
-                  backgroundColor: Colors.white.withValues(alpha: 0.4),
+                  backgroundColor: Colors.white.withOpacity(0.4),
                   valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               )
             : LinearProgressIndicator(
                 value: state == _BarState.done ? 1.0 : 0.0,
-                backgroundColor: Colors.white.withValues(alpha: 0.4),
+                backgroundColor: Colors.white.withOpacity(0.4),
                 valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
               ),
       ),

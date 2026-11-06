@@ -235,7 +235,7 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
                       color: const Color(0xFFFFF8F0),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                          color: AppColors.primary.withValues(alpha: 0.25)),
+                          color: AppColors.primary.withOpacity(0.25)),
                     ),
                     child: const Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -272,7 +272,7 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
+              color: Colors.black.withOpacity(0.04),
               blurRadius: 8,
               offset: const Offset(0, 2)),
         ],

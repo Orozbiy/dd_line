@@ -55,7 +55,7 @@ class SellerEntranceScreen extends StatelessWidget {
               width: 260, height: 260,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFFD97706).withValues(alpha: isDark ? 0.12 : 0.10),
+                color: const Color(0xFFD97706).withOpacity(isDark ? 0.12 : 0.10),
               ),
             ),
           ),
@@ -65,7 +65,7 @@ class SellerEntranceScreen extends StatelessWidget {
               width: 220, height: 220,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFFEF4444).withValues(alpha: isDark ? 0.08 : 0.07),
+                color: const Color(0xFFEF4444).withOpacity(isDark ? 0.08 : 0.07),
               ),
             ),
           ),
@@ -133,13 +133,13 @@ class SellerEntranceScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(32),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFFD97706).withValues(alpha: 0.35),
+                              color: const Color(0xFFD97706).withOpacity(0.35),
                               blurRadius: 24,
                               offset: const Offset(0, 10),
                             ),
                           ],
                           border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.25),
+                            color: Colors.white.withOpacity(0.25),
                             width: 1.5,
                           ),
                         ),
@@ -177,7 +177,7 @@ class SellerEntranceScreen extends StatelessWidget {
                     loc.get('shop_desc'),
                     style: AppTextStyles.bodyMedium.copyWith(
                       color: isDark
-                          ? Colors.white.withValues(alpha: 0.55)
+                          ? Colors.white.withOpacity(0.55)
                           : AppColors.grey500,
                       height: 1.5,
                     ),
@@ -259,19 +259,19 @@ class _GlassButton extends StatelessWidget {
               color: isPrimary
                   ? null
                   : (isDark
-                      ? Colors.white.withValues(alpha: 0.08)
-                      : Colors.white.withValues(alpha: 0.55)),
+                      ? Colors.white.withOpacity(0.08)
+                      : Colors.white.withOpacity(0.55)),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: isPrimary
-                    ? Colors.white.withValues(alpha: 0.25)
-                    : const Color(0xFFD97706).withValues(alpha: 0.60),
+                    ? Colors.white.withOpacity(0.25)
+                    : const Color(0xFFD97706).withOpacity(0.60),
                 width: 1.5,
               ),
               boxShadow: isPrimary
                   ? [
                       BoxShadow(
-                        color: const Color(0xFFD97706).withValues(alpha: 0.30),
+                        color: const Color(0xFFD97706).withOpacity(0.30),
                         blurRadius: 16,
                         offset: const Offset(0, 6),
                       ),

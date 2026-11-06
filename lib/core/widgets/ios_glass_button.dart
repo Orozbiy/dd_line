@@ -114,7 +114,7 @@ class _IosStyleButtonState extends State<IosStyleButton> {
             boxShadow: widget.active
                 ? [
                     BoxShadow(
-                      color: color.withValues(alpha: 0.35),
+                      color: color.withOpacity(0.35),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                       spreadRadius: -2,
@@ -124,13 +124,13 @@ class _IosStyleButtonState extends State<IosStyleButton> {
                     ? []
                     : [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.08),
+                          color: Colors.black.withOpacity(0.08),
                           blurRadius: 12,
                           offset: const Offset(0, 4),
                           spreadRadius: -2,
                         ),
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.04),
+                          color: Colors.black.withOpacity(0.04),
                           blurRadius: 4,
                           offset: const Offset(0, 1),
                         ),
@@ -190,13 +190,13 @@ class _IosCircleButtonState extends _IosStyleButtonState {
                 ? []
                 : [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.10),
+                      color: Colors.black.withOpacity(0.10),
                       blurRadius: 14,
                       offset: const Offset(0, 4),
                       spreadRadius: -2,
                     ),
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
+                      color: Colors.black.withOpacity(0.04),
                       blurRadius: 3,
                       offset: const Offset(0, 1),
                     ),
@@ -257,13 +257,13 @@ class _IosLabelButtonState extends _IosStyleButtonState {
                 ? []
                 : [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
+                      color: Colors.black.withOpacity(0.08),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                       spreadRadius: -2,
                     ),
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
+                      color: Colors.black.withOpacity(0.04),
                       blurRadius: 3,
                       offset: const Offset(0, 1),
                     ),
@@ -334,7 +334,7 @@ class _IosPrimaryButtonState extends _IosStyleButtonState {
             boxShadow: enabled
                 ? [
                     BoxShadow(
-                      color: btn.color.withValues(alpha: 0.4),
+                      color: btn.color.withOpacity(0.4),
                       blurRadius: 16,
                       offset: const Offset(0, 6),
                       spreadRadius: -3,

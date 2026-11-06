@@ -38,10 +38,10 @@ class _GlassBubble extends StatelessWidget {
             : Colors.white);            // light: таза ак
 
     final Color borderColor = isMe
-        ? Colors.white.withValues(alpha: 0.15)
+        ? Colors.white.withOpacity(0.15)
         : (isDark
-            ? Colors.white.withValues(alpha: 0.08)
-            : Colors.black.withValues(alpha: 0.06));
+            ? Colors.white.withOpacity(0.08)
+            : Colors.black.withOpacity(0.06));
 
     return Container(
       decoration: BoxDecoration(
@@ -50,7 +50,7 @@ class _GlassBubble extends StatelessWidget {
         border: Border.all(color: borderColor, width: 0.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.08),
+            color: Colors.black.withOpacity(isDark ? 0.25 : 0.08),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -102,19 +102,19 @@ class _MessageStatus extends StatelessWidget {
     // Жеткирилди → боз done_all
     if (isDelivered) {
       final greyColor = onDarkBg
-          ? Colors.white.withValues(alpha: 0.65)
+          ? Colors.white.withOpacity(0.65)
           : (isDark
-              ? Colors.white.withValues(alpha: 0.50)
-              : Colors.white.withValues(alpha: 0.65));
+              ? Colors.white.withOpacity(0.50)
+              : Colors.white.withOpacity(0.65));
       return Icon(Icons.done_all, size: 14, color: greyColor);
     }
 
     // Жөнөтүлдү → боз done (1 галочка)
     final greyColor = onDarkBg
-        ? Colors.white.withValues(alpha: 0.65)
+        ? Colors.white.withOpacity(0.65)
         : (isDark
-            ? Colors.white.withValues(alpha: 0.50)
-            : Colors.white.withValues(alpha: 0.65));
+            ? Colors.white.withOpacity(0.50)
+            : Colors.white.withOpacity(0.65));
     return Icon(Icons.done, size: 14, color: greyColor);
   }
 }
@@ -168,7 +168,7 @@ class _FullscreenChatImage extends StatelessWidget {
                   onTap: () => Navigator.pop(context),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.5),
+                      color: Colors.black.withOpacity(0.5),
                       shape: BoxShape.circle,
                     ),
                     child: const Padding(
@@ -238,7 +238,7 @@ class MessageBubble extends StatelessWidget {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      barrierColor: Colors.black.withValues(alpha: 0.35),
+      barrierColor: Colors.black.withOpacity(0.35),
       builder: (sheetContext) => ClipRRect(
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         child: BackdropFilter(
@@ -246,15 +246,15 @@ class MessageBubble extends StatelessWidget {
           child: Container(
             decoration: BoxDecoration(
               color: isDark
-                  ? Colors.white.withValues(alpha: 0.08)
-                  : Colors.white.withValues(alpha: 0.55),
+                  ? Colors.white.withOpacity(0.08)
+                  : Colors.white.withOpacity(0.55),
               borderRadius:
                   const BorderRadius.vertical(top: Radius.circular(28)),
               border: Border(
                 top: BorderSide(
                   color: isDark
-                      ? Colors.white.withValues(alpha: 0.12)
-                      : Colors.white.withValues(alpha: 0.8),
+                      ? Colors.white.withOpacity(0.12)
+                      : Colors.white.withOpacity(0.8),
                   width: 1,
                 ),
               ),
@@ -269,8 +269,8 @@ class MessageBubble extends StatelessWidget {
                     height: 4,
                     decoration: BoxDecoration(
                       color: isDark
-                          ? Colors.white.withValues(alpha: 0.25)
-                          : Colors.black.withValues(alpha: 0.18),
+                          ? Colors.white.withOpacity(0.25)
+                          : Colors.black.withOpacity(0.18),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -281,13 +281,13 @@ class MessageBubble extends StatelessWidget {
                           horizontal: 14, vertical: 10),
                       decoration: BoxDecoration(
                         color: isDark
-                            ? Colors.white.withValues(alpha: 0.07)
-                            : Colors.white.withValues(alpha: 0.6),
+                            ? Colors.white.withOpacity(0.07)
+                            : Colors.white.withOpacity(0.6),
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
                           color: isDark
-                              ? Colors.white.withValues(alpha: 0.10)
-                              : Colors.black.withValues(alpha: 0.06),
+                              ? Colors.white.withOpacity(0.10)
+                              : Colors.black.withOpacity(0.06),
                         ),
                       ),
                       child: Text(
@@ -389,7 +389,7 @@ class MessageBubble extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         color: isSelected
-            ? AppColors.primary.withValues(alpha: 0.10)
+            ? AppColors.primary.withOpacity(0.10)
             : Colors.transparent,
         padding: EdgeInsets.only(
           left: isMe ? 60 : 12,
@@ -476,7 +476,7 @@ class MessageBubble extends StatelessWidget {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 5, vertical: 2),
                               decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: 0.40),
+                                color: Colors.black.withOpacity(0.40),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Row(
@@ -489,7 +489,7 @@ class MessageBubble extends StatelessWidget {
                                         fontSize: 11,
                                         fontStyle: FontStyle.italic,
                                         color: Colors.white
-                                            .withValues(alpha: 0.80),
+                                            .withOpacity(0.80),
                                       ),
                                     ),
                                   Text(
@@ -497,7 +497,7 @@ class MessageBubble extends StatelessWidget {
                                     style: TextStyle(
                                       fontSize: 12,
                                       color:
-                                          Colors.white.withValues(alpha: 0.90),
+                                          Colors.white.withOpacity(0.90),
                                     ),
                                   ),
                                   const SizedBox(width: 4),
@@ -521,14 +521,14 @@ class MessageBubble extends StatelessWidget {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 5, vertical: 2),
                               decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: 0.40),
+                                color: Colors.black.withOpacity(0.40),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
                                 message.formattedTime,
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: Colors.white.withValues(alpha: 0.90),
+                                  color: Colors.white.withOpacity(0.90),
                                 ),
                               ),
                             ),
@@ -582,9 +582,9 @@ class MessageBubble extends StatelessWidget {
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
                                 color: isMe
-                                    ? Colors.white.withValues(alpha: 0.15)
+                                    ? Colors.white.withOpacity(0.15)
                                     : AppColors.grey100
-                                        .withValues(alpha: 0.50),
+                                        .withOpacity(0.50),
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border(
                                   left: BorderSide(
@@ -601,7 +601,7 @@ class MessageBubble extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                                 style: AppTextStyles.labelSmall.copyWith(
                                   color: isMe
-                                      ? Colors.white.withValues(alpha: 0.85)
+                                      ? Colors.white.withOpacity(0.85)
                                       : AppColors.grey600,
                                 ),
                               ),
@@ -635,7 +635,7 @@ class MessageBubble extends StatelessWidget {
                                   fontSize: 12,
                                   fontStyle: FontStyle.italic,
                                   color: isMe
-                                      ? Colors.white.withValues(alpha: 0.7)
+                                      ? Colors.white.withOpacity(0.7)
                                       : AppColors.grey400,
                                 ),
                               ),
@@ -643,9 +643,9 @@ class MessageBubble extends StatelessWidget {
                               message.formattedTime,
                               style: AppTextStyles.labelSmall.copyWith(
                                 color: isMe
-                                    ? Colors.white.withValues(alpha: 0.85)
+                                    ? Colors.white.withOpacity(0.85)
                                     : (isDark
-                                        ? Colors.white.withValues(alpha: 0.55)
+                                        ? Colors.white.withOpacity(0.55)
                                         : const Color(0xFF757575)),
                               ),
                             ),
@@ -692,16 +692,16 @@ class _SystemMessage extends StatelessWidget {
             padding:
                 const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.20),
+              color: Colors.black.withOpacity(0.20),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.15)),
+                  color: Colors.white.withOpacity(0.15)),
             ),
             child: Text(
               text,
               textAlign: TextAlign.center,
               style: AppTextStyles.labelSmall.copyWith(
-                color: Colors.white.withValues(alpha: 0.85),
+                color: Colors.white.withOpacity(0.85),
               ),
             ),
           ),

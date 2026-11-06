@@ -147,7 +147,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
     final fieldText     = isDark ? Colors.white : AppColors.black;        // пароль тексти
     final hintColor     = isDark ? const Color(0xFF666666) : AppColors.grey400;
     final warnBg        = isDark ? const Color(0xFF1A2744) : const Color(0xFFEFF6FF);
-    final warnBorder    = const Color(0xFF1E40AF).withValues(alpha: isDark ? 0.5 : 0.2);
+    final warnBorder    = const Color(0xFF1E40AF).withOpacity(isDark ? 0.5 : 0.2);
     final warnText      = isDark ? const Color(0xFF93C5FD) : const Color(0xFF1E40AF);
     final blockBg       = isDark ? const Color(0xFF2A1515) : const Color(0xFFFFEEEE);
 
@@ -187,7 +187,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                         borderRadius: BorderRadius.circular(28),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF1E40AF).withValues(alpha: 0.3),
+                            color: const Color(0xFF1E40AF).withOpacity(0.3),
                             blurRadius: 20,
                             offset: const Offset(0, 8),
                           ),
@@ -220,7 +220,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                         decoration: BoxDecoration(
                           color: blockBg,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                          border: Border.all(color: AppColors.error.withOpacity(0.3)),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,

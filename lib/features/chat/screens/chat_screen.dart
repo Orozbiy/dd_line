@@ -413,7 +413,7 @@ Future<void> _markRead() async {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final confirm = await showDialog<bool>(
       context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.35),
+      barrierColor: Colors.black.withOpacity(0.35),
       builder: (_) => Dialog(
         backgroundColor: Colors.transparent,
         child: ClipRRect(
@@ -424,13 +424,13 @@ Future<void> _markRead() async {
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: isDark
-                    ? Colors.black.withValues(alpha: 0.55)
-                    : Colors.white.withValues(alpha: 0.65),
+                    ? Colors.black.withOpacity(0.55)
+                    : Colors.white.withOpacity(0.65),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: isDark
-                      ? Colors.white.withValues(alpha: 0.15)
-                      : Colors.black.withValues(alpha: 0.08),
+                      ? Colors.white.withOpacity(0.15)
+                      : Colors.black.withOpacity(0.08),
                 ),
               ),
               child: Column(
@@ -594,15 +594,15 @@ Future<void> _markRead() async {
           child: Container(
             decoration: BoxDecoration(
               color: isDark
-                  ? Colors.black.withValues(alpha: 0.55)
-                  : Colors.white.withValues(alpha: 0.60),
+                  ? Colors.black.withOpacity(0.55)
+                  : Colors.white.withOpacity(0.60),
               borderRadius:
                   const BorderRadius.vertical(top: Radius.circular(20)),
               border: Border(
                 top: BorderSide(
                   color: isDark
-                      ? Colors.white.withValues(alpha: 0.12)
-                      : Colors.black.withValues(alpha: 0.08),
+                      ? Colors.white.withOpacity(0.12)
+                      : Colors.black.withOpacity(0.08),
                 ),
               ),
             ),
@@ -616,7 +616,7 @@ Future<void> _markRead() async {
                       height: 4,
                       decoration: BoxDecoration(
                           color: isDark
-                              ? Colors.white.withValues(alpha: 0.25)
+                              ? Colors.white.withOpacity(0.25)
                               : AppColors.grey300,
                           borderRadius: BorderRadius.circular(2))),
                   const SizedBox(height: 12),
@@ -1073,17 +1073,17 @@ Future<void> _sendVoiceMessage(String path, int durationSeconds) async {
     final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
 
     final glassAppBarBg = isDark
-        ? Colors.black.withValues(alpha: 0.45)
-        : Colors.white.withValues(alpha: 0.60);
+        ? Colors.black.withOpacity(0.45)
+        : Colors.white.withOpacity(0.60);
     final glassBottomBg = isDark
-        ? Colors.black.withValues(alpha: 0.40)
-        : Colors.white.withValues(alpha: 0.55);
+        ? Colors.black.withOpacity(0.40)
+        : Colors.white.withOpacity(0.55);
     final glassInputFill = isDark
-        ? Colors.white.withValues(alpha: 0.10)
-        : Colors.black.withValues(alpha: 0.06);
+        ? Colors.white.withOpacity(0.10)
+        : Colors.black.withOpacity(0.06);
     final glassButtonBg = isDark
-        ? Colors.white.withValues(alpha: 0.12)
-        : Colors.black.withValues(alpha: 0.08);
+        ? Colors.white.withOpacity(0.12)
+        : Colors.black.withOpacity(0.08);
 
     return Stack(
       children: [
@@ -1310,9 +1310,9 @@ Future<void> _sendVoiceMessage(String path, int durationSeconds) async {
                               border: Border(
                                   top: BorderSide(
                                       color: isDark
-                                          ? Colors.white.withValues(alpha: 0.12)
+                                          ? Colors.white.withOpacity(0.12)
                                           : Colors.black
-                                              .withValues(alpha: 0.08))),
+                                              .withOpacity(0.08))),
                             ),
                             child: Row(
                               children: [
@@ -1369,8 +1369,8 @@ Future<void> _sendVoiceMessage(String path, int durationSeconds) async {
                               border: Border(
                                 top: BorderSide(
                                   color: isDark
-                                      ? Colors.white.withValues(alpha: 0.10)
-                                      : Colors.black.withValues(alpha: 0.07),
+                                      ? Colors.white.withOpacity(0.10)
+                                      : Colors.black.withOpacity(0.07),
                                 ),
                               ),
                             ),
@@ -1397,10 +1397,8 @@ Future<void> _sendVoiceMessage(String path, int durationSeconds) async {
                                                   BorderRadius.circular(22),
                                               border: Border.all(
                                                 color: isDark
-                                                    ? Colors.white.withValues(
-                                                        alpha: 0.15)
-                                                    : Colors.black.withValues(
-                                                        alpha: 0.10),
+                                                    ? Colors.white.withOpacity(0.15)
+                                                    : Colors.black.withOpacity(0.10),
                                               )),
                                           child: const Icon(
                                               Icons.image_outlined,
@@ -1426,7 +1424,7 @@ Future<void> _sendVoiceMessage(String path, int durationSeconds) async {
                                       hintText: loc.get('chat_hint'),
                                       hintStyle: TextStyle(
                                         color: isDark
-                                            ? Colors.white.withValues(alpha: 0.45)
+                                            ? Colors.white.withOpacity(0.45)
                                             : AppColors.grey400,
                                       ),
                                       filled: true,
@@ -1440,9 +1438,9 @@ Future<void> _sendVoiceMessage(String path, int durationSeconds) async {
                                           borderSide: BorderSide(
                                             color: isDark
                                                 ? Colors.white
-                                                    .withValues(alpha: 0.15)
+                                                    .withOpacity(0.15)
                                                 : Colors.black
-                                                    .withValues(alpha: 0.10),
+                                                    .withOpacity(0.10),
                                           )),
                                       enabledBorder: OutlineInputBorder(
                                           borderRadius:
@@ -1450,9 +1448,9 @@ Future<void> _sendVoiceMessage(String path, int durationSeconds) async {
                                           borderSide: BorderSide(
                                             color: isDark
                                                 ? Colors.white
-                                                    .withValues(alpha: 0.15)
+                                                    .withOpacity(0.15)
                                                 : Colors.black
-                                                    .withValues(alpha: 0.10),
+                                                    .withOpacity(0.10),
                                           )),
                                       focusedBorder: OutlineInputBorder(
                                           borderRadius:

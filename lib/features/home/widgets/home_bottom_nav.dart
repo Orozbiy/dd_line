@@ -103,18 +103,18 @@ class _HomeBottomNavState extends State<HomeBottomNav> {
           child: Container(
             decoration: BoxDecoration(
               color: p.isDark
-                  ? const Color(0xFF1A1A1A).withValues(alpha: 0.75)
-                  : Colors.white.withValues(alpha: 0.70),
+                  ? const Color(0xFF1A1A1A).withOpacity(0.75)
+                  : Colors.white.withOpacity(0.70),
               borderRadius: BorderRadius.circular(40),
               border: Border.all(
                 color: p.isDark
-                    ? Colors.white.withValues(alpha: 0.10)
-                    : Colors.black.withValues(alpha: 0.08),
+                    ? Colors.white.withOpacity(0.10)
+                    : Colors.black.withOpacity(0.08),
                 width: 0.8,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: p.isDark ? 0.4 : 0.15),
+                  color: Colors.black.withOpacity(p.isDark ? 0.4 : 0.15),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                   spreadRadius: -4,
@@ -300,14 +300,14 @@ class _NavButton extends StatelessWidget {
                   gradient: isActive ? DD.accentGradient : null,
                   color: !isActive && isTouched
                       ? (p.isDark
-                          ? Colors.white.withValues(alpha: 0.06)
-                          : Colors.black.withValues(alpha: 0.05))
+                          ? Colors.white.withOpacity(0.06)
+                          : Colors.black.withOpacity(0.05))
                       : null,
                   borderRadius: BorderRadius.circular(DD.rPill),
                   boxShadow: isActive
                       ? [
                           BoxShadow(
-                            color: DD.accent.withValues(alpha: 0.40),
+                            color: DD.accent.withOpacity(0.40),
                             blurRadius: 14,
                             offset: const Offset(0, 5),
                             spreadRadius: -4,

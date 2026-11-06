@@ -245,7 +245,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.orange.withValues(alpha: 0.12),
+                    color: Colors.orange.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(Icons.local_offer_rounded, color: Colors.orange, size: 20),
@@ -349,7 +349,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                                 decoration: BoxDecoration(
-                                  color: Colors.orange.withValues(alpha: 0.12),
+                                  color: Colors.orange.withOpacity(0.12),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
@@ -442,7 +442,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
-                    disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.4),
+                    disabledBackgroundColor: AppColors.primary.withOpacity(0.4),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     elevation: 0,
                   ),
@@ -649,7 +649,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                               decoration: BoxDecoration(
                                 color: cardColor,
                                 borderRadius: BorderRadius.circular(14),
-                                boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2))],
+                                boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
                               ),
                               child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                                 Stack(children: [
@@ -692,7 +692,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                                     Row(children: colors.take(5).map((name) {
                                       final c = _allColors.firstWhere((x) => x['name'] == name, orElse: () => {'hex': 0xFF888888});
                                       return Container(width: 14, height: 14, margin: const EdgeInsets.only(right: 4),
-                                          decoration: BoxDecoration(color: Color(c['hex'] as int), shape: BoxShape.circle, border: Border.all(color: Colors.grey.withValues(alpha: 0.3))));
+                                          decoration: BoxDecoration(color: Color(c['hex'] as int), shape: BoxShape.circle, border: Border.all(color: Colors.grey.withOpacity(0.3))));
                                     }).toList()),
                                   ],
                                   if (sizes.isNotEmpty) ...[
@@ -761,7 +761,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
           const SizedBox(width: 6),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(color: isSelected ? Colors.white.withValues(alpha: 0.25) : AppColors.grey300, borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(color: isSelected ? Colors.white.withOpacity(0.25) : AppColors.grey300, borderRadius: BorderRadius.circular(10)),
             child: Text('$count', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: isSelected ? Colors.white : AppColors.grey600)),
           ),
         ]),
@@ -1042,7 +1042,7 @@ Row(
     final borderClr   = hasNew || hasExisting
         ? AppColors.primary
         : (isFirst
-            ? const Color(0xFFEF4444).withValues(alpha: 0.5)
+            ? const Color(0xFFEF4444).withOpacity(0.5)
             : AppColors.grey300);
 
     return Expanded(
@@ -1219,7 +1219,7 @@ Row(
                             padding: const EdgeInsets.symmetric(vertical: 10),
                             decoration: BoxDecoration(
                               color: wholesaleMode == 'price'
-                                  ? const Color(0xFF7C3AED).withValues(alpha: 0.12)
+                                  ? const Color(0xFF7C3AED).withOpacity(0.12)
                                   : (isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF7F7F7)),
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
@@ -1247,7 +1247,7 @@ Row(
                             padding: const EdgeInsets.symmetric(vertical: 10),
                             decoration: BoxDecoration(
                               color: wholesaleMode == 'negotiation'
-                                  ? const Color(0xFF059669).withValues(alpha: 0.12)
+                                  ? const Color(0xFF059669).withOpacity(0.12)
                                   : (isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF7F7F7)),
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
@@ -1287,7 +1287,7 @@ Row(
                           decoration: BoxDecoration(
                             color: isDark ? const Color(0xFF0D1F18) : const Color(0xFFF0FDF4),
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: const Color(0xFF059669).withValues(alpha: 0.4)),
+                            border: Border.all(color: const Color(0xFF059669).withOpacity(0.4)),
                           ),
                           child: Row(children: [
                             const Icon(Icons.handshake_outlined, color: Color(0xFF059669), size: 18),
@@ -1380,7 +1380,7 @@ Row(
 
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(10)),
+                      decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.06), borderRadius: BorderRadius.circular(10)),
                       child: Row(children: [
                         const Icon(Icons.label_outline, size: 16, color: AppColors.primary),
                         const SizedBox(width: 8),
@@ -1532,7 +1532,7 @@ Row(
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
-                          disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.6),
+                          disabledBackgroundColor: AppColors.primary.withOpacity(0.6),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                           elevation: 0,
                         ),
@@ -1560,9 +1560,9 @@ Row(
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
           decoration: BoxDecoration(
-            color: const Color(0xFF059669).withValues(alpha: 0.12),
+            color: const Color(0xFF059669).withOpacity(0.12),
             borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: const Color(0xFF059669).withValues(alpha: 0.4)),
+            border: Border.all(color: const Color(0xFF059669).withOpacity(0.4)),
           ),
           child: Row(mainAxisSize: MainAxisSize.min, children: [
             const Icon(Icons.handshake_outlined, color: Color(0xFF059669), size: 10),
@@ -1575,9 +1575,9 @@ Row(
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         decoration: BoxDecoration(
-          color: const Color(0xFF7C3AED).withValues(alpha: 0.12),
+          color: const Color(0xFF7C3AED).withOpacity(0.12),
           borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: const Color(0xFF7C3AED).withValues(alpha: 0.4)),
+          border: Border.all(color: const Color(0xFF7C3AED).withOpacity(0.4)),
         ),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           const Icon(Icons.store_rounded, color: Color(0xFF7C3AED), size: 10),
@@ -1590,9 +1590,9 @@ Row(
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.10),
+        color: AppColors.primary.withOpacity(0.10),
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
+        border: Border.all(color: AppColors.primary.withOpacity(0.35)),
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         const Icon(Icons.person_rounded, color: AppColors.primary, size: 10),
@@ -1616,7 +1616,7 @@ Row(
           Icon(
             Icons.add_photo_alternate_outlined,
             size: 26,
-            color: isRequired ? AppColors.primary.withValues(alpha: 0.7) : AppColors.grey400,
+            color: isRequired ? AppColors.primary.withOpacity(0.7) : AppColors.grey400,
           ),
           const SizedBox(height: 4),
           Text(
@@ -1624,7 +1624,7 @@ Row(
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 12,
-              color: isRequired ? AppColors.primary.withValues(alpha: 0.7) : AppColors.grey400,
+              color: isRequired ? AppColors.primary.withOpacity(0.7) : AppColors.grey400,
             ),
           ),
         ],
@@ -1643,13 +1643,13 @@ Row(
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: isSelected ? AppColors.primary.withValues(alpha: 0.1) : unselBg,
+              color: isSelected ? AppColors.primary.withOpacity(0.1) : unselBg,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: isSelected ? AppColors.primary : Colors.transparent),
             ),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
               Container(width: 14, height: 14,
-                  decoration: BoxDecoration(color: Color(c['hex'] as int), shape: BoxShape.circle, border: Border.all(color: Colors.grey.withValues(alpha: 0.3)))),
+                  decoration: BoxDecoration(color: Color(c['hex'] as int), shape: BoxShape.circle, border: Border.all(color: Colors.grey.withOpacity(0.3)))),
               const SizedBox(width: 6),
               Text(
                 loc.locale.languageCode == 'ru' ? (c['nameRu'] as String? ?? c['name'] as String) : c['name'] as String,

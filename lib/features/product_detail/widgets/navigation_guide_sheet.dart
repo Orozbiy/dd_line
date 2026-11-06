@@ -83,10 +83,10 @@ class _NavigationGuideSheetState extends State<NavigationGuideSheet> {
     final sheetBg = isDark ? const Color(0xFF122A4D) : const Color(0xFFEFF5FF);
     final stepBg = isDark ? const Color(0xFF1B3A66) : Colors.white;
     final stepBorder = isDark
-        ? Colors.white.withValues(alpha: 0.10)
+        ? Colors.white.withOpacity(0.10)
         : const Color(0xFFBFDBFE);
     final handleColor =
-        isDark ? Colors.white.withValues(alpha: 0.24) : const Color(0xFF93C5FD);
+        isDark ? Colors.white.withOpacity(0.24) : const Color(0xFF93C5FD);
 
     return Container(
       decoration: BoxDecoration(
@@ -94,8 +94,8 @@ class _NavigationGuideSheetState extends State<NavigationGuideSheet> {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         border: Border.all(
           color: isDark
-              ? Colors.white.withValues(alpha: 0.08)
-              : Colors.black.withValues(alpha: 0.05),
+              ? Colors.white.withOpacity(0.08)
+              : Colors.black.withOpacity(0.05),
         ),
       ),
       child: Padding(
@@ -114,7 +114,7 @@ class _NavigationGuideSheetState extends State<NavigationGuideSheet> {
               width: 64,
               height: 64,
               decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
+                  color: AppColors.primary.withOpacity(0.1),
                   shape: BoxShape.circle),
               child: const Icon(Icons.navigation_rounded,
                   color: AppColors.primary, size: 32),

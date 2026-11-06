@@ -41,8 +41,8 @@ class _ChatBackgroundSettingsScreenState
             filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
             child: Container(
               color: isDark
-                  ? Colors.black.withValues(alpha: 0.30)
-                  : Colors.white.withValues(alpha: 0.40),
+                  ? Colors.black.withOpacity(0.30)
+                  : Colors.white.withOpacity(0.40),
             ),
           ),
         ),
@@ -84,12 +84,12 @@ class _ChatBackgroundSettingsScreenState
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                               decoration: BoxDecoration(
                                 color: isDark
-                                    ? Colors.white.withValues(alpha: 0.12)
-                                    : Colors.white.withValues(alpha: 0.65),
+                                    ? Colors.white.withOpacity(0.12)
+                                    : Colors.white.withOpacity(0.65),
                                 border: Border.all(
                                   color: isDark
-                                      ? Colors.white.withValues(alpha: 0.15)
-                                      : Colors.white.withValues(alpha: 0.80),
+                                      ? Colors.white.withOpacity(0.15)
+                                      : Colors.white.withOpacity(0.80),
                                 ),
                                 borderRadius: const BorderRadius.only(
                                   topLeft: Radius.circular(14),
@@ -124,7 +124,7 @@ class _ChatBackgroundSettingsScreenState
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.primary.withValues(alpha: 0.35),
+                                color: AppColors.primary.withOpacity(0.35),
                                 blurRadius: 8,
                                 offset: const Offset(0, 3),
                               ),
@@ -171,17 +171,17 @@ class _ChatBackgroundSettingsScreenState
                         child: Container(
                           decoration: BoxDecoration(
                             color: isActive
-                                ? AppColors.primary.withValues(alpha: isDark ? 0.18 : 0.10)
+                                ? AppColors.primary.withOpacity(isDark ? 0.18 : 0.10)
                                 : (isDark
-                                    ? Colors.white.withValues(alpha: 0.06)
-                                    : Colors.white.withValues(alpha: 0.55)),
+                                    ? Colors.white.withOpacity(0.06)
+                                    : Colors.white.withOpacity(0.55)),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
                               color: isActive
-                                  ? AppColors.primary.withValues(alpha: 0.70)
+                                  ? AppColors.primary.withOpacity(0.70)
                                   : (isDark
-                                      ? Colors.white.withValues(alpha: 0.10)
-                                      : Colors.white.withValues(alpha: 0.80)),
+                                      ? Colors.white.withOpacity(0.10)
+                                      : Colors.white.withOpacity(0.80)),
                               width: isActive ? 1.5 : 1.0,
                             ),
                           ),
@@ -228,7 +228,7 @@ class _ChatBackgroundSettingsScreenState
                                     color: isActive
                                         ? AppColors.primary
                                         : (isDark
-                                            ? Colors.white.withValues(alpha: 0.25)
+                                            ? Colors.white.withOpacity(0.25)
                                             : AppColors.grey300),
                                     width: 1.5,
                                   ),

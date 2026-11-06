@@ -137,10 +137,10 @@ class _BuyerLeaderboardState extends State<BuyerLeaderboard> {
                   margin: const EdgeInsets.fromLTRB(14, 8, 14, 4),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.08),
+                    color: AppColors.primary.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                        color: AppColors.primary.withValues(alpha: 0.2)),
+                        color: AppColors.primary.withOpacity(0.2)),
                   ),
                   child: Row(children: [
                     const Text('🔑', style: TextStyle(fontSize: 18)),
@@ -200,10 +200,10 @@ class _BuyerLeaderboardState extends State<BuyerLeaderboard> {
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.4), width: 1.5),
+        border: Border.all(color: AppColors.primary.withOpacity(0.4), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.08),
+            color: AppColors.primary.withOpacity(0.08),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -214,7 +214,7 @@ class _BuyerLeaderboardState extends State<BuyerLeaderboard> {
         Container(
           width: 48, height: 48,
           decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.1),
+            color: AppColors.primary.withOpacity(0.1),
             shape: BoxShape.circle,
           ),
           child: const Center(
@@ -280,15 +280,15 @@ class _BuyerLeaderboardState extends State<BuyerLeaderboard> {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: isMe
-            ? AppColors.primary.withValues(alpha: isDark ? 0.15 : 0.07)
+            ? AppColors.primary.withOpacity(isDark ? 0.15 : 0.07)
             : cardColor,
         borderRadius: BorderRadius.circular(14),
         border: isMe
-            ? Border.all(color: AppColors.primary.withValues(alpha: 0.4), width: 1.5)
+            ? Border.all(color: AppColors.primary.withOpacity(0.4), width: 1.5)
             : null,
         boxShadow: isDark
             ? []
-            : [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 6)],
+            : [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 6)],
       ),
       child: Row(children: [
         // Орун
@@ -305,7 +305,7 @@ class _BuyerLeaderboardState extends State<BuyerLeaderboard> {
         // Аватар
         CircleAvatar(
           radius: 20,
-          backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+          backgroundColor: AppColors.primary.withOpacity(0.1),
           backgroundImage:
               avatar != null ? CachedNetworkImageProvider(avatar) : null,
           child: avatar == null
@@ -351,7 +351,7 @@ class _BuyerLeaderboardState extends State<BuyerLeaderboard> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(text,

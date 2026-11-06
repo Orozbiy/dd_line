@@ -301,7 +301,7 @@ class _AdminNotificationSenderState extends State<AdminNotificationSender> {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
+                color: Colors.black.withOpacity(0.06),
                 blurRadius: 10,
                 offset: const Offset(0, 3),
               ),
@@ -421,7 +421,7 @@ class _AdminNotificationSenderState extends State<AdminNotificationSender> {
                       color: fillColor,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: AppColors.primary.withValues(alpha: 0.4),
+                        color: AppColors.primary.withOpacity(0.4),
                         width: 1.5,
                       ),
                     ),
@@ -454,7 +454,7 @@ class _AdminNotificationSenderState extends State<AdminNotificationSender> {
                       Positioned.fill(
                         child: Container(
                           decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.5),
+                            color: Colors.black.withOpacity(0.5),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Center(
@@ -470,7 +470,7 @@ class _AdminNotificationSenderState extends State<AdminNotificationSender> {
                         child: Container(
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.65),
+                            color: Colors.black.withOpacity(0.65),
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(Icons.close,
@@ -486,7 +486,7 @@ class _AdminNotificationSenderState extends State<AdminNotificationSender> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 10, vertical: 6),
                           decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.65),
+                            color: Colors.black.withOpacity(0.65),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Row(
@@ -567,7 +567,7 @@ class _AdminNotificationSenderState extends State<AdminNotificationSender> {
                 padding: const EdgeInsets.symmetric(
                     horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.15),
+                  color: AppColors.primary.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -661,20 +661,20 @@ class _AdminNotificationSenderState extends State<AdminNotificationSender> {
               return Container(
                 decoration: BoxDecoration(
                   color: isEditing
-                      ? const Color(0xFF2563EB).withValues(alpha: 0.08)
+                      ? const Color(0xFF2563EB).withOpacity(0.08)
                       : cardColor,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: isEditing
-                        ? const Color(0xFF2563EB).withValues(alpha: 0.5)
+                        ? const Color(0xFF2563EB).withOpacity(0.5)
                         : (isDark
                             ? const Color(0xFF2A2560)
-                            : Colors.grey.withValues(alpha: 0.15)),
+                            : Colors.grey.withOpacity(0.15)),
                     width: isEditing ? 1.5 : 0.8,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
+                      color: Colors.black.withOpacity(0.05),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -834,7 +834,7 @@ class _ActionBtn extends StatelessWidget {
           width: 34,
           height: 34,
           decoration: BoxDecoration(
-            color: color.withValues(alpha: isDark ? 0.18 : 0.1),
+            color: color.withOpacity(isDark ? 0.18 : 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, color: color, size: 17),

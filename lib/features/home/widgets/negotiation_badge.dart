@@ -18,7 +18,7 @@ class NegotiationBadgeSmall extends StatelessWidget {
         color: const Color(0xFFE8F5E9),        // жашыл фон
         borderRadius: BorderRadius.circular(6),
         border: Border.all(
-          color: const Color(0xFF66BB6A).withValues(alpha: 0.5),
+          color: const Color(0xFF66BB6A).withOpacity(0.5),
           width: 1,
         ),
       ),
@@ -54,7 +54,7 @@ class NegotiationBadgeLarge extends StatelessWidget {
         color: const Color(0xFFE8F5E9),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: const Color(0xFF66BB6A).withValues(alpha: 0.6),
+          color: const Color(0xFF66BB6A).withOpacity(0.6),
           width: 1.5,
         ),
       ),

@@ -33,8 +33,8 @@ class PromoProductCard extends StatelessWidget {
           color: cardColor,
           borderRadius: BorderRadius.circular(16),
           boxShadow: isDark
-              ? [BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4))]
-              : [BoxShadow(color: Colors.black.withValues(alpha: 0.07), blurRadius: 10, offset: const Offset(0, 4))],
+              ? [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))]
+              : [BoxShadow(color: Colors.black.withOpacity(0.07), blurRadius: 10, offset: const Offset(0, 4))],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -72,7 +72,7 @@ class PromoProductCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.error.withValues(alpha: 0.35),
+                            color: AppColors.error.withOpacity(0.35),
                             blurRadius: 6,
                             offset: const Offset(0, 2),
                           ),

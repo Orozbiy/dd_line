@@ -135,7 +135,7 @@ class _StoryCommentsSheetState extends State<_StoryCommentsSheet> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey.withValues(alpha: 0.4),
+                color: Colors.grey.withOpacity(0.4),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -145,7 +145,7 @@ class _StoryCommentsSheetState extends State<_StoryCommentsSheet> {
                   style: TextStyle(
                       color: fg, fontSize: 16, fontWeight: FontWeight.w700)),
             ),
-            Divider(height: 1, color: sub.withValues(alpha: 0.2)),
+            Divider(height: 1, color: sub.withOpacity(0.2)),
             Expanded(
               child: _loading
                   ? const Center(child: CircularProgressIndicator())
@@ -170,7 +170,7 @@ class _StoryCommentsSheetState extends State<_StoryCommentsSheet> {
                                   CircleAvatar(
                                     radius: 17,
                                     backgroundColor:
-                                        Colors.grey.withValues(alpha: 0.3),
+                                        Colors.grey.withOpacity(0.3),
                                     backgroundImage: (c.avatarUrl != null &&
                                             c.avatarUrl!.isNotEmpty)
                                         ? CachedNetworkImageProvider(c.avatarUrl!)
@@ -227,7 +227,7 @@ class _StoryCommentsSheetState extends State<_StoryCommentsSheet> {
                           },
                         ),
             ),
-            Divider(height: 1, color: sub.withValues(alpha: 0.2)),
+            Divider(height: 1, color: sub.withOpacity(0.2)),
             SafeArea(
               top: false,
               child: Padding(

@@ -107,20 +107,20 @@ class _ProductCardState extends State<ProductCard>
           boxShadow: isDark
               ? [
                   BoxShadow(
-                    color: const Color(0xFF3D2080).withValues(alpha: 0.15),
+                    color: const Color(0xFF3D2080).withOpacity(0.15),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
                 ]
               : [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
+                    color: Colors.black.withOpacity(0.08),
                     blurRadius: 16,
                     offset: const Offset(0, 5),
                     spreadRadius: -3,
                   ),
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.04),
+                    color: Colors.black.withOpacity(0.04),
                     blurRadius: 4,
                     offset: const Offset(0, 1),
                   ),
@@ -184,7 +184,7 @@ class _ProductCardState extends State<ProductCard>
                               borderRadius: BorderRadius.circular(badgeRadius),
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.error.withValues(alpha: 0.45),
+                                  color: AppColors.error.withOpacity(0.45),
                                   blurRadius: 6,
                                   offset: const Offset(0, 2),
                                 ),
@@ -234,7 +234,7 @@ class _ProductCardState extends State<ProductCard>
                                 : null,
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.10),
+                                color: Colors.black.withOpacity(0.10),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
                               ),

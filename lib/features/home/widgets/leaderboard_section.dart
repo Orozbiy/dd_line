@@ -124,7 +124,7 @@ class _LeaderboardSectionState extends State<LeaderboardSection> {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.12),
+                    color: AppColors.primary.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -286,12 +286,12 @@ class _Podium extends StatelessWidget {
                   height: heights[idx],
                   margin: const EdgeInsets.symmetric(horizontal: 4),
                   decoration: BoxDecoration(
-                    color: colors[idx].withValues(alpha: 0.18),
+                    color: colors[idx].withOpacity(0.18),
                     borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(8),
                     ),
                     border: Border.all(
-                      color: colors[idx].withValues(alpha: 0.4),
+                      color: colors[idx].withOpacity(0.4),
                       width: 0.8,
                     ),
                   ),
@@ -436,10 +436,10 @@ class _MyRankCard extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(14, 8, 14, 0),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: isDark ? 0.15 : 0.08),
+        color: AppColors.primary.withOpacity(isDark ? 0.15 : 0.08),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.3),
+          color: AppColors.primary.withOpacity(0.3),
           width: 0.8,
         ),
       ),

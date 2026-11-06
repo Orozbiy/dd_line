@@ -230,13 +230,13 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen>
           width: double.infinity,
           decoration: BoxDecoration(
             color: isDark
-                ? Colors.white.withValues(alpha: 0.06)
-                : Colors.white.withValues(alpha: 0.55),
+                ? Colors.white.withOpacity(0.06)
+                : Colors.white.withOpacity(0.55),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: isDark
-                  ? Colors.white.withValues(alpha: 0.10)
-                  : Colors.white.withValues(alpha: 0.80),
+                  ? Colors.white.withOpacity(0.10)
+                  : Colors.white.withOpacity(0.80),
             ),
           ),
           padding: const EdgeInsets.all(24),
@@ -266,8 +266,8 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen>
             filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
             child: Container(
               color: isDark
-                  ? Colors.black.withValues(alpha: 0.30)
-                  : Colors.white.withValues(alpha: 0.40),
+                  ? Colors.black.withOpacity(0.30)
+                  : Colors.white.withOpacity(0.40),
             ),
           ),
         ),
@@ -296,7 +296,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen>
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: AppColors.error.withValues(alpha: isDark ? 0.15 : 0.10),
+                color: AppColors.error.withOpacity(isDark ? 0.15 : 0.10),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -412,9 +412,9 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen>
                   height: 56,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
-                    color: AppColors.error.withValues(alpha: isDark ? 0.12 : 0.08),
+                    color: AppColors.error.withOpacity(isDark ? 0.12 : 0.08),
                     border: Border.all(
-                      color: AppColors.error.withValues(alpha: 0.3),
+                      color: AppColors.error.withOpacity(0.3),
                     ),
                   ),
                 ),
@@ -428,7 +428,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen>
                       value: _holdProgress,
                       backgroundColor: Colors.transparent,
                       valueColor: AlwaysStoppedAnimation(
-                        AppColors.error.withValues(alpha: 0.3),
+                        AppColors.error.withOpacity(0.3),
                       ),
                     ),
                   ),
@@ -496,15 +496,15 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen>
               child: Container(
                 decoration: BoxDecoration(
                   color: isDark
-                      ? Colors.white.withValues(alpha: 0.05)
-                      : Colors.white.withValues(alpha: 0.4),
+                      ? Colors.white.withOpacity(0.05)
+                      : Colors.white.withOpacity(0.4),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: _checkboxChecked
-                        ? AppColors.error.withValues(alpha: 0.5)
+                        ? AppColors.error.withOpacity(0.5)
                         : (isDark
-                            ? Colors.white.withValues(alpha: 0.1)
-                            : Colors.black.withValues(alpha: 0.08)),
+                            ? Colors.white.withOpacity(0.1)
+                            : Colors.black.withOpacity(0.08)),
                   ),
                 ),
                 child: CheckboxListTile(
@@ -536,7 +536,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen>
                   style: TextStyle(
                     fontSize: 48,
                     fontWeight: FontWeight.w900,
-                    color: AppColors.error.withValues(alpha: 0.7),
+                    color: AppColors.error.withOpacity(0.7),
                   ),
                 ),
                 Text(
@@ -607,7 +607,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen>
           width: 40,
           height: 2,
           color: step >= 2
-              ? AppColors.error.withValues(alpha: 0.5)
+              ? AppColors.error.withOpacity(0.5)
               : (isDark ? Colors.white12 : AppColors.grey300),
         ),
         _stepDot(2, step, isDark),
@@ -651,7 +651,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen>
       child: Row(
         children: [
           Icon(Icons.remove_circle_outline,
-              color: AppColors.error.withValues(alpha: 0.7), size: 18),
+              color: AppColors.error.withOpacity(0.7), size: 18),
           const SizedBox(width: 10),
           Expanded(
             child: Text(

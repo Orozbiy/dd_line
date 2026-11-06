@@ -160,12 +160,12 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                           borderRadius: BorderRadius.circular(28),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFFD97706).withValues(alpha: 0.45),
+                              color: const Color(0xFFD97706).withOpacity(0.45),
                               blurRadius: 28,
                               offset: const Offset(0, 10),
                             ),
                             BoxShadow(
-                              color: const Color(0xFFEF4444).withValues(alpha: 0.25),
+                              color: const Color(0xFFEF4444).withOpacity(0.25),
                               blurRadius: 40,
                               offset: const Offset(0, 16),
                             ),
@@ -204,10 +204,10 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 16, vertical: 8),
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.12),
+                              color: Colors.white.withOpacity(0.12),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.20),
+                                color: Colors.white.withOpacity(0.20),
                               ),
                             ),
                             child: Text(
@@ -269,10 +269,10 @@ class _WelcomeScreenState extends State<WelcomeScreen>
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 18),
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.75),
+                color: AppColors.primary.withOpacity(0.75),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.35),
+                  color: Colors.white.withOpacity(0.35),
                   width: 1.5,
                 ),
               ),
@@ -305,10 +305,10 @@ class _WelcomeScreenState extends State<WelcomeScreen>
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 18),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: _isLoading ? 0.10 : 0.18),
+              color: Colors.white.withOpacity(_isLoading ? 0.10 : 0.18),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: Colors.white.withValues(alpha: 0.40),
+                color: Colors.white.withOpacity(0.40),
                 width: 1.5,
               ),
             ),
@@ -353,10 +353,10 @@ class _WelcomeScreenState extends State<WelcomeScreen>
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 18),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: _isAppleLoading ? 0.10 : 0.18),
+              color: Colors.white.withOpacity(_isAppleLoading ? 0.10 : 0.18),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: Colors.white.withValues(alpha: 0.40),
+                color: Colors.white.withOpacity(0.40),
                 width: 1.5,
               ),
             ),
@@ -472,8 +472,8 @@ class _BgPainter extends CustomPainter {
       Paint()
         ..shader = RadialGradient(
           colors: [
-            const Color(0xFFD97706).withValues(alpha: 0.35),
-            const Color(0xFFD97706).withValues(alpha: 0.0),
+            const Color(0xFFD97706).withOpacity(0.35),
+            const Color(0xFFD97706).withOpacity(0.0),
           ],
         ).createShader(Rect.fromCircle(
             center: Offset(cx1, cy1), radius: w * 0.55)),
@@ -488,8 +488,8 @@ class _BgPainter extends CustomPainter {
       Paint()
         ..shader = RadialGradient(
           colors: [
-            const Color(0xFFEF4444).withValues(alpha: 0.28),
-            const Color(0xFFEF4444).withValues(alpha: 0.0),
+            const Color(0xFFEF4444).withOpacity(0.28),
+            const Color(0xFFEF4444).withOpacity(0.0),
           ],
         ).createShader(Rect.fromCircle(
             center: Offset(cx2, cy2), radius: w * 0.50)),
@@ -504,8 +504,8 @@ class _BgPainter extends CustomPainter {
       Paint()
         ..shader = RadialGradient(
           colors: [
-            const Color(0xFF3D2080).withValues(alpha: 0.30),
-            const Color(0xFF3D2080).withValues(alpha: 0.0),
+            const Color(0xFF3D2080).withOpacity(0.30),
+            const Color(0xFF3D2080).withOpacity(0.0),
           ],
         ).createShader(Rect.fromCircle(
             center: Offset(cx3, cy3), radius: w * 0.40)),
@@ -522,7 +522,7 @@ class _BgPainter extends CustomPainter {
       canvas.drawCircle(
         Offset(sx, sy),
         sr,
-        Paint()..color = Colors.white.withValues(alpha: 0.20 + blink * 0.35),
+        Paint()..color = Colors.white.withOpacity(0.20 + blink * 0.35),
       );
     }
   }

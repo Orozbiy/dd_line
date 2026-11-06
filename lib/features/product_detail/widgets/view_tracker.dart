@@ -62,7 +62,7 @@ GestureDetector(
     decoration: BoxDecoration(
       color: const Color(0xFFFFF8F0),
       borderRadius: BorderRadius.circular(10),
-      border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+      border: Border.all(color: AppColors.primary.withOpacity(0.3)),
     ),
     child: Row(mainAxisSize: MainAxisSize.min, children: [
       const Text('🏆', style: TextStyle(fontSize: 16)),
