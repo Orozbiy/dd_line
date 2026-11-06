@@ -10,11 +10,13 @@ enum ProductFilterMode { all, newest, popular }
 class CategoryList extends StatefulWidget {
   final Function(String) onCategorySelected;
   final Function(ProductFilterMode)? onFilterModeChanged;
+  final ProductFilterMode? currentFilterMode; // тышкы синхрондоо
 
   const CategoryList({
     super.key,
     required this.onCategorySelected,
     this.onFilterModeChanged,
+    this.currentFilterMode,
   });
 
   @override
@@ -32,6 +34,19 @@ class _CategoryListState extends State<CategoryList> {
   void initState() {
     super.initState();
     _categories = CategoryModel.getCategories();
+    if (widget.currentFilterMode != null) {
+      _filterMode = widget.currentFilterMode!;
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant CategoryList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Тышкы filterMode өзгөрсө — ички абалды синхрондоо
+    if (widget.currentFilterMode != null &&
+        widget.currentFilterMode != _filterMode) {
+      setState(() => _filterMode = widget.currentFilterMode!);
+    }
   }
 
   CategoryModel? get _selectedCategory {

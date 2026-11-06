@@ -20,7 +20,8 @@ workflows:
           cd ios
           pod install --repo-update
       - name: Set up code signing settings on Xcode project
-        script: xcode-project use-profiles
+        script: |
+          xcode-project use-profiles
       - name: Build ipa
         script: |
           flutter build ipa --release \
@@ -31,4 +32,5 @@ workflows:
     publishing:
       app_store_connect:
         auth: integration
-        submit_to_testflight: true
+        submit_to_testflight: false
+        submit_to_app_store: true

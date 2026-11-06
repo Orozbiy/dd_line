@@ -95,36 +95,27 @@ class _HomeBottomNavState extends State<HomeBottomNav> {
       right: 0,
       bottom: widget.isVisible
           ? 0
-          : -(HomeBottomNav.navHeight + widget.bottomPadding),
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(14, 0, 14, widget.bottomPadding),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(28),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
-            child: Container(
-              decoration: BoxDecoration(
-                color: p.isDark
-                    ? const Color(0xFF15120F).withValues(alpha: 0.80)
-                    : Colors.white.withValues(alpha: 0.85),
-                borderRadius: BorderRadius.circular(28),
-                border: Border.all(
+          : -(HomeBottomNav.navHeight + widget.bottomPadding + 24),
+      child: ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(0)),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+          child: Container(
+            decoration: BoxDecoration(
+              color: p.isDark
+                  ? const Color(0xFF15120F).withValues(alpha: 0.55)
+                  : Colors.white.withValues(alpha: 0.60),
+              border: Border(
+                top: BorderSide(
                   color: p.isDark
-                      ? DD.accent2.withValues(alpha: 0.22)
-                      : Colors.white,
-                  width: 1.2,
+                      ? Colors.white.withValues(alpha: 0.08)
+                      : Colors.black.withValues(alpha: 0.06),
+                  width: 0.5,
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: p.isDark
-                        ? DD.accent.withValues(alpha: 0.16)
-                        : DD.ink.withValues(alpha: 0.10),
-                    blurRadius: 22,
-                    offset: const Offset(0, 8),
-                    spreadRadius: -6,
-                  ),
-                ],
               ),
+            ),
+            child: Padding(
+              padding: EdgeInsets.only(bottom: widget.bottomPadding),
               child: SizedBox(
                 height: HomeBottomNav.navHeight,
                 child: LayoutBuilder(
