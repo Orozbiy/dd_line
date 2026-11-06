@@ -97,33 +97,22 @@ class _HomeBottomNavState extends State<HomeBottomNav> {
           ? 0
           : -(HomeBottomNav.navHeight + widget.bottomPadding + 24),
       child: ClipRRect(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(0)),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+          filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
           child: Container(
             decoration: BoxDecoration(
               color: p.isDark
-                  ? const Color(0xFF15120F).withValues(alpha: 0.80)
-                  : Colors.white.withValues(alpha: 0.85),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  ? const Color(0xFF15120F).withValues(alpha: 0.55)
+                  : Colors.white.withValues(alpha: 0.60),
               border: Border(
                 top: BorderSide(
                   color: p.isDark
-                      ? DD.accent2.withValues(alpha: 0.22)
-                      : Colors.white,
-                  width: 1.2,
+                      ? Colors.white.withValues(alpha: 0.08)
+                      : Colors.black.withValues(alpha: 0.06),
+                  width: 0.5,
                 ),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: p.isDark
-                      ? DD.accent.withValues(alpha: 0.16)
-                      : DD.ink.withValues(alpha: 0.10),
-                  blurRadius: 22,
-                  offset: const Offset(0, -4),
-                  spreadRadius: -6,
-                ),
-              ],
             ),
             child: Padding(
               padding: EdgeInsets.only(bottom: widget.bottomPadding),
@@ -252,7 +241,6 @@ class _HomeBottomNavState extends State<HomeBottomNav> {
                 ),
               ),
             ),
-          ),
           ),
         ),
       ),
