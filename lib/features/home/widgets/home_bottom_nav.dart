@@ -91,34 +91,39 @@ class _HomeBottomNavState extends State<HomeBottomNav> {
           ? const Duration(milliseconds: 300)
           : const Duration(milliseconds: 200),
       curve: Curves.easeOut,
-      left: 0,
-      right: 0,
+      left: 16,
+      right: 16,
       bottom: widget.isVisible
-          ? 0
-          : -(HomeBottomNav.navHeight + widget.bottomPadding + 24),
+          ? widget.bottomPadding + 8
+          : -(HomeBottomNav.navHeight + widget.bottomPadding + 40),
       child: ClipRRect(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(0)),
+        borderRadius: BorderRadius.circular(40),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
           child: Container(
             decoration: BoxDecoration(
               color: p.isDark
-                  ? const Color(0xFF15120F).withValues(alpha: 0.55)
-                  : Colors.white.withValues(alpha: 0.60),
-              border: Border(
-                top: BorderSide(
-                  color: p.isDark
-                      ? Colors.white.withValues(alpha: 0.08)
-                      : Colors.black.withValues(alpha: 0.06),
-                  width: 0.5,
-                ),
+                  ? const Color(0xFF1A1A1A).withValues(alpha: 0.75)
+                  : Colors.white.withValues(alpha: 0.70),
+              borderRadius: BorderRadius.circular(40),
+              border: Border.all(
+                color: p.isDark
+                    ? Colors.white.withValues(alpha: 0.10)
+                    : Colors.black.withValues(alpha: 0.08),
+                width: 0.8,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: p.isDark ? 0.4 : 0.15),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                  spreadRadius: -4,
+                ),
+              ],
             ),
-            child: Padding(
-              padding: EdgeInsets.only(bottom: widget.bottomPadding),
-              child: SizedBox(
-                height: HomeBottomNav.navHeight,
-                child: LayoutBuilder(
+            child: SizedBox(
+              height: HomeBottomNav.navHeight,
+              child: LayoutBuilder(
                   builder: (context, constraints) {
                     final totalWidth = constraints.maxWidth;
 

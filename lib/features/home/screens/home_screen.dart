@@ -1111,7 +1111,7 @@ if (_isSearchMode || _isNearbyMode ||
                 curve: Curves.easeInOut,
                 right: 16,
                 bottom: _navVisible
-                    ? HomeBottomNav.navHeight + _navBottomPadding + 16
+                    ? HomeBottomNav.navHeight + _navBottomPadding + 28
                     : 32,
                 child: _MenuFab(onTap: () => openSidePanel(context)),
               ),
