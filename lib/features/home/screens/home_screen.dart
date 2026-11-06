@@ -96,7 +96,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // DD Online блогу көрүнөбү
 
   // DD Online блогунун бийиктиги: toolbar(52px)
-  static const double _titleBarHeight = 75.0;
+  static const double _titleBarHeight = 105.0;
   // Sticky header'дин чыныгы бийиктиги (категория ачылганда өзгөрөт)
   final GlobalKey _headerKey = GlobalKey();
   double? _headerH;
@@ -799,7 +799,8 @@ if (_isSearchMode || _isNearbyMode ||
                         child: SizedBox(
                           height: _titleBarHeight,
                           child: Padding(
-                            padding: const EdgeInsets.only(top: 20),
+                            padding: EdgeInsets.only(
+                                top: MediaQuery.of(context).padding.top),
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
