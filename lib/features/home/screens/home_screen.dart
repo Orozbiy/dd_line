@@ -151,6 +151,22 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
 // ── Жаңы метод ──
+
+  Future<void> _loadSellerAvatar() async {
+    final uid = await SellerSessionService.instance.getSavedUid();
+    if (uid == null || uid.isEmpty) {
+      if (mounted) setState(() => _sellerAvatarUrl = null);
+      return;
+    }
+    try {
+      final row = await supa.supabase.from('stores').select('logo_url').eq('owner_id', uid).maybeSingle();
+      final logo = row?['logo_url'] as String?;
+      if (mounted) setState(() => _sellerAvatarUrl = (logo != null && logo.isNotEmpty) ? logo : null);
+    } catch (_) {
+      if (mounted) setState(() => _sellerAvatarUrl = null);
+    }
+  }
+
   Future<void> _checkAppUpdate() async {
     final langCode = AppLocalizations.of(context).locale.languageCode;
     await UpdateChecker.check(context, langCode);
