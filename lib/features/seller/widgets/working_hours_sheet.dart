@@ -18,16 +18,6 @@ class WorkingHoursSheet extends StatefulWidget {
     this.initialDays,
   });
 
-  @override
-  State<WorkingHoursSheet> createState() => _WorkingHoursSheetState();
-}
-
-class _WorkingHoursSheetState extends State<WorkingHoursSheet> {
-  late TimeOfDay _start;
-  late TimeOfDay _end;
-  late Set<int>  _sel; // 0=Дш … 6=Жк
-  bool _saving = false;
-
   static const _short = ['Дш', 'Шш', 'Шр', 'Бш', 'Жм', 'Шб', 'Жк'];
 
   /// Сакталган саптан (эски жана жаңы форматтар) күндөрдүн жыйындысын чыгарат.
@@ -88,11 +78,21 @@ class _WorkingHoursSheetState extends State<WorkingHoursSheet> {
   }
 
   @override
+  State<WorkingHoursSheet> createState() => _WorkingHoursSheetState();
+}
+
+class _WorkingHoursSheetState extends State<WorkingHoursSheet> {
+  late TimeOfDay _start;
+  late TimeOfDay _end;
+  late Set<int>  _sel; // 0=Дш … 6=Жк
+  bool _saving = false;
+
+  @override
   void initState() {
     super.initState();
     _start = _parseTime(widget.initialStart ?? '09:00');
     _end   = _parseTime(widget.initialEnd   ?? '18:00');
-    _sel   = parseDays(widget.initialDays);
+    _sel   = WorkingHoursSheet.parseDays(widget.initialDays);
   }
 
   TimeOfDay _parseTime(String t) {
@@ -129,7 +129,7 @@ class _WorkingHoursSheetState extends State<WorkingHoursSheet> {
       await supabase.from('stores').update({
         'work_start': _fmt(_start),
         'work_end':   _fmt(_end),
-        'work_days':  formatDays(_sel),
+        'work_days':  WorkingHoursSheet.formatDays(_sel),
       }).eq('owner_id', widget.sellerUid);
 
       if (mounted) {
@@ -229,7 +229,7 @@ class _WorkingHoursSheetState extends State<WorkingHoursSheet> {
                             const Icon(Icons.check_rounded,
                                 size: 14, color: Colors.white),
                           Text(
-                            _short[i],
+                            WorkingHoursSheet._short[i],
                             style: TextStyle(
                               fontSize: 13,
                               color: selected ? Colors.white : chipText,
@@ -260,7 +260,7 @@ class _WorkingHoursSheetState extends State<WorkingHoursSheet> {
               const Icon(Icons.access_time_rounded, color: AppColors.primary, size: 18),
               const SizedBox(width: 8),
               Text(
-                '${formatDays(_sel)}  ${_fmt(_start)} — ${_fmt(_end)}',
+                '${WorkingHoursSheet.formatDays(_sel)}  ${_fmt(_start)} — ${_fmt(_end)}',
                 style: AppTextStyles.labelLarge.copyWith(color: AppColors.primary),
               ),
             ]),
