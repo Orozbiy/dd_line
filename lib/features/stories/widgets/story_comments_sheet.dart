@@ -40,6 +40,7 @@ class _StoryCommentsSheet extends StatefulWidget {
 
 class _StoryCommentsSheetState extends State<_StoryCommentsSheet> {
   final _ctrl = TextEditingController();
+  final _scroll = ScrollController();
   List<StoryCommentModel> _comments = [];
   bool _loading = true;
   bool _sending = false;
@@ -55,6 +56,7 @@ class _StoryCommentsSheetState extends State<_StoryCommentsSheet> {
   @override
   void dispose() {
     _ctrl.dispose();
+    _scroll.dispose();
     super.dispose();
   }
 
@@ -89,6 +91,14 @@ class _StoryCommentsSheetState extends State<_StoryCommentsSheet> {
     });
     if (c != null) {
       widget.onCountChanged(_comments.length);
+      // Жаңы комментарий тизменин башында — ошол жерге жылдырабыз
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scroll.hasClients) {
+          _scroll.animateTo(0,
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOut);
+        }
+      });
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Жөнөтүүдө ката чыкты')),
@@ -156,6 +166,7 @@ class _StoryCommentsSheetState extends State<_StoryCommentsSheet> {
                               style: TextStyle(color: sub)),
                         )
                       : ListView.builder(
+                          controller: _scroll,
                           padding: const EdgeInsets.symmetric(vertical: 8),
                           itemCount: _comments.length,
                           itemBuilder: (_, i) {

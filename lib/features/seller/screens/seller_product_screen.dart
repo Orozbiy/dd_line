@@ -39,10 +39,15 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
 
   List<Map<String, dynamic>> get _filteredProducts {
     if (_selectedCategoryId == null) return _products;
+    final sel = _selectedCategoryId!;
     return _products
-        .where((p) => (p['category_id'] as String? ?? '').startsWith(_selectedCategoryId!))
+        .where((p) => _catMatches(p['category_id'] as String? ?? '', sel))
         .toList();
   }
+
+  /// '1' жана '10'–'17' аралашып кетпеши үчүн так дал келүү же '_' менен башталуу.
+  static bool _catMatches(String categoryId, String selected) =>
+      categoryId == selected || categoryId.startsWith('${selected}_');
 
   final List<Map<String, String>> _legacyCategories = [
     {'id': '1',  'name': 'Кийим-кече',           'icon': '👕'},
@@ -599,7 +604,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                 _categoryChip(id: null, icon: '📦', name: loc.get('prod_all'), count: _products.length, isDark: isDark),
                 const SizedBox(width: 8),
                 ..._allCategories.where((cat) => usedMainCatIds.contains(cat.id)).map((cat) {
-                  final count = _products.where((p) => (p['category_id'] as String? ?? '').startsWith(cat.id)).length;
+                  final count = _products.where((p) => _catMatches(p['category_id'] as String? ?? '', cat.id)).length;
                   return Padding(padding: const EdgeInsets.only(right: 8),
                       child: _categoryChip(id: cat.id, icon: cat.icon, name: cat.name, count: count, isDark: isDark));
                 }),
@@ -617,6 +622,29 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
             ),
           ),
           Divider(height: 1, color: divColor),
+          if (_selectedCategoryId != null && _selectedCategoryId!.contains('_'))
+            Container(
+              width: double.infinity,
+              color: AppColors.primary.withOpacity(isDark ? 0.14 : 0.08),
+              padding: const EdgeInsets.fromLTRB(14, 8, 8, 8),
+              child: Row(children: [
+                const Icon(Icons.filter_alt_rounded, size: 16, color: AppColors.primary),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    _getCategoryName(_selectedCategoryId!),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.labelSmall.copyWith(color: AppColors.primary, fontWeight: FontWeight.w700),
+                  ),
+                ),
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  icon: const Icon(Icons.close_rounded, size: 18, color: AppColors.primary),
+                  onPressed: () => setState(() => _selectedCategoryId = null),
+                ),
+              ]),
+            ),
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
@@ -734,13 +762,48 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showProductDialog(),
-        backgroundColor: AppColors.primary,
-        icon: const Icon(Icons.add, color: Colors.white),
-        label: Text(loc.get('add_product'), style: AppTextStyles.labelMedium.copyWith(color: Colors.white)),
+      floatingActionButton: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FloatingActionButton.extended(
+            heroTag: 'seller_filter_fab',
+            onPressed: _openCategoryFilter,
+            backgroundColor: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+            elevation: 3,
+            icon: Icon(Icons.filter_list_rounded,
+                color: _selectedCategoryId == null ? AppColors.primary : AppColors.success),
+            label: Text(
+              _selectedCategoryId == null ? 'Фильтр' : 'Фильтр ✓',
+              style: AppTextStyles.labelMedium.copyWith(color: isDark ? Colors.white : AppColors.black),
+            ),
+          ),
+          const SizedBox(width: 10),
+          FloatingActionButton.extended(
+            heroTag: 'seller_add_fab',
+            onPressed: () => _showProductDialog(),
+            backgroundColor: AppColors.primary,
+            icon: const Icon(Icons.add, color: Colors.white),
+            label: Text(loc.get('add_product'), style: AppTextStyles.labelMedium.copyWith(color: Colors.white)),
+          ),
+        ],
       ),
     );
+  }
+
+  // ── Категория фильтри: 18 негизги → подкатегория → подэлемент ──
+  Future<void> _openCategoryFilter() async {
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _CategoryFilterSheet(
+        categories: _allCategories,
+        products: _products,
+        selectedId: _selectedCategoryId,
+      ),
+    );
+    if (picked == null) return; // жабылды
+    setState(() => _selectedCategoryId = picked.isEmpty ? null : picked);
   }
 
   Widget _categoryChip({required String? id, required String icon, required String name, required int count, required bool isDark}) {
@@ -2307,6 +2370,172 @@ class _EmptyState extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+
+// ══════════════════════════════════════════════════════
+// Категория фильтри барагы
+// ══════════════════════════════════════════════════════
+class _CategoryFilterSheet extends StatelessWidget {
+  final List<CategoryModel> categories;
+  final List<Map<String, dynamic>> products;
+  final String? selectedId;
+
+  const _CategoryFilterSheet({
+    required this.categories,
+    required this.products,
+    required this.selectedId,
+  });
+
+  int _count(String id) => products
+      .where((p) => _SellerProductScreenState._catMatches(
+          p['category_id'] as String? ?? '', id))
+      .length;
+
+  bool _isAll(SubCategoryModel s) => s.name.trim() == 'Баары';
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final fg = isDark ? Colors.white : AppColors.black;
+    final sub = isDark ? Colors.white54 : AppColors.grey500;
+
+    Widget row({
+      required String id,
+      required String icon,
+      required String title,
+      double indent = 0,
+      bool bold = false,
+    }) {
+      final n = id.isEmpty ? products.length : _count(id);
+      final active = id.isEmpty ? selectedId == null : selectedId == id;
+      return ListTile(
+        dense: true,
+        contentPadding: EdgeInsets.only(left: 16 + indent, right: 16),
+        leading: Text(icon, style: const TextStyle(fontSize: 18)),
+        title: Text(title,
+            style: TextStyle(
+              color: active ? AppColors.primary : fg,
+              fontWeight: bold || active ? FontWeight.w700 : FontWeight.w500,
+            )),
+        trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: n > 0 ? AppColors.primary.withOpacity(0.12) : Colors.transparent,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text('$n',
+                style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: n > 0 ? AppColors.primary : sub)),
+          ),
+          if (active) ...[
+            const SizedBox(width: 6),
+            const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 18),
+          ],
+        ]),
+        onTap: () => Navigator.pop(context, id),
+      );
+    }
+
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.8,
+      maxChildSize: 0.95,
+      minChildSize: 0.4,
+      builder: (_, scroll) => Container(
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(children: [
+          const SizedBox(height: 8),
+          Container(
+            width: 40, height: 4,
+            decoration: BoxDecoration(color: AppColors.grey300, borderRadius: BorderRadius.circular(2)),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
+            child: Row(children: [
+              Expanded(
+                child: Text('Категория боюнча фильтр',
+                    style: TextStyle(color: fg, fontSize: 17, fontWeight: FontWeight.w800)),
+              ),
+              if (selectedId != null)
+                TextButton(
+                  onPressed: () => Navigator.pop(context, ''),
+                  child: const Text('Тазалоо'),
+                ),
+            ]),
+          ),
+          Expanded(
+            child: ListView(
+              controller: scroll,
+              padding: const EdgeInsets.only(bottom: 24),
+              children: [
+                row(id: '', icon: '📦', title: 'Бардык товарлар', bold: true),
+                for (final cat in categories)
+                  Theme(
+                    data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                    child: ExpansionTile(
+                      initiallyExpanded: selectedId != null &&
+                          (selectedId == cat.id || selectedId!.startsWith('${cat.id}_')),
+                      tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+                      leading: Text(cat.icon, style: const TextStyle(fontSize: 20)),
+                      title: Row(children: [
+                        Expanded(
+                          child: Text(cat.name,
+                              style: TextStyle(color: fg, fontWeight: FontWeight.w700)),
+                        ),
+                        Text('${_count(cat.id)}',
+                            style: TextStyle(
+                                color: _count(cat.id) > 0 ? AppColors.primary : sub,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13)),
+                      ]),
+                      children: [
+                        row(id: cat.id, icon: '📂', title: 'Баары — ${cat.name}', indent: 16, bold: true),
+                        for (final s in cat.subcategories.where((x) => !_isAll(x)))
+                          s.subItems.where((x) => !_isAll(x)).isEmpty
+                              ? row(id: s.id, icon: s.icon, title: s.name, indent: 16)
+                              : Theme(
+                                  data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                                  child: ExpansionTile(
+                                    initiallyExpanded: selectedId != null &&
+                                        (selectedId == s.id || selectedId!.startsWith('${s.id}_')),
+                                    tilePadding: const EdgeInsets.only(left: 32, right: 16),
+                                    leading: Text(s.icon, style: const TextStyle(fontSize: 18)),
+                                    title: Row(children: [
+                                      Expanded(
+                                        child: Text(s.name,
+                                            style: TextStyle(color: fg, fontWeight: FontWeight.w600, fontSize: 14)),
+                                      ),
+                                      Text('${_count(s.id)}',
+                                          style: TextStyle(
+                                              color: _count(s.id) > 0 ? AppColors.primary : sub,
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 12)),
+                                    ]),
+                                    children: [
+                                      row(id: s.id, icon: '📂', title: 'Баары — ${s.name}', indent: 36, bold: true),
+                                      for (final it in s.subItems.where((x) => !_isAll(x)))
+                                        row(id: it.id, icon: it.icon, title: it.name, indent: 36),
+                                    ],
+                                  ),
+                                ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ]),
       ),
     );
   }

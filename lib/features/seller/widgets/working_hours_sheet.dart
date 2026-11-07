@@ -25,24 +25,74 @@ class WorkingHoursSheet extends StatefulWidget {
 class _WorkingHoursSheetState extends State<WorkingHoursSheet> {
   late TimeOfDay _start;
   late TimeOfDay _end;
-  late String    _days;
+  late Set<int>  _sel; // 0=Дш … 6=Жк
   bool _saving = false;
-  
-  
 
-  static const _dayKeys = [
-    'hours_mon_fri', 'hours_mon_sat', 'hours_mon_sun', 'hours_no_sun', 'hours_daily',
-  ];
-  static const _dayValues = [
-    'Дш-Жм', 'Дш-Шб', 'Дш-Жк', 'Жк күн эмес', 'Күн сайын',
-  ];
+  static const _short = ['Дш', 'Шш', 'Шр', 'Бш', 'Жм', 'Шб', 'Жк'];
+
+  /// Сакталган саптан (эски жана жаңы форматтар) күндөрдүн жыйындысын чыгарат.
+  static Set<int> parseDays(String? raw) {
+    final v = (raw ?? '').trim();
+    if (v.isEmpty) return {0, 1, 2, 3, 4};
+    switch (v) {
+      case 'Дш-Жм':
+        return {0, 1, 2, 3, 4};
+      case 'Дш-Шб':
+      case 'Жк күн эмес':
+        return {0, 1, 2, 3, 4, 5};
+      case 'Дш-Жк':
+      case 'Күн сайын':
+        return {0, 1, 2, 3, 4, 5, 6};
+    }
+    final out = <int>{};
+    for (final part in v.split(',')) {
+      final t = part.trim();
+      if (t.contains('-')) {
+        final ab = t.split('-');
+        final i = _short.indexOf(ab[0].trim());
+        final j = _short.indexOf(ab.last.trim());
+        if (i >= 0 && j >= i) {
+          for (var k = i; k <= j; k++) {
+            out.add(k);
+          }
+        }
+      } else {
+        final i = _short.indexOf(t);
+        if (i >= 0) out.add(i);
+      }
+    }
+    return out.isEmpty ? {0, 1, 2, 3, 4} : out;
+  }
+
+  /// Тандалган күндөрдү кыска сапка айландырат.
+  static String formatDays(Set<int> sel) {
+    if (sel.length == 7) return 'Күн сайын';
+    final days = sel.toList()..sort();
+    final parts = <String>[];
+    var i = 0;
+    while (i < days.length) {
+      var j = i;
+      while (j + 1 < days.length && days[j + 1] == days[j] + 1) {
+        j++;
+      }
+      if (j - i >= 2) {
+        parts.add('${_short[days[i]]}-${_short[days[j]]}');
+      } else {
+        for (var k = i; k <= j; k++) {
+          parts.add(_short[days[k]]);
+        }
+      }
+      i = j + 1;
+    }
+    return parts.join(', ');
+  }
 
   @override
   void initState() {
     super.initState();
     _start = _parseTime(widget.initialStart ?? '09:00');
     _end   = _parseTime(widget.initialEnd   ?? '18:00');
-    _days  = widget.initialDays ?? _dayValues[0];
+    _sel   = parseDays(widget.initialDays);
   }
 
   TimeOfDay _parseTime(String t) {
@@ -68,12 +118,18 @@ class _WorkingHoursSheetState extends State<WorkingHoursSheet> {
 
   Future<void> _save() async {
     final loc = AppLocalizations.of(context);
+    if (_sel.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Жок дегенде 1 күндү тандаңыз')),
+      );
+      return;
+    }
     setState(() => _saving = true);
     try {
       await supabase.from('stores').update({
         'work_start': _fmt(_start),
         'work_end':   _fmt(_end),
-        'work_days':  _days,
+        'work_days':  formatDays(_sel),
       }).eq('owner_id', widget.sellerUid);
 
       if (mounted) {
@@ -141,26 +197,50 @@ class _WorkingHoursSheetState extends State<WorkingHoursSheet> {
           Text(loc.get('hours_workdays'),
               style: AppTextStyles.labelLarge.copyWith(color: headColor)),
           const SizedBox(height: 10),
-          Wrap(
-            spacing: 8, runSpacing: 8,
-            children: List.generate(_dayKeys.length, (i) {
-              final value    = _dayValues[i];
-              final label    = loc.get(_dayKeys[i]);
-              final selected = _days == value;
-              return GestureDetector(
-                onTap: () => setState(() => _days = value),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: selected ? AppColors.primary : chipUnsel,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: selected ? AppColors.primary : Colors.transparent),
+          Row(
+            children: List.generate(7, (i) {
+              final selected = _sel.contains(i);
+              return Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(right: i == 6 ? 0 : 6),
+                  child: GestureDetector(
+                    onTap: () => setState(() {
+                      if (selected) {
+                        _sel.remove(i);
+                      } else {
+                        _sel.add(i);
+                      }
+                    }),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      height: 46,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: selected ? AppColors.success : chipUnsel,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: selected ? AppColors.success : Colors.transparent,
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (selected)
+                            const Icon(Icons.check_rounded,
+                                size: 14, color: Colors.white),
+                          Text(
+                            _short[i],
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: selected ? Colors.white : chipText,
+                              fontWeight:
+                                  selected ? FontWeight.w700 : FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                  child: Text(label, style: AppTextStyles.labelSmall.copyWith(
-                    color: selected ? Colors.white : chipText,
-                    fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
-                  )),
                 ),
               );
             }),
@@ -180,7 +260,7 @@ class _WorkingHoursSheetState extends State<WorkingHoursSheet> {
               const Icon(Icons.access_time_rounded, color: AppColors.primary, size: 18),
               const SizedBox(width: 8),
               Text(
-                '${loc.get(_dayKeys[_dayValues.indexOf(_days)])}  ${_fmt(_start)} — ${_fmt(_end)}',
+                '${formatDays(_sel)}  ${_fmt(_start)} — ${_fmt(_end)}',
                 style: AppTextStyles.labelLarge.copyWith(color: AppColors.primary),
               ),
             ]),

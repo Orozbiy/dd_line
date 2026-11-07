@@ -412,35 +412,18 @@ class NotificationService {
   }) async {
     debugPrint('📤 sendChatNotification → receiverUid=$receiverUid');
     try {
-      final rows = await supabase
-          .from('push_tokens')
-          .select('token')
-          .eq('user_id', receiverUid);
-
-      if ((rows as List).isEmpty) {
-        debugPrint('⚠️ Токен жок: $receiverUid');
-        return;
-      }
-
-      final accessToken = await _getAccessToken();
-      if (accessToken == null) {
-        debugPrint('❌ Access token алынбады');
-        return;
-      }
-
-      for (final row in rows) {
-        final fcmToken = row['token'] as String?;
-        if (fcmToken == null || fcmToken.isEmpty) continue;
-        await _sendOneFcm(
-          fcmToken:    fcmToken,
-          accessToken: accessToken,
-          title:       senderName,
-          body:        messageText,
-          chatId:      chatId,
-        );
-      }
-
-      debugPrint('✅ sendChatNotification бүттү');
+      // Серверде (Edge Function) жөнөтүлөт — service account ачкычы
+      // тиркемеде сакталбайт, ошондуктан push чындап иштейт.
+      final res = await supabase.functions.invoke(
+        'send-push',
+        body: {
+          'receiverUid': receiverUid,
+          'title':       senderName,
+          'body':        messageText,
+          'chatId':      chatId,
+        },
+      );
+      debugPrint('✅ send-push: ${res.status} ${res.data}');
     } catch (e) {
       debugPrint('❌ sendChatNotification ката: $e');
     }
@@ -683,6 +666,15 @@ class NotificationService {
         );
       } else if (defaultTargetPlatform == TargetPlatform.iOS) {
         platform = 'ios';
+        // iOS: FCM токенден мурун APNs токен даяр болушу керек
+        String? apns = await _messaging.getAPNSToken();
+        for (int i = 0; apns == null && i < 10; i++) {
+          await Future.delayed(const Duration(milliseconds: 500));
+          apns = await _messaging.getAPNSToken();
+        }
+        if (apns == null) {
+          debugPrint('⚠️ APNs token алынган жок (Push capability/APNs key текшериңиз)');
+        }
         token = await _messaging.getToken();
       } else {
         platform = 'android';
@@ -760,4 +752,4 @@ class NotificationService {
       return null;
     }
   }
-}
+}

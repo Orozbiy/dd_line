@@ -25,6 +25,8 @@ import '../../product_detail/screens/product_detail_screen.dart';
 import '../screens/favorites_screen.dart';
 
 import '../widgets/product_card.dart';
+import '../widgets/product_skeleton_grid.dart';
+import '../../../core/widgets/diagonal_reveal.dart';
 import 'dart:ui';
 import '../constants/home_colors.dart';
 import '../widgets/home_bottom_nav.dart';
@@ -227,6 +229,15 @@ class _HomeScreenState extends State<HomeScreen> {
       _navVisible = true;
       _titleVisible = true;
     });
+  }
+
+  /// Жүктөлүп жатканда спиннердин ордуна товар орундары.
+  Widget _buildSkeletonSliver() {
+    DiagonalReveal.resetPlayed(); // жаңы товарлар 45° менен кайра чыксын
+    return const SliverPadding(
+      padding: EdgeInsets.fromLTRB(10, 15, 10, 12),
+      sliver: SliverToBoxAdapter(child: ProductSkeletonGrid()),
+    );
   }
 
   Future<void> _loadProducts({bool refresh = false}) async {
@@ -642,6 +653,9 @@ class _HomeScreenState extends State<HomeScreen> {
               return false;
             },
             child: RefreshIndicator(
+              color: Colors.transparent,
+              backgroundColor: Colors.transparent,
+              elevation: 0,
               onRefresh: () async {
                 if (_isSearchMode && _searchQuery.isNotEmpty) {
                   // ── Издөө режиминде — издөөнү кайра жүргүзүү ──
@@ -737,21 +751,7 @@ if (_isSearchMode || _isNearbyMode ||
 
                   // ── Товарлар ──
                   if (_isLoading)
-                    SliverFillRemaining(
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const CircularProgressIndicator(
-                                color: DD.accent, strokeWidth: 3),
-                            const SizedBox(height: 16),
-                            Text(loc.get('loading'),
-                                style: const TextStyle(
-                                    color: AppColors.grey500, fontSize: 14)),
-                          ],
-                        ),
-                      ),
-                    )
+                    _buildSkeletonSliver()
                   else if (displayedProducts.isEmpty)
                     SliverFillRemaining(
                       child: Center(
@@ -798,7 +798,12 @@ if (_isSearchMode || _isNearbyMode ||
                                         ? RepaintBoundary(
                                             key: ValueKey(
                                                 displayedProducts[rowIndex * 2 + col].id),
-                                            child: ProductCard(
+                                            child: DiagonalReveal(
+                                              revealId:
+                                                  displayedProducts[rowIndex * 2 + col].id.toString(),
+                                              delay: Duration(
+                                                  milliseconds: (rowIndex % 6) * 60 + col * 70),
+                                              child: ProductCard(
                                               product: displayedProducts[
                                                   rowIndex * 2 + col],
                                               onTap: () => Navigator.push(
@@ -809,6 +814,7 @@ if (_isSearchMode || _isNearbyMode ||
                                                           rowIndex * 2 + col]),
                                                 ),
                                               ).then((_) => setState(() {})),
+                                            ),
                                             ),
                                           )
                                         : const SizedBox.shrink(),
@@ -1102,7 +1108,7 @@ if (_isSearchMode || _isNearbyMode ||
                 curve: Curves.easeInOut,
                 right: 16,
                 bottom: _navVisible
-                    ? HomeBottomNav.navHeight + _navBottomPadding + 20
+                    ? HomeBottomNav.footprint(_navBottomPadding) + 16
                     : 32,
                 child: _MenuFab(onTap: () => openSidePanel(context)),
               ),

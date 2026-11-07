@@ -23,6 +23,8 @@ import '../../chat/services/chat_service.dart';
 import '../../store/screens/store_products_screen.dart';
 import '../widgets/review_section.dart';
 import '../widgets/pulse_box.dart';
+import '../../seller/widgets/working_hours_sheet.dart';
+import '../../../core/widgets/diagonal_reveal.dart';
 import '../widgets/share_widget.dart';
 
 class ProductDetailScreen extends StatefulWidget {
@@ -90,6 +92,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
     }
     // Экран дароо көрүнөт (жогорудагы _product менен); калган маалымат
     // фондо жүктөлөт. "Окшош товарлар" өзүнчө виджет катары өзү жүктөйт.
+    // Сатуучунун UID белгилүү болсо — профилди (сүрөтү менен) дароо,
+    // дүкөн маалыматын күтпөстөн параллель жүктөйбүз
+    final earlyUid = widget.product.sellerUid;
+    if (earlyUid != null && earlyUid.isNotEmpty) _loadSellerProfile(earlyUid);
     _loadFullProductData();
   }
 
@@ -102,6 +108,36 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
       _waitingForLocationSettings = false;
       _openMapNavigation();
     }
+  }
+
+  // Сатуучунун профили (аты, сүрөтү) — кэш менен, бир гана жолу жүктөлөт
+  static final Map<String, Map<String, dynamic>> _profileCache = {};
+  String? _profileRequestedFor;
+
+  void _applyProfile(Map<String, dynamic> profile) {
+    if (!mounted) return;
+    setState(() {
+      _sellerName = profile['full_name'] as String? ?? '';
+      _storeType = profile['store_type'] as String? ?? 'market';
+      _marketName = profile['market_name'] as String? ?? '';
+      _avatarUrl = profile['avatar_url'] as String?;
+    });
+  }
+
+  void _loadSellerProfile(String uid) {
+    if (_profileRequestedFor == uid) return;
+    _profileRequestedFor = uid;
+    final cached = _profileCache[uid];
+    if (cached != null) _applyProfile(cached);
+    supabase
+        .from('profiles')
+        .select('full_name, store_type, market_name, avatar_url')
+        .eq('id', uid)
+        .single()
+        .then((profile) {
+      _profileCache[uid] = Map<String, dynamic>.from(profile);
+      _applyProfile(profile);
+    }).catchError((_) {});
   }
 
   Future<void> _loadFullProductData() async {
@@ -129,24 +165,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
           _storeLat = (storeData['latitude'] as num?)?.toDouble();
           _storeLng = (storeData['longitude'] as num?)?.toDouble();
         });
-        if (_sellerUid != null) {
-          // Сатуучунун профилин да фондо, күттүрбөй жүктөйбүз
-          supabase
-              .from('profiles')
-              .select('full_name, store_type, market_name, avatar_url')
-              .eq('id', _sellerUid!)
-              .single()
-              .then((profile) {
-            if (mounted) {
-              setState(() {
-                _sellerName = profile['full_name'] as String? ?? '';
-                _storeType = profile['store_type'] as String? ?? 'market';
-                _marketName = profile['market_name'] as String? ?? '';
-                _avatarUrl = profile['avatar_url'] as String?;
-              });
-            }
-          }).catchError((_) {});
-        }
+        if (_sellerUid != null) _loadSellerProfile(_sellerUid!);
       }
 
       supabase.rpc('increment_product_views', params: {
@@ -368,6 +387,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
 
   bool _isOpenNow() {
     if (_workStart.isEmpty || _workEnd.isEmpty) return false;
+    if (_workDays.isNotEmpty &&
+        !WorkingHoursSheet.parseDays(_workDays)
+            .contains(DateTime.now().weekday - 1)) {
+      return false; // бүгүн иш күнү эмес
+    }
     final now = TimeOfDay.now();
     TimeOfDay parse(String t) {
       final p = t.split(':');
@@ -427,8 +451,23 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                 child: CachedNetworkImage(
                   imageUrl: toCloudinaryThumb(url, width: 800),
                   fit: BoxFit.cover,
-                  fadeInDuration: const Duration(milliseconds: 150),
-                  placeholder: (_, __) => Container(color: AppColors.grey100),
+                  fadeInDuration: Duration.zero,
+                  fadeOutDuration: Duration.zero,
+                  // Ак фон эмес — теманын түсүндөгү орун; сүрөт 45° менен чыгат
+                  placeholder: (ctx, __) => Container(
+                    color: Theme.of(ctx).brightness == Brightness.dark
+                        ? const Color(0xFF14162A)
+                        : AppColors.grey100,
+                  ),
+                  imageBuilder: (ctx, provider) => ClipRect(
+                    child: DiagonalReveal(
+                      distance: 44,
+                      duration: const Duration(milliseconds: 480),
+                      child: SizedBox.expand(
+                        child: Image(image: provider, fit: BoxFit.cover),
+                      ),
+                    ),
+                  ),
                   errorWidget: (_, __, ___) => Container(
                     color: AppColors.grey100,
                     child: const Icon(Icons.image_not_supported,
@@ -1008,7 +1047,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                                                     radius: 30,
                                                     backgroundColor: const Color(0xFFF1F5F9),
                                                     backgroundImage:
-                                                        CachedNetworkImageProvider(_avatarUrl!),
+                                                        CachedNetworkImageProvider(_avatarUrl!, maxWidth: 160, maxHeight: 160),
                                                   )
                                                 : const CircleAvatar(
                                                     radius: 30,
@@ -1490,7 +1529,29 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
     final hasColors = _product.colors.isNotEmpty;
     final hasSizes = _product.sizes.isNotEmpty;
     final hasStock = _product.inStock != null;
-    if (!hasColors && !hasSizes && !hasStock) return const SizedBox.shrink();
+
+    // ── Сатуучу кошкон кошумча талаалар (категорияга жараша аталышы) ──
+    final mainCat = (_product.category ?? '').split('_').first;
+    final List<String> extraLabels;
+    if (['4', '6'].contains(mainCat)) {
+      extraLabels = ['prod_field_brand', 'prod_field_model', 'prod_field_spec'];
+    } else if (['9', '10'].contains(mainCat)) {
+      extraLabels = ['prod_field_brand', 'prod_field_volume'];
+    } else if (mainCat == '12') {
+      extraLabels = ['prod_field_brand', 'prod_field_car_compat'];
+    } else {
+      extraLabels = const [];
+    }
+    final extraValues = [_product.extra1, _product.extra2, _product.extra3];
+    final extraRows = <MapEntry<String, String>>[
+      for (var i = 0; i < extraLabels.length; i++)
+        if (extraValues[i].isNotEmpty)
+          MapEntry(loc.get(extraLabels[i]), extraValues[i]),
+    ];
+
+    if (!hasColors && !hasSizes && !hasStock && extraRows.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     return _blurBlock(
       Padding(
@@ -1531,6 +1592,30 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                 );
               }),
               const SizedBox(height: 14),
+            ],
+            for (final row in extraRows) ...[
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      flex: 5,
+                      child: Text(row.key,
+                          style: AppTextStyles.bodySmall
+                              .copyWith(color: AppColors.grey500)),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      flex: 6,
+                      child: Text(row.value,
+                          textAlign: TextAlign.right,
+                          style: AppTextStyles.bodyMedium
+                              .copyWith(fontWeight: FontWeight.w600)),
+                    ),
+                  ],
+                ),
+              ),
             ],
             if (hasColors) ...[
               _subLabel(Icons.palette_outlined, loc.get('colors')),

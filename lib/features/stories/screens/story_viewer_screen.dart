@@ -483,36 +483,25 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                               borderRadius: BorderRadius.circular(24),
                               border: Border.all(color: Colors.white54),
                             ),
-                            child: const Text('Комментарий жазуу...',
-                                style: TextStyle(
-                                    color: Colors.white70, fontSize: 14)),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      // Комментарий иконкасы + саны
-                      GestureDetector(
-                        onTap: () => _openComments(),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 10),
-                          decoration: BoxDecoration(
-                            color: Colors.black38,
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.mode_comment_outlined,
-                                  color: Colors.white, size: 22),
-                              if ((_commentCounts[story.id] ?? 0) > 0) ...[
-                                const SizedBox(width: 6),
-                                Text('${_commentCounts[story.id]}',
-                                    style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w600)),
+                            child: Row(
+                              children: [
+                                const Expanded(
+                                  child: Text('Комментарий жазуу...',
+                                      style: TextStyle(
+                                          color: Colors.white70, fontSize: 14)),
+                                ),
+                                if ((_commentCounts[story.id] ?? 0) > 0) ...[
+                                  const Icon(Icons.mode_comment_outlined,
+                                      color: Colors.white70, size: 16),
+                                  const SizedBox(width: 4),
+                                  Text('${_commentCounts[story.id]}',
+                                      style: const TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600)),
+                                ],
                               ],
-                            ],
+                            ),
                           ),
                         ),
                       ),

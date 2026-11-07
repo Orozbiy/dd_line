@@ -30,6 +30,10 @@ class ProductModel {
   final String pricingType;    // 'retail' | 'wholesale'
   final String wholesaleMode;  // 'price' | 'negotiation'
   final double? wholesalePrice;
+  // Сатуучу кошкон кошумча талаалар (бренд/модель/мүнөздөмө ж.б.)
+  final String extra1;
+  final String extra2;
+  final String extra3;
 
   ProductModel({
     required this.id,
@@ -61,6 +65,9 @@ class ProductModel {
     this.pricingType = 'retail',
     this.wholesaleMode = 'price',
     this.wholesalePrice,
+    this.extra1 = '',
+    this.extra2 = '',
+    this.extra3 = '',
   });
 
   /// Товар 10 күндөн жаш болсо — "Жаңы" badge көрсөтүлөт
@@ -108,6 +115,9 @@ class ProductModel {
       pricingType: data['pricing_type'] as String? ?? 'retail',
       wholesaleMode: data['wholesale_mode'] as String? ?? 'price',
       wholesalePrice: (data['wholesale_price'] as num?)?.toDouble(),
+      extra1: (data['extra1'] as String? ?? '').trim(),
+      extra2: (data['extra2'] as String? ?? '').trim(),
+      extra3: (data['extra3'] as String? ?? '').trim(),
     );
   }
 
@@ -182,6 +192,9 @@ class ProductModel {
     String? pricingType,
     String? wholesaleMode,
     double? wholesalePrice,
+    String? extra1,
+    String? extra2,
+    String? extra3,
   }) {
     return ProductModel(
       id: id ?? this.id,
@@ -213,6 +226,9 @@ class ProductModel {
       pricingType: pricingType ?? this.pricingType,
       wholesaleMode: wholesaleMode ?? this.wholesaleMode,
       wholesalePrice: wholesalePrice ?? this.wholesalePrice,
+      extra1: extra1 ?? this.extra1,
+      extra2: extra2 ?? this.extra2,
+      extra3: extra3 ?? this.extra3,
     );
   }
 }

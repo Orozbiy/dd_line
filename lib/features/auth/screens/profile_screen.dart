@@ -78,7 +78,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final loc    = AppLocalizations.of(context);
     final picker = ImagePicker();
     final picked = await picker.pickImage(
-        source: ImageSource.gallery, imageQuality: 70, maxWidth: 512);
+        source: ImageSource.gallery, imageQuality: 75, maxWidth: 320, maxHeight: 320);
     if (picked == null) return;
 
     setState(() => _isUploadingPhoto = true);
@@ -90,8 +90,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       await supabase.storage.from('product-images').upload(
             storagePath, file,
             fileOptions: const FileOptions(upsert: true));
+      // ?v= — жаңы сүрөт кэште эски болуп калбашы үчүн
       final url =
-          supabase.storage.from('product-images').getPublicUrl(storagePath);
+          '${supabase.storage.from('product-images').getPublicUrl(storagePath)}?v=${DateTime.now().millisecondsSinceEpoch}';
       await supabase
           .from('profiles')
           .update({'avatar_url': url}).eq('id', user.id);
