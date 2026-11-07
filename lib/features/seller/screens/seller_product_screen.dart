@@ -1030,6 +1030,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
       barrierDismissible: false,
       builder: (_) => StatefulBuilder(
         builder: (ctx, setD) {
+          final loc = AppLocalizations.of(ctx);
           final mainCat      = _allCategories.firstWhere((c) => c.id == selectedMainCatId, orElse: () => _allCategories.first);
           final selectedSub  = selectedSubCatId != null
               ? mainCat.subcategories.where((s) => s.id == selectedSubCatId).firstOrNull

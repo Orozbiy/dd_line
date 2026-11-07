@@ -4,6 +4,7 @@
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import '../../../core/app_localizations.dart';
 
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
@@ -63,6 +64,7 @@ class _SellerNotificationsScreenState
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor   = isDark ? const Color(0xFF121212) : Colors.white;
     final cardColor = isDark ? const Color(0xFF1E1E1E) : const Color(0xFFF7F8FA);

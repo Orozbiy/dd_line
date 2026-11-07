@@ -35,7 +35,6 @@ import 'dart:ui';
 import '../constants/home_colors.dart';
 import '../widgets/home_bottom_nav.dart';
 // ignore: duplicate_import
-import '../widgets/home_bottom_nav.dart';
 import '../widgets/equal_height_row.dart';
 import '../widgets/home_background.dart';
 import '../../../core/update_checker.dart';
