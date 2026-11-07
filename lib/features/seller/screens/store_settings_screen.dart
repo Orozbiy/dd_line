@@ -141,8 +141,7 @@ class _StoreLocationScreenState extends State<StoreLocationScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              loc.get('store_location_hint')
-              'Учурдагы GPS позицияңыз дүкөндүн жайгашкан жери катары сакталат.',
+              loc.get('store_location_hint'),
               style: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey500),
             ),
             const Spacer(),
