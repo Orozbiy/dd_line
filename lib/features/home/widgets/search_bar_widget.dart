@@ -71,13 +71,19 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
         prefixIcon: const Icon(Icons.search, color: AppColors.primary, size: 24),
         suffixIcon: _controller.text.isNotEmpty
             ? GestureDetector(
+                behavior: HitTestBehavior.opaque,
                 onTap: () {
                   _controller.clear();
                   _focusNode.unfocus();  // ← KOШ: тазалагандан кийин жабылат
                   widget.onClear?.call();
                   widget.onChanged('');
                 },
-                child: const Icon(Icons.close, color: AppColors.grey400),
+                child: const SizedBox(
+                  width: 44,
+                  height: 44,
+                  child: Icon(Icons.cancel_rounded,
+                      color: AppColors.grey400, size: 20),
+                ),
               )
             : null,
         border: OutlineInputBorder(

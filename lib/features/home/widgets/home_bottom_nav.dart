@@ -34,6 +34,9 @@ class HomeBottomNav extends StatefulWidget {
   final double bottomPadding;
   final ValueChanged<int> onTabSelected;
 
+  /// Ар бир чыныгы тийүүдө (ошол эле табга кайра басканда да) чакырылат.
+  final ValueChanged<int>? onTabTapped;
+
   const HomeBottomNav({
     super.key,
     required this.currentTab,
@@ -42,6 +45,7 @@ class HomeBottomNav extends StatefulWidget {
     required this.favCount,
     required this.bottomPadding,
     required this.onTabSelected,
+    this.onTabTapped,
   });
 
   static const double navHeight = 68.0;
@@ -141,7 +145,9 @@ class _HomeBottomNavState extends State<HomeBottomNav> {
                                   d.localPosition.dx, totalWidth,
                                   haptic: true);
                             };
-                            instance.onTapUp = (_) {
+                            instance.onTapUp = (d) {
+                              widget.onTabTapped?.call(
+                                  _indexAtDx(d.localPosition.dx, totalWidth));
                               _endTouch();
                             };
                             instance.onTapCancel = _endTouch;

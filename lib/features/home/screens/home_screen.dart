@@ -98,7 +98,9 @@ class _HomeScreenState extends State<HomeScreen> {
   // DD Online блогу көрүнөбү
 
   // DD Online блогунун бийиктиги: toolbar(52px)
-  static const double _titleBarHeight = 105.0;
+  // (status bar бийиктиги + 50px) — эки катардын ортосу жакын болсун
+  double get _titleBarHeight =>
+      MediaQuery.of(context).padding.top + 50.0;
   // Sticky header'дин чыныгы бийиктиги (категория ачылганда өзгөрөт)
   final GlobalKey _headerKey = GlobalKey();
   double? _headerH;
@@ -543,17 +545,25 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  void _onTitleTap() {
+  // Жашыруун админ: "Жөндөөлөр" кнопкасын 13 жолу ээрчий басуу,
+  // ар бир басуунун ортосу 1 секундадан ашпашы керек.
+  void _onNavTapped(int tab) {
+    if (tab != tabSettings) {
+      _adminTapCount = 0;
+      _lastTapTime = null;
+      return;
+    }
     final now = DateTime.now();
     if (_lastTapTime == null ||
-        now.difference(_lastTapTime!) > const Duration(seconds: 2)) {
+        now.difference(_lastTapTime!) > const Duration(seconds: 1)) {
       _adminTapCount = 1;
     } else {
       _adminTapCount++;
     }
     _lastTapTime = now;
-    if (_adminTapCount >= 15) {
+    if (_adminTapCount >= 13) {
       _adminTapCount = 0;
+      _lastTapTime = null;
       Navigator.push(
           context, MaterialPageRoute(builder: (_) => const AdminLoginScreen()));
     }
@@ -860,7 +870,7 @@ if (_isSearchMode || _isNearbyMode ||
                                       .then((_) => setState(() {})),
                                   child: Container(
                                     margin:
-                                        const EdgeInsets.fromLTRB(8, 6, 4, 6),
+                                        const EdgeInsets.fromLTRB(8, 4, 4, 4),
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 17, vertical: 11),
                                     decoration: BoxDecoration(
@@ -884,28 +894,7 @@ if (_isSearchMode || _isNearbyMode ||
                                             fontSize: 15)),
                                   ),
                                 ),
-                                // DD Online логотипи
-                                Expanded(
-                                  child: GestureDetector(
-                                    onTap: _onTitleTap,
-                                    child: Center(
-                                      child: ShaderMask(
-                                        shaderCallback: (bounds) =>
-                                            const LinearGradient(
-                                          colors: [DD.accent2, DD.accent],
-                                          begin: Alignment.centerLeft,
-                                          end: Alignment.centerRight,
-                                        ).createShader(bounds),
-                                        child: const Text('DD Online',
-                                            style: TextStyle(
-                                                fontSize: 26,
-                                                fontWeight: FontWeight.w800,
-                                                color: Colors.white,
-                                                letterSpacing: -0.8)),
-                                      ),
-                                    ),
-                                  ),
-                                ),
+                                const Spacer(),
                                 // Коңгуроо
                                 GestureDetector(
                                   onTap: () => Navigator.push(
@@ -949,7 +938,7 @@ if (_isSearchMode || _isNearbyMode ||
 
                       // ── Search + баскычтар (дайыма туруктуу) ──
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+                        padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
                         child: Row(
                           children: [
                             Expanded(
@@ -957,27 +946,6 @@ if (_isSearchMode || _isNearbyMode ||
                                     controller: _searchController,
                                     onChanged: _onSearchChanged,
                                     onClear: _onSearchClear)),
-                            const SizedBox(width: 8),
-                            _glassButton(
-                              active: _isNearbyMode,
-                              onTap: _isLocating
-                                  ? () {}
-                                  : (_isNearbyMode
-                                      ? () => _loadProducts(refresh: true)
-                                      : _loadNearbyProducts),
-                              child: _isLocating
-                                  ? const SizedBox(
-                                      width: 22,
-                                      height: 22,
-                                      child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: DD.accent))
-                                  : Icon(Icons.near_me_rounded,
-                                      color: _isNearbyMode
-                                          ? Colors.white
-                                          : filterIconColor,
-                                      size: 22),
-                            ),
                             const SizedBox(width: 8),
                             _glassButton(
                               active: _filterCount > 0,
@@ -1125,6 +1093,7 @@ if (_isSearchMode || _isNearbyMode ||
               favCount: _favCount,
               bottomPadding: _navBottomPadding,
               onTabSelected: _switchTab,
+              onTabTapped: _onNavTapped,
             ),
           ],
         ),
