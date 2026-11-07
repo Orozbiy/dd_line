@@ -387,8 +387,7 @@ class _ProductCardState extends State<ProductCard>
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Icon(Icons.star_rounded,
-                              size: 16, color: Colors.amber[600]),
+                          Image.asset('assets/icons/nav/ic_star.png', width: 16, height: 16),
                           const SizedBox(width: 2),
                           Text(
                             rating.toStringAsFixed(1),

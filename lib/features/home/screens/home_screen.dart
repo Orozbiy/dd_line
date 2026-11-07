@@ -1039,12 +1039,7 @@ if (_isSearchMode || _isNearbyMode ||
                                     child: Stack(
                                       clipBehavior: Clip.none,
                                       children: [
-                                        Icon(Icons.notifications_outlined,
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .onSurface
-                                                .withOpacity(0.8),
-                                            size: 26),
+                                        Image.asset('assets/icons/nav/ic_bell.png', width: 28, height: 28),
                                         if (_hasUnread)
                                           Positioned(
                                             top: 0,
@@ -1084,11 +1079,7 @@ if (_isSearchMode || _isNearbyMode ||
                               child: Stack(
                                 clipBehavior: Clip.none,
                                 children: [
-                                  Icon(Icons.tune_rounded,
-                                      color: _filterCount > 0
-                                          ? Colors.white
-                                          : filterIconColor,
-                                      size: 22),
+                                  Image.asset('assets/icons/nav/ic_filter.png', width: 26, height: 26),
                                   if (_filterCount > 0)
                                     Positioned(
                                       top: -6,

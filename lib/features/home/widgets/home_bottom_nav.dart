@@ -243,14 +243,9 @@ class _HomeBottomNavState extends State<HomeBottomNav>
                           child: Row(
                             children: [
                               _NavButton(
-                                icon: Icon(
-                                  shownTab == tabHome
-                                      ? Icons.home_rounded
-                                      : Icons.home_outlined,
-                                  size: 23,
-                                  color: shownTab == tabHome
-                                      ? _mandarin
-                                      : p.subText,
+                                icon: Opacity(
+                                  opacity: shownTab == tabHome ? 1.0 : 0.45,
+                                  child: Image.asset('assets/icons/nav/ic_home.png', width: 26, height: 26),
                                 ),
                                 label: loc.get('home'),
                                 isActive: shownTab == tabHome,
@@ -267,14 +262,9 @@ class _HomeBottomNavState extends State<HomeBottomNav>
                                 palette: p,
                               ),
                               _NavButton(
-                                icon: Icon(
-                                  shownTab == tabMap
-                                      ? Icons.storefront_rounded
-                                      : Icons.storefront_outlined,
-                                  size: 23,
-                                  color: shownTab == tabMap
-                                      ? _mandarin
-                                      : p.subText,
+                                icon: Opacity(
+                                  opacity: shownTab == tabMap ? 1.0 : 0.45,
+                                  child: Image.asset('assets/icons/nav/ic_storefront.png', width: 26, height: 26),
                                 ),
                                 label: loc.get('map_title'),
                                 isActive: shownTab == tabMap,
@@ -290,14 +280,9 @@ class _HomeBottomNavState extends State<HomeBottomNav>
                                 palette: p,
                               ),
                               _NavButton(
-                                icon: Icon(
-                                  shownTab == tabSettings
-                                      ? Icons.settings_rounded
-                                      : Icons.settings_outlined,
-                                  size: 23,
-                                  color: shownTab == tabSettings
-                                      ? _mandarin
-                                      : p.subText,
+                                icon: Opacity(
+                                  opacity: shownTab == tabSettings ? 1.0 : 0.45,
+                                  child: Image.asset('assets/icons/nav/ic_settings_gear.png', width: 26, height: 26),
                                 ),
                                 label: loc.get('settings'),
                                 isActive: shownTab == tabSettings,
@@ -425,12 +410,9 @@ class _ChatBadgeIcon extends StatelessWidget {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        Icon(
-          isActive
-              ? Icons.chat_bubble_rounded
-              : Icons.chat_bubble_outline_rounded,
-          size: 23,
-          color: isActive ? _mandarin : palette.subText,
+        Opacity(
+          opacity: isActive ? 1.0 : 0.45,
+          child: Image.asset('assets/icons/nav/ic_chat.png', width: 26, height: 26),
         ),
         if (unreadCount > 0)
           Positioned(
