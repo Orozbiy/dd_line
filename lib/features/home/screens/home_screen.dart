@@ -183,7 +183,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _subscribeChatUnread() {
-    final user = supabase.auth.currentUser;
+    final user = supa.supabase.auth.currentUser;
     if (user == null) return;
     _chatSub = ChatService().buyerChatsStream(user.id).listen((chats) {
       if (!mounted) return;
@@ -198,13 +198,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _checkUnread() async {
     try {
-      final userId = supabase.auth.currentUser?.id;
+      final userId = supa.supabase.auth.currentUser?.id;
       if (userId == null) return;
-      final all = await supabase.from('admin_notifications').select('id')
+      final all = await supa.supabase.from('admin_notifications').select('id')
        .isFilter('seller_id', null);
       if ((all as List).isEmpty) return;
       final allIds = all.map((r) => r['id'] as String).toSet();
-      final reads = await supabase
+            final reads = await supa.supabase
           .from('notification_reads')
           .select('notification_id')
           .eq('user_id', userId);
