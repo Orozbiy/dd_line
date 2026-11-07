@@ -1003,13 +1003,22 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                                               gradient: DD.accentGradient,
                                               shape: BoxShape.circle,
                                             ),
-                                            child: CircleAvatar(
-                                            radius: 30,
-                                            backgroundColor: DD.accent,
-                                            backgroundImage: (_avatarUrl != null && _avatarUrl!.isNotEmpty)
-                                                ? CachedNetworkImageProvider(_avatarUrl!)
-                                                : const AssetImage('assets/icon/app_icon.png') as ImageProvider,
-                                          )),
+                                            child: (_avatarUrl != null && _avatarUrl!.isNotEmpty)
+                                                ? CircleAvatar(
+                                                    radius: 30,
+                                                    backgroundColor: const Color(0xFFF1F5F9),
+                                                    backgroundImage:
+                                                        CachedNetworkImageProvider(_avatarUrl!),
+                                                  )
+                                                : const CircleAvatar(
+                                                    radius: 30,
+                                                    backgroundColor: Color(0xFFF1F5F9),
+                                                    child: Icon(
+                                                      Icons.storefront_rounded,
+                                                      size: 30,
+                                                      color: Color(0xFF94A3B8),
+                                                    ),
+                                                  )),
                                           const SizedBox(height: 8),
                                           PulseBox(
                                               child: GestureDetector(
