@@ -15,14 +15,17 @@ class ShareWidget {
       'https://play.google.com/store/apps/details?id=com.ddonline.app';
 
   static Future<void> show(BuildContext context, ProductModel product) async {
-    final text = '🛍 ${product.name}\n'
-        '💰 ${product.priceFormatted}\n\n'
-        '📲 Колдонмодо кара:\n'
-        'ddonline://product/${product.id}\n\n'
-        '🌐 же браузерде:\n'
-        'https://dd-online-web.web.app/product/${product.id}\n\n'
-        '⬇️ Жүктөп алуу:\n'
-        '$_playStore';
+    // Universal link: Android тиркеме орнотулган болсо ачат, болбосо веб.
+    // iOS үчүн App Store шилтемеси кошулат.
+    const _appStore =
+        'https://apps.apple.com/app/id6738891846'; // iOS App Store
+    final webUrl = 'https://dd-online-web.web.app/product/\${product.id}';
+    final text = '🛍 \${product.name}\n'
+        '💰 \${product.priceFormatted}\n\n'
+        '👉 \$webUrl\n\n'
+        '📲 Колдонмону жүктөп ал:\n'
+        'Android: \$_playStore\n'
+        'iOS: \$_appStore';
 
     // Бөлүшүү аймагы (iPad үчүн керек)
     final box = context.findRenderObject() as RenderBox?;

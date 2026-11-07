@@ -1475,13 +1475,9 @@ Row(
 
                             for (int i = 0; i < 3; i++) {
                               if (newImageBytes[i] != null) {
-                                final Uint8List uploadBytes;
-                                if (kIsWeb) {
-                                  uploadBytes = newImageBytes[i]!;
-                                } else {
-                                  final compressed = await compressImage(newImageBytes[i]!);
-                                  uploadBytes      = await addWatermark(compressed);
-                                }
+                                // iOS / Android / Web: compress + watermark
+                                final compressed = await compressImage(newImageBytes[i]!);
+                                final Uint8List uploadBytes = await addWatermark(compressed);
                                 final uploaded = await YandexStorageService.instance.uploadImage(
                                   uploadBytes, folder: 'products',
                                 );

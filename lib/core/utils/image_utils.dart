@@ -48,11 +48,11 @@ Future<Uint8List> compressStoryImage(Uint8List bytes) async {
 // WATERMARK — dart:ui, сервер жок
 // ─────────────────────────────────────────────────────────────
 
-/// Товар сүрөтүнө "DD Online" watermark кош (ылдый ортосунда)
+/// Товар сүрөтүнө "DD Online" watermark кош — он ылдыйкы бурч, 40% opacity
 Future<Uint8List> addWatermark(Uint8List bytes) async {
-  final codec  = await ui.instantiateImageCodec(bytes);
-  final frame  = await codec.getNextFrame();
-  final src    = frame.image;
+  final codec = await ui.instantiateImageCodec(bytes);
+  final frame = await codec.getNextFrame();
+  final src   = frame.image;
 
   try {
     final w = src.width.toDouble();
@@ -62,52 +62,75 @@ Future<Uint8List> addWatermark(Uint8List bytes) async {
     final canvas   = Canvas(recorder);
     canvas.drawImage(src, Offset.zero, Paint());
 
-    final fontSize = w * 0.042;
-    final textColor = const Color(0x26FFFFFF);
+    // 40% opacity = 0x66 (255 * 0.4 ≈ 102 = 0x66)
+    const opacity    = 0x66;
+    const bgOpacity  = 0x40; // 25% фон
 
-    final positions = [
-      Offset(w * 0.18, h * 0.50),
-      Offset(w * 0.82, h * 0.50),
-      Offset(w * 0.50, h * 0.18),
-      Offset(w * 0.50, h * 0.82),
-      Offset(w * 0.50, h * 0.50),
-    ];
+    // Размерлер сүрөттүн өлчөмүнө жараша
+    final badgeH   = h * 0.085;          // badge бийиктиги
+    final badgeW   = w * 0.38;           // badge туурасы
+    final margin   = w * 0.025;          // четтен аралык
+    final bx       = w - badgeW - margin; // он жак
+    final by       = h - badgeH - margin; // ылдыйкы
 
-    for (final pos in positions) {
-      final pb = ui.ParagraphBuilder(ui.ParagraphStyle(
-        textAlign:  TextAlign.center,
-        fontSize:   fontSize,
-        fontWeight: FontWeight.bold,
+    // Жарым-жарым ак фон (капсула)
+    final bgPaint = Paint()
+      ..color = ui.Color.fromARGB(bgOpacity, 255, 255, 255);
+    final radius = badgeH / 2;
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(bx, by, badgeW, badgeH),
+        Radius.circular(radius),
+      ),
+      bgPaint,
+    );
+
+    // "D" чоң тамга (логотип)
+    final dSize    = badgeH * 0.65;
+    final dPb = ui.ParagraphBuilder(ui.ParagraphStyle(
+      textAlign:  TextAlign.left,
+      fontSize:   dSize,
+      fontWeight: FontWeight.w900,
+    ))
+      ..pushStyle(ui.TextStyle(
+        color:      ui.Color.fromARGB(opacity, 230, 60, 30), // кызгылт-кызыл
+        fontSize:   dSize,
+        fontWeight: FontWeight.w900,
       ))
-        ..pushStyle(ui.TextStyle(
-          color:         textColor,
-          fontSize:      fontSize,
-          fontWeight:    FontWeight.bold,
-          letterSpacing: fontSize * 0.1,
-        ))
-        ..addText('DD Online');
+      ..addText('D');
+    final dPara = dPb.build()
+      ..layout(ui.ParagraphConstraints(width: dSize * 1.2));
+    canvas.drawParagraph(
+      dPara,
+      Offset(bx + badgeH * 0.18, by + (badgeH - dSize) / 2 - 1),
+    );
 
-      final para = pb.build()
-        ..layout(ui.ParagraphConstraints(width: w * 0.5));
-
-      canvas.save();
-      canvas.translate(pos.dx, pos.dy);
-      canvas.rotate(-45 * 3.14159265 / 180);
-      canvas.drawParagraph(
-        para,
-        Offset(-para.longestLine / 2, -para.height / 2),
-      );
-      canvas.restore();
-    }
+    // "DD Online" текст
+    final txtSize = badgeH * 0.32;
+    final txtPb = ui.ParagraphBuilder(ui.ParagraphStyle(
+      textAlign:  TextAlign.left,
+      fontSize:   txtSize,
+      fontWeight: FontWeight.bold,
+    ))
+      ..pushStyle(ui.TextStyle(
+        color:         ui.Color.fromARGB(opacity, 40, 40, 40),
+        fontSize:      txtSize,
+        fontWeight:    FontWeight.bold,
+        letterSpacing: 0.5,
+      ))
+      ..addText('DD Online');
+    final txtPara = txtPb.build()
+      ..layout(ui.ParagraphConstraints(width: badgeW * 0.7));
+    canvas.drawParagraph(
+      txtPara,
+      Offset(bx + dSize * 1.0 + badgeH * 0.22, by + (badgeH - txtSize) / 2),
+    );
 
     final picture  = recorder.endRecording();
     final finalImg = await picture.toImage(src.width, src.height);
 
     try {
-      final byteData = await finalImg.toByteData(
-        format: ui.ImageByteFormat.png,
-      );
-
+      final byteData = await finalImg.toByteData(format: ui.ImageByteFormat.png);
       return FlutterImageCompress.compressWithList(
         byteData!.buffer.asUint8List(),
         minWidth:  src.width,
@@ -119,7 +142,7 @@ Future<Uint8List> addWatermark(Uint8List bytes) async {
       finalImg.dispose();
     }
   } finally {
-    src.dispose(); // ← src колдонулуп бүткөндөн КИЙИН dispose
+    src.dispose();
   }
 }
 
