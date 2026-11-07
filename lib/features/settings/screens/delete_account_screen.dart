@@ -3,19 +3,12 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../core/app_localizations.dart';
 import '../../../core/supabase_client.dart';
 import '../../auth/screens/welcome_screen.dart';
 
-/// Аккаунтту коопсуз өчүрүү экраны.
-///
-/// 3 кадам коопсуздук:
-/// 1. Face ID / Биометрия текшерүү
-/// 2. "Түшүндүм" баскычын 5 секунд кармоо
-/// 3. Галочка + 5 секунд таймер → "Өчүрүү" баскычы активдешет
 class DeleteAccountScreen extends StatefulWidget {
   const DeleteAccountScreen({super.key});
 
@@ -25,17 +18,16 @@ class DeleteAccountScreen extends StatefulWidget {
 
 class _DeleteAccountScreenState extends State<DeleteAccountScreen>
     with TickerProviderStateMixin {
-  // ── Абал ──
-  int _step = 0; // 0=биометрия, 1=түшүндүм, 2=галочка+таймер
+
+  int _step = 0; // 
   bool _biometricPassed = false;
   bool _isDeleting = false;
 
-  // Кадам 1: Түшүндүм баскычы — 5 сек кармоо
   bool _holdingButton = false;
   double _holdProgress = 0.0;
   Timer? _holdTimer;
 
-  // Кадам 2: Галочка + таймер
+
   bool _checkboxChecked = false;
   int _countdown = 5;
   Timer? _countdownTimer;
