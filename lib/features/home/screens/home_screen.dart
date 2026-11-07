@@ -72,7 +72,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   bool _isNearbyMode = false;
   bool _hasUnread = false;
-  bool _isLocating = false;
   bool _isSearchMode = false;
   Timer? _debounce;
   final TextEditingController _searchController = TextEditingController();
@@ -99,8 +98,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // DD Online блогунун бийиктиги: toolbar(52px)
   // (status bar бийиктиги + 50px) — эки катардын ортосу жакын болсун
-  double get _titleBarHeight =>
-      MediaQuery.of(context).padding.top + 50.0;
+  // iPhone (notch/Dynamic Island): катар status bar'га жакын жайгашат
+  double get _headerTopInset {
+    final top = MediaQuery.of(context).padding.top;
+    final isIOS = Theme.of(context).platform == TargetPlatform.iOS;
+    return (isIOS && top >= 44) ? top - 22 : top;
+  }
+
+  double get _titleBarHeight => _headerTopInset + 50.0;
   // Sticky header'дин чыныгы бийиктиги (категория ачылганда өзгөрөт)
   final GlobalKey _headerKey = GlobalKey();
   double? _headerH;
@@ -251,12 +256,13 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     } catch (e) {
       debugPrint('❌ loadProducts: $e');
-      if (mounted)
+      if (mounted) {
         setState(() {
           allProducts = [];
           displayedProducts = [];
           _isLoading = false;
         });
+      }
     }
   }
 
@@ -345,7 +351,9 @@ class _HomeScreenState extends State<HomeScreen> {
         !_hasMore ||
         _isLoading ||
         _isNearbyMode ||
-        _isSearchMode) return;
+        _isSearchMode) {
+      return;
+    }
     _isLoadingMore = true;
     try {
       List<ProductModel> newProducts;
@@ -391,11 +399,9 @@ class _HomeScreenState extends State<HomeScreen> {
       _searchQuery = '';
       _debounce?.cancel();
     }
-    setState(() => _isLocating = true);
     final position = await ProductRepository.instance.getCurrentPosition();
     if (position == null) {
       if (mounted) {
-        setState(() => _isLocating = false);
         final loc = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(loc.get('nearby_error')),
@@ -422,14 +428,12 @@ class _HomeScreenState extends State<HomeScreen> {
         allProducts = products;
         displayedProducts = List.from(products);
         _isLoading = false;
-        _isLocating = false;
       });
       _applyFilters();
     } catch (e) {
       debugPrint('❌ loadNearbyProducts: $e');
       setState(() {
         _isLoading = false;
-        _isLocating = false;
       });
     }
   }
@@ -520,9 +524,10 @@ class _HomeScreenState extends State<HomeScreen> {
         result.sort((a, b) => (b.rating ?? 0).compareTo(a.rating ?? 0));
         break;
       default:
-        if (_isNearbyMode)
+        if (_isNearbyMode) {
           result.sort((a, b) => (a.distanceKm ?? double.infinity)
               .compareTo(b.distanceKm ?? double.infinity));
+        }
         break;
     }
     setState(() => displayedProducts = result);
@@ -631,8 +636,9 @@ class _HomeScreenState extends State<HomeScreen> {
           // ════════════════════════════════════════════
           NotificationListener<ScrollNotification>(
             onNotification: (n) {
-              if (n.metrics.pixels >= n.metrics.maxScrollExtent - 300)
+              if (n.metrics.pixels >= n.metrics.maxScrollExtent - 300) {
                 _loadMoreProducts();
+              }
               return false;
             },
             child: RefreshIndicator(
@@ -855,8 +861,7 @@ if (_isSearchMode || _isNearbyMode ||
                         child: SizedBox(
                           height: _titleBarHeight,
                           child: Padding(
-                            padding: EdgeInsets.only(
-                                top: MediaQuery.of(context).padding.top),
+                            padding: EdgeInsets.only(top: _headerTopInset),
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
@@ -894,7 +899,25 @@ if (_isSearchMode || _isNearbyMode ||
                                             fontSize: 15)),
                                   ),
                                 ),
-                                const Spacer(),
+                                // DD Online жазуусу (функциясы жок, 22px)
+                                Expanded(
+                                  child: Center(
+                                    child: ShaderMask(
+                                      shaderCallback: (bounds) =>
+                                          const LinearGradient(
+                                        colors: [DD.accent2, DD.accent],
+                                        begin: Alignment.centerLeft,
+                                        end: Alignment.centerRight,
+                                      ).createShader(bounds),
+                                      child: const Text('DD Online',
+                                          style: TextStyle(
+                                              fontSize: 22,
+                                              fontWeight: FontWeight.w800,
+                                              color: Colors.white,
+                                              letterSpacing: -0.6)),
+                                    ),
+                                  ),
+                                ),
                                 // Коңгуроо
                                 GestureDetector(
                                   onTap: () => Navigator.push(
@@ -1079,7 +1102,7 @@ if (_isSearchMode || _isNearbyMode ||
                 curve: Curves.easeInOut,
                 right: 16,
                 bottom: _navVisible
-                    ? HomeBottomNav.navHeight + _navBottomPadding + 28
+                    ? HomeBottomNav.navHeight + _navBottomPadding + 20
                     : 32,
                 child: _MenuFab(onTap: () => openSidePanel(context)),
               ),

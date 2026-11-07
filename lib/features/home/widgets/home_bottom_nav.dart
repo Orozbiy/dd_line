@@ -20,10 +20,9 @@ const int _tabCount    = 5;
 ///
 /// ✦ Бардык 5 баскыч бирдей кендикте, бирдей аралыкта.
 /// ✦ Жөнөкөй басуу — дароо тандалат.
-/// ✦ 0.3 секунд кармап туруп, манжаны ошол эле тилкедеги башка
-///   баскычтарга жылдырсаң — манжа үстүндө турган баскыч
-///   дароо активдүү болуп тандала берет (Telegram/iOS-стилиндей
-///   "кармап-сүрүп тандоо").
+/// ✦ Басканда ошол замат (кармабай) башка баскычтарга сүрүүгө болот —
+///   сүрүп жатканда экран алмашпайт, колду көтөргөндө манжа турган
+///   баскычтын экраны ачылат.
 /// ✦ Активдүү баскыч кызгылт сары градиент пилюля.
 /// ✦ Жарык/караңгы режимде өзүнчө көрүнөт (DDPalette).
 class HomeBottomNav extends StatefulWidget {
@@ -57,6 +56,8 @@ class HomeBottomNav extends StatefulWidget {
 class _HomeBottomNavState extends State<HomeBottomNav> {
   // ── Учурда манжа/басуу астында турган индекс (визуалдык гана) ──
   int? _touchedIndex;
+  int _downIndex = -1;
+  bool _slid = false;
 
   int _indexAtDx(double dx, double totalWidth) {
     if (totalWidth <= 0) return widget.currentTab;
@@ -65,23 +66,26 @@ class _HomeBottomNavState extends State<HomeBottomNav> {
     return idx.clamp(0, _tabCount - 1);
   }
 
-  void _selectFromDx(double dx, double totalWidth, {bool haptic = true}) {
+  void _touch(double dx, double totalWidth) {
     final idx = _indexAtDx(dx, totalWidth);
-    final changed = _touchedIndex != idx;
-    setState(() {
-      _touchedIndex = idx;
-    });
-    if (changed) {
-      if (haptic) HapticFeedback.selectionClick();
-      if (widget.currentTab != idx) widget.onTabSelected(idx);
-    }
+    if (_touchedIndex == idx) return;
+    if (_touchedIndex != null) _slid = true; // башка баскычка жылды
+    HapticFeedback.selectionClick();
+    setState(() => _touchedIndex = idx);
+  }
+
+  void _release(double dx, double totalWidth) {
+    final idx = _indexAtDx(dx, totalWidth);
+    final wasTap = !_slid && idx == _downIndex;
+    setState(() => _touchedIndex = null);
+    // Экран колду көтөргөндө гана алмашат (сүрүп жатканда эмес)
+    if (widget.currentTab != idx) widget.onTabSelected(idx);
+    if (wasTap) widget.onTabTapped?.call(idx);
   }
 
   void _endTouch() {
     if (_touchedIndex != null) {
-      setState(() {
-        _touchedIndex = null;
-      });
+      setState(() => _touchedIndex = null);
     }
   }
 
@@ -89,19 +93,22 @@ class _HomeBottomNavState extends State<HomeBottomNav> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
     final p = DDPalette.of(context);
+    // Сүрүп жатканда пилюля манжанын астындагы баскычта көрүнөт,
+    // ал эми экран колду көтөргөндө гана алмашат.
+    final shownTab = _touchedIndex ?? widget.currentTab;
 
     return AnimatedPositioned(
       duration: widget.isVisible
           ? const Duration(milliseconds: 300)
           : const Duration(milliseconds: 200),
       curve: Curves.easeOut,
-      left: 16,
-      right: 16,
+      left: 0,
+      right: 0,
       bottom: widget.isVisible
-          ? widget.bottomPadding + 8
+          ? 0
           : -(HomeBottomNav.navHeight + widget.bottomPadding + 40),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(40),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
           child: Container(
@@ -109,7 +116,7 @@ class _HomeBottomNavState extends State<HomeBottomNav> {
               color: p.isDark
                   ? const Color(0xFF1A1A1A).withOpacity(0.75)
                   : Colors.white.withOpacity(0.70),
-              borderRadius: BorderRadius.circular(40),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
               border: Border.all(
                 color: p.isDark
                     ? Colors.white.withOpacity(0.10)
@@ -120,128 +127,97 @@ class _HomeBottomNavState extends State<HomeBottomNav> {
                 BoxShadow(
                   color: Colors.black.withOpacity(p.isDark ? 0.4 : 0.15),
                   blurRadius: 20,
-                  offset: const Offset(0, 8),
+                  offset: const Offset(0, -4),
                   spreadRadius: -4,
                 ),
               ],
             ),
-            child: SizedBox(
+            child: Padding(
+              padding: EdgeInsets.only(bottom: widget.bottomPadding),
+              child: SizedBox(
               height: HomeBottomNav.navHeight,
               child: LayoutBuilder(
                   builder: (context, constraints) {
                     final totalWidth = constraints.maxWidth;
 
-                    return RawGestureDetector(
+                    return Listener(
                       behavior: HitTestBehavior.opaque,
-                      gestures: {
-                        // ── Жөнөкөй тийүү/басуу: дароо тандайт ──
-                        TapGestureRecognizer:
-                            GestureRecognizerFactoryWithHandlers<
-                                TapGestureRecognizer>(
-                          () => TapGestureRecognizer(),
-                          (TapGestureRecognizer instance) {
-                            instance.onTapDown = (d) {
-                              _selectFromDx(
-                                  d.localPosition.dx, totalWidth,
-                                  haptic: true);
-                            };
-                            instance.onTapUp = (d) {
-                              widget.onTabTapped?.call(
-                                  _indexAtDx(d.localPosition.dx, totalWidth));
-                              _endTouch();
-                            };
-                            instance.onTapCancel = _endTouch;
-                          },
-                        ),
-                        // ── 0.3 сек кармап туруп сүрүп тандоо ──
-                        LongPressGestureRecognizer:
-                            GestureRecognizerFactoryWithHandlers<
-                                LongPressGestureRecognizer>(
-                          () => LongPressGestureRecognizer(
-                            duration: const Duration(milliseconds: 300),
-                          ),
-                          (LongPressGestureRecognizer instance) {
-                            instance.onLongPressStart = (d) {
-                              HapticFeedback.mediumImpact();
-                              _selectFromDx(
-                                  d.localPosition.dx, totalWidth,
-                                  haptic: false);
-                            };
-                            instance.onLongPressMoveUpdate = (d) {
-                              _selectFromDx(d.localPosition.dx, totalWidth);
-                            };
-                            instance.onLongPressEnd = (_) {
-                              _endTouch();
-                            };
-                            instance.onLongPressCancel = _endTouch;
-                          },
-                        ),
+                      onPointerDown: (e) {
+                        _slid = false;
+                        _downIndex =
+                            _indexAtDx(e.localPosition.dx, totalWidth);
+                        _touch(e.localPosition.dx, totalWidth);
                       },
+                      onPointerMove: (e) =>
+                          _touch(e.localPosition.dx, totalWidth),
+                      onPointerUp: (e) =>
+                          _release(e.localPosition.dx, totalWidth),
+                      onPointerCancel: (_) => _endTouch(),
                       child: Row(
                         children: [
                           _NavButton(
                             icon: Icon(
-                              widget.currentTab == tabHome
+                              shownTab == tabHome
                                   ? Icons.home_rounded
                                   : Icons.home_outlined,
                               size: 23,
-                              color: widget.currentTab == tabHome
+                              color: shownTab == tabHome
                                   ? Colors.white
                                   : p.subText,
                             ),
                             label: loc.get('home'),
-                            isActive: widget.currentTab == tabHome,
+                            isActive: shownTab == tabHome,
                             isTouched: _touchedIndex == tabHome,
                             palette: p,
                           ),
                           _NavButton(
                             icon: _ChatBadgeIcon(
                               unreadCount: widget.totalUnreadChat,
-                              isActive: widget.currentTab == tabChat,
+                              isActive: shownTab == tabChat,
                               palette: p,
                             ),
                             label: loc.get('chat'),
-                            isActive: widget.currentTab == tabChat,
+                            isActive: shownTab == tabChat,
                             isTouched: _touchedIndex == tabChat,
                             palette: p,
                           ),
                           _NavButton(
                             icon: Icon(
-                              widget.currentTab == tabMap
+                              shownTab == tabMap
                                   ? Icons.storefront_rounded
                                   : Icons.storefront_outlined,
                               size: 23,
-                              color: widget.currentTab == tabMap
+                              color: shownTab == tabMap
                                   ? Colors.white
                                   : p.subText,
                             ),
                             label: loc.get('map_title'),
-                            isActive: widget.currentTab == tabMap,
+                            isActive: shownTab == tabMap,
                             isTouched: _touchedIndex == tabMap,
                             palette: p,
                           ),
                           _NavButton(
                             icon: FavBadge(
                               count: widget.favCount,
-                              active: widget.currentTab == tabFavorites,
+                              active: shownTab == tabFavorites,
                             ),
                             label: loc.get('favorites'),
-                            isActive: widget.currentTab == tabFavorites,
+                            isActive: shownTab == tabFavorites,
                             isTouched: _touchedIndex == tabFavorites,
                             palette: p,
                           ),
                           _NavButton(
                             icon: Icon(
-                              widget.currentTab == tabSettings
+                              shownTab == tabSettings
                                   ? Icons.settings_rounded
                                   : Icons.settings_outlined,
                               size: 23,
-                              color: widget.currentTab == tabSettings
+                              color: shownTab == tabSettings
                                   ? Colors.white
                                   : p.subText,
                             ),
                             label: loc.get('settings'),
-                            isActive: widget.currentTab == tabSettings,
+                            isActive: shownTab == tabSettings,
                             isTouched: _touchedIndex == tabSettings,
                             palette: p,
                           ),
@@ -250,6 +226,7 @@ class _HomeBottomNavState extends State<HomeBottomNav> {
                     );
                   },
                 ),
+              ),
               ),
             ),
           ),

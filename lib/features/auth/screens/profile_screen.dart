@@ -9,6 +9,7 @@ import '../../../core/app_localizations.dart';
 import '../../../core/auth_service.dart';
 import '../../../core/supabase_client.dart';
 import 'welcome_screen.dart';
+import '../../settings/screens/delete_account_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -437,102 +438,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ));
   }
 
-  Future<void> _deleteAccount() async {
-    final loc = AppLocalizations.of(context);
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? Colors.white.withOpacity(0.08)
-                    : Colors.white.withOpacity(0.80),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.white.withOpacity(0.12)
-                      : Colors.white.withOpacity(0.9),
-                ),
-              ),
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.warning_amber_rounded,
-                      color: AppColors.error, size: 40),
-                  const SizedBox(height: 10),
-                  Text(loc.get('delete_account'),
-                      style: AppTextStyles.headingSmall),
-                  const SizedBox(height: 10),
-                  Text(loc.get('delete_account_confirm'),
-                      style: AppTextStyles.bodyMedium
-                          .copyWith(color: AppColors.grey500),
-                      textAlign: TextAlign.center),
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: AppColors.grey300),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10)),
-                          ),
-                          child: Text(loc.get('no'),
-                              style: const TextStyle(color: AppColors.grey500)),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.error,
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10)),
-                          ),
-                          child: Text(loc.get('yes'),
-                              style: const TextStyle(color: Colors.white)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-    if (confirmed != true) return;
-    try {
-      final userId = supabase.auth.currentUser?.id;
-      if (userId != null) {
-        // Колдонуучунун маалыматтарын жок кылуу
-        await supabase.from('profiles').delete().eq('id', userId);
-      }
-      await supabase.auth.admin.deleteUser(userId!);
-    } catch (_) {
-      // admin.deleteUser жок болсо, sign out гана
-    }
-    await AuthService.instance.signOut();
-    if (mounted) {
-      _showSnack(loc.get('delete_account_success'), success: true);
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => const WelcomeScreen()),
-        (route) => false,
-      );
-    }
-  }
-
   void _signOut() {
     final loc = AppLocalizations.of(context);
     showDialog(
@@ -702,12 +607,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
       body: _isLoading
           ? const Center(
               child: CircularProgressIndicator(color: AppColors.primary))
-          : SingleChildScrollView(
+          : Column(
+              children: [
+            Expanded(
+              child: SingleChildScrollView(
               padding: EdgeInsets.fromLTRB(
                 20,
                 MediaQuery.of(context).padding.top + kToolbarHeight + 16,
                 20,
-                120,
+                24,
               ),
               child: Column(
                 children: [
@@ -873,36 +781,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                   const SizedBox(height: 16),
 
-                  // ── АККАУНТ ЖОК КЫЛУУ ──
-                  GestureDetector(
-                    onTap: _deleteAccount,
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      margin: const EdgeInsets.only(bottom: 12),
-                      decoration: BoxDecoration(
-                        color: Colors.transparent,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: AppColors.error.withOpacity(0.3),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.delete_forever_outlined,
-                              color: AppColors.error.withOpacity(0.7), size: 20),
-                          const SizedBox(width: 8),
-                          Text(
-                            loc.get('delete_account'),
-                            style: AppTextStyles.bodyMedium.copyWith(
-                                color: AppColors.error.withOpacity(0.7)),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
                   // ── ЧЫГУУ КНОПКАСЫ — Glass стилинде ──
                   ClipRRect(
                     borderRadius: BorderRadius.circular(16),
@@ -941,10 +819,75 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 16),
                 ],
               ),
+            )),
+            _buildDeleteAccountBar(isDark, loc),
+              ],
             ),
+    );
+  }
+
+  // ── Аккаунтту өчүрүү: экрандын эң түбүндө, айнек стили, 3:4 иконка-кнопка ──
+  Widget _buildDeleteAccountBar(bool isDark, AppLocalizations loc) {
+    final bottomInset = MediaQuery.of(context).padding.bottom;
+    const double btnW = 48; // 3 : 4  →  48 × 64
+    const double btnH = 64;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20, 8, 20, bottomInset + 12),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const DeleteAccountScreen()),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                child: Container(
+                  width: btnW,
+                  height: btnH,
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withOpacity(isDark ? 0.12 : 0.08),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: AppColors.error.withOpacity(isDark ? 0.25 : 0.20),
+                    ),
+                  ),
+                  child: const Icon(Icons.person_remove_outlined,
+                      color: AppColors.error, size: 22),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  loc.get('delete_account_btn'),
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.error,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  loc.get('delete_account_subtitle'),
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color: AppColors.error.withOpacity(0.6),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
