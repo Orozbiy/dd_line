@@ -46,11 +46,26 @@ class _StoryCommentsSheetState extends State<_StoryCommentsSheet> {
   bool _sending = false;
 
   String? get _myId => supabase.auth.currentUser?.id;
+  bool _isAdmin = false;
+
+  Future<void> _checkAdmin() async {
+    final uid = _myId;
+    if (uid == null) return;
+    try {
+      final row = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', uid)
+          .maybeSingle();
+      if (mounted) setState(() => _isAdmin = row?['is_admin'] == true);
+    } catch (_) {}
+  }
 
   @override
   void initState() {
     super.initState();
     _load();
+    _checkAdmin();
   }
 
   @override
@@ -223,7 +238,7 @@ class _StoryCommentsSheetState extends State<_StoryCommentsSheet> {
                                       ],
                                     ),
                                   ),
-                                  if (mine)
+                                  if (mine || _isAdmin)
                                     GestureDetector(
                                       onTap: () => _delete(c),
                                       child: Padding(

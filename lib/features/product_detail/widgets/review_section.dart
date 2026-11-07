@@ -59,7 +59,9 @@ class _ReviewSectionState extends State<ReviewSection> {
       ));
       return;
     }
-    setState(() { _myRating = star; _showInput = true; });
+    setState(() { _myRating = star; });
+    // Баа сакталат (комент жок)
+    await _save();
   }
 
   Future<void> _save() async {
@@ -241,92 +243,7 @@ class _ReviewSectionState extends State<ReviewSection> {
                         : const SizedBox.shrink(),
                   ),
 
-                  // ── Комментарий жазуу панели ──────────────────────────
-                  AnimatedSize(
-                    duration: const Duration(milliseconds: 250),
-                    curve: Curves.easeInOut,
-                    child: _showInput
-                        ? Padding(
-                            padding: const EdgeInsets.only(top: 14),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                TextField(
-                                  controller: _commentCtrl,
-                                  maxLines: 3,
-                                  maxLength: 300,
-                                  style: TextStyle(color: labelColor, fontSize: 14),
-                                  decoration: InputDecoration(
-                                    hintText: loc.get('add_review'),
-                                    hintStyle: TextStyle(color: subColor),
-                                    filled: true,
-                                    fillColor: inputBg,
-                                    contentPadding: const EdgeInsets.all(12),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(14),
-                                      borderSide: BorderSide(color: borderColor),
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(14),
-                                      borderSide: BorderSide(color: borderColor),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(14),
-                                      borderSide: const BorderSide(
-                                          color: AppColors.primary, width: 1.5),
-                                    ),
-                                    counterStyle: TextStyle(
-                                        color: subColor, fontSize: 11),
-                                  ),
-                                ),
-                                const SizedBox(height: 10),
-                                // Бир кнопка: Сактоо
-                                SizedBox(
-                                  height: 44,
-                                  child: ElevatedButton(
-                                    onPressed: _isSaving ? null : _save,
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppColors.primary,
-                                      foregroundColor: Colors.white,
-                                      shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(14)),
-                                      elevation: 0,
-                                    ),
-                                    child: _isSaving
-                                        ? const SizedBox(width: 20, height: 20,
-                                            child: CircularProgressIndicator(
-                                                color: Colors.white, strokeWidth: 2))
-                                        : Text(loc.get('save'),
-                                            style: const TextStyle(
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: 15)),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                        : const SizedBox.shrink(),
-                  ),
 
-                  // "Комментарий жазуу" баскычы (жылдыз тандалганда жашырылат)
-                  if (!_showInput && _myRating > 0 && !_isSaving)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 10),
-                      child: TextButton.icon(
-                        onPressed: () => setState(() { _showInput = true; }),
-                        icon: const Icon(Icons.edit_outlined, size: 16),
-                        label: Text(
-                          _myComment.isNotEmpty
-                              ? loc.get('edit_review')
-                              : loc.get('add_review'),
-                        ),
-                        style: TextButton.styleFrom(
-                          foregroundColor: AppColors.primary,
-                          textStyle: const TextStyle(fontSize: 13,
-                              fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                    ),
                 ],
               ),
             ),

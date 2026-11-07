@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/app_localizations.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
@@ -91,6 +92,7 @@ class _StoreLocationScreenState extends State<StoreLocationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final hasLocation = _lat != null && _lng != null;
 
     return Scaffold(
@@ -98,7 +100,7 @@ class _StoreLocationScreenState extends State<StoreLocationScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: Text('Дүкөндүн жайгашкан жери', style: AppTextStyles.headingSmall),
+        title: Text(loc.get('store_location_title'), style: AppTextStyles.headingSmall),
         iconTheme: const IconThemeData(color: AppColors.black),
       ),
       body: Padding(
@@ -139,7 +141,7 @@ class _StoreLocationScreenState extends State<StoreLocationScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Дүкөнүңүздө туруп, төмөнкү баскычты басыңыз. '
+              loc.get('store_location_hint')
               'Учурдагы GPS позицияңыз дүкөндүн жайгашкан жери катары сакталат.',
               style: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey500),
             ),

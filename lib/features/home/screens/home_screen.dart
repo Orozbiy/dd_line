@@ -10,6 +10,10 @@ import '../../../data/models/product_model.dart';
 import '../../admin/screens/admin_login_screen.dart';
 import '../../chat/screens/chat_list_screen.dart';
 import '../../seller/screens/seller_entrance_screen.dart';
+import '../../seller/screens/seller_dashboard_screen.dart';
+import '../../../core/seller_session_service.dart';
+import '../../../core/supabase_client.dart' as supa;
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../notifications/screens/notifications_screen.dart';
 import '../utils/product_repository.dart';
 import '../widgets/category_list.dart';
@@ -72,6 +76,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _hasMore = true;
   static const int _pageSize = ProductRepository.pageSize;
 
+  String? _sellerAvatarUrl;
   bool _isNearbyMode = false;
   bool _hasUnread = false;
   bool _isSearchMode = false;
@@ -133,6 +138,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadProducts(); // ← бул бар
+    _loadSellerAvatar();
     _favCount = fav.count;
     _checkUnread();
     fav.addListener(_onFavChanged);
@@ -296,7 +302,6 @@ class _HomeScreenState extends State<HomeScreen> {
         offset: 0,
         categoryId: _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
       );
-      products.shuffle();
       _hasMore = products.length == _pageSize;
       _offset = products.length;
       if (mounted) {
@@ -430,7 +435,6 @@ class _HomeScreenState extends State<HomeScreen> {
           categoryId:
               _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
         );
-        newProducts.shuffle();
       }
       _hasMore = newProducts.length == _pageSize;
       _offset += newProducts.length;
@@ -912,12 +916,20 @@ if (_isSearchMode || _isNearbyMode ||
                               children: [
                                 // Дүкөн баскычы
                                 GestureDetector(
-                                  onTap: () => Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                              builder: (_) =>
-                                                  const SellerEntranceScreen()))
-                                      .then((_) => setState(() {})),
+                                  onTap: () async {
+                                    final uid = await SellerSessionService.instance.getSavedUid();
+                                    if (!context.mounted) return;
+                                    if (uid != null && uid.isNotEmpty) {
+                                      await Navigator.push(context, MaterialPageRoute(
+                                        builder: (_) => SellerDashboardScreen(uid: uid),
+                                      ));
+                                    } else {
+                                      await Navigator.push(context, MaterialPageRoute(
+                                        builder: (_) => const SellerEntranceScreen(),
+                                      ));
+                                    }
+                                    if (mounted) setState(() {});
+                                  },
                                   child: Container(
                                     margin:
                                         const EdgeInsets.fromLTRB(8, 4, 4, 4),
@@ -937,11 +949,22 @@ if (_isSearchMode || _isNearbyMode ||
                                         ),
                                       ],
                                     ),
-                                    child: Text(loc.get('shop'),
-                                        style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: 15)),
+                                    child: _sellerAvatarUrl != null
+                                        ? ClipOval(
+                                            child: CachedNetworkImage(
+                                              imageUrl: _sellerAvatarUrl!,
+                                              width: 32,
+                                              height: 32,
+                                              fit: BoxFit.cover,
+                                              errorWidget: (_, __, ___) => const Icon(
+                                                  Icons.store_rounded, color: Colors.white, size: 20),
+                                            ),
+                                          )
+                                        : Text(loc.get('shop'),
+                                            style: const TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w700,
+                                                fontSize: 15)),
                                   ),
                                 ),
                                 // DD Online жазуусу (функциясы жок, 22px)

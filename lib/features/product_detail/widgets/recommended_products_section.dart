@@ -60,7 +60,7 @@ class _RecommendedProductsSectionState
           .eq('is_active', true)
           .neq('id', widget.currentProductId)
           .order('created_at', ascending: false)
-          .limit(200);
+          .limit(25);
 
       final list = (data as List)
           .cast<Map<String, dynamic>>()

@@ -84,7 +84,7 @@ class _SellerNotificationsScreenState
             const Text('🔔', style: TextStyle(fontSize: 20)),
             const SizedBox(width: 8),
             Text(
-              'Админден билдирүүлөр',
+              loc.get('seller_notifications_title'),
               style: AppTextStyles.headingMedium.copyWith(color: textColor),
             ),
           ],
@@ -112,7 +112,7 @@ class _SellerNotificationsScreenState
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'Азырынча билдирүү жок',
+                        loc.get('no_notifications'),
                         style: AppTextStyles.bodyMedium
                             .copyWith(color: subColor),
                       ),

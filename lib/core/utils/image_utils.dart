@@ -48,7 +48,7 @@ Future<Uint8List> compressStoryImage(Uint8List bytes) async {
 // WATERMARK — dart:ui, сервер жок
 // ─────────────────────────────────────────────────────────────
 
-/// Товар сүрөтүнө "DD Online" watermark кош — он ылдыйкы бурч, 40% opacity
+/// Товар сүрөтүнө "DD Online" watermark кош — ылдыйкы оң бурч, 80% opacity, мандарин
 Future<Uint8List> addWatermark(Uint8List bytes) async {
   final codec = await ui.instantiateImageCodec(bytes);
   final frame = await codec.getNextFrame();
@@ -62,20 +62,21 @@ Future<Uint8List> addWatermark(Uint8List bytes) async {
     final canvas   = Canvas(recorder);
     canvas.drawImage(src, Offset.zero, Paint());
 
-    // 40% opacity = 0x66 (255 * 0.4 ≈ 102 = 0x66)
-    const opacity    = 0x66;
-    const bgOpacity  = 0x40; // 25% фон
+    // 80% opacity = 0xCC (255 * 0.8 ≈ 204 = 0xCC)
+    const opacity    = 0xCC;
+    // Капсула фону: кара (жарык/кара теманын суроту да норм болсун үчүн)
+    const bgOpacity  = 0x99; // ~60% тунук кара фон
 
     // Размерлер сүрөттүн өлчөмүнө жараша
-    final badgeH   = h * 0.085;          // badge бийиктиги
-    final badgeW   = w * 0.38;           // badge туурасы
+    final badgeH   = h * 0.09;           // badge бийиктиги
+    final badgeW   = w * 0.40;           // badge туурасы
     final margin   = w * 0.025;          // четтен аралык
     final bx       = w - badgeW - margin; // он жак
     final by       = h - badgeH - margin; // ылдыйкы
 
-    // Жарым-жарым ак фон (капсула)
+    // Кара жарым-жарым фон капсула
     final bgPaint = Paint()
-      ..color = ui.Color.fromARGB(bgOpacity, 255, 255, 255);
+      ..color = ui.Color.fromARGB(bgOpacity, 0, 0, 0);
     final radius = badgeH / 2;
     canvas.drawRRect(
       RRect.fromRectAndRadius(
@@ -85,7 +86,7 @@ Future<Uint8List> addWatermark(Uint8List bytes) async {
       bgPaint,
     );
 
-    // "D" чоң тамга (логотип)
+    // "D" чоң тамга — МАНДАРИН (#FF8A00)
     final dSize    = badgeH * 0.65;
     final dPb = ui.ParagraphBuilder(ui.ParagraphStyle(
       textAlign:  TextAlign.left,
@@ -93,7 +94,7 @@ Future<Uint8List> addWatermark(Uint8List bytes) async {
       fontWeight: FontWeight.w900,
     ))
       ..pushStyle(ui.TextStyle(
-        color:      ui.Color.fromARGB(opacity, 230, 60, 30), // кызгылт-кызыл
+        color:      ui.Color.fromARGB(opacity, 0xFF, 0x8A, 0x00), // мандарин
         fontSize:   dSize,
         fontWeight: FontWeight.w900,
       ))
@@ -105,15 +106,15 @@ Future<Uint8List> addWatermark(Uint8List bytes) async {
       Offset(bx + badgeH * 0.18, by + (badgeH - dSize) / 2 - 1),
     );
 
-    // "DD Online" текст
-    final txtSize = badgeH * 0.32;
+    // "DD Online" текст — ак
+    final txtSize = badgeH * 0.34;
     final txtPb = ui.ParagraphBuilder(ui.ParagraphStyle(
       textAlign:  TextAlign.left,
       fontSize:   txtSize,
       fontWeight: FontWeight.bold,
     ))
       ..pushStyle(ui.TextStyle(
-        color:         ui.Color.fromARGB(opacity, 40, 40, 40),
+        color:         ui.Color.fromARGB(opacity, 255, 255, 255), // ак
         fontSize:      txtSize,
         fontWeight:    FontWeight.bold,
         letterSpacing: 0.5,

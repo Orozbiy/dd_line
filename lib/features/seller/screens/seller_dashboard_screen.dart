@@ -674,6 +674,7 @@ const SizedBox(height: 20),
              _buildMenuItem(context,
   icon: '📊', title: loc.get('dash_stats'), subtitle: loc.get('dash_stats_sub'),
   onTap: () => _showSnack(loc.get('coming_soon'))),
+              const SizedBox(height: 10),
 
               _buildMenuItem(context,
                 icon: '📍', title: loc.get('dash_location'), subtitle: loc.get('dash_location_sub'),

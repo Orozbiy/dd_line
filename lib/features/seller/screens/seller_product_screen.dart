@@ -1112,6 +1112,45 @@ Row(
       child: Padding(
         padding: EdgeInsets.only(right: i < 2 ? 8.0 : 0.0),
         child: GestureDetector(
+          onLongPress: () async {
+            // Сурот бар болсо → башка слот менен ордун алмаштыруу
+            final hasImg = newImageBytes[i] != null || existingImages[i].isNotEmpty;
+            if (!hasImg) { pickImage(i, setD); return; }
+            final otherSlots = List.generate(3, (j) => j).where((j) => j != i).toList();
+            final chosen = await showDialog<int>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                title: Text(loc.get('swap_image_title') == 'swap_image_title' ? 'Сүрөттүн ордун алмаштыруу' : loc.get('swap_image_title')),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: otherSlots.map((j) {
+                    final hasJ = newImageBytes[j] != null || existingImages[j].isNotEmpty;
+                    return ListTile(
+                      leading: Icon(hasJ ? Icons.swap_horiz_rounded : Icons.add_photo_alternate_outlined, color: AppColors.primary),
+                      title: Text('${i + 1} → ${j + 1} слот менен алмаштыруу'),
+                      onTap: () => Navigator.pop(ctx, j),
+                    );
+                  }).toList(),
+                ),
+                actions: [
+                  TextButton(onPressed: () => Navigator.pop(ctx), child: Text(loc.get('cancel'))),
+                ],
+              ),
+            );
+            if (chosen != null) {
+              setD(() {
+                // Bytes алмаш
+                final tmpB = newImageBytes[i];
+                newImageBytes[i] = newImageBytes[chosen];
+                newImageBytes[chosen] = tmpB;
+                // URL алмаш
+                final tmpE = existingImages[i];
+                existingImages[i] = existingImages[chosen];
+                existingImages[chosen] = tmpE;
+              });
+            }
+          },
           onTap: () => pickImage(i, setD),
           child: Stack(
             clipBehavior: Clip.none,

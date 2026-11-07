@@ -88,7 +88,8 @@ class _StoreProductsScreenState extends State<StoreProductsScreen> {
           .select('*, stores(*)')
           .eq('store_id', widget.storeId)
           .or('is_active.eq.true,is_active.is.null')
-          .order('created_at', ascending: false);
+          .order('created_at', ascending: false)
+          .limit(50);
 
       final list = (data as List)
           .cast<Map<String, dynamic>>()

@@ -210,7 +210,7 @@ class _ProductCardState extends State<ProductCard>
                             color: AppColors.success,
                             borderRadius: BorderRadius.circular(badgeRadius),
                           ),
-                          child: Text('Жаңы',
+                          child: Text(AppLocalizations.of(context).get('badge_new'),
                               style: TextStyle(
                                   color: Colors.white,
                                   fontSize: badgeFontSize,
