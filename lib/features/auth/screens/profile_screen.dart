@@ -636,7 +636,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   width: 96, height: 96,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
-                                    gradient: _avatarUrl == null
+                                    gradient: (_avatarUrl == null && !_isSeller)
                                         ? const LinearGradient(colors: [
                                             Color(0xFFD97706),
                                             Color(0xFFEF4444)
@@ -646,7 +646,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         ? DecorationImage(
                                             image: NetworkImage(_avatarUrl!),
                                             fit: BoxFit.cover)
-                                        : null,
+                                        : (_isSeller
+                                            ? const DecorationImage(
+                                                image: AssetImage(
+                                                    'assets/images/seller_default.png'),
+                                                fit: BoxFit.cover)
+                                            : null),
                                     border: Border.all(
                                       color: isDark
                                           ? Colors.white.withOpacity(0.15)
@@ -662,7 +667,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       ),
                                     ],
                                   ),
-                                  child: _avatarUrl == null
+                                  child: (_avatarUrl == null && !_isSeller)
                                       ? Center(
                                           child: Text(
                                             _fullName.isNotEmpty

@@ -11,15 +11,11 @@ import '../../../data/models/product_model.dart';
 import '../../../core/app_localizations.dart';
 
 class ShareWidget {
-  static const _playStore =
-      'https://play.google.com/store/apps/details?id=com.ddonline.app';
 
   static Future<void> show(BuildContext context, ProductModel product) async {
     // Universal link: Android тиркеме орнотулган болсо ачат, болбосо веб.
     // iOS үчүн App Store шилтемеси кошулат.
-    const _appStore =
-        'https://apps.apple.com/app/id6738891846'; // iOS App Store
-    final webUrl = 'https://dd-online-web.web.app/product/\${product.id}';
+// iOS App Store
     final text = '🛍 \${product.name}\n'
         '💰 \${product.priceFormatted}\n\n'
         '👉 \$webUrl\n\n'

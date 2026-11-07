@@ -1052,11 +1052,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                                                 : const CircleAvatar(
                                                     radius: 30,
                                                     backgroundColor: Color(0xFFF1F5F9),
-                                                    child: Icon(
-                                                      Icons.storefront_rounded,
-                                                      size: 30,
-                                                      color: Color(0xFF94A3B8),
-                                                    ),
+                                                    backgroundImage: AssetImage(
+                                                        'assets/images/seller_default.png'),
                                                   )),
                                           const SizedBox(height: 8),
                                           PulseBox(

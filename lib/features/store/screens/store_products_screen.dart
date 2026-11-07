@@ -213,7 +213,7 @@ class _StoreProductsScreenState extends State<StoreProductsScreen> {
                                   backgroundColor: Colors.transparent,
                                   backgroundImage: (widget.avatarUrl != null && widget.avatarUrl!.isNotEmpty)
                                       ? CachedNetworkImageProvider(widget.avatarUrl!)
-                                      : const AssetImage('assets/icon/app_icon.png') as ImageProvider,
+                                      : const AssetImage('assets/images/seller_default.png') as ImageProvider,
                                 ),
                               ),
                               const SizedBox(width: 14),
