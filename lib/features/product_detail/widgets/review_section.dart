@@ -19,7 +19,6 @@ class _ReviewSectionState extends State<ReviewSection> {
   String _myComment = '';
   bool  _isLoading  = true;
   bool  _isSaving   = false;
-  bool  _showInput  = false;
   Map<String, dynamic>? _localOverride;
   List<Map<String, dynamic>> _reviews = [];
 
@@ -84,7 +83,6 @@ class _ReviewSectionState extends State<ReviewSection> {
         _myComment     = comment;
         _localOverride = fresh;
         _reviews       = reviews;
-        _showInput     = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(loc.get('review_submitted')),
@@ -117,7 +115,6 @@ class _ReviewSectionState extends State<ReviewSection> {
     final subColor    = isDark ? const Color(0xFF8888AA) : const Color(0xFFAAAAAA);
     final emptyColor  = isDark ? const Color(0xFF444466) : const Color(0xFFDDDDDD);
     final labelColor  = isDark ? Colors.white : const Color(0xFF1A1A2E);
-    final inputBg     = isDark ? const Color(0xFF252538) : const Color(0xFFF8F8F8);
 
     return StreamBuilder<Map<String, dynamic>>(
       stream: _manager.getRatingStream(widget.productId),
