@@ -26,7 +26,7 @@ import '../screens/favorites_screen.dart';
 
 import '../widgets/product_card.dart';
 import '../widgets/product_skeleton_grid.dart';
-import '../../../core/widgets/diagonal_reveal.dart';
+import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'dart:ui';
 import '../constants/home_colors.dart';
 import '../widgets/home_bottom_nav.dart';
@@ -231,9 +231,51 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  // ── Катуу тартып жаңыртуу: жеңил тийүү/тартууда сүрөттөр жаңырбайт ──
+  static const double _pullThreshold = 130;
+  bool _pullArmed = false;
+
+  void _handlePull(ScrollNotification n) {
+    if (n.depth != 0 || n.metrics.axis != Axis.vertical) return;
+    final px = n.metrics.pixels;
+    if (n is ScrollUpdateNotification || n is OverscrollNotification) {
+      if (px <= -_pullThreshold && !_pullArmed) {
+        _pullArmed = true;
+        HapticFeedback.mediumImpact();
+      } else if (_pullArmed && px > -_pullThreshold * 0.6) {
+        _pullArmed = false; // кайра жогору жыйды — жокко чыгат
+      }
+    } else if (n is ScrollEndNotification) {
+      if (_pullArmed) {
+        _pullArmed = false;
+        _pullRefresh();
+      }
+    }
+  }
+
+  Future<void> _pullRefresh() async {
+    if (_isLoading) return;
+    if (_isSearchMode && _searchQuery.isNotEmpty) {
+      _onSearchChanged(_searchQuery);
+    } else if (_isNearbyMode) {
+      await _loadNearbyProducts();
+    } else {
+      switch (_filterMode) {
+        case ProductFilterMode.newest:
+          await _loadNewest();
+          break;
+        case ProductFilterMode.popular:
+          await _loadPopular();
+          break;
+        case ProductFilterMode.all:
+          await _loadProducts(refresh: true);
+          break;
+      }
+    }
+  }
+
   /// Жүктөлүп жатканда спиннердин ордуна товар орундары.
   Widget _buildSkeletonSliver() {
-    DiagonalReveal.resetPlayed(); // жаңы товарлар 45° менен кайра чыксын
     return const SliverPadding(
       padding: EdgeInsets.fromLTRB(10, 15, 10, 12),
       sliver: SliverToBoxAdapter(child: ProductSkeletonGrid()),
@@ -650,12 +692,15 @@ class _HomeScreenState extends State<HomeScreen> {
               if (n.metrics.pixels >= n.metrics.maxScrollExtent - 300) {
                 _loadMoreProducts();
               }
+              _handlePull(n);
               return false;
             },
             child: RefreshIndicator(
               color: Colors.transparent,
               backgroundColor: Colors.transparent,
               elevation: 0,
+              // Адаттагы жеңил тартуу жаңыртпайт — төмөндө катуу тартуу логикасы
+              notificationPredicate: (_) => false,
               onRefresh: () async {
                 if (_isSearchMode && _searchQuery.isNotEmpty) {
                   // ── Издөө режиминде — издөөнү кайра жүргүзүү ──
@@ -679,7 +724,8 @@ class _HomeScreenState extends State<HomeScreen> {
               displacement: 80,
               child: CustomScrollView(
                 controller: _scrollController,
-                physics: const AlwaysScrollableScrollPhysics(),
+                physics: const BouncingScrollPhysics(
+                    parent: AlwaysScrollableScrollPhysics()),
                 slivers: [
                   // ── Жогоруда бош орун (sticky header бийиктиги) ──
                   SliverToBoxAdapter(
@@ -797,12 +843,7 @@ if (_isSearchMode || _isNearbyMode ||
                                         ? RepaintBoundary(
                                             key: ValueKey(
                                                 displayedProducts[rowIndex * 2 + col].id),
-                                            child: DiagonalReveal(
-                                              revealId:
-                                                  displayedProducts[rowIndex * 2 + col].id.toString(),
-                                              delay: Duration(
-                                                  milliseconds: (rowIndex % 6) * 60 + col * 70),
-                                              child: ProductCard(
+                                            child: ProductCard(
                                               product: displayedProducts[
                                                   rowIndex * 2 + col],
                                               onTap: () => Navigator.push(
@@ -813,7 +854,6 @@ if (_isSearchMode || _isNearbyMode ||
                                                           rowIndex * 2 + col]),
                                                 ),
                                               ).then((_) => setState(() {})),
-                                            ),
                                             ),
                                           )
                                         : const SizedBox.shrink(),
@@ -1074,7 +1114,25 @@ if (_isSearchMode || _isNearbyMode ||
               left: 0,
               right: 0,
               bottom: 0,
-              child: Stack(
+              child: NotificationListener<UserScrollNotification>(
+                onNotification: (n) {
+                  // Башкы беттен башка 4 табда да: ылдый → навбар жашынат,
+                  // жогору → кайра чыгат
+                  if (_currentTab == tabHome || n.metrics.axis != Axis.vertical) {
+                    return false;
+                  }
+                  if (n.direction == ScrollDirection.reverse &&
+                      n.metrics.pixels > 0 &&
+                      _navVisible) {
+                    setState(() => _navVisible = false);
+                  } else if ((n.direction == ScrollDirection.forward ||
+                          n.metrics.pixels <= 0) &&
+                      !_navVisible) {
+                    setState(() => _navVisible = true);
+                  }
+                  return false;
+                },
+                child: Stack(
                 children: [
                   Offstage(
                     offstage: _currentTab != tabHome,
@@ -1097,6 +1155,7 @@ if (_isSearchMode || _isNearbyMode ||
                     child: const SettingsScreen(),
                   ),
                 ],
+              ),
               ),
             ),
 

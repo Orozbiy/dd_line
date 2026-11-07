@@ -1,17 +1,21 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
-/// Lalafo/iOS стилиндеги shimmer эффект — 45° бурчта жылуучу жарык сызык.
-/// Сүрөттөр жана карточкалар жүктөлүп жатканда placeholder катары колдонулат.
+/// Жүктөлүп жатканда көрүнгөн placeholder: 45° бурчка оодарылган жарык сызыгы
+/// солдон оңго жылып өтүп турат.
+/// Сүрөттөр жана карточкалар жүктөлүп жатканда колдонулат.
 class ShimmerLoading extends StatefulWidget {
   final double? width;
   final double? height;
   final BorderRadius? borderRadius;
+  final Widget? child;
 
   const ShimmerLoading({
     super.key,
     this.width,
     this.height,
     this.borderRadius,
+    this.child,
   });
 
   @override
@@ -20,18 +24,15 @@ class ShimmerLoading extends StatefulWidget {
 
 class _ShimmerLoadingState extends State<ShimmerLoading>
     with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
+  late final AnimationController _controller;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 1400),
     )..repeat();
-    _controller.addListener(() {
-      if (mounted) setState(() {});
-    });
   }
 
   @override
@@ -43,41 +44,75 @@ class _ShimmerLoadingState extends State<ShimmerLoading>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final baseColor = isDark ? const Color(0xFF1E2040) : const Color(0xFFE8E8E8);
+    final sheen = isDark
+        ? Colors.white.withOpacity(0.14)
+        : Colors.white.withOpacity(0.75);
 
-    final baseColor = isDark
-        ? const Color(0xFF1E2040)
-        : const Color(0xFFE8E8E8);
-    final highlightColor = isDark
-        ? const Color(0xFF2A2D55)
-        : const Color(0xFFF5F5F5);
-
-    final v = _controller.value;
-
-    return Container(
-      width: widget.width,
-      height: widget.height,
-      decoration: BoxDecoration(
-        borderRadius: widget.borderRadius,
-        gradient: LinearGradient(
-          // 45° бурч — солдон оңго, жогорудан ылдыйга
-          begin: const Alignment(-1.0, -0.5),
-          end: const Alignment(1.0, 0.5),
-          colors: [
-            baseColor,
-            baseColor,
-            highlightColor,
-            baseColor,
-            baseColor,
-          ],
-          stops: [
-            0.0,
-            (v - 0.3).clamp(0.0, 1.0),
-            v,
-            (v + 0.3).clamp(0.0, 1.0),
-            1.0,
+    return ClipRRect(
+      borderRadius: widget.borderRadius ?? BorderRadius.zero,
+      child: SizedBox(
+        width: widget.width,
+        height: widget.height,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            ColoredBox(color: baseColor),
+            if (widget.child != null) widget.child!,
+            IgnorePointer(
+              child: AnimatedBuilder(
+                animation: _controller,
+                builder: (_, __) => CustomPaint(
+                  painter: _SheenPainter(_controller.value, sheen),
+                ),
+              ),
+            ),
           ],
         ),
       ),
     );
+  }
+}
+
+class _SheenPainter extends CustomPainter {
+  final double t;
+  final Color color;
+  _SheenPainter(this.t, this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.isEmpty) return;
+    final rect = Offset.zero & size;
+    final c = rect.center;
+    // Сызык толугу менен сол жактан чыгып, оң жакка өтүп кетет
+    final travel = (size.width + size.height) / 2 + size.width * 0.35;
+    final dx = (t * 2 - 1) * travel;
+
+    final gradient = LinearGradient(
+      begin: Alignment.centerLeft,
+      end: Alignment.centerRight,
+      colors: [Colors.transparent, color, Colors.transparent],
+      stops: const [0.42, 0.5, 0.58],
+      // 45° бурчка бурабыз, андан соң горизонталдуу жылдырабыз
+      transform: _SheenTransform(c, dx),
+    );
+    canvas.drawRect(rect, Paint()..shader = gradient.createShader(rect));
+  }
+
+  @override
+  bool shouldRepaint(_SheenPainter old) => old.t != t || old.color != color;
+}
+
+class _SheenTransform extends GradientTransform {
+  final Offset center;
+  final double dx;
+  const _SheenTransform(this.center, this.dx);
+
+  @override
+  Matrix4? transform(Rect bounds, {TextDirection? textDirection}) {
+    return Matrix4.translationValues(dx, 0, 0)
+      ..translate(center.dx, center.dy)
+      ..rotateZ(math.pi / 4)
+      ..translate(-center.dx, -center.dy);
   }
 }

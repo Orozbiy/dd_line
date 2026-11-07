@@ -20,7 +20,7 @@ class FavBadge extends StatelessWidget {
         // фонунун үстүндө), болбосо палитранын субтексти ──
         Icon(
           active ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-          color: active ? DD.accent : p.subText,
+          color: active ? const Color(0xFFFF8A00) : p.subText,
           size: 23,
         ),
 

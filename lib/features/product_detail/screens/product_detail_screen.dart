@@ -24,7 +24,7 @@ import '../../store/screens/store_products_screen.dart';
 import '../widgets/review_section.dart';
 import '../widgets/pulse_box.dart';
 import '../../seller/widgets/working_hours_sheet.dart';
-import '../../../core/widgets/diagonal_reveal.dart';
+import '../../../core/widgets/shimmer_loading.dart';
 import '../widgets/share_widget.dart';
 
 class ProductDetailScreen extends StatefulWidget {
@@ -449,25 +449,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
               child: Hero(
                 tag: 'product_image_${_product.id}_$index',
                 child: CachedNetworkImage(
-                  imageUrl: toCloudinaryThumb(url, width: 800),
+                  imageUrl: toCloudinaryThumb(url, width: 1080),
                   fit: BoxFit.cover,
                   fadeInDuration: Duration.zero,
                   fadeOutDuration: Duration.zero,
-                  // Ак фон эмес — теманын түсүндөгү орун; сүрөт 45° менен чыгат
-                  placeholder: (ctx, __) => Container(
-                    color: Theme.of(ctx).brightness == Brightness.dark
-                        ? const Color(0xFF14162A)
-                        : AppColors.grey100,
-                  ),
-                  imageBuilder: (ctx, provider) => ClipRect(
-                    child: DiagonalReveal(
-                      distance: 44,
-                      duration: const Duration(milliseconds: 480),
-                      child: SizedBox.expand(
-                        child: Image(image: provider, fit: BoxFit.cover),
-                      ),
-                    ),
-                  ),
+                  // Жүктөлгөнчө 45° жарык сызыгы солдон оңго жылып турат
+                  placeholder: (ctx, __) => const ShimmerLoading(),
+                  memCacheWidth: 1080,
                   errorWidget: (_, __, ___) => Container(
                     color: AppColors.grey100,
                     child: const Icon(Icons.image_not_supported,
@@ -1387,7 +1375,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
               valueListenable: _buttonsVisible,
               builder: (context, buttonsVisible, _) => Container(
               padding: EdgeInsets.fromLTRB(
-                  16, 10, 16, MediaQuery.of(context).padding.bottom + 10),
+                  16,
+                  10,
+                  16,
+                  // Бир аз ылдыйга, бирок экрандын четине жабышпайт
+                  MediaQuery.of(context).padding.bottom > 0
+                      ? MediaQuery.of(context).padding.bottom - 8
+                      : 8),
               color: Colors.transparent,
               child: Row(
           children: [

@@ -70,7 +70,7 @@ class _ProductCardState extends State<ProductCard>
 
   String _thumbUrl(String url) {
     if (url.contains('res.cloudinary.com') && url.contains('/upload/')) {
-      return url.replaceFirst('/upload/', '/upload/w_300,q_auto,f_auto/');
+      return url.replaceFirst('/upload/', '/upload/w_480,q_auto,f_auto/');
     }
     return url;
   }
@@ -160,7 +160,7 @@ class _ProductCardState extends State<ProductCard>
                       imageUrl: _thumbUrl(widget.product.imageUrl),
                       fit: BoxFit.cover,
                       fadeInDuration: const Duration(milliseconds: 120),
-                      memCacheWidth: 300,
+                      memCacheWidth: 480,
                       placeholder: (_, __) => const ShimmerLoading(),
                       errorWidget: (_, __, ___) => Container(
                         color: shimmerColor,

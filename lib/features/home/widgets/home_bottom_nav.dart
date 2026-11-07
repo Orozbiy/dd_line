@@ -15,6 +15,9 @@ const int tabFavorites = 3;
 const int tabSettings  = 4;
 const int _tabCount    = 5;
 
+/// Мандарин түс (навбардагы тамчы жана активдүү белгилер)
+const Color _mandarin = Color(0xFFFF8A00);
+
 /// Төмөнкү 5 баскыч — WhatsApp сыяктуу сүзүп жүрүүчү айнек капсула.
 ///
 /// ✦ Капсула экрандын четинен 20px, астынан (safe-area − 14px) бийиктикте.
@@ -246,7 +249,7 @@ class _HomeBottomNavState extends State<HomeBottomNav>
                                       : Icons.home_outlined,
                                   size: 23,
                                   color: shownTab == tabHome
-                                      ? DD.accent
+                                      ? _mandarin
                                       : p.subText,
                                 ),
                                 label: loc.get('home'),
@@ -270,7 +273,7 @@ class _HomeBottomNavState extends State<HomeBottomNav>
                                       : Icons.storefront_outlined,
                                   size: 23,
                                   color: shownTab == tabMap
-                                      ? DD.accent
+                                      ? _mandarin
                                       : p.subText,
                                 ),
                                 label: loc.get('map_title'),
@@ -293,7 +296,7 @@ class _HomeBottomNavState extends State<HomeBottomNav>
                                       : Icons.settings_outlined,
                                   size: 23,
                                   color: shownTab == tabSettings
-                                      ? DD.accent
+                                      ? _mandarin
                                       : p.subText,
                                 ),
                                 label: loc.get('settings'),
@@ -333,21 +336,15 @@ class _DropletPill extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(40),
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              DD.accent.withOpacity(isDark ? 0.34 : 0.28),
-              DD.accent.withOpacity(isDark ? 0.18 : 0.14),
-            ],
-          ),
+          // 80% тунук мандарин айнек
+          color: _mandarin.withOpacity(0.20),
           border: Border.all(
-            color: Colors.white.withOpacity(isDark ? 0.22 : 0.55),
+            color: _mandarin.withOpacity(isDark ? 0.45 : 0.40),
             width: 0.9,
           ),
           boxShadow: [
             BoxShadow(
-              color: DD.accent.withOpacity(0.28),
+              color: _mandarin.withOpacity(0.28),
               blurRadius: 14,
               spreadRadius: -2,
             ),
@@ -392,7 +389,7 @@ class _NavButton extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
-                  color: isActive ? DD.accent : p.subText,
+                  color: isActive ? _mandarin : p.subText,
                 ),
                 child: Text(
                   label,
@@ -433,7 +430,7 @@ class _ChatBadgeIcon extends StatelessWidget {
               ? Icons.chat_bubble_rounded
               : Icons.chat_bubble_outline_rounded,
           size: 23,
-          color: isActive ? DD.accent : palette.subText,
+          color: isActive ? _mandarin : palette.subText,
         ),
         if (unreadCount > 0)
           Positioned(
