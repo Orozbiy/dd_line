@@ -31,8 +31,15 @@ class _LanguageSectionState extends State<LanguageSection> {
             padding: EdgeInsets.fromLTRB(0, 12, 0, 8),
             child: Row(
               children: [
-                Icon(Icons.language, color: AppColors.primary, size: 20),
-                SizedBox(width: 8),
+                Container(
+                  width: 32, height: 32,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF5B8DEF).withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.language_rounded, color: Color(0xFF5B8DEF), size: 18),
+                ),
+                SizedBox(width: 10),
                 Text('Тил / Язык', style: AppTextStyles.headingSmall),
               ],
             ),

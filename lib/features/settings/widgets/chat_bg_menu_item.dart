@@ -36,10 +36,13 @@ class ChatBgMenuItem extends StatelessWidget {
           child: Row(
             children: [
               // ← Контейнер жок, жөн гана Icon — CacheMenuItem/SupportMenuItem/TermsMenuItem сыяктуу
-              const Icon(
-                Icons.wallpaper_rounded,
-                color: AppColors.primary,
-                size: 20,
+              Container(
+                width: 34, height: 34,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF34C679).withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.wallpaper_rounded, color: Color(0xFF34C679), size: 20),
               ),
               const SizedBox(width: 12), // ← 14→12 башкалар менен бирдей
               Expanded(

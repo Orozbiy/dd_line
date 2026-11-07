@@ -193,8 +193,14 @@ class SettingsScreen extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         child: Row(
                           children: [
-                            const Icon(Icons.chat_bubble_outline_rounded,
-                                color: DD.accent, size: 20),
+                            Container(
+                              width: 34, height: 34,
+                              decoration: BoxDecoration(
+                                color: DD.accent.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(Icons.chat_bubble_rounded, color: DD.accent, size: 20),
+                            ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(

@@ -60,8 +60,14 @@ class _CacheMenuItemState extends State<CacheMenuItem> {
         padding: const EdgeInsets.symmetric(vertical: 14),
         child: Row(
           children: [
-            const Icon(Icons.cleaning_services_outlined,
-                color: AppColors.primary, size: 20),
+            Container(
+              width: 34, height: 34,
+              decoration: BoxDecoration(
+                color: const Color(0xFFEC4B5F).withOpacity(0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.cleaning_services_rounded, color: Color(0xFFEC4B5F), size: 20),
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(loc.get('cache'), style: AppTextStyles.bodyMedium),
