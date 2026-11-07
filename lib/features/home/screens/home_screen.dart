@@ -24,7 +24,6 @@ import '../../map/screens/map_screen.dart';
 import '../../settings/screens/settings_screen.dart';
 import '../../chat/services/chat_service.dart';
 import '../../chat/models/chat_model.dart';
-import '../../../core/supabase_client.dart';
 import '../../product_detail/screens/product_detail_screen.dart';
 import '../screens/favorites_screen.dart';
 
