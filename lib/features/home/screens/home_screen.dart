@@ -676,7 +676,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   }
                 }
               },
-              color: DD.accent,
               displacement: 80,
               child: CustomScrollView(
                 controller: _scrollController,
