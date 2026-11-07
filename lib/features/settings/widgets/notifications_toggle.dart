@@ -45,13 +45,9 @@ class _NotificationsToggleState extends State<NotificationsToggle> {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          Container(
-            width: 34, height: 34,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF4A93D).withOpacity(0.15),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(Icons.notifications_rounded, color: Color(0xFFF4A93D), size: 20),
+          Image.asset(
+            'assets/icons/settings/ic_notifications.png',
+            width: 36, height: 36, fit: BoxFit.contain,
           ),
           const SizedBox(width: 12),
           Expanded(child: Text(loc.get('notifications'),

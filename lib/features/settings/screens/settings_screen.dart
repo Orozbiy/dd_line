@@ -96,7 +96,7 @@ class SettingsScreen extends StatelessWidget {
                             ),
                           ],
                         ),
-                        child: const Icon(Icons.person_rounded, color: Colors.white, size: 24),
+                        child: Image.asset('assets/icons/settings/ic_profile.png', width: 46, height: 46, fit: BoxFit.cover),
                       ),
                       const SizedBox(width: 14),
                       Expanded(
@@ -193,13 +193,9 @@ class SettingsScreen extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         child: Row(
                           children: [
-                            Container(
-                              width: 34, height: 34,
-                              decoration: BoxDecoration(
-                                color: DD.accent.withOpacity(0.15),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: const Icon(Icons.chat_bubble_rounded, color: DD.accent, size: 20),
+                            Image.asset(
+                              'assets/icons/settings/ic_notifications.png',
+                              width: 36, height: 36, fit: BoxFit.contain,
                             ),
                             const SizedBox(width: 12),
                             Expanded(

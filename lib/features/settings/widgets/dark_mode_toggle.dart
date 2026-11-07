@@ -36,13 +36,9 @@ class DarkModeToggle extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          Container(
-            width: 34, height: 34,
-            decoration: BoxDecoration(
-              color: const Color(0xFF8B6CF7).withOpacity(0.15),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(Icons.contrast_rounded, color: Color(0xFF8B6CF7), size: 20),
+          Image.asset(
+            'assets/icons/settings/ic_theme.png',
+            width: 36, height: 36, fit: BoxFit.contain,
           ),
           const SizedBox(width: 12),
           Expanded(
