@@ -75,6 +75,10 @@ class _HomeScreenState extends State<HomeScreen> {
   static const int _pageSize = ProductRepository.pageSize;
 
   String? _sellerAvatarUrl;
+
+  // ── Header bounce анимациясы ──
+  late AnimationController _headerBounceCtrl;
+  late Animation<Offset> _headerSlide;
   bool _isNearbyMode = false;
   bool _hasUnread = false;
   bool _isSearchMode = false;
@@ -135,6 +139,21 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+
+    // ── Header bounce анимациясы — жогорудан ылдыга ──
+    _headerBounceCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
+    _headerSlide = Tween<Offset>(
+      begin: const Offset(0, -1.0),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _headerBounceCtrl,
+      curve: Curves.elasticOut,
+    ));
+    _headerBounceCtrl.forward();
+
     _loadProducts(); // ← бул бар
     _loadSellerAvatar();
     _favCount = fav.count;
@@ -239,6 +258,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _searchController.dispose();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
+    _headerBounceCtrl.dispose();
     super.dispose();
   }
 
@@ -896,7 +916,9 @@ if (_isSearchMode || _isNearbyMode ||
             top: 0,
             left: 0,
             right: 0,
-            child: NotificationListener<SizeChangedLayoutNotification>(
+            child: SlideTransition(
+              position: _headerSlide,
+              child: NotificationListener<SizeChangedLayoutNotification>(
               onNotification: (_) {
                 WidgetsBinding.instance
                     .addPostFrameCallback((_) => mounted ? _measureHeader() : null);
@@ -945,19 +967,23 @@ if (_isSearchMode || _isNearbyMode ||
                                     if (mounted) setState(() {});
                                   },
                                   child: Container(
-                                    margin:
-                                        const EdgeInsets.fromLTRB(8, 4, 4, 4),
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 17, vertical: 11),
+                                    margin: const EdgeInsets.fromLTRB(8, 4, 4, 4),
+                                    padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 11),
                                     decoration: BoxDecoration(
-                                      color: DD.accent,
-                                      borderRadius:
-                                          BorderRadius.circular(DD.rPill),
+                                      gradient: const LinearGradient(
+                                        colors: [
+                                          Color(0xFFCCCCCC),
+                                          Color(0xFFEAEAEA),
+                                          Color(0xFFB8B8B8),
+                                        ],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      ),
+                                      borderRadius: BorderRadius.circular(DD.rPill),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: DD.accent.withOpacity(
-                                              isDark ? 0.35 : 0.30),
-                                          blurRadius: 12,
+                                          color: Colors.black.withOpacity(isDark ? 0.4 : 0.18),
+                                          blurRadius: 10,
                                           offset: const Offset(0, 4),
                                           spreadRadius: -2,
                                         ),
@@ -971,12 +997,12 @@ if (_isSearchMode || _isNearbyMode ||
                                               height: 32,
                                               fit: BoxFit.cover,
                                               errorWidget: (_, __, ___) => const Icon(
-                                                  Icons.store_rounded, color: Colors.white, size: 20),
+                                                  Icons.store_rounded, color: Color(0xFF444444), size: 20),
                                             ),
                                           )
                                         : Text(loc.get('shop'),
                                             style: const TextStyle(
-                                                color: Colors.white,
+                                                color: Color(0xFF333333),
                                                 fontWeight: FontWeight.w700,
                                                 fontSize: 15)),
                                   ),
@@ -1116,6 +1142,7 @@ if (_isSearchMode || _isNearbyMode ||
             ),
               ), // ← SizeChangedLayoutNotifier
             ), // ← NotificationListener
+            ), // ← SlideTransition
           ), // ← ClipRect
         ],
       ),
