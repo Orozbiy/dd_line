@@ -1,144 +1,150 @@
-// @ts-nocheck
-// Чат билдирүүсү үчүн push жөнөтөт (FCM v1).
-// Керектүү secrets:
-//   FCM_SERVICE_ACCOUNT = Firebase service-account JSON (толугу менен)
-//   SERVICE_ROLE_KEY    = Supabase service role key
-// Чакыруу: supabase.functions.invoke('send-push', body: {receiverUid, title, body, chatId})
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const PROJECT_ID = 'dd-online-web'
 const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
 
-function b64url(data: Uint8Array | string): string {
-  const bytes = typeof data === 'string' ? new TextEncoder().encode(data) : data
-  let s = ''
-  for (const b of bytes) s += String.fromCharCode(b)
-  return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
-}
-
-async function getAccessToken(sa: any): Promise<string> {
-  const now = Math.floor(Date.now() / 1000)
-  const header = b64url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }))
-  const claim = b64url(JSON.stringify({
-    iss: sa.client_email,
-    scope: 'https://www.googleapis.com/auth/firebase.messaging',
-    aud: 'https://oauth2.googleapis.com/token',
-    iat: now,
-    exp: now + 3600,
-  }))
-  const pem = sa.private_key
-    .replace('-----BEGIN PRIVATE KEY-----', '')
-    .replace('-----END PRIVATE KEY-----', '')
-    .replace(/\s/g, '')
-  const der = Uint8Array.from(atob(pem), (c) => c.charCodeAt(0))
-  const key = await crypto.subtle.importKey(
-    'pkcs8', der, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['sign'])
-  const sig = new Uint8Array(await crypto.subtle.sign(
-    'RSASSA-PKCS1-v1_5', key, new TextEncoder().encode(`${header}.${claim}`)))
-  const jwt = `${header}.${claim}.${b64url(sig)}`
-  const res = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`,
-  })
-  const j = await res.json()
-  if (!j.access_token) throw new Error('oauth: ' + JSON.stringify(j))
-  return j.access_token
-}
-
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
-  const json = (obj: any, status = 200) =>
-    new Response(JSON.stringify(obj), { status, headers: { ...CORS, 'Content-Type': 'application/json' } })
-
+serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   try {
-    const url = Deno.env.get('SUPABASE_URL')!
-    const serviceKey = Deno.env.get('SERVICE_ROLE_KEY')!
-    const authHeader = req.headers.get('Authorization') ?? ''
+    console.log("STEP1: parsing body");
+    const b = await req.json();
+    const uid = b.receiver_uid ?? b.receiverUid;
+    const title = b.title;
+    const body = b.body;
+    const chatId = b.chat_id ?? b.chatId ?? "";
+    console.log("STEP2: uid=" + uid);
 
-    // 1) Чакырган колдонуучуну текшерүү
-    const uRes = await fetch(`${url}/auth/v1/user`, {
-      headers: { Authorization: authHeader, apikey: serviceKey },
-    })
-    if (!uRes.ok) return json({ error: 'unauthorized' }, 401)
-    const caller = await uRes.json()
+    const sb = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
 
-    const { receiverUid, title, body, chatId } = await req.json()
-    if (!receiverUid || !chatId) return json({ error: 'bad request' }, 400)
+    console.log("STEP3: querying push_tokens");
+    const { data: tokens, error: tokErr } = await sb
+      .from("push_tokens")
+      .select("token")
+      .eq("user_id", uid);
+    console.log("STEP4: tokens=" + JSON.stringify(tokens) + " err=" + JSON.stringify(tokErr));
 
-    const rest = (path: string) =>
-      fetch(`${url}/rest/v1/${path}`, {
-        headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
-      }).then((r) => r.json())
+    if (!tokens || tokens.length === 0)
+      return new Response(JSON.stringify({ sent: 0, reason: "no tokens" }), {
+        status: 200,
+        headers: { ...CORS, "Content-Type": "application/json" },
+      });
 
-    // 2) Чат катышуучулары гана (чакыруучу жана алуучу ушул чаттын экөөнүн бири)
-    const chats = await rest(`chats?id=eq.${encodeURIComponent(chatId)}&select=buyer_id,seller_id`)
-    const chat = Array.isArray(chats) ? chats[0] : null
-    if (!chat) return json({ error: 'chat not found' }, 404)
-    const members = [chat.buyer_id, chat.seller_id]
-    if (!members.includes(caller.id) || !members.includes(receiverUid) || caller.id === receiverUid) {
-      return json({ error: 'forbidden' }, 403)
-    }
+    console.log("STEP5: parsing FCM_SERVICE_ACCOUNT");
+    const raw = Deno.env.get("FCM_SERVICE_ACCOUNT");
+    if (!raw) throw new Error("FCM_SERVICE_ACCOUNT not set");
+    const sa = JSON.parse(raw);
+    console.log("STEP6: project_id=" + sa.project_id);
 
-    // 3) Токендер
-    const rows = await rest(`push_tokens?user_id=eq.${receiverUid}&select=token`)
-    const tokens = (Array.isArray(rows) ? rows : []).map((r: any) => r.token).filter(Boolean)
-    if (tokens.length === 0) return json({ sent: 0, reason: 'no tokens' })
+    console.log("STEP7: getting OAuth token");
+    const accessToken = await getAccessToken(sa);
+    console.log("STEP8: got OAuth token");
 
-    const sa = JSON.parse(Deno.env.get('FCM_SERVICE_ACCOUNT')!)
-    const accessToken = await getAccessToken(sa)
-
-    let sent = 0
-    for (const token of tokens) {
-      const res = await fetch(`https://fcm.googleapis.com/v1/projects/${PROJECT_ID}/messages:send`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: {
-            token,
-            notification: { title, body },
-            android: {
-              priority: 'high',
-              notification: {
-                channel_id: 'chat_messages',
-                sound: 'default',
-                default_vibrate_timings: true,
-                notification_priority: 'PRIORITY_MAX',
-                visibility: 'PUBLIC',
-                click_action: 'FLUTTER_NOTIFICATION_CLICK',
+    let success = 0;
+    for (const { token } of tokens) {
+      console.log("STEP9: sending FCM token=" + token.substring(0, 20));
+      const res = await fetch(
+        `https://fcm.googleapis.com/v1/projects/${sa.project_id}/messages:send`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: "Bearer " + accessToken,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message: {
+              token,
+              notification: { title, body },
+              android: {
+                priority: "high",
+                notification: {
+                  channel_id: "chat_messages",
+                  sound: "default",
+                  notification_priority: "PRIORITY_MAX",
+                  default_vibrate_timings: true,
+                },
+              },
+              apns: {
+                payload: { aps: { sound: "default", badge: 1 } },
+                headers: { "apns-priority": "10" },
+              },
+              data: {
+                chatId,
+                type: "chat_message",
+                title: title ?? "",
+                body: body ?? "",
+                click_action: "FLUTTER_NOTIFICATION_CLICK",
               },
             },
-            apns: {
-              payload: { aps: { sound: 'default', badge: 1, 'content-available': 1 } },
-              headers: { 'apns-priority': '10' },
-            },
-            data: {
-              chatId: String(chatId),
-              type: 'chat_message',
-              senderName: String(title ?? ''),
-              title: String(title ?? ''),
-              body: String(body ?? ''),
-              click_action: 'FLUTTER_NOTIFICATION_CLICK',
-            },
-          },
-        }),
-      })
-      if (res.ok) {
-        sent++
-      } else {
-        const txt = await res.text()
-        if (res.status === 404 || txt.includes('UNREGISTERED')) {
-          await fetch(`${url}/rest/v1/push_tokens?token=eq.${encodeURIComponent(token)}`, {
-            method: 'DELETE',
-            headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
-          })
+          }),
         }
-      }
+      );
+      const rt = await res.text();
+      console.log("STEP10: FCM status=" + res.status + " body=" + rt.substring(0, 300));
+      if (res.ok) success++;
     }
-    return json({ sent })
+
+    return new Response(JSON.stringify({ sent: success }), {
+      status: 200,
+      headers: { ...CORS, "Content-Type": "application/json" },
+    });
   } catch (e) {
-    return json({ error: String(e?.message ?? e) }, 500)
+    console.error("ERR: " + String(e));
+    return new Response(JSON.stringify({ error: String(e) }), {
+      status: 500,
+      headers: { ...CORS, "Content-Type": "application/json" },
+    });
   }
-})
+});
+
+async function getAccessToken(sa: any): Promise<string> {
+  const now = Math.floor(Date.now() / 1000);
+  const header = { alg: "RS256", typ: "JWT" };
+  const payload = {
+    iss: sa.client_email,
+    sub: sa.client_email,
+    aud: "https://oauth2.googleapis.com/token",
+    iat: now,
+    exp: now + 3600,
+    scope: "https://www.googleapis.com/auth/firebase.messaging",
+  };
+  const enc = new TextEncoder();
+  const b64 = (s: string) =>
+    btoa(s).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+  const h = b64(JSON.stringify(header));
+  const p = b64(JSON.stringify(payload));
+  const keyData = sa.private_key
+    .replace("-----BEGIN PRIVATE KEY-----", "")
+    .replace("-----END PRIVATE KEY-----", "")
+    .replace(/\n/g, "");
+  const binaryKey = Uint8Array.from(atob(keyData), (c) => c.charCodeAt(0));
+  const cryptoKey = await crypto.subtle.importKey(
+    "pkcs8",
+    binaryKey,
+    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const sig = new Uint8Array(
+    await crypto.subtle.sign("RSASSA-PKCS1-v1_5", cryptoKey, enc.encode(h + "." + p))
+  );
+  const s = b64(String.fromCharCode(...sig));
+  const jwt = h + "." + p + "." + s;
+
+  console.log("OAuth: calling google token endpoint");
+  const res = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body:
+      "grant_type=urn:ietf:params:oauth2:grant-type:jwt-bearer&assertion=" + jwt,
+  });
+  const j = await res.json();
+  console.log("OAuth: response=" + JSON.stringify(j).substring(0, 150));
+  if (!j.access_token) throw new Error("oauth error: " + JSON.stringify(j));
+  return j.access_token;
+}
