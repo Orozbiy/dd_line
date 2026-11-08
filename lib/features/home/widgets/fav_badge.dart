@@ -18,9 +18,10 @@ class FavBadge extends StatelessWidget {
       children: [
         // ── Жүрөкчө иконасы: активдүү болсо ак (кызгылт сары пилюля
         // фонунун үстүндө), болбосо палитранын субтексти ──
-        Opacity(
-          opacity: active ? 1.0 : 0.45,
-          child: Image.asset('assets/icons/nav/ic_heart.png', width: 26, height: 26),
+        Icon(
+          active ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+          size: 26,
+          color: active ? const Color(0xFFFF7A30) : p.subText,
         ),
 
         // ── Badge — 0 болсо жашырылат ──
