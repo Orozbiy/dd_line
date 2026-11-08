@@ -130,18 +130,22 @@ async function getAccessToken(sa: any): Promise<string> {
     false,
     ["sign"]
   );
-  const sig = new Uint8Array(
-    await crypto.subtle.sign("RSASSA-PKCS1-v1_5", cryptoKey, enc.encode(h + "." + p))
-  );
-  const s = b64(String.fromCharCode(...sig));
+  const sigBuf = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", cryptoKey, enc.encode(h + "." + p));
+  const sig = new Uint8Array(sigBuf);
+  let binary = "";
+  for (let i = 0; i < sig.length; i++) binary += String.fromCharCode(sig[i]);
+  const s = b64(binary);
   const jwt = h + "." + p + "." + s;
 
   console.log("OAuth: calling google token endpoint");
+  const params = new URLSearchParams({
+    grant_type: "urn:ietf:params:oauth2:grant-type:jwt-bearer",
+    assertion: jwt,
+  });
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body:
-      "grant_type=urn:ietf:params:oauth2:grant-type:jwt-bearer&assertion=" + jwt,
+    body: params.toString(),
   });
   const j = await res.json();
   console.log("OAuth: response=" + JSON.stringify(j).substring(0, 150));
