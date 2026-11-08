@@ -108,21 +108,22 @@ async function getAccessToken(sa: any): Promise<string> {
   console.log("OAuth: importing private key");
   const privateKey = await importPKCS8(sa.private_key, "RS256");
   console.log("OAuth: signing JWT");
+  const tokenUri = sa.token_uri || "https://oauth2.googleapis.com/token";
   const jwt = await new SignJWT({
+    iss: sa.client_email,
+    sub: sa.client_email,
+    aud: tokenUri,
+    iat: now,
+    exp: now + 3600,
     scope: "https://www.googleapis.com/auth/firebase.messaging",
   })
     .setProtectedHeader({ alg: "RS256", typ: "JWT" })
-    .setIssuer(sa.client_email)
-    .setSubject(sa.client_email)
-    .setAudience("https://oauth2.googleapis.com/token")
-    .setIssuedAt(now)
-    .setExpirationTime(now + 3600)
     .sign(privateKey);
   console.log("OAuth: calling google token endpoint");
-  const res = await fetch("https://oauth2.googleapis.com/token", {
+  const res = await fetch(tokenUri, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: "grant_type=urn%3Aietf%3Aparams%3Aoauth2%3Agrant-type%3Ajwt-bearer&assertion=" + jwt,
+    body: "grant_type=urn:ietf:params:oauth2:grant-type:jwt-bearer&assertion=" + jwt,
   });
   const j = await res.json();
   console.log("OAuth: response=" + JSON.stringify(j).substring(0, 200));
