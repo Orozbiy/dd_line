@@ -3,7 +3,7 @@ description: "Дордойдогу интерактивдүү онлайн ба�
 
 publish_to: 'none'
 
-version: 1.0.2+20
+version: 1.0.2+21
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -53,6 +53,7 @@ flutter_launcher_icons:
   android: true
   ios: true
   image_path: "assets/icon/app_icon.png"
+  image_path_ios: "assets/icon/app_icon_ios.png"
   remove_alpha_ios: true
 
 flutter:
@@ -61,8 +62,10 @@ flutter:
     
     - assets/icon/
     - assets/icons/
+    - assets/icons/nav/
     - assets/icons/profile/
     - assets/icons/chat/
+    - assets/icons/settings/
     - assets/backgrounds/
     - assets/images/
     - assets/images/categories/
