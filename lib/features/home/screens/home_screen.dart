@@ -272,28 +272,6 @@ class _HomeScreenState extends State<HomeScreen>
     });
   }
 
-  // ── Катуу тартып жаңыртуу: жеңил тийүү/тартууда сүрөттөр жаңырбайт ──
-  static const double _pullThreshold = 130;
-  bool _pullArmed = false;
-
-  void _handlePull(ScrollNotification n) {
-    if (n.depth != 0 || n.metrics.axis != Axis.vertical) return;
-    final px = n.metrics.pixels;
-    if (n is ScrollUpdateNotification || n is OverscrollNotification) {
-      if (px <= -_pullThreshold && !_pullArmed) {
-        _pullArmed = true;
-        HapticFeedback.mediumImpact();
-      } else if (_pullArmed && px > -_pullThreshold * 0.6) {
-        _pullArmed = false; // кайра жогору жыйды — жокко чыгат
-      }
-    } else if (n is ScrollEndNotification) {
-      if (_pullArmed) {
-        _pullArmed = false;
-        _pullRefresh();
-      }
-    }
-  }
-
   Future<void> _pullRefresh() async {
     if (_isLoading) return;
     if (_isSearchMode && _searchQuery.isNotEmpty) {
@@ -730,36 +708,14 @@ class _HomeScreenState extends State<HomeScreen>
               if (n.metrics.pixels >= n.metrics.maxScrollExtent - 300) {
                 _loadMoreProducts();
               }
-              _handlePull(n);
               return false;
             },
             child: RefreshIndicator(
-              color: Colors.transparent,
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              // Адаттагы жеңил тартуу жаңыртпайт — төмөндө катуу тартуу логикасы
-              notificationPredicate: (_) => false,
-              onRefresh: () async {
-                if (_isSearchMode && _searchQuery.isNotEmpty) {
-                  // ── Издөө режиминде — издөөнү кайра жүргүзүү ──
-                  _onSearchChanged(_searchQuery);
-                } else if (_isNearbyMode) {
-                  await _loadNearbyProducts();
-                } else {
-                  switch (_filterMode) {
-                    case ProductFilterMode.newest:
-                      await _loadNewest();
-                      break;
-                    case ProductFilterMode.popular:
-                      await _loadPopular();
-                      break;
-                    case ProductFilterMode.all:
-                      await _loadProducts(refresh: true);
-                      break;
-                  }
-                }
-              },
+              color: const Color(0xFFFF7A30),
+              backgroundColor: Colors.white,
+              strokeWidth: 2.5,
               displacement: 80,
+              onRefresh: _pullRefresh,
               child: CustomScrollView(
                 controller: _scrollController,
                 physics: const BouncingScrollPhysics(
