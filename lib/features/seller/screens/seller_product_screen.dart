@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
+import '../../../config/theme/dd_design.dart';
 import '../../../core/app_localizations.dart';
 import '../../../core/utils/image_utils.dart';
 import '../../../core/supabase_client.dart';
@@ -213,9 +214,9 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
 
   // ── Акция: товар тандоо sheet ─────────────────────────────────────────────
   void _showProductPickerForDiscount() {
-    final isDark  = Theme.of(context).brightness == Brightness.dark;
-    final sheetBg = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-    final titleColor = isDark ? Colors.white : AppColors.black;
+    final sp = DDPalette.of(context);
+    final sheetBg = sp.card;
+    final titleColor = sp.text;
     String query = '';
 
     showModalBottomSheet(
@@ -274,7 +275,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                   prefixIcon: const Icon(Icons.search_rounded, size: 20),
                   isDense: true,
                   filled: true,
-                  fillColor: isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF5F5F5),
+                  fillColor: sp.field,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
@@ -283,7 +284,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                 ),
               ),
             ),
-            Divider(height: 1, color: isDark ? const Color(0xFF2C2C2C) : const Color(0xFFEEEEEE)),
+            Divider(height: 1, color: sp.divider),
             Expanded(
               child: filtered.isEmpty
                   ? Center(
@@ -319,11 +320,11 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                                   child: imageUrl.isNotEmpty
                                       ? Image.network(imageUrl, fit: BoxFit.cover,
                                           errorBuilder: (_, __, ___) => Container(
-                                            color: isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF0F0F0),
+                                            color: sp.field,
                                             child: const Center(child: Text('📦', style: TextStyle(fontSize: 22))),
                                           ))
                                       : Container(
-                                          color: isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF0F0F0),
+                                          color: sp.field,
                                           child: const Center(child: Text('📦', style: TextStyle(fontSize: 22))),
                                         ),
                                 ),
@@ -379,12 +380,13 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
   void _showDiscountSheet(Map<String, dynamic> product) {
     final loc    = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final ds = DDPalette.of(context);
     final price  = (product['price'] as num?)?.toDouble() ?? 0;
     final ctrl   = TextEditingController(text: (product['discount_percent'] as num?)?.toString() ?? '');
     double? discountedPrice;
     int percent = int.tryParse(ctrl.text) ?? 0;
-    final sheetBg   = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-    final fieldFill = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF7F7F7);
+    final sheetBg   = ds.card;
+    final fieldFill = ds.field;
 
     showModalBottomSheet(
       context: context,
@@ -409,7 +411,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
               const SizedBox(height: 20),
               TextField(
                 controller: ctrl, keyboardType: TextInputType.number, onChanged: recalc,
-                style: TextStyle(color: isDark ? Colors.white : AppColors.black),
+                style: TextStyle(color: ds.text),
                 decoration: InputDecoration(
                   labelText: loc.get('discount_percent_label'), suffixText: '%',
                   filled: true, fillColor: fieldFill,
@@ -515,16 +517,17 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
   Widget build(BuildContext context) {
     final loc      = AppLocalizations.of(context);
     final isDark   = Theme.of(context).brightness == Brightness.dark;
+    final pal      = DDPalette.of(context);
     final filtered = _filteredProducts;
     final usedMainCatIds = _products.map((p) => (p['category_id'] as String? ?? '').split('_')[0]).toSet();
 
-    final bgColor       = isDark ? const Color(0xFF121212) : const Color(0xFFF4F5F7);
-    final appBarColor   = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-    final titleColor    = isDark ? Colors.white : AppColors.black;
-    final catBarColor   = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-    final cardColor     = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-    final prodNameColor = isDark ? Colors.white : AppColors.black;
-    final divColor      = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFEEEEEE);
+    final bgColor       = pal.bg;
+    final appBarColor   = pal.card;
+    final titleColor    = pal.text;
+    final catBarColor   = pal.card;
+    final cardColor     = pal.card;
+    final prodNameColor = pal.text;
+    final divColor      = pal.divider;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -532,10 +535,10 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
         backgroundColor: appBarColor,
         elevation: 0,
         centerTitle: false,
-        iconTheme: IconThemeData(color: isDark ? Colors.white : AppColors.grey600),
+        iconTheme: IconThemeData(color: pal.text),
         title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(loc.get('my_products'), style: AppTextStyles.headingSmall.copyWith(color: titleColor)),
-          Text(widget.shopName, style: AppTextStyles.labelSmall.copyWith(color: isDark ? Colors.white60 : AppColors.grey500)),
+          Text(widget.shopName, style: AppTextStyles.labelSmall.copyWith(color: pal.subText)),
         ]),
         actions: [
           // ── Акция кнопкасы ──
@@ -587,7 +590,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
           // ── Жаңыртуу ──
           IconButton(
             onPressed: _loadProducts,
-            icon: Icon(Icons.refresh, color: isDark ? Colors.white70 : AppColors.grey600),
+            icon: Icon(Icons.refresh, color: pal.subText),
             tooltip: loc.get('refresh'),
           ),
         ],
@@ -601,12 +604,12 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Row(children: [
-                _categoryChip(id: null, icon: '📦', name: loc.get('prod_all'), count: _products.length, isDark: isDark),
+                _categoryChip(id: null, icon: '📦', name: loc.get('prod_all'), count: _products.length, isDark: isDark, palette: pal),
                 const SizedBox(width: 8),
                 ..._allCategories.where((cat) => usedMainCatIds.contains(cat.id)).map((cat) {
                   final count = _products.where((p) => _catMatches(p['category_id'] as String? ?? '', cat.id)).length;
                   return Padding(padding: const EdgeInsets.only(right: 8),
-                      child: _categoryChip(id: cat.id, icon: cat.icon, name: cat.name, count: count, isDark: isDark));
+                      child: _categoryChip(id: cat.id, icon: cat.icon, name: cat.name, count: count, isDark: isDark, palette: pal));
                 }),
                 ..._legacyCategories.where((cat) {
                   final id = cat['id']!;
@@ -616,7 +619,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                 }).map((cat) {
                   final count = _products.where((p) => p['category_id'] == cat['id']).length;
                   return Padding(padding: const EdgeInsets.only(right: 8),
-                      child: _categoryChip(id: cat['id'], icon: cat['icon']!, name: cat['name']!, count: count, isDark: isDark));
+                      child: _categoryChip(id: cat['id'], icon: cat['icon']!, name: cat['name']!, count: count, isDark: isDark, palette: pal));
                 }),
               ]),
             ),
@@ -768,13 +771,13 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
           FloatingActionButton.extended(
             heroTag: 'seller_filter_fab',
             onPressed: _openCategoryFilter,
-            backgroundColor: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+            backgroundColor: pal.card,
             elevation: 3,
             icon: Icon(Icons.filter_list_rounded,
                 color: _selectedCategoryId == null ? AppColors.primary : AppColors.success),
             label: Text(
               _selectedCategoryId == null ? 'Фильтр' : 'Фильтр ✓',
-              style: AppTextStyles.labelMedium.copyWith(color: isDark ? Colors.white : AppColors.black),
+              style: AppTextStyles.labelMedium.copyWith(color: pal.text),
             ),
           ),
           const SizedBox(width: 10),
@@ -806,10 +809,10 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
     setState(() => _selectedCategoryId = picked.isEmpty ? null : picked);
   }
 
-  Widget _categoryChip({required String? id, required String icon, required String name, required int count, required bool isDark}) {
+  Widget _categoryChip({required String? id, required String icon, required String name, required int count, required bool isDark, DDPalette? palette}) {
     final isSelected = _selectedCategoryId == id;
-    final unselBg    = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF0F0F0);
-    final unselText  = isDark ? Colors.white70 : AppColors.grey600;
+    final unselBg    = palette?.field ?? (isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF0F0F0));
+    final unselText  = palette?.subText ?? (isDark ? Colors.white70 : AppColors.grey600);
 
     return GestureDetector(
       onTap: () => setState(() => _selectedCategoryId = id),
@@ -835,6 +838,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
   Future<void> _showProductDialog({Map<String, dynamic>? existing}) async {
     final loc    = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final ep = DDPalette.of(context);
 
     final nameCtrl         = TextEditingController(text: existing?['title'] ?? '');
     final priceCtrl        = TextEditingController(text: existing?['price']?.toString() ?? '');
@@ -878,12 +882,12 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
     bool isLoading    = false;
     String uploadStatus = '';
 
-    final dialogBg  = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-    final fieldFill = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF7F7F7);
-    final textColor = isDark ? Colors.white : AppColors.black;
-    final labelClr  = isDark ? const Color(0xFFCCCCCC) : AppColors.grey600;
-    final hintClr   = isDark ? const Color(0xFF666666) : AppColors.grey400;
-    final dropBg    = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF7F7F7);
+    final dialogBg  = ep.card;
+    final fieldFill = ep.field;
+    final textColor = ep.text;
+    final labelClr  = ep.subText;
+    final hintClr   = ep.subText;
+    final dropBg    = ep.field;
 
     List<String> sizesForCategory(String mainId, [String? subId, String? subItemId]) {
       if (subId != null) {
@@ -1922,7 +1926,8 @@ class _SellerFlashSaleScreenState extends State<SellerFlashSaleScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF0F0F0F) : const Color(0xFFF5F5F5);
+    final fp = DDPalette.of(context);
+    final bgColor = fp.bg;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -2036,8 +2041,9 @@ class _FlashProductTile extends StatelessWidget {
     final h = timeLeft.inHours.toString().padLeft(2, '0');
     final mn = (timeLeft.inMinutes % 60).toString().padLeft(2, '0');
 
-    final cardBg = isDark ? const Color(0xFF1C1C1C) : Colors.white;
-    final border = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFEEEEEE);
+    final fp2 = DDPalette.of(context);
+    final cardBg = fp2.card;
+    final border = fp2.divider;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -2065,7 +2071,7 @@ class _FlashProductTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(name, maxLines: 2, overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isDark ? Colors.white : const Color(0xFF1A1A1A))),
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: fp2.text)),
                   const SizedBox(height: 4),
                   Row(children: [
                     Text('${flashPrice.toStringAsFixed(0)} с',
@@ -2140,8 +2146,9 @@ class _AddFlashSheetState extends State<_AddFlashSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final sheetBg = isDark ? const Color(0xFF1A1A1A) : Colors.white;
-    final subColor = isDark ? Colors.white70 : const Color(0xFF555555);
+    final gp = DDPalette.of(context);
+    final sheetBg = gp.card;
+    final subColor = gp.subText;
 
     final filtered = _filteredProducts;
     return Container(
@@ -2187,7 +2194,7 @@ class _AddFlashSheetState extends State<_AddFlashSheet> {
                   prefixIcon: const Icon(Icons.search_rounded, size: 20),
                   isDense: true,
                   filled: true,
-                  fillColor: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF5F5F5),
+                  fillColor: gp.field,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
@@ -2268,7 +2275,7 @@ class _AddFlashSheetState extends State<_AddFlashSheet> {
                           decoration: InputDecoration(
                             hintText: 'Акция бааны киргиз',
                             filled: true,
-                            fillColor: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF5F5F5),
+                            fillColor: gp.field,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide.none,
@@ -2320,7 +2327,7 @@ class _AddFlashSheetState extends State<_AddFlashSheet> {
                             duration: const Duration(milliseconds: 150),
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                             decoration: BoxDecoration(
-                              color: isActive ? AppColors.error : (isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF0F0F0)),
+                              color: isActive ? AppColors.error : gp.field,
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(

@@ -176,6 +176,7 @@ for (final id in toDelete) {
     final loc = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final _p = DDPalette.of(context);
 
     final appBarBg = isDark
         ? Colors.black.withOpacity(0.55)
@@ -209,7 +210,11 @@ for (final id in toDelete) {
                     backgroundColor: appBarBg,
                     elevation: 0,
                     leading: IconButton(
-                      icon: Icon(Icons.close, color: theme.colorScheme.onSurface),
+                      icon: Image.asset(
+                        'assets/icons/chat/ic_close.png',
+                        width: 22, height: 22,
+                        color: theme.colorScheme.onSurface,
+                      ),
                       onPressed: _exitSelectionMode,
                     ),
                     title: Text(
@@ -238,8 +243,11 @@ for (final id in toDelete) {
                         },
                       ),
                       IconButton(
-                        icon: const Icon(Icons.delete_outline,
-                            color: AppColors.error),
+                        icon: Image.asset(
+                          'assets/icons/chat/ic_delete_chat.png',
+                          width: 22, height: 22,
+                          color: AppColors.error,
+                        ),
                         onPressed:
                             _selectedIds.isEmpty ? null : _deleteSelected,
                       ),
@@ -251,7 +259,7 @@ for (final id in toDelete) {
                     title: Text(
                       loc.get('messages'),
                       style: AppTextStyles.headingSmall.copyWith(
-                        color: isDark ? Colors.white : AppColors.black,
+                        color: _p.text,
                       ),
                     ),
                   ),
@@ -393,7 +401,7 @@ for (final id in toDelete) {
   ),
                     title: Text(displayName,
                         style: AppTextStyles.bodyLarge.copyWith(
-                          color: isDark ? Colors.white : AppColors.black,
+                          color: _p.text,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis),

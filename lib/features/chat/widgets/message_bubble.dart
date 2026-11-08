@@ -96,7 +96,11 @@ class _MessageStatus extends StatelessWidget {
     // колдонулат — ал көк баллондо да, сүрөттүн үстүндөгү кара
     // котормодо да даана көрүнөт.
     if (isRead) {
-      return const Icon(Icons.done_all, size: 14, color: Color(0xFFFFC94D));
+      return Image.asset(
+        'assets/icons/chat/ic_check_done.png',
+        width: 14, height: 14,
+        color: const Color(0xFFFFC94D),
+      );
     }
 
     // Жеткирилди → боз done_all
@@ -106,7 +110,11 @@ class _MessageStatus extends StatelessWidget {
           : (isDark
               ? Colors.white.withOpacity(0.50)
               : Colors.white.withOpacity(0.65));
-      return Icon(Icons.done_all, size: 14, color: greyColor);
+      return Image.asset(
+        'assets/icons/chat/ic_check_done.png',
+        width: 14, height: 14,
+        color: greyColor,
+      );
     }
 
     // Жөнөтүлдү → боз done (1 галочка)

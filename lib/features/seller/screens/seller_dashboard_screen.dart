@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
+import '../../../config/theme/dd_design.dart';
 import '../../../core/app_localizations.dart';
 import '../models/seller_model.dart';
 import '../services/seller_service.dart';
@@ -117,7 +118,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
 // ══════════════════════════════════════════════════════
 void _showChangePhoneSheet() {
   final loc     = AppLocalizations.of(context);
-  final isDark  = Theme.of(context).brightness == Brightness.dark;
+  final p       = DDPalette.of(context);
   final ctrl    = TextEditingController();
   bool sending  = false;
 
@@ -132,7 +133,7 @@ void _showChangePhoneSheet() {
           bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
         ),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          color: p.card,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
@@ -145,8 +146,7 @@ void _showChangePhoneSheet() {
               const SizedBox(width: 10),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(loc.get('dash_change_phone'),
-                    style: AppTextStyles.headingSmall.copyWith(
-                        color: isDark ? Colors.white : AppColors.black)),
+                    style: AppTextStyles.headingSmall.copyWith(color: p.text)),
                 Text(loc.get('dash_change_phone_sub'),
                     style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey500)),
               ])),
@@ -157,7 +157,7 @@ void _showChangePhoneSheet() {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF7F7F7),
+                color: p.field,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Row(children: [
@@ -167,8 +167,7 @@ void _showChangePhoneSheet() {
                   loc.locale.languageCode == 'ru'
                       ? 'Текущий номер: ${_seller?.phone ?? ''}'
                       : 'Учурдагы номер: ${_seller?.phone ?? ''}',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                      color: isDark ? Colors.white70 : AppColors.grey600),
+                  style: AppTextStyles.bodyMedium.copyWith(color: p.subText),
                 ),
               ]),
             ),
@@ -178,8 +177,7 @@ void _showChangePhoneSheet() {
             TextField(
               controller: ctrl,
               keyboardType: TextInputType.phone,
-              style: AppTextStyles.bodyMedium.copyWith(
-                  color: isDark ? Colors.white : AppColors.black),
+              style: AppTextStyles.bodyMedium.copyWith(color: p.text),
               decoration: InputDecoration(
                 labelText: loc.locale.languageCode == 'ru'
                     ? 'Новый номер телефона'
@@ -192,7 +190,7 @@ void _showChangePhoneSheet() {
                   borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
                 ),
                 filled: true,
-                fillColor: isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF7F7F7),
+                fillColor: p.field,
               ),
             ),
             const SizedBox(height: 12),
@@ -284,6 +282,7 @@ void _showChangePhoneSheet() {
 
   void _showSubscriptionSheet() {
     final loc      = AppLocalizations.of(context);
+    final p        = DDPalette.of(context);
     final cardCtrl = TextEditingController();
     final expCtrl  = TextEditingController();
     final cvvCtrl  = TextEditingController();
@@ -292,7 +291,7 @@ void _showChangePhoneSheet() {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: p.card,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => StatefulBuilder(
@@ -448,15 +447,16 @@ void _showChangePhoneSheet() {
   @override
   Widget build(BuildContext context) {
     final loc    = AppLocalizations.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final p      = DDPalette.of(context);
+    final isDark = p.isDark;
 
     // ── Адаптивдүү түстөр ──
-    final bgColor      = isDark ? const Color(0xFF121212) : const Color(0xFFF4F5F7);
-    final appBarColor  = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-    final arrowColor   = isDark ? Colors.white : AppColors.black;
-    final titleColor   = isDark ? Colors.white : AppColors.black;
-    final cardBg       = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-    final sectionColor = isDark ? Colors.white : AppColors.black;
+    final bgColor      = p.bg;
+    final appBarColor  = p.card;
+    final arrowColor   = p.text;
+    final titleColor   = p.text;
+    final cardBg       = p.card;
+    final sectionColor = p.text;
     final contactBg    = isDark ? const Color(0xFF1A2E1A) : const Color(0xFFF0FFF4);
     final contactBorder= const Color(0xFF22C55E).withOpacity(isDark ? 0.4 : 0.3);
     final contactText  = isDark ? const Color(0xFF86EFAC) : const Color(0xFF374151);
@@ -585,7 +585,7 @@ GestureDetector(
     width: double.infinity,
     padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
     decoration: BoxDecoration(
-      color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+      color: cardBg,
       borderRadius: BorderRadius.circular(14),
       border: Border.all(
         color: const Color(0xFFD97706).withOpacity(0.5),
@@ -624,7 +624,7 @@ GestureDetector(
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: isDark ? Colors.white : AppColors.black,
+                  color: p.text,
                 ),
               ),
               const SizedBox(height: 3),
@@ -828,12 +828,12 @@ const SizedBox(height: 16),
   return StreamBuilder<List<ChatModel>>(
     stream: _chatService.sellerChatsStream(_seller!.uid),
     builder: (context, snap) {
-      final isDark      = Theme.of(context).brightness == Brightness.dark;
+      final cp          = DDPalette.of(context);
       final chats       = snap.data ?? [];
     final totalUnread = chats.fold<int>(
   0, (sum, chat) => sum + (chat.sellerUnread as num).toInt(),
 );
-      final titleColor = isDark ? Colors.white : AppColors.black;
+      final titleColor = cp.text;
 
       return GestureDetector(
         onTap: () => Navigator.push(context, MaterialPageRoute(
@@ -918,9 +918,9 @@ const SizedBox(height: 16),
     required String subtitle,
     required VoidCallback onTap,
   }) {
-    final isDark     = Theme.of(context).brightness == Brightness.dark;
-    final cardBg     = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-    final titleColor = isDark ? Colors.white : AppColors.black;
+    final p          = DDPalette.of(context);
+    final cardBg     = p.card;
+    final titleColor = p.text;
 
     return GestureDetector(
       onTap: onTap,
@@ -929,7 +929,7 @@ const SizedBox(height: 16),
         decoration: BoxDecoration(
           color: cardBg,
           borderRadius: BorderRadius.circular(14),
-          boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
+          boxShadow: p.isDark ? [] : [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
         ),
         child: Row(children: [
           Text(icon, style: const TextStyle(fontSize: 26)),
@@ -991,6 +991,7 @@ class _AdminNotificationsBannerState
   @override
   Widget build(BuildContext context) {
     final isDark = widget.isDark;
+    final p      = DDPalette.of(context);
     final isRu = AppLocalizations.of(context).locale.languageCode == 'ru';
     final cardBg = isDark ? const Color(0xFF1E1A2E) : const Color(0xFFFFF8F0);
     final borderColor = const Color(0xFFD97706).withOpacity(isDark ? 0.4 : 0.35);
@@ -1077,7 +1078,7 @@ class _AdminNotificationsBannerState
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: isDark ? Colors.white : AppColors.black,
+                      color: p.text,
                     ),
                   ),
                   const SizedBox(height: 3),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
+import '../../../config/theme/dd_design.dart';
 import '../../../core/app_localizations.dart';
 import '../utils/cart_manager.dart';
 
@@ -17,12 +18,14 @@ class _CartScreenState extends State<CartScreen> {
   @override
   Widget build(BuildContext context) {
     final loc    = AppLocalizations.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor   = isDark ? const Color(0xFF121212) : const Color(0xFFF4F5F7);
-    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-    final appBarBg  = isDark ? const Color(0xFF1A1A1A) : Colors.white;
-    final textColor = isDark ? Colors.white : AppColors.black;
-    final qtyBg     = isDark ? const Color(0xFF2C2C2C) : AppColors.grey100;
+    final p      = DDPalette.of(context);
+    final isDark    = p.isDark;
+    final bgColor   = p.bg;
+    final cardColor = p.card;
+    final appBarBg  = p.card;
+    final textColor = p.text;
+    final subColor  = p.subText;
+    final qtyBg     = p.field;
 
     final items = _cart.items;
 
@@ -85,15 +88,15 @@ class _CartScreenState extends State<CartScreen> {
                 children: [
                   Icon(Icons.shopping_cart_outlined,
                       size: 80,
-                      color: isDark ? AppColors.grey600 : AppColors.grey300),
+                      color: subColor),
                   const SizedBox(height: 16),
                   Text(loc.get('cart_empty'),
                       style: AppTextStyles.headingSmall
-                          .copyWith(color: isDark ? AppColors.grey500 : AppColors.grey400)),
+                          .copyWith(color: subColor)),
                   const SizedBox(height: 8),
                   Text(loc.get('cart_empty_desc'),
                       style: AppTextStyles.bodyMedium
-                          .copyWith(color: isDark ? AppColors.grey500 : null)),
+                          .copyWith(color: subColor)),
                   const SizedBox(height: 24),
                   ElevatedButton(
                     onPressed: () => Navigator.pop(context),
@@ -148,14 +151,10 @@ class _CartScreenState extends State<CartScreen> {
                                 errorBuilder: (_, __, ___) => Container(
                                   width: 80,
                                   height: 80,
-                                  color: isDark
-                                      ? const Color(0xFF2C2C2C)
-                                      : AppColors.grey100,
+                                  color: p.field,
                                   child: Icon(
                                       Icons.image_not_supported_outlined,
-                                      color: isDark
-                                          ? AppColors.grey600
-                                          : AppColors.grey300),
+                                      color: subColor),
                                 ),
                               ),
                             ),
@@ -174,9 +173,7 @@ class _CartScreenState extends State<CartScreen> {
                                     Text(
                                         '${loc.get('size_label')}: ${item.selectedSize}',
                                         style: AppTextStyles.bodySmall.copyWith(
-                                            color: isDark
-                                                ? AppColors.grey500
-                                                : null)),
+                                            color: subColor)),
                                   const SizedBox(height: 8),
                                   Row(
                                     children: [

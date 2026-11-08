@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../config/theme/dd_design.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 
 /// Товарлар жүктөлүп жатканда спиннердин ордуна көрүнүүчү товар орундары
@@ -9,8 +10,7 @@ class ProductSkeletonGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final blockColor = isDark ? const Color(0xFF2A2D55) : const Color(0xFFDADADA);
+    final blockColor = DDPalette.of(context).field;
 
     Widget bar(double widthFactor, double height) => FractionallySizedBox(
           widthFactor: widthFactor,

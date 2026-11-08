@@ -24,6 +24,10 @@ class _FullscreenImageScreenState extends State<FullscreenImageScreen> {
   late PageController _pageController;
   late int _currentIndex;
 
+  // Zoom деңгээлин байкоо үчүн — ар бир баракча өз контроллерине ээ.
+  // Жөнөкөй чечим: бир глобал "zoomed" флаг, PageView physics башкарат.
+  bool _isZoomed = false;
+
   @override
   void initState() {
     super.initState();
@@ -45,41 +49,25 @@ class _FullscreenImageScreenState extends State<FullscreenImageScreen> {
       body: Stack(children: [
         PageView.builder(
           controller: _pageController,
+          // Zoom болуп жатканда PageView скроллун өчүрүү
+          physics: _isZoomed
+              ? const NeverScrollableScrollPhysics()
+              : const ClampingScrollPhysics(),
           itemCount: widget.images.length,
           onPageChanged: (i) => setState(() => _currentIndex = i),
           itemBuilder: (context, index) {
             final url = widget.images[index];
-            return InteractiveViewer(
-              minScale: 0.8,
-              maxScale: 5.0,
-              child: index == widget.initialIndex
-                  ? Hero(
-                      tag: widget.heroTag,
-                      child: CachedNetworkImage(
-                        imageUrl: url,
-                        width: screenSize.width,
-                        height: screenSize.height,
-                        fit: BoxFit.contain,
-                        placeholder: (_, __) => const Center(
-                            child:
-                                CircularProgressIndicator(color: Colors.white)),
-                        errorWidget: (_, __, ___) => const Center(
-                            child: Icon(Icons.image_not_supported_outlined,
-                                color: Colors.white54, size: 64)),
-                      ),
-                    )
-                  : CachedNetworkImage(
-                      imageUrl: url,
-                      width: screenSize.width,
-                      height: screenSize.height,
-                      fit: BoxFit.contain,
-                      placeholder: (_, __) => const Center(
-                          child:
-                              CircularProgressIndicator(color: Colors.white)),
-                      errorWidget: (_, __, ___) => const Center(
-                          child: Icon(Icons.image_not_supported_outlined,
-                              color: Colors.white54, size: 64)),
-                    ),
+
+            return _ZoomableImage(
+              url: url,
+              screenSize: screenSize,
+              isHero: index == widget.initialIndex,
+              heroTag: widget.heroTag,
+              onZoomChanged: (zoomed) {
+                if (_isZoomed != zoomed) {
+                  setState(() => _isZoomed = zoomed);
+                }
+              },
             );
           },
         ),
@@ -125,6 +113,77 @@ class _FullscreenImageScreenState extends State<FullscreenImageScreen> {
             ),
           ),
       ]),
+    );
+  }
+}
+
+// ── Жекелештирилген zoom виджети ──────────────────────
+// Ар бир баракча өз TransformationController'ына ээ.
+// Zoom > 1.0 болгондо _isZoomed = true → PageView блокталат.
+// Zoom = 1.0 га кайткандан кийин PageView кайра иштейт.
+class _ZoomableImage extends StatefulWidget {
+  final String url;
+  final Size screenSize;
+  final bool isHero;
+  final String heroTag;
+  final ValueChanged<bool> onZoomChanged;
+
+  const _ZoomableImage({
+    required this.url,
+    required this.screenSize,
+    required this.isHero,
+    required this.heroTag,
+    required this.onZoomChanged,
+  });
+
+  @override
+  State<_ZoomableImage> createState() => _ZoomableImageState();
+}
+
+class _ZoomableImageState extends State<_ZoomableImage> {
+  final TransformationController _transformCtrl = TransformationController();
+
+  @override
+  void initState() {
+    super.initState();
+    _transformCtrl.addListener(_onTransformChanged);
+  }
+
+  void _onTransformChanged() {
+    // Matrix4тин scale маанисин алуу
+    final scale = _transformCtrl.value.getMaxScaleOnAxis();
+    // 1.01 чектен ашса — зумда деп эсептейбиз (кичинекей буффер)
+    widget.onZoomChanged(scale > 1.01);
+  }
+
+  @override
+  void dispose() {
+    _transformCtrl.removeListener(_onTransformChanged);
+    _transformCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final image = CachedNetworkImage(
+      imageUrl: widget.url,
+      width: widget.screenSize.width,
+      height: widget.screenSize.height,
+      fit: BoxFit.contain,
+      placeholder: (_, __) =>
+          const Center(child: CircularProgressIndicator(color: Colors.white)),
+      errorWidget: (_, __, ___) => const Center(
+          child: Icon(Icons.image_not_supported_outlined,
+              color: Colors.white54, size: 64)),
+    );
+
+    return InteractiveViewer(
+      transformationController: _transformCtrl,
+      minScale: 0.8,
+      maxScale: 5.0,
+      child: widget.isHero
+          ? Hero(tag: widget.heroTag, child: image)
+          : image,
     );
   }
 }

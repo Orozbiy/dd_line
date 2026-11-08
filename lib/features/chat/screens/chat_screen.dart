@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
+import '../../../config/theme/dd_design.dart';
 import '../../../core/app_localizations.dart';
 import '../../../core/supabase_client.dart';
 import '../../../core/utils/image_utils.dart';
@@ -1070,7 +1071,8 @@ Future<void> _sendVoiceMessage(String path, int durationSeconds) async {
     final myId = _myId;
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final _p     = DDPalette.of(context);
+    final cardColor = _p.card;
 
     final glassAppBarBg = isDark
         ? Colors.black.withOpacity(0.45)
@@ -1167,9 +1169,7 @@ Future<void> _sendVoiceMessage(String path, int durationSeconds) async {
                                     // ак болуп, ак фондо көрүнбөй калып
                                     // калчу)
                                     style: AppTextStyles.labelLarge.copyWith(
-                                      color: isDark
-                                          ? Colors.white
-                                          : AppColors.black,
+                                      color: _p.text,
                                       fontWeight: FontWeight.w700,
                                     ),
                                     overflow: TextOverflow.ellipsis,
@@ -1416,7 +1416,7 @@ Future<void> _sendVoiceMessage(String path, int durationSeconds) async {
                                     onSubmitted: (_) => _send(),
                                     // ← Жазылган текст күндүзгү/түнкү режимде ар дайым көрүнүктүү
                                     style: TextStyle(
-                                      color: isDark ? Colors.white : AppColors.black,
+                                      color: _p.text,
                                       fontSize: 15,
                                     ),
                                     cursorColor: AppColors.primary,

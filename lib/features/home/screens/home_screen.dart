@@ -52,7 +52,8 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
   List<ProductModel> allProducts = [];
   List<ProductModel> displayedProducts = [];
   bool _isLoading = true;
@@ -684,7 +685,7 @@ class _HomeScreenState extends State<HomeScreen> {
     double padding = 13,
     double radius = 18,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final _hp = DDPalette.of(context);
     final color = activeColor ?? DD.accent;
     return _IosBtn(
       onTap: onTap,
@@ -692,7 +693,7 @@ class _HomeScreenState extends State<HomeScreen> {
       activeColor: color,
       padding: EdgeInsets.all(padding),
       radius: radius,
-      isDark: isDark,
+      isDark: _hp.isDark,
       child: child,
     );
   }
@@ -705,10 +706,9 @@ class _HomeScreenState extends State<HomeScreen> {
   // HOME TAB мазмуну
   // ══════════════════════════════════════════════════════
   Widget _buildHomeTab(AppLocalizations loc, bool isDark) {
-    final filterIconColor = isDark ? AppColors.grey400 : AppColors.grey600;
-    final dividerColor =
-        isDark ? HomeColors.cardBorder : const Color(0xFFEEEEEE);
-    final appBarColor = isDark ? HomeColors.card : Colors.white;
+    final p2           = DDPalette.of(context);
+    final dividerColor = p2.divider;
+    final appBarColor = p2.card;
 
     // ── Search + CategoryList бийиктиги (туруктуу sticky блок) ──
     // search(44+8padding) + divider(1) + pills(44) = ~97
@@ -790,7 +790,7 @@ if (_isSearchMode || _isNearbyMode ||
               child: Text(
                 '${displayedProducts.length} ${loc.get('results')}',
                 style: AppTextStyles.bodyMedium.copyWith(
-                    color: isDark ? Colors.white70 : Colors.black54),
+                    color: p2.subText),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -799,7 +799,7 @@ if (_isSearchMode || _isNearbyMode ||
               child: Text(
                 '📍 ${displayedProducts.length} ${loc.get('nearby_count')}',
                 style: AppTextStyles.bodyMedium.copyWith(
-                    color: isDark ? Colors.white70 : Colors.black54),
+                    color: p2.subText),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -811,7 +811,7 @@ if (_isSearchMode || _isNearbyMode ||
               child: Text(
                 '${_filterModeLabel(loc)} · ${displayedProducts.length} шт',
                 style: AppTextStyles.bodyMedium.copyWith(
-                    color: isDark ? Colors.white70 : Colors.black54),
+                    color: p2.subText),
                 overflow: TextOverflow.ellipsis,
                 maxLines: 1,
               ),
@@ -1146,7 +1146,8 @@ if (_isSearchMode || _isNearbyMode ||
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final _bp = DDPalette.of(context);
+    final isDark = _bp.isDark;
 
     return PopScope(
       canPop: false,

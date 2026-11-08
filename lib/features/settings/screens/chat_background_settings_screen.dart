@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
+import '../../../config/theme/dd_design.dart';
 import '../../../core/app_localizations.dart';
 import '../../../core/chat_background_provider.dart';
 
@@ -26,12 +27,13 @@ class _ChatBackgroundSettingsScreenState
 
   @override
   Widget build(BuildContext context) {
-    final isDark    = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? Colors.white : AppColors.black;
+    final _sp       = DDPalette.of(context);
+    final isDark    = _sp.isDark;
+    final textColor = _sp.text;
     final loc       = AppLocalizations.of(context);
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF4F5F7),
+      backgroundColor: _sp.bg,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,

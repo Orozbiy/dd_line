@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
+import '../../../config/theme/dd_design.dart';
 import '../../../core/app_localizations.dart';
 import '../../../core/utils/favorites_manager.dart';
 import '../../../data/models/product_model.dart';
@@ -79,9 +80,10 @@ class _ProductCardState extends State<ProductCard>
   Widget build(BuildContext context) {
     final isFav       = _favorites.isFavorite(widget.product.id);
     final rating      = widget.product.rating ?? 0.0;
-    final isDark      = Theme.of(context).brightness == Brightness.dark;
-    final textColor   = isDark ? Colors.white           : Colors.black87;
-    final subColor    = isDark ? Colors.white60         : Colors.black54;
+    final p           = DDPalette.of(context);
+    final isDark      = p.isDark;
+    final textColor   = p.text;
+    final subColor    = p.subText;
     final shimmerColor = isDark ? _CardC.shimmer        : const Color(0xFFE8E8E8);
 
     final hasDiscount = widget.product.hasPromotion &&
@@ -99,7 +101,7 @@ class _ProductCardState extends State<ProductCard>
         // ── Карта мазмунуна жараша авто бийиктик ──
         // Эч кандай fixed height жок → mainAxisSize.min аркылуу авто кыскарат
         decoration: BoxDecoration(
-          color: isDark ? _CardC.card : Colors.white,
+          color: isDark ? _CardC.card : p.card,
           borderRadius: BorderRadius.circular(16),
           border: isDark
               ? Border.all(color: _CardC.cardBorder, width: 0.8)
@@ -226,7 +228,7 @@ class _ProductCardState extends State<ProductCard>
                         child: Container(
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
-                            color: isDark ? _CardC.favBg : Colors.white,
+                            color: isDark ? _CardC.favBg : p.card,
                             shape: BoxShape.circle,
                             border: isDark
                                 ? Border.all(

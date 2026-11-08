@@ -216,8 +216,9 @@ class _MapScreenState extends State<MapScreen> {
   @override
   Widget build(BuildContext context) {
     final loc    = AppLocalizations.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? DD.bgDark : DD.bgLight;
+    final p      = DDPalette.of(context);
+    final isDark = p.isDark;
+    final bgColor = p.bg;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -241,7 +242,7 @@ class _MapScreenState extends State<MapScreen> {
                         Text(
                           ' ${loc.get('map_title')}',
                           style: AppTextStyles.headingMedium.copyWith(
-                            color: isDark ? Colors.white : AppColors.black,
+                            color: p.text,
                           ),
                         ),
                         const Spacer(),
@@ -280,7 +281,7 @@ class _MapScreenState extends State<MapScreen> {
                           controller: _searchController,
                           onChanged: _search,
                           style: AppTextStyles.bodyMedium.copyWith(
-                            color: isDark ? Colors.white : AppColors.black,
+                            color: p.text,
                           ),
                           decoration: InputDecoration(
                             hintText: loc.get('map_search_hint'),
@@ -391,9 +392,9 @@ class _MapScreenState extends State<MapScreen> {
 
   Widget _buildSellerCard(
       _StoreLocation seller, AppLocalizations loc, bool isDark) {
+    final cp           = DDPalette.of(context);
     final isSelected   = _selectedSeller?.id == seller.id;
-    final dividerColor =
-        isDark ? const Color(0xFF2C2C2C) : const Color(0xFFEEEEEE);
+    final dividerColor = cp.divider;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
@@ -449,7 +450,7 @@ class _MapScreenState extends State<MapScreen> {
                         children: [
                           Text(seller.shopName,
                               style: AppTextStyles.headingSmall.copyWith(
-                                color: isDark ? Colors.white : AppColors.black,
+                                color: cp.text,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis),

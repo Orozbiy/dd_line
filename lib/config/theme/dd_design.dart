@@ -5,9 +5,9 @@ import 'package:flutter/material.dart';
 class DD {
   DD._();
 
-  // Түстөр (Figma: #E84427 негизги, #E86827 экинчи, #23262F / #353945 текст)
-  static const accent = Color(0xFFE84427);
-  static const accent2 = Color(0xFFE86827);
+  // Түстөр — Мандарин + Күмүш бренд палитрасы
+  static const accent = Color(0xFFFF7A30);   // Мандарин (негизги)
+  static const accent2 = Color(0xFFFF9B50);  // Мандарин жеңил
   static const ink = Color(0xFF23262F);
   static const inkSoft = Color(0xFF353945);
   static const mint = Color(0xFFEDFFEF);

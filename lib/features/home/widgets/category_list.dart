@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
+import '../../../config/theme/dd_design.dart';
 import '../../../core/app_localizations.dart';
 import '../models/category_model.dart';
 import 'dart:ui';
@@ -148,9 +149,10 @@ class _CategoryListState extends State<CategoryList> {
     final loc    = AppLocalizations.of(context);
     final cat    = _selectedCategory;
     final sub    = _selectedSub;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final inactiveBg    = isDark ? const Color(0xFF2C2C2C) : AppColors.grey100;
-    final inactiveColor = isDark ? AppColors.grey400 : AppColors.grey600;
+    final _cp    = DDPalette.of(context);
+    final isDark = _cp.isDark;
+    final inactiveBg    = _cp.field;
+    final inactiveColor = _cp.subText;
 
     final activeCatColor = cat != null
         ? Color(int.parse('0xFF${cat.color}'))

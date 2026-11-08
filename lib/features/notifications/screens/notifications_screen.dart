@@ -143,7 +143,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   : RefreshIndicator(
                       onRefresh: _load,
                       color: DD.accent,
-                      backgroundColor: p.isDark ? DD.ink : Colors.white,
+                      backgroundColor: p.card,
                       child: ListView.separated(
                         padding: EdgeInsets.fromLTRB(
                           16,

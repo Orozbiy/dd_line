@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
+import '../../../config/theme/dd_design.dart';
 import '../../../core/app_localizations.dart';
 import '../../../core/supabase_client.dart';
 import '../../../core/utils/image_utils.dart';
@@ -63,6 +64,7 @@ class _ChatProductBannerState extends State<ChatProductBanner> {
 
     final loc    = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final _p     = DDPalette.of(context);
 
     final name        = (_product?['title'] as String?) ?? widget.productName ?? '';
     final images      = List<String>.from(_product?['images'] as List? ?? []);
@@ -81,10 +83,8 @@ class _ChatProductBannerState extends State<ChatProductBanner> {
     final borderColor = isDark
         ? Colors.white.withOpacity(0.15)
         : Colors.white.withOpacity(0.80);
-    final textColor   = isDark ? Colors.white : AppColors.black;
-    final subColor    = isDark
-        ? Colors.white.withOpacity(0.55)
-        : AppColors.grey500;
+    final textColor   = _p.text;
+    final subColor    = _p.subText;
     final dividerColor = isDark
         ? Colors.white.withOpacity(0.12)
         : Colors.white.withOpacity(0.60);

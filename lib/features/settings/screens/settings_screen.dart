@@ -21,11 +21,12 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark     = Theme.of(context).brightness == Brightness.dark;
+    final p          = DDPalette.of(context);
+    final isDark     = p.isDark;
     final loc        = AppLocalizations.of(context);
-    final divColor   = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFEEEEEE);
-    final textColor  = isDark ? Colors.white : AppColors.black;
-    final subColor   = isDark ? const Color(0xFFAAAAAA) : AppColors.grey500;
+    final divColor   = p.divider;
+    final textColor  = p.text;
+    final subColor   = p.subText;
     final cardBg     = isDark
         ? Colors.white.withOpacity(0.06)
         : Colors.white.withOpacity(0.55);
@@ -118,9 +119,9 @@ class SettingsScreen extends StatelessWidget {
                           ],
                         ),
                       ),
-                      Icon(
-                        Icons.arrow_forward_ios_rounded,
-                        size: 16,
+                      Image.asset(
+                        'assets/icons/settings/ic_chevron_right.png',
+                        width: 16, height: 16,
                         color: isDark ? AppColors.grey500 : AppColors.grey400,
                       ),
                     ],
@@ -217,8 +218,11 @@ class SettingsScreen extends StatelessWidget {
                                 ],
                               ),
                             ),
-                            const Icon(Icons.chevron_right,
-                                color: AppColors.grey300, size: 20),
+                            Image.asset(
+                              'assets/icons/settings/ic_chevron_right.png',
+                              width: 20, height: 20,
+                              color: AppColors.grey300,
+                            ),
                           ],
                         ),
                       ),

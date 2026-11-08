@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 
 /// Тиркеменин бардык түстүүлөрү
 class AppColors {
-  // Башкы түстөр - базардын жылуу түстөрү
-  static const Color primary = Color(0xFFD97706);        // Алтын-оранжевый
-  static const Color primaryLight = Color(0xFFF59E0B);   // Жеңил алтын
-  static const Color primaryDark = Color(0xFFB45309);    // Төмөнкү алтын
+  // Башкы түстөр — Мандарин бренд палитрасы
+  static const Color primary = Color(0xFFFF7A30);        // Мандарин (негизги)
+  static const Color primaryLight = Color(0xFFFF9B50);   // Мандарин жеңил
+  static const Color primaryDark = Color(0xFFE85A10);    // Мандарин күңүрт
 
   // Өстүк түстөр
   static const Color secondary = Color(0xFF8B5CF6);      // Фиолет

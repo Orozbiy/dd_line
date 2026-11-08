@@ -39,16 +39,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
     with WidgetsBindingObserver {
   final _fav = FavoritesManager();
   final _chatService = ChatService();
-  // Тизмеден келген product маалыматы (аты, баасы, сүрөттөрү, ж.б.) толук
-  // экранды дароо көрсөтүү үчүн жетиштүү — андыктан баштапкы мааниси false:
-  // колдонуучу ачылганда спиннерге күтпөй, товарды дароо көрөт.
   bool _dataLoading = false;
-  // Дүкөн/сатуучу маалыматы (chat/маршрут үчүн керек) фондо жүктөлөт
   bool _sellerInfoLoading = true;
   bool _navGuideOpen = false;
-  // Колдонуучу геолокация/жайгашкан жер жөндөөлөрүнө жөнөтүлгөн —
-  // тиркемеге кайра кайтканда (app resumed) геолокация жанык болсо,
-  // кайра баскыч басылбай эле автоматтык түрдө 2ГИС'ке өтөт
   bool _waitingForLocationSettings = false;
   bool _isChatLoading = false;
   String selectedSize = '';
@@ -67,7 +60,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
   String _workEnd = '';
   String _workDays = '';
   String? _avatarUrl;
-  // Дүкөндүн координаттары (stores таблицасынан). null/0 болсо — локация коюлган эмес
   double? _storeLat;
   double? _storeLng;
 
@@ -76,8 +68,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
       _storeLng != null &&
       !(_storeLat == 0 && _storeLng == 0);
 
-  // ── Төмөнкү баскычтар: ылдый жылдырганда жашырынат, жогору
-  // жылдырганда же токтогондо кайра чыгат ──
   final ValueNotifier<bool> _buttonsVisible = ValueNotifier<bool>(true);
 
   @override
@@ -86,14 +76,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
     WidgetsBinding.instance.addObserver(this);
     _product = widget.product;
     _imagePageController = PageController();
-    // shopId дароо белгилүү болсо — storeId'ти алдын ала коюп коюу
     if (widget.product.shopId.isNotEmpty) {
       _storeId = widget.product.shopId;
     }
-    // Экран дароо көрүнөт (жогорудагы _product менен); калган маалымат
-    // фондо жүктөлөт. "Окшош товарлар" өзүнчө виджет катары өзү жүктөйт.
-    // Сатуучунун UID белгилүү болсо — профилди (сүрөтү менен) дароо,
-    // дүкөн маалыматын күтпөстөн параллель жүктөйбүз
     final earlyUid = widget.product.sellerUid;
     if (earlyUid != null && earlyUid.isNotEmpty) _loadSellerProfile(earlyUid);
     _loadFullProductData();
@@ -102,15 +87,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    // Колдонуучу геолокация/жайгашкан жер жөндөөлөрүнөн кайтты —
-    // геолокация жанык болсо, баскычты кайра баспай эле 2ГИС'ке өтөбүз
     if (state == AppLifecycleState.resumed && _waitingForLocationSettings) {
       _waitingForLocationSettings = false;
       _openMapNavigation();
     }
   }
 
-  // Сатуучунун профили (аты, сүрөтү) — кэш менен, бир гана жолу жүктөлөт
   static final Map<String, Map<String, dynamic>> _profileCache = {};
   String? _profileRequestedFor;
 
@@ -187,8 +169,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
   }
 
   Future<void> _openMapNavigation() async {
-    // Баскычты бир нече жолу катар бассаңыз да, бир гана жолу иштейт —
-    // "маршрут түзүү" экрандары катмарланып чыкпайт
     if (_navGuideOpen) return;
     _navGuideOpen = true;
     try {
@@ -201,13 +181,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
   Future<void> _openMapNavigationInner() async {
     final loc = AppLocalizations.of(context);
 
-    // ── 1) АЛДЫ МЕНЕН сатуучу локация койгонбу — текшеребиз.
-    // Койбосо маршрут иштебейт (GPS/уруксат да сурабайбыз). ──
     double? sellerLat = _storeLat;
     double? sellerLng = _storeLng;
 
     if (sellerLat == null || sellerLng == null) {
-      // Дүкөн маалыматы али жүктөлө элек болушу мүмкүн — stores'тан алабыз
       String? storeId = _storeId;
       if (storeId == null) {
         try {
@@ -249,7 +226,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
       return;
     }
 
-    // ── 2) Колдонуучунун GPS уруксаттары ──
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
@@ -260,7 +236,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
     }
     if (permission == LocationPermission.deniedForever) {
       if (mounted) {
-        // Жөндөөлөрдөн кайтканда (уруксат берилсе) автоматтык улантуу
         _waitingForLocationSettings = true;
         await Geolocator.openAppSettings();
       }
@@ -268,8 +243,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
     }
     final serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      // Жайгашкан жер (GPS) жөндөөлөрүнөн кайтканда, жанык болсо,
-      // баскычты кайра баспай эле автоматтык түрдө 2ГИС'ке өтөбүз
       _waitingForLocationSettings = true;
       await Geolocator.openLocationSettings();
       return;
@@ -390,7 +363,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
     if (_workDays.isNotEmpty &&
         !WorkingHoursSheet.parseDays(_workDays)
             .contains(DateTime.now().weekday - 1)) {
-      return false; // бүгүн иш күнү эмес
+      return false;
     }
     final now = TimeOfDay.now();
     TimeOfDay parse(String t) {
@@ -410,7 +383,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
     return count.toString();
   }
 
-  // ── Сүрөт галереясы (слайдер + thumbnail strip) ──
   Widget _buildImageGallery() {
     final allImages = _product.images.isNotEmpty
         ? _product.images
@@ -425,7 +397,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
 
     return Stack(
       children: [
-        // ── Сүрөттөр PageView ──
         PageView.builder(
           controller: _imagePageController,
           itemCount: allImages.length,
@@ -453,7 +424,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                   fit: BoxFit.cover,
                   fadeInDuration: Duration.zero,
                   fadeOutDuration: Duration.zero,
-                  // Жүктөлгөнчө 45° жарык сызыгы солдон оңго жылып турат
                   placeholder: (ctx, __) => const ShimmerLoading(),
                   memCacheWidth: 1080,
                   errorWidget: (_, __, ___) => Container(
@@ -467,7 +437,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
           },
         ),
 
-        // ── Thumbnail strip (болгону 2+ сүрөт болсо) ──
         if (allImages.length > 1)
           Positioned(
             bottom: 0,
@@ -485,8 +454,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                   ],
                 ),
               ),
-              // Align + оңго түздөгөн Row: аз сүрөт болсо оң четке
-              // жыйналат, көп болсо горизонталдык scroll иштейт
               child: Align(
                 alignment: Alignment.centerRight,
                 child: SingleChildScrollView(
@@ -540,11 +507,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
             ),
           ),
 
-        // ── Санагыч "2 / 3" ──
         if (allImages.length > 1)
           Positioned(
-            // ← Асты-сол жакка жылдырылды: үстүнкү жүрөк/бөлүшүү
-            // баскычтарына жакын болбошу үчүн
             bottom: 12,
             left: 12,
             child: Container(
@@ -567,7 +531,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
     );
   }
 
-  // ── Жардамчы: блокту blur менен ороо ──
   Widget _blurBlock(Widget child, Color cardColor) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
@@ -577,7 +540,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
       child: child,
     );
   }
-
 
   // ── Секция аталышы: кызгылт сары сызык + иконка ──
   Widget _sectionTitle(String text, IconData icon) {
@@ -625,7 +587,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
         ]),
       );
 
-  // ── Кичинекей маалымат "таблетка" (рейтинг, көрүү, лайк, аралык) ──
   Widget _metaPill(IconData icon, String text, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -694,7 +655,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Negotiation: баа жок — текст гана
         if (isNegotiation)
           Text(
             loc.get('prod_price_negotiation'),
@@ -716,7 +676,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
               ),
             ),
           ]),
-        // Оптом маалыматы
         if (isWholesale) ...[
           const SizedBox(height: 8),
           Container(
@@ -733,9 +692,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
               ),
             ),
             child: Row(children: [
-              Icon(isNegotiation ? Icons.handshake_outlined : Icons.price_change_outlined,
-                  color: isNegotiation ? const Color(0xFF059669) : const Color(0xFF7C3AED),
-                  size: 18),
+              // ── Wholesale иконка: ic_handshake / ic_price_tag ──
+              Image.asset(
+                isNegotiation
+                    ? 'assets/icons/nav/ic_handshake.png'
+                    : 'assets/icons/nav/ic_price_tag.png',
+                width: 20, height: 20,
+                color: isNegotiation ? const Color(0xFF059669) : const Color(0xFF7C3AED),
+              ),
               const SizedBox(width: 10),
               Expanded(child: isNegotiation
                   ? Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -780,32 +744,23 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
         ? Colors.black.withOpacity(0.70)
         : Colors.white.withOpacity(0.85);
 
-    // ── Арткы фон: dark → синий градиент (HomeBackground), light → ак ──
-    final scaffoldBg = isDark
-        ? DD.bgDark
-        : DD.bgLight; // light ак фон
+    final scaffoldBg = isDark ? DD.bgDark : DD.bgLight;
 
     return Scaffold(
       backgroundColor: scaffoldBg,
       body: NotificationListener<UserScrollNotification>(
         onNotification: (n) {
-          // ValueNotifier'ге setState эмес, түз мааниси коюлат — ошондуктан
-          // бул бүт 1500 саптык build()ди эмес, баскыч тилкесин гана
-          // кайра курат (scroll учурундагы jank четтетилет)
           if (n.direction == ScrollDirection.reverse &&
               _buttonsVisible.value) {
-            // ылдый жылдырып жатат (мазмун жогору жылат) → жашыр
             _buttonsVisible.value = false;
           } else if (n.direction != ScrollDirection.reverse &&
               !_buttonsVisible.value) {
-            // жогору жылдырды же токтоду → кайра көрсөт
             _buttonsVisible.value = true;
           }
           return false;
         },
         child: Stack(
         children: [
-          // ── Figma фон: кара/ак + кызгылт сары жарык такталары ──
           Positioned.fill(child: _DDGlow(isDark: isDark)),
           CustomScrollView(
             slivers: [
@@ -819,8 +774,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                     margin: const EdgeInsets.all(8),
                     decoration:
                         BoxDecoration(color: btnBg, shape: BoxShape.circle),
-                    child: Icon(Icons.arrow_back,
-                        color: theme.colorScheme.onSurface),
+                    // ── АРТКА иконка: ic_back_arrow ──
+                    child: Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: Image.asset(
+                        'assets/icons/nav/ic_back_arrow.png',
+                        width: 22, height: 22,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
                   ),
                 ),
                 actions: [
@@ -846,10 +808,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                       margin: const EdgeInsets.all(8),
                       decoration:
                           BoxDecoration(color: btnBg, shape: BoxShape.circle),
-                      child: const Padding(
-                          padding: EdgeInsets.all(8),
-                          child: Icon(Icons.share_outlined,
-                              color: AppColors.grey600)),
+                      // ── БӨЛҮШҮҮ иконка: ic_share ──
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: Image.asset(
+                          'assets/icons/nav/ic_share.png',
+                          width: 22, height: 22,
+                          color: AppColors.grey600,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 4),
@@ -1008,7 +975,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                             const SizedBox(height: 8),
                           ],
 
-                          // ── Сатуучу маалыматы (жаңы дизайн) ──
+                          // ── Сатуучу маалыматы ──
                           _blurBlock(
                             Padding(
                               padding: const EdgeInsets.all(14),
@@ -1021,7 +988,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      // ── СОЛ: Айлана аватар + Кирүү баскычы ──
                                       Column(
                                         children: [
                                           Container(
@@ -1033,13 +999,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                                             child: (_avatarUrl != null && _avatarUrl!.isNotEmpty)
                                                 ? CircleAvatar(
                                                     radius: 30,
-                                                    backgroundColor: const Color(0xFFF1F5F9),
+                                                    backgroundColor: isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF1F5F9),
                                                     backgroundImage:
                                                         CachedNetworkImageProvider(_avatarUrl!, maxWidth: 160, maxHeight: 160),
                                                   )
-                                                : const CircleAvatar(
+                                                : CircleAvatar(
                                                     radius: 30,
-                                                    backgroundColor: Color(0xFFF1F5F9),
+                                                    backgroundColor: isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF1F5F9),
                                                     backgroundImage: AssetImage(
                                                         'assets/images/seller_default.png'),
                                                   )),
@@ -1104,7 +1070,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                                         ],
                                       ),
                                       const SizedBox(width: 14),
-                                      // ── ОҢ: Маалыматтар ──
                                       Expanded(
                                         child: Column(
                                           crossAxisAlignment:
@@ -1146,7 +1111,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                                               ),
                                               const SizedBox(height: 6),
                                             ],
-                                            // ── Тип badge ──
                                             Container(
                                               padding:
                                                   const EdgeInsets.symmetric(
@@ -1182,7 +1146,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                                                 ),
                                               ),
                                             ),
-                                            // ── Иштөө убактысы ──
                                             if (_workStart.isNotEmpty &&
                                                 _workEnd.isNotEmpty) ...[
                                               const SizedBox(height: 6),
@@ -1236,7 +1199,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                                       ),
                                     ],
                                   ),
-                                  // ── Арыздануу баскычы ──
                                   const SizedBox(height: 14),
                                   Divider(
                                       height: 1,
@@ -1244,6 +1206,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                                           ? Colors.white.withOpacity(0.08)
                                           : const Color(0xFFEDEDF0)),
                                   const SizedBox(height: 12),
+                                  // ── АРЫЗДАНУУ баскычы: ic_flag ──
                                   GestureDetector(
                                     onTap: () => _showComplaintSheet(context),
                                     child: Container(
@@ -1261,9 +1224,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                                       child: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          const Icon(Icons.flag_outlined,
-                                              color: Color(0xFFEF4444),
-                                              size: 16),
+                                          Image.asset(
+                                            'assets/icons/nav/ic_flag.png',
+                                            width: 18, height: 18,
+                                            color: const Color(0xFFEF4444),
+                                          ),
                                           const SizedBox(width: 6),
                                           Text(
                                             loc.locale.languageCode == 'ru'
@@ -1286,7 +1251,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                           ),
                           const SizedBox(height: 8),
 
-                          // ── Бөлүшүү кнопкасы ──
+                          // ── Бөлүшүү баскычы ──
                           Container(
                             margin: const EdgeInsets.symmetric(
                                 horizontal: 16, vertical: 2),
@@ -1319,8 +1284,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      const Icon(Icons.share_rounded,
-                                          color: Colors.white, size: 22),
+                                      // ── БӨЛҮШҮҮ баскычы иконка: ic_share ──
+                                      Image.asset(
+                                        'assets/icons/nav/ic_share.png',
+                                        width: 22, height: 22,
+                                        color: Colors.white,
+                                      ),
                                       const SizedBox(width: 10),
                                       Text(
                                         loc.locale.languageCode == 'ru'
@@ -1351,8 +1320,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                             categoryId: _product.category,
                             productBuilder: (p) => ProductDetailScreen(product: p),
                           ),
-                          // ── "Окшош товарлар" бүткөндөн кийин — бардык
-                          // товарлардан аралаштырылган чексиз тасма ──
                           RecommendedProductsSection(
                             currentProductId: _product.id,
                             productBuilder: (p) => ProductDetailScreen(product: p),
@@ -1363,14 +1330,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
               ),
             ],
           ),
-          // ── Төмөнкү баскычтар: Positioned — артында кара фон жок,
-          // товарлар ылдыйда көрүнүп турат ──
           Positioned(
             left: 0,
             right: 0,
             bottom: 0,
-            // ── ValueListenableBuilder: _buttonsVisible өзгөргөндө
-            // бул кичине тилке гана кайра курулат, бүт экран эмес ──
             child: ValueListenableBuilder<bool>(
               valueListenable: _buttonsVisible,
               builder: (context, buttonsVisible, _) => Container(
@@ -1378,14 +1341,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                   16,
                   10,
                   16,
-                  // Бир аз ылдыйга, бирок экрандын четине жабышпайт
                   MediaQuery.of(context).padding.bottom > 0
                       ? MediaQuery.of(context).padding.bottom - 8
                       : 8),
               color: Colors.transparent,
               child: Row(
           children: [
-            // ── Чат баскычы: ылдый жылдырганда АСТЫГА жашырынат ──
             Expanded(
               flex: 2,
               child: AnimatedSlide(
@@ -1395,8 +1356,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                 child: AnimatedOpacity(
                   duration: const Duration(milliseconds: 200),
                   opacity: buttonsVisible ? 1 : 0,
-                  // ── GradientButton: Маршрут баскычындагыдай эле
-                  // басканда кичирейип-жарчыйт (AnimatedScale) ──
                   child: GradientButton(
                     height: 52,
                     borderRadius: DD.rPill,
@@ -1415,17 +1374,23 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                         Positioned(
                           right: -8,
                           bottom: -12,
-                          child: Icon(Icons.shopping_bag_rounded,
-                              size: 48,
-                              color: Colors.white.withOpacity(0.16)),
+                          child: Image.asset(
+                            'assets/icons/nav/ic_shopping_bag.png',
+                            width: 48, height: 48,
+                            color: Colors.white.withOpacity(0.16),
+                          ),
                         ),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.chat_bubble_rounded,
-                                  color: Colors.white, size: 20),
+                              // ── ЧАТ баскычы иконка: ic_whatsapp_chat ──
+                              Image.asset(
+                                'assets/icons/nav/ic_whatsapp_chat.png',
+                                width: 22, height: 22,
+                                color: Colors.white,
+                              ),
                               const SizedBox(width: 8),
                               const Text(
                                 'Чат',
@@ -1444,9 +1409,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                 ),
               ),
             ),
-            // ── Эки баскычты ачык ажыратуу үчүн кеңейтилген боштук ──
             const SizedBox(width: 18),
-            // ── Маршрут баскычы: ылдый жылдырганда АСТЫГА жашырынат ──
             Expanded(
               flex: 3,
               child: AnimatedSlide(
@@ -1475,17 +1438,23 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                         Positioned(
                           right: -8,
                           bottom: -12,
-                          child: Icon(Icons.map_rounded,
-                              size: 48,
-                              color: Colors.white.withOpacity(0.16)),
+                          child: Image.asset(
+                            'assets/icons/nav/ic_map_route.png',
+                            width: 48, height: 48,
+                            color: Colors.white.withOpacity(0.16),
+                          ),
                         ),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.near_me_rounded,
-                                  color: Colors.white, size: 20),
+                              // ── МАРШРУТ баскычы иконка: ic_near_me ──
+                              Image.asset(
+                                'assets/icons/nav/ic_near_me.png',
+                                width: 22, height: 22,
+                                color: Colors.white,
+                              ),
                               const SizedBox(width: 8),
                               Text(
                                 loc.get('route'),
@@ -1507,11 +1476,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
               ],
               ),
             ),
-            ), // ← ValueListenableBuilder
+            ),
           ),
-        ], // ← Stack children
-        ), // ← Stack
-      ), // ← NotificationListener
+        ],
+        ),
+      ),
     );
   }
 
@@ -1521,7 +1490,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
     final hasSizes = _product.sizes.isNotEmpty;
     final hasStock = _product.inStock != null;
 
-    // ── Сатуучу кошкон кошумча талаалар (категорияга жараша аталышы) ──
     final mainCat = (_product.category ?? '').split('_').first;
     final List<String> extraLabels;
     if (['4', '6'].contains(mainCat)) {
@@ -1564,13 +1532,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                     borderRadius: BorderRadius.circular(DD.rPill),
                     border: Border.all(color: c.withOpacity(0.35)),
                   ),
+                  // ── СКЛАД иконка: ic_check_circle / ic_cancel_circle ──
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(
-                        ok
-                            ? Icons.check_circle_rounded
-                            : Icons.cancel_rounded,
-                        size: 16,
-                        color: c),
+                    Image.asset(
+                      ok
+                          ? 'assets/icons/nav/ic_check_circle.png'
+                          : 'assets/icons/nav/ic_cancel_circle.png',
+                      width: 18, height: 18,
+                      color: c,
+                    ),
                     const SizedBox(width: 6),
                     Text(
                       ok
@@ -1753,9 +1723,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
   }
 }
 
-// ══════════════════════════════════════════════════════
-// ФОН — Figma "blur gradient": кара/ак + кызгылт сары жарык
-// ══════════════════════════════════════════════════════
 class _DDGlow extends StatelessWidget {
   final bool isDark;
   const _DDGlow({required this.isDark});

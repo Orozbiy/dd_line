@@ -16,7 +16,7 @@ const int tabSettings  = 4;
 const int _tabCount    = 5;
 
 /// Мандарин түс (навбардагы тамчы жана активдүү белгилер)
-const Color _mandarin = Color(0xFFFF8A00);
+const Color _mandarin = Color(0xFFFF7A30);
 
 /// Төмөнкү 5 баскыч — WhatsApp сыяктуу сүзүп жүрүүчү айнек капсула.
 ///

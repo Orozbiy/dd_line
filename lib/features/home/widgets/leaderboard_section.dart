@@ -26,6 +26,7 @@
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
+import '../../../config/theme/dd_design.dart';
 import '../../../core/supabase_client.dart';
 
 class LeaderboardSection extends StatefulWidget {
@@ -98,8 +99,9 @@ class _LeaderboardSectionState extends State<LeaderboardSection> {
     if (_loading) return const SizedBox.shrink();
     if (_leaders.isEmpty) return const SizedBox.shrink();
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final p         = DDPalette.of(context);
+    final isDark    = p.isDark;
+    final cardColor = p.card;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -114,7 +116,7 @@ class _LeaderboardSectionState extends State<LeaderboardSection> {
               Text(
                 'Топ алуучулар',
                 style: AppTextStyles.headingSmall.copyWith(
-                  color: isDark ? Colors.white : AppColors.black,
+                  color: p.text,
                 ),
               ),
               const Spacer(),
@@ -155,9 +157,7 @@ class _LeaderboardSectionState extends State<LeaderboardSection> {
               color: cardColor,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: isDark
-                    ? const Color(0xFF2C2C2C)
-                    : const Color(0xFFEEEEEE),
+                color: p.divider,
                 width: 0.5,
               ),
             ),
@@ -215,10 +215,10 @@ class _Podium extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1A1A1A) : const Color(0xFFFAFAFA),
+        color: DDPalette.of(context).card,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? const Color(0xFF2C2C2C) : const Color(0xFFEEEEEE),
+          color: DDPalette.of(context).divider,
           width: 0.5,
         ),
       ),
@@ -246,7 +246,7 @@ class _Podium extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(color: colors[idx], width: 2.5),
-                    color: isDark ? const Color(0xFF2C2C2C) : AppColors.grey100,
+                    color: DDPalette.of(context).field,
                   ),
                   child: avatarUrl.isNotEmpty
                       ? ClipOval(
@@ -268,7 +268,7 @@ class _Podium extends StatelessWidget {
                   style: TextStyle(
                     fontSize: isFirst ? 13 : 11,
                     fontWeight: FontWeight.w600,
-                    color: isDark ? Colors.white : AppColors.black,
+                    color: DDPalette.of(context).text,
                   ),
                 ),
                 // Балл
@@ -336,8 +336,8 @@ class _LeaderRow extends StatelessWidget {
     final name = item['full_name'] as String? ?? 'Колдонуучу';
     final score = item['total_score'] as int? ?? 0;
     final orders = item['orders_count'] as int? ?? 0;
-    final divColor =
-        isDark ? const Color(0xFF2C2C2C) : const Color(0xFFEEEEEE);
+    final lp       = DDPalette.of(context);
+    final divColor = lp.divider;
 
     return Column(
       children: [
@@ -363,9 +363,7 @@ class _LeaderRow extends StatelessWidget {
                 height: 34,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: isDark
-                      ? const Color(0xFF2C2C2C)
-                      : AppColors.grey100,
+                  color: lp.field,
                 ),
                 child: _Initials(
                   name: name,
@@ -386,7 +384,7 @@ class _LeaderRow extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
-                        color: isDark ? Colors.white : AppColors.black,
+                        color: lp.text,
                       ),
                     ),
                     Text(
@@ -458,7 +456,7 @@ class _MyRankCard extends StatelessWidget {
             '📍 Сениң орнуң',
             style: TextStyle(
               fontSize: 13,
-              color: isDark ? Colors.white70 : AppColors.grey600,
+              color: DDPalette.of(context).subText,
             ),
           ),
           const Spacer(),

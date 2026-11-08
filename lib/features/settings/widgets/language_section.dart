@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
+import '../../../config/theme/dd_design.dart';
 import '../../../main.dart';
 
 class LanguageSection extends StatefulWidget {
@@ -15,9 +16,8 @@ class _LanguageSectionState extends State<LanguageSection> {
   Widget build(BuildContext context) {
     final provider = LocaleScope.of(context);
     final selected = provider.locale.languageCode;
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final dividerColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFEEEEEE);
+    final _lp = DDPalette.of(context);
+    final dividerColor = _lp.divider;
 
     return Container(
       width: double.infinity,
@@ -27,8 +27,8 @@ class _LanguageSectionState extends State<LanguageSection> {
       ),
       child: Column(
         children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(0, 12, 0, 8),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(0, 12, 0, 8),
             child: Row(
               children: [
                 Image.asset(
@@ -71,8 +71,11 @@ class _LanguageSectionState extends State<LanguageSection> {
             Text(flag, style: const TextStyle(fontSize: 22)),
             const SizedBox(width: 12),
             Expanded(child: Text(title, style: AppTextStyles.bodyMedium)),
-            Icon(
-              isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
+            Image.asset(
+              isSelected
+                  ? 'assets/icons/settings/ic_radio_on.png'
+                  : 'assets/icons/settings/ic_radio_off.png',
+              width: 24, height: 24,
               color: isSelected ? AppColors.primary : AppColors.grey300,
             ),
           ],

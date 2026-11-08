@@ -4,7 +4,7 @@ import '../../stories/models/story_model.dart';
 import '../../stories/services/story_service.dart';
 import '../../stories/widgets/story_circle_button.dart';
 import '../../stories/screens/story_viewer_screen.dart';
-import '../../../config/theme/app_colors.dart';
+
 import '../../../config/theme/app_text_styles.dart';
 import '../../../config/theme/dd_design.dart';
 import '../../../core/app_localizations.dart';
@@ -271,18 +271,17 @@ class _SidePanelScreenState extends State<_SidePanelScreen> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? Colors.white : DD.ink;
-    final subColor = isDark ? Colors.white54 : DD.inkSoft.withOpacity(0.6);
-    final dividerColor = isDark
-        ? Colors.white.withOpacity(0.08)
-        : const Color(0xFFEDEDF0);
-    final footerColor = isDark ? Colors.white38 : AppColors.grey400;
+    final p = DDPalette.of(context);
+    final isDark = p.isDark;
+    final textColor = p.text;
+    final subColor = p.subText;
+    final dividerColor = p.divider;
+    final footerColor = p.subText;
 
     return ClipRRect(
       borderRadius: const BorderRadius.horizontal(left: Radius.circular(28)),
       child: Material(
-        color: isDark ? DD.bgDark : DD.bgLight,
+        color: p.bg,
         child: Stack(
           children: [
             // ── Figma фон: кара/ак + кызгылт сары жарыктар ──
@@ -441,7 +440,7 @@ class _SidePanelScreenState extends State<_SidePanelScreen> {
                                 title: loc.get('drawer_flash_title'),
                                 subtitle: loc.get('drawer_flash_subtitle'),
                                 isDark: isDark,
-                                onTap: () => _goTo(FlashSaleScreen()),
+                                onTap: () => _goTo(const FlashSaleScreen()),
                               ),
                             ),
                             const SizedBox(height: 14),

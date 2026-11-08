@@ -219,11 +219,12 @@ class _FavoritesScreenState extends State<FavoritesScreen>
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final p = DDPalette.of(context);
+    final isDark = p.isDark;
     final isKy = loc.locale.languageCode == 'ky';
 
-    final bgColor = isDark ? DD.bgDark : DD.bgLight;
-    final cardColor = isDark ? const Color(0xFF15120F) : Colors.white;
+    final bgColor = p.bg;
+    final cardColor = p.card;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -239,7 +240,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
             : Colors.white.withOpacity(0.65),
         elevation: 0,
         automaticallyImplyLeading: false,
-        foregroundColor: isDark ? Colors.white : AppColors.black,
+        foregroundColor: p.text,
         title: _selectionMode
             ? Row(children: [
                 GestureDetector(
@@ -255,7 +256,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
             : Text(
                 loc.get('favorites'),
                 style: AppTextStyles.headingMedium.copyWith(
-                  color: isDark ? Colors.white : AppColors.black,
+                  color: p.text,
                 ),
               ),
         actions: _selectionMode
@@ -646,8 +647,9 @@ class _ProductFavCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-    final shimmerColor = isDark ? const Color(0xFF2C2C2C) : AppColors.grey100;
+    final fp = DDPalette.of(context);
+    final cardColor = fp.card;
+    final shimmerColor = fp.field;
     final thumbUrl = toCloudinaryThumb(product.imageUrl, width: 400);
 
     return Container(
@@ -691,7 +693,7 @@ class _ProductFavCard extends StatelessWidget {
                 Text(
                   product.name,
                   style: AppTextStyles.labelMedium.copyWith(
-                    color: isDark ? Colors.white : AppColors.black,
+                    color: fp.text,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,

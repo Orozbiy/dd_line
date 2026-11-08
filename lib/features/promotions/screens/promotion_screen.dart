@@ -64,9 +64,10 @@ class _PromotionScreenState extends State<PromotionScreen> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF121212) : const Color(0xFFF4F5F7);
-    final inputBg = isDark ? const Color(0xFF2C2C2C) : AppColors.grey100;
+    final p = DDPalette.of(context);
+    final isDark = p.isDark;
+    final bgColor = p.bg;
+    final inputBg = p.field;
     final filtered = _filtered;
 
     return Scaffold(
@@ -97,7 +98,7 @@ class _PromotionScreenState extends State<PromotionScreen> {
               border: Border.all(color: isDark ? Colors.white.withOpacity(0.12) : const Color(0xFFEDEDF0)),
               boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 6, offset: const Offset(0, 2))],
             ),
-            child: Icon(Icons.arrow_back_rounded, color: isDark ? Colors.white : AppColors.black, size: 18),
+            child: Icon(Icons.arrow_back_rounded, color: p.text, size: 18),
           ),
           onPressed: () => Navigator.pop(context),
         ),
@@ -117,13 +118,13 @@ class _PromotionScreenState extends State<PromotionScreen> {
             Text(
               loc.get('promo_title'),
               style: AppTextStyles.headingMedium.copyWith(
-                color: isDark ? Colors.white : AppColors.black,
+                color: p.text,
                 fontSize: 17,
               ),
             ),
           ],
         ),
-        foregroundColor: isDark ? Colors.white : AppColors.black,
+        foregroundColor: p.text,
         centerTitle: true,
       ),
       body: Column(
@@ -228,7 +229,8 @@ class _PromoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cp = DDPalette.of(context);
+    final isDark = cp.isDark;
     final cur = loc.get('currency');
     final price = (product['price'] as num?)?.toDouble() ?? 0;
     final discounted =
@@ -271,7 +273,7 @@ class _PromoCard extends StatelessWidget {
               // ── Карточка фону ──
               Container(
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF0E0A07) : Colors.white,
+                  color: cp.card,
                   border: Border.all(
                     color: isDark
                         ? DD.accent.withOpacity(0.22)

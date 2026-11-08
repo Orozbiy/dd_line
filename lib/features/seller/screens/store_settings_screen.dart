@@ -3,6 +3,7 @@ import '../../../core/app_localizations.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
+import '../../../config/theme/dd_design.dart';
 import '../../../core/supabase_client.dart';
 
 /// Сатуучу дүкөнүнүн картадагы жайгашкан жерин (latitude/longitude)
@@ -94,14 +95,15 @@ class _StoreLocationScreenState extends State<StoreLocationScreen> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
     final hasLocation = _lat != null && _lng != null;
+    final p = DDPalette.of(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F5F7),
+      backgroundColor: p.bg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: p.card,
         elevation: 0,
         title: Text(loc.get('store_location_title'), style: AppTextStyles.headingSmall),
-        iconTheme: const IconThemeData(color: AppColors.black),
+        iconTheme: IconThemeData(color: p.text),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -112,9 +114,9 @@ class _StoreLocationScreenState extends State<StoreLocationScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: p.card,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.grey200),
+                border: Border.all(color: p.divider),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

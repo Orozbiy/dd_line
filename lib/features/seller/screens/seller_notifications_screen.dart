@@ -8,6 +8,7 @@ import '../../../core/app_localizations.dart';
 
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
+import '../../../config/theme/dd_design.dart';
 import '../../../core/supabase_client.dart';
 
 class SellerNotificationsScreen extends StatefulWidget {
@@ -65,16 +66,17 @@ class _SellerNotificationsScreenState
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor   = isDark ? const Color(0xFF121212) : Colors.white;
-    final cardColor = isDark ? const Color(0xFF1E1E1E) : const Color(0xFFF7F8FA);
-    final textColor = isDark ? Colors.white : AppColors.black;
-    final subColor  = isDark ? Colors.white60 : AppColors.grey500;
+    final p = DDPalette.of(context);
+    final isDark    = p.isDark;
+    final bgColor   = p.bg;
+    final cardColor = p.card;
+    final textColor = p.text;
+    final subColor  = p.subText;
 
     return Scaffold(
       backgroundColor: bgColor,
       appBar: AppBar(
-        backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        backgroundColor: p.card,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
@@ -110,7 +112,7 @@ class _SellerNotificationsScreenState
                       Icon(
                         Icons.notifications_none_rounded,
                         size: 72,
-                        color: isDark ? Colors.white24 : Colors.grey[300],
+                        color: isDark ? Colors.white24 : p.divider,
                       ),
                       const SizedBox(height: 16),
                       Text(
@@ -245,9 +247,7 @@ class _SellerNotificationsScreenState
                                   fit: BoxFit.cover,
                                   placeholder: (_, __) => Container(
                                     height: 200,
-                                    color: isDark
-                                        ? const Color(0xFF2A2560)
-                                        : const Color(0xFFEEEEEE),
+                                    color: p.field,
                                     child: const Center(
                                       child: CircularProgressIndicator(
                                           color: AppColors.primary,

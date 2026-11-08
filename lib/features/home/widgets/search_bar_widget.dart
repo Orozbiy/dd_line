@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
+import '../../../config/theme/dd_design.dart';
 import '../../../core/app_localizations.dart';
 
 class SearchBarWidget extends StatefulWidget {
@@ -47,12 +48,10 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final loc    = AppLocalizations.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final fillColor   = isDark
-        ? const Color(0xFF2C2C2C).withOpacity(0.55)
-        : AppColors.grey50.withOpacity(0.55);
-    final borderColor = isDark ? const Color(0xFF3A3A3A) : AppColors.grey200;
+    final loc         = AppLocalizations.of(context);
+    final p           = DDPalette.of(context);
+    final fillColor   = p.field;
+    final borderColor = p.divider;
 
     return TextFormField(
       controller: _controller,
@@ -63,7 +62,7 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
         _focusNode.unfocus();
       },
       style: AppTextStyles.bodyMedium.copyWith(
-        color: isDark ? Colors.white : AppColors.black,
+        color: p.text,
       ),
       decoration: InputDecoration(
         hintText: loc.get('search_hint'),

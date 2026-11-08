@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../config/theme/app_colors.dart';
+
 import '../../../config/theme/app_text_styles.dart';
+import '../../../config/theme/dd_design.dart';
 import '../../../core/app_localizations.dart';
 import '../../../core/supabase_client.dart';
 
@@ -144,22 +145,21 @@ class _SellerEditProfileScreenState extends State<SellerEditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
-    final isDark   = Theme.of(context).brightness == Brightness.dark;
-    final bgColor  = isDark ? const Color(0xFF121212) : const Color(0xFFF4F5F7);
+    final p      = DDPalette.of(context);
+
+    final bgColor = p.bg;
 
     return Scaffold(
       backgroundColor: bgColor,
       appBar: AppBar(
-        backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        backgroundColor: p.card,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back,
-              color: isDark ? Colors.white : AppColors.black),
+          icon: Icon(Icons.arrow_back, color: p.text),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(loc.get('seller_edit_profile_title'),
-            style: AppTextStyles.headingMedium.copyWith(
-                color: isDark ? Colors.white : AppColors.black)),
+            style: AppTextStyles.headingMedium.copyWith(color: p.text)),
       ),
       body: _initLoading
           ? const Center(child: CircularProgressIndicator(color: Color(0xFFD97706)))
@@ -168,13 +168,13 @@ class _SellerEditProfileScreenState extends State<SellerEditProfileScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildField(loc.get('seller_name_label'), _nameCtrl, isDark),
+                  _buildField(loc.get('seller_name_label'), _nameCtrl, p),
                   const SizedBox(height: 14),
-                  _buildField(loc.get('shop_name_label'), _shopCtrl, isDark),
+                  _buildField(loc.get('shop_name_label'), _shopCtrl, p),
                   const SizedBox(height: 14),
-                  _buildField(loc.get('container_location_label'), _containerCtrl, isDark),
+                  _buildField(loc.get('container_location_label'), _containerCtrl, p),
                   const SizedBox(height: 24),
-                  _buildStoreTypeSelector(isDark, loc),
+                  _buildStoreTypeSelector(p, loc),
                   const SizedBox(height: 32),
                   SizedBox(
                     width: double.infinity,
@@ -208,44 +208,39 @@ class _SellerEditProfileScreenState extends State<SellerEditProfileScreen> {
     );
   }
 
-  Widget _buildStoreTypeSelector(bool isDark, AppLocalizations loc) {
-    final labelColor = isDark ? Colors.white70 : AppColors.grey600;
-    final cardBg     = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-
+  Widget _buildStoreTypeSelector(DDPalette p, AppLocalizations loc) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(loc.get('store_type_label'),
-            style: AppTextStyles.labelMedium.copyWith(color: labelColor)),
+            style: AppTextStyles.labelMedium.copyWith(color: p.subText)),
         const SizedBox(height: 10),
         Row(children: [
-          Expanded(child: _typeCard('🏪', loc.get('market_type_label'),      'market',  cardBg, isDark)),
+          Expanded(child: _typeCard('🏪', loc.get('market_type_label'),      'market',  p)),
           const SizedBox(width: 12),
-          Expanded(child: _typeCard('🏬', loc.get('private_store_type_label'), 'private', cardBg, isDark)),
+          Expanded(child: _typeCard('🏬', loc.get('private_store_type_label'), 'private', p)),
         ]),
         if (_storeType == 'market') ...[
           const SizedBox(height: 16),
           Text(loc.get('choose_market_label'),
-              style: AppTextStyles.labelMedium.copyWith(color: labelColor)),
+              style: AppTextStyles.labelMedium.copyWith(color: p.subText)),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14),
             decoration: BoxDecoration(
-              color: cardBg,
+              color: p.card,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.grey300),
+              border: Border.all(color: p.divider),
             ),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
                 value: _markets.contains(_marketName) ? _marketName : _markets.first,
                 isExpanded: true,
-                dropdownColor: cardBg,
+                dropdownColor: p.card,
                 items: _markets
                     .map((m) => DropdownMenuItem(
                           value: m,
-                          child: Text(m,
-                              style: TextStyle(
-                                  color: isDark ? Colors.white : AppColors.black)),
+                          child: Text(m, style: TextStyle(color: p.text)),
                         ))
                     .toList(),
                 onChanged: (v) => setState(() => _marketName = v),
@@ -257,8 +252,7 @@ class _SellerEditProfileScreenState extends State<SellerEditProfileScreen> {
     );
   }
 
-  Widget _typeCard(
-      String icon, String label, String value, Color cardBg, bool isDark) {
+  Widget _typeCard(String icon, String label, String value, DDPalette p) {
     final isSelected = _storeType == value;
     return GestureDetector(
       onTap: () => setState(() => _storeType = value),
@@ -267,10 +261,10 @@ class _SellerEditProfileScreenState extends State<SellerEditProfileScreen> {
         decoration: BoxDecoration(
           color: isSelected
               ? const Color(0xFFD97706).withOpacity(0.1)
-              : cardBg,
+              : p.card,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? const Color(0xFFD97706) : AppColors.grey300,
+            color: isSelected ? const Color(0xFFD97706) : p.divider,
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -280,33 +274,27 @@ class _SellerEditProfileScreenState extends State<SellerEditProfileScreen> {
           Text(label,
               style: TextStyle(
                 fontSize: 13,
-                fontWeight:
-                    isSelected ? FontWeight.w700 : FontWeight.normal,
-                color: isSelected
-                    ? const Color(0xFFD97706)
-                    : (isDark ? Colors.white70 : AppColors.grey600),
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.normal,
+                color: isSelected ? const Color(0xFFD97706) : p.subText,
               )),
         ]),
       ),
     );
   }
 
-  Widget _buildField(
-      String label, TextEditingController ctrl, bool isDark) {
+  Widget _buildField(String label, TextEditingController ctrl, DDPalette p) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label,
-            style: AppTextStyles.labelMedium.copyWith(
-                color: isDark ? Colors.white70 : AppColors.grey600)),
+            style: AppTextStyles.labelMedium.copyWith(color: p.subText)),
         const SizedBox(height: 6),
         TextField(
           controller: ctrl,
-          style:
-              TextStyle(color: isDark ? Colors.white : AppColors.black),
+          style: TextStyle(color: p.text),
           decoration: InputDecoration(
             filled: true,
-            fillColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+            fillColor: p.field,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,

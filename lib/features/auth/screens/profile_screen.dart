@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
+import '../../../config/theme/dd_design.dart';
 import '../../../core/app_localizations.dart';
 import '../../../core/auth_service.dart';
 import '../../../core/supabase_client.dart';
@@ -141,7 +142,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _showAvatarOptionsSheet() {
     final loc    = AppLocalizations.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final _pp    = DDPalette.of(context);
+    final isDark = _pp.isDark;
 
     showModalBottomSheet(
       context: context,
@@ -183,19 +185,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
                 ListTile(
-                  leading: const Icon(Icons.photo_camera_outlined,
-                      color: AppColors.primary),
+                  leading: Image.asset(
+                    'assets/icons/profile/ic_camera.png',
+                    width: 24, height: 24,
+                    color: AppColors.primary,
+                  ),
                   title: Text(loc.get('profile_change_photo'),
                       style: AppTextStyles.labelLarge.copyWith(
-                          color: isDark ? Colors.white : AppColors.black)),
+                          color: _pp.text)),
                   onTap: () {
                     Navigator.pop(context);
                     _pickAndUploadAvatar();
                   },
                 ),
                 ListTile(
-                  leading: const Icon(Icons.delete_outline,
-                      color: AppColors.error),
+                  leading: Image.asset(
+                    'assets/icons/profile/ic_delete.png',
+                    width: 24, height: 24,
+                    color: AppColors.error,
+                  ),
                   title: Text(loc.get('profile_delete_photo'),
                       style: AppTextStyles.labelLarge
                           .copyWith(color: AppColors.error)),
@@ -322,7 +330,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _showEditSheet() {
     final loc    = AppLocalizations.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final _ep    = DDPalette.of(context);
+    final isDark = _ep.isDark;
 
     showModalBottomSheet(
       context: context,
@@ -368,13 +377,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 16),
                 Text(loc.get('profile_edit_title'),
                     style: AppTextStyles.headingMedium.copyWith(
-                        color: isDark ? Colors.white : AppColors.black)),
+                        color: _ep.text)),
                 const SizedBox(height: 20),
                 Text(loc.get('profile_label_name'),
                     style: AppTextStyles.bodySmall.copyWith(
-                        color: isDark
-                            ? Colors.white70
-                            : AppColors.grey500)),
+                        color: _ep.subText)),
                 const SizedBox(height: 6),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
@@ -383,7 +390,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: TextField(
                       controller: _fullNameController,
                       style: AppTextStyles.labelLarge.copyWith(
-                          color: isDark ? Colors.white : AppColors.black),
+                          color: _ep.text),
                       decoration: InputDecoration(
                         hintText: loc.get('profile_hint_name'),
                         hintStyle: TextStyle(
@@ -560,17 +567,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final loc      = AppLocalizations.of(context);
-    final isDark   = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? Colors.white : AppColors.black;
-    final subColor  = isDark ? const Color(0xFFAAAAAA) : AppColors.grey500;
-    final divColor  = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFEEEEEE);
+    final _bp      = DDPalette.of(context);
+    final isDark   = _bp.isDark;
+    final textColor = _bp.text;
+    final subColor  = _bp.subText;
+    final divColor  = _bp.divider;
 
     final subtitleText = _isSeller
         ? 'Сатуучу'
         : (_email.isNotEmpty ? _email : '—');
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF4F5F7),
+      backgroundColor: _bp.bg,
       extendBodyBehindAppBar: true,
 
       // ── AppBar — размытие (settings стилинде) ──
@@ -600,7 +608,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         actions: [
           IconButton(
             onPressed: _showEditSheet,
-            icon: const Icon(Icons.edit_outlined, color: AppColors.primary),
+            icon: Image.asset(
+              'assets/icons/profile/ic_edit.png',
+              width: 24, height: 24,
+              color: AppColors.primary,
+            ),
           ),
         ],
       ),
@@ -692,9 +704,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       color: AppColors.primary,
                                       shape: BoxShape.circle,
                                       border: Border.all(
-                                          color: isDark
-                                              ? const Color(0xFF1A1A1A)
-                                              : Colors.white,
+                                          color: _bp.bg,
                                           width: 2),
                                     ),
                                     child: _isUploadingPhoto
@@ -754,7 +764,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       child: Column(
                         children: [
                           _profileItem(
-                            Icons.person_outline,
+                            'assets/icons/profile/ic_person.png',
                             loc.get('profile_label_name'),
                             _fullName,
                             textColor: textColor,
@@ -763,8 +773,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           Divider(height: 1, color: divColor),
                           _profileItem(
                             _isSeller
-                                ? Icons.store_outlined
-                                : Icons.email_outlined,
+                                ? 'assets/icons/profile/ic_store_profile.png'
+                                : 'assets/icons/profile/ic_email.png',
                             _isSeller ? 'Аккаунт' : 'Email',
                             _isSeller
                                 ? 'Сатуучу аккаунту'
@@ -774,7 +784,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           Divider(height: 1, color: divColor),
                           _profileItem(
-                            Icons.phone_outlined,
+                            'assets/icons/profile/ic_phone.png',
                             loc.get('profile_label_phone'),
                             _phone,
                             textColor: textColor,
@@ -810,8 +820,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.logout,
-                                  color: AppColors.error, size: 20),
+                              Image.asset(
+                                'assets/icons/profile/ic_logout.png',
+                                width: 20, height: 20,
+                                color: AppColors.error,
+                              ),
                               const SizedBox(width: 8),
                               Text(
                                 loc.get('profile_signout_btn'),
@@ -863,8 +876,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       color: AppColors.error.withOpacity(isDark ? 0.25 : 0.20),
                     ),
                   ),
-                  child: const Icon(Icons.person_remove_outlined,
-                      color: AppColors.error, size: 22),
+                  child: Center(
+                    child: Image.asset(
+                      'assets/icons/profile/ic_remove_account.png',
+                      width: 26, height: 26,
+                      color: AppColors.error,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -898,7 +916,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _profileItem(
-    IconData icon,
+    String iconPath,
     String label,
     String value, {
     required Color textColor,
@@ -915,7 +933,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
               color: AppColors.primary.withOpacity(0.12),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: AppColors.primary, size: 18),
+            child: Center(
+              child: Image.asset(
+                iconPath,
+                width: 20, height: 20,
+                color: AppColors.primary,
+              ),
+            ),
           ),
           const SizedBox(width: 14),
           Column(

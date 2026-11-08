@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
+import '../../../config/theme/dd_design.dart';
 import '../../../core/app_localizations.dart';
 import '../../../core/supabase_client.dart';
 import '../../auth/screens/welcome_screen.dart';
@@ -243,12 +244,13 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen>
   // ═══════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final _dp = DDPalette.of(context);
+    final isDark = _dp.isDark;
     final loc = AppLocalizations.of(context);
-    final textColor = isDark ? Colors.white : AppColors.black;
+    final textColor = _dp.text;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF4F5F7),
+      backgroundColor: _dp.bg,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -302,7 +304,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen>
             Text(
               loc.get('delete_account_warning'),
               style: AppTextStyles.bodyMedium.copyWith(
-                color: isDark ? Colors.white70 : AppColors.grey500,
+                color: _dp.subText,
               ),
               textAlign: TextAlign.center,
             ),

@@ -36,7 +36,7 @@ class FavBadge extends StatelessWidget {
                 color: DD.accent,
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: p.isDark ? const Color(0xFF15120F) : Colors.white,
+                  color: p.card,
                   width: 1.5,
                 ),
               ),
