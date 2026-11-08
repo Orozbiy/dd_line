@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { importPKCS8, SignJWT } from "https://deno.land/x/jose@v4.14.4/index.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -104,51 +105,27 @@ serve(async (req) => {
 
 async function getAccessToken(sa: any): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
-  const header = { alg: "RS256", typ: "JWT" };
-  const payload = {
-    iss: sa.client_email,
-    sub: sa.client_email,
-    aud: "https://oauth2.googleapis.com/token",
-    iat: now,
-    exp: now + 3600,
+  console.log("OAuth: importing private key");
+  const privateKey = await importPKCS8(sa.private_key, "RS256");
+  console.log("OAuth: signing JWT");
+  const jwt = await new SignJWT({
     scope: "https://www.googleapis.com/auth/firebase.messaging",
-  };
-  const enc = new TextEncoder();
-  const b64 = (s: string) =>
-    btoa(s).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
-  const h = b64(JSON.stringify(header));
-  const p = b64(JSON.stringify(payload));
-  const keyData = sa.private_key
-    .replace("-----BEGIN PRIVATE KEY-----", "")
-    .replace("-----END PRIVATE KEY-----", "")
-    .replace(/\n/g, "");
-  const binaryKey = Uint8Array.from(atob(keyData), (c) => c.charCodeAt(0));
-  const cryptoKey = await crypto.subtle.importKey(
-    "pkcs8",
-    binaryKey,
-    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
-    false,
-    ["sign"]
-  );
-  const sigBuf = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", cryptoKey, enc.encode(h + "." + p));
-  const sig = new Uint8Array(sigBuf);
-  let binary = "";
-  for (let i = 0; i < sig.length; i++) binary += String.fromCharCode(sig[i]);
-  const s = b64(binary);
-  const jwt = h + "." + p + "." + s;
-
+  })
+    .setProtectedHeader({ alg: "RS256", typ: "JWT" })
+    .setIssuer(sa.client_email)
+    .setSubject(sa.client_email)
+    .setAudience("https://oauth2.googleapis.com/token")
+    .setIssuedAt(now)
+    .setExpirationTime(now + 3600)
+    .sign(privateKey);
   console.log("OAuth: calling google token endpoint");
-  const params = new URLSearchParams({
-    grant_type: "urn:ietf:params:oauth2:grant-type:jwt-bearer",
-    assertion: jwt,
-  });
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: params.toString(),
+    body: "grant_type=urn%3Aietf%3Aparams%3Aoauth2%3Agrant-type%3Ajwt-bearer&assertion=" + jwt,
   });
   const j = await res.json();
-  console.log("OAuth: response=" + JSON.stringify(j).substring(0, 150));
+  console.log("OAuth: response=" + JSON.stringify(j).substring(0, 200));
   if (!j.access_token) throw new Error("oauth error: " + JSON.stringify(j));
   return j.access_token;
 }
