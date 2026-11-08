@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { importPKCS8, SignJWT } from "https://deno.land/x/jose@v4.14.4/index.ts";
+import { GoogleAuth } from "npm:google-auth-library@9";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -104,29 +104,15 @@ serve(async (req) => {
 });
 
 async function getAccessToken(sa: any): Promise<string> {
-  const now = Math.floor(Date.now() / 1000);
-  console.log("OAuth: importing private key");
-  const privateKey = await importPKCS8(sa.private_key, "RS256");
-  console.log("OAuth: signing JWT");
-  const tokenUri = sa.token_uri || "https://oauth2.googleapis.com/token";
-  const jwt = await new SignJWT({
-    iss: sa.client_email,
-    sub: sa.client_email,
-    aud: tokenUri,
-    iat: now,
-    exp: now + 3600,
-    scope: "https://www.googleapis.com/auth/firebase.messaging",
-  })
-    .setProtectedHeader({ alg: "RS256", typ: "JWT" })
-    .sign(privateKey);
-  console.log("OAuth: calling google token endpoint");
-  const res = await fetch(tokenUri, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: "grant_type=urn:ietf:params:oauth2:grant-type:jwt-bearer&assertion=" + jwt,
+  console.log("OAuth: creating GoogleAuth client");
+  const auth = new GoogleAuth({
+    credentials: sa,
+    scopes: ["https://www.googleapis.com/auth/firebase.messaging"],
   });
-  const j = await res.json();
-  console.log("OAuth: response=" + JSON.stringify(j).substring(0, 200));
-  if (!j.access_token) throw new Error("oauth error: " + JSON.stringify(j));
-  return j.access_token;
+  const client = await auth.getClient();
+  console.log("OAuth: getting access token");
+  const tokenRes = await client.getAccessToken();
+  console.log("OAuth: token received=" + !!tokenRes.token);
+  if (!tokenRes.token) throw new Error("Failed to get access token from GoogleAuth");
+  return tokenRes.token;
 }
