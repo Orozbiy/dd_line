@@ -61,6 +61,9 @@ flutter:
     
     - assets/icon/
     - assets/icons/
+    - assets/icons/profile/
+    - assets/icons/chat/
+    - assets/backgrounds/
     - assets/images/
     - assets/images/categories/
     - assets/images/drawer/akcii.jpg
