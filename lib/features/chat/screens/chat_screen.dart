@@ -1,10 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 import 'dart:ui';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
@@ -69,8 +67,6 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  static const _cloudName = 'dedwm4krp';
-  static const _uploadPreset = 'dd-online';
 
   final _service    = ChatService();
   final _msgCtrl    = TextEditingController();
@@ -698,46 +694,7 @@ Future<void> _pickAndSendImage() async {
 }
  
 
-  Future<String?> _uploadToCloudinary(Uint8List bytes) async {
-    try {
-      final uri =
-          Uri.parse('https://api.cloudinary.com/v1_1/$_cloudName/image/upload');
-      final request = http.MultipartRequest('POST', uri)
-        ..fields['upload_preset'] = _uploadPreset
-        ..files.add(http.MultipartFile.fromBytes('file', bytes,
-            filename: 'chat_${DateTime.now().millisecondsSinceEpoch}.jpg'));
-      final streamedResponse =
-          await request.send().timeout(const Duration(seconds: 60));
-      final response = await http.Response.fromStream(streamedResponse);
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        return data['secure_url'] as String?;
-      }
-      return null;
-    } catch (_) {
-      return null;
-    }
-  }
 
-  Future<String?> _uploadAudioToCloudinary(String filePath) async {
-    try {
-      final uri =
-          Uri.parse('https://api.cloudinary.com/v1_1/$_cloudName/video/upload');
-      final request = http.MultipartRequest('POST', uri)
-        ..fields['upload_preset'] = _uploadPreset
-        ..files.add(await http.MultipartFile.fromPath('file', filePath));
-      final streamedResponse =
-          await request.send().timeout(const Duration(seconds: 60));
-      final response = await http.Response.fromStream(streamedResponse);
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        return data['secure_url'] as String?;
-      }
-      return null;
-    } catch (_) {
-      return null;
-    }
-  }
 
 Future<void> _sendVoiceMessage(String path, int durationSeconds) async {
   final loc = AppLocalizations.of(context);

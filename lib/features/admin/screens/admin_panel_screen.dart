@@ -1129,9 +1129,6 @@ GestureDetector(
   }
 
   // ── Сатуучуга билдирүү жөнөтүү ──
-  void _showSendToSellerSheet(BuildContext context) {
-  showAdminChatSheet(context, _allSellers);
-}
 
   // ══════════════════════════════════════════════════════
   // ⏳ ӨТҮНҮЧТӨР TAB

@@ -1706,21 +1706,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
     );
   }
 
-  Widget _infoRow(IconData icon, String label, String value,
-      {Color? valueColor}) {
-    final theme = Theme.of(context);
-    return Row(children: [
-      Icon(icon, size: 18, color: AppColors.grey500),
-      const SizedBox(width: 8),
-      Text('$label: ', style: AppTextStyles.labelMedium),
-      Expanded(
-          child: Text(value,
-              style: AppTextStyles.bodyMedium.copyWith(
-                  color: valueColor ?? theme.colorScheme.onSurface,
-                  fontWeight: FontWeight.w600),
-              overflow: TextOverflow.ellipsis)),
-    ]);
-  }
 }
 
 class _DDGlow extends StatelessWidget {
