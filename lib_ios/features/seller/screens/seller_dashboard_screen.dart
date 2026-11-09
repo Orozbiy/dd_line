@@ -1,26 +1,26 @@
 import 'package:flutter/material.dart';
+
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../config/theme/dd_design.dart';
 import '../../../core/app_localizations.dart';
-import '../models/seller_model.dart';
-import '../services/seller_service.dart';
-import 'seller_product_screen.dart';
+import '../../../core/seller_session_service.dart';
+import '../../../core/supabase_client.dart';
+import '../../chat/models/chat_model.dart';
 import '../../chat/screens/chat_list_screen.dart';
 import '../../chat/services/chat_service.dart';
-import 'location_picker_screen.dart';
-import '../../../core/supabase_client.dart';
-import 'seller_login_screen.dart';
-import 'seller_entrance_screen.dart';
-import '../../../core/seller_session_service.dart';
 import '../../home/screens/home_screen.dart';
-import 'seller_close_account_screen.dart';
+import '../models/seller_model.dart';
+import '../services/seller_service.dart';
 import '../widgets/working_hours_sheet.dart';
-import 'seller_rules_screen.dart';
-import 'seller_edit_profile_screen.dart';
-import '../../chat/models/chat_model.dart';
-import 'seller_notifications_screen.dart';
+import 'location_picker_screen.dart';
 import 'seller_admin_chat_banner.dart';
+import 'seller_close_account_screen.dart';
+import 'seller_edit_profile_screen.dart';
+import 'seller_entrance_screen.dart';
+import 'seller_notifications_screen.dart';
+import 'seller_product_screen.dart';
+import 'seller_rules_screen.dart';
 
 class SellerDashboardScreen extends StatefulWidget {
   final String uid;
@@ -31,14 +31,14 @@ class SellerDashboardScreen extends StatefulWidget {
 }
 
 class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
-  final _service     = SellerService();
+  final _service = SellerService();
   final _chatService = ChatService();
 
   SellerModel? _seller;
   bool _isLoading = true;
   String _workStart = '09:00';
-  String _workEnd   = '18:00';
-  String _workDays  = 'Дш-Жм';
+  String _workEnd = '18:00';
+  String _workDays = 'Дш-Жм';
 
   @override
   void initState() {
@@ -58,14 +58,17 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
         if (store != null && mounted) {
           setState(() {
             _workStart = store['work_start'] as String? ?? '09:00';
-            _workEnd   = store['work_end']   as String? ?? '18:00';
-            _workDays  = store['work_days']  as String? ?? 'Дш-Жм';
+            _workEnd = store['work_end'] as String? ?? '18:00';
+            _workDays = store['work_days'] as String? ?? 'Дш-Жм';
           });
         }
       } catch (_) {}
     }
     if (mounted) {
-      setState(() { _seller = seller; _isLoading = false; });
+      setState(() {
+        _seller = seller;
+        _isLoading = false;
+      });
     }
   }
 
@@ -82,20 +85,25 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(loc.get('sign_out'), style: AppTextStyles.headingSmall),
-        content: Text(loc.get('dash_logout_confirm'), style: AppTextStyles.bodyMedium),
+        content: Text(loc.get('dash_logout_confirm'),
+            style: AppTextStyles.bodyMedium),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context),
-              child: Text(loc.get('no'), style: const TextStyle(color: AppColors.grey500))),
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(loc.get('no'),
+                  style: const TextStyle(color: AppColors.grey500))),
           TextButton(
             onPressed: () {
-  Navigator.pop(context);
-  Navigator.push(context, MaterialPageRoute(
-    builder: (_) => SellerCloseAccountScreen(sellerUid: _seller!.uid),
-  ));
-
-
+              Navigator.pop(context);
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        SellerCloseAccountScreen(sellerUid: _seller!.uid),
+                  ));
             },
-            child: Text(loc.get('dash_close_account'), style: const TextStyle(color: AppColors.error)),
+            child: Text(loc.get('dash_close_account'),
+                style: const TextStyle(color: AppColors.error)),
           ),
           TextButton(
             onPressed: () async {
@@ -103,11 +111,14 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
               await supabase.auth.signOut();
               await SellerSessionService.instance.clearSession();
               if (!mounted) return;
-              Navigator.pushAndRemoveUntil(context,
-                  MaterialPageRoute(builder: (_) => const SellerEntranceScreen()),
+              Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const SellerEntranceScreen()),
                   (route) => false);
             },
-            child: Text(loc.get('yes'), style: const TextStyle(color: AppColors.error)),
+            child: Text(loc.get('yes'),
+                style: const TextStyle(color: AppColors.error)),
           ),
         ],
       ),
@@ -117,196 +128,225 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
   // ══════════════════════════════════════════════════════
 // НОМЕР ӨЗГӨРТҮҮ ӨТҮНҮЧҮ
 // ══════════════════════════════════════════════════════
-void _showChangePhoneSheet() {
-  final loc     = AppLocalizations.of(context);
-  final p       = DDPalette.of(context);
-  final ctrl    = TextEditingController();
-  bool sending  = false;
+  void _showChangePhoneSheet() {
+    final loc = AppLocalizations.of(context);
+    final p = DDPalette.of(context);
+    final ctrl = TextEditingController();
+    bool sending = false;
 
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (ctx) => StatefulBuilder(
-      builder: (ctx, setS) => Container(
-        padding: EdgeInsets.only(
-          left: 20, right: 20, top: 24,
-          bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
-        ),
-        decoration: BoxDecoration(
-          color: p.card,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Баш ──
-            Row(children: [
-              const Text('📞', style: TextStyle(fontSize: 28)),
-              const SizedBox(width: 10),
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(loc.get('dash_change_phone'),
-                    style: AppTextStyles.headingSmall.copyWith(color: p.text)),
-                Text(loc.get('dash_change_phone_sub'),
-                    style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey500)),
-              ])),
-            ]),
-            const SizedBox(height: 20),
-
-            // ── Учурдагы номер ──
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: p.field,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Row(children: [
-                const Icon(Icons.phone, size: 16, color: AppColors.grey500),
-                const SizedBox(width: 8),
-                Text(
-                  loc.locale.languageCode == 'ru'
-                      ? 'Текущий номер: ${_seller?.phone ?? ''}'
-                      : 'Учурдагы номер: ${_seller?.phone ?? ''}',
-                  style: AppTextStyles.bodyMedium.copyWith(color: p.subText),
-                ),
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => Container(
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 24,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+          ),
+          decoration: BoxDecoration(
+            color: p.card,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Баш ──
+              Row(children: [
+                const Text('📞', style: TextStyle(fontSize: 28)),
+                const SizedBox(width: 10),
+                Expanded(
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                      Text(loc.get('dash_change_phone'),
+                          style: AppTextStyles.headingSmall
+                              .copyWith(color: p.text)),
+                      Text(loc.get('dash_change_phone_sub'),
+                          style: AppTextStyles.bodySmall
+                              .copyWith(color: AppColors.grey500)),
+                    ])),
               ]),
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 20),
 
-            // ── Жаңы номер ──
-            TextField(
-              controller: ctrl,
-              keyboardType: TextInputType.phone,
-              style: AppTextStyles.bodyMedium.copyWith(color: p.text),
-              decoration: InputDecoration(
-                labelText: loc.locale.languageCode == 'ru'
-                    ? 'Новый номер телефона'
-                    : 'Жаңы телефон номери',
-                hintText: '+996 700 123 456',
-                prefixIcon: const Icon(Icons.phone_android, color: AppColors.primary),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+              // ── Учурдагы номер ──
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: p.field,
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                filled: true,
-                fillColor: p.field,
+                child: Row(children: [
+                  const Icon(Icons.phone, size: 16, color: AppColors.grey500),
+                  const SizedBox(width: 8),
+                  Text(
+                    loc.locale.languageCode == 'ru'
+                        ? 'Текущий номер: ${_seller?.phone ?? ''}'
+                        : 'Учурдагы номер: ${_seller?.phone ?? ''}',
+                    style: AppTextStyles.bodyMedium.copyWith(color: p.subText),
+                  ),
+                ]),
               ),
-            ),
-            const SizedBox(height: 12),
+              const SizedBox(height: 16),
 
-            // ── Маалымат ──
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.primary.withOpacity(0.2)),
-              ),
-              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Icon(Icons.info_outline, size: 16, color: AppColors.primary),
-                const SizedBox(width: 8),
-                Expanded(child: Text(
-                  loc.locale.languageCode == 'ru'
-                      ? 'Запрос будет отправлен администратору. Номер изменится после подтверждения.'
-                      : 'Өтүнүч администраторго жиберилет. Номер бекитилгенден кийин өзгөрөт.',
-                  style: AppTextStyles.bodySmall.copyWith(color: AppColors.primary),
-                )),
-              ]),
-            ),
-            const SizedBox(height: 20),
-
-            // ── Жиберүү баскычы ──
-            SizedBox(
-              width: double.infinity, height: 50,
-              child: ElevatedButton(
-                onPressed: sending
-                    ? null
-                    : () async {
-                        final newPhone = ctrl.text.trim();
-                        if (newPhone.length < 9) {
-                          _showSnack(loc.get('reg_err_phone'), AppColors.error);
-                          return;
-                        }
-                        setS(() => sending = true);
-                        try {
-                          // Supabase га өтүнүч жаз
-                          await supabase.from('phone_change_requests').insert({
-                            'seller_uid':   _seller!.uid,
-                            'seller_name':  _seller!.name,
-                            'shop_name':    _seller!.shopName,
-                            'old_phone':    _seller!.phone,
-                            'new_phone':    newPhone,
-                            'status':       'pending',
-                            'created_at':   DateTime.now().toIso8601String(),
-                          });
-                          if (ctx.mounted) Navigator.pop(ctx);
-                          _showSnack(
-                            loc.locale.languageCode == 'ru'
-                                ? '✅ Запрос отправлен администратору!'
-                                : '✅ Өтүнүч администраторго жиберилди!',
-                            AppColors.success,
-                          );
-                        } catch (e) {
-                          setS(() => sending = false);
-                          _showSnack(loc.get('error'), AppColors.error);
-                        }
-                      },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  disabledBackgroundColor: AppColors.grey200,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              // ── Жаңы номер ──
+              TextField(
+                controller: ctrl,
+                keyboardType: TextInputType.phone,
+                style: AppTextStyles.bodyMedium.copyWith(color: p.text),
+                decoration: InputDecoration(
+                  labelText: loc.locale.languageCode == 'ru'
+                      ? 'Новый номер телефона'
+                      : 'Жаңы телефон номери',
+                  hintText: '+996 700 123 456',
+                  prefixIcon:
+                      const Icon(Icons.phone_android, color: AppColors.primary),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide:
+                        const BorderSide(color: AppColors.primary, width: 1.5),
+                  ),
+                  filled: true,
+                  fillColor: p.field,
                 ),
-                child: sending
-                    ? const SizedBox(
-                        width: 20, height: 20,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                      )
-                    : Text(
-                        loc.locale.languageCode == 'ru' ? 'Отправить запрос' : 'Өтүнүч жиберүү',
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 15),
-                      ),
               ),
-            ),
-          ],
+              const SizedBox(height: 12),
+
+              // ── Маалымат ──
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                ),
+                child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.info_outline,
+                          size: 16, color: AppColors.primary),
+                      const SizedBox(width: 8),
+                      Expanded(
+                          child: Text(
+                        loc.locale.languageCode == 'ru'
+                            ? 'Запрос будет отправлен администратору. Номер изменится после подтверждения.'
+                            : 'Өтүнүч администраторго жиберилет. Номер бекитилгенден кийин өзгөрөт.',
+                        style: AppTextStyles.bodySmall
+                            .copyWith(color: AppColors.primary),
+                      )),
+                    ]),
+              ),
+              const SizedBox(height: 20),
+
+              // ── Жиберүү баскычы ──
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: sending
+                      ? null
+                      : () async {
+                          final newPhone = ctrl.text.trim();
+                          if (newPhone.length < 9) {
+                            _showSnack(
+                                loc.get('reg_err_phone'), AppColors.error);
+                            return;
+                          }
+                          setS(() => sending = true);
+                          try {
+                            // Supabase га өтүнүч жаз
+                            await supabase
+                                .from('phone_change_requests')
+                                .insert({
+                              'seller_uid': _seller!.uid,
+                              'seller_name': _seller!.name,
+                              'shop_name': _seller!.shopName,
+                              'old_phone': _seller!.phone,
+                              'new_phone': newPhone,
+                              'status': 'pending',
+                              'created_at': DateTime.now().toIso8601String(),
+                            });
+                            if (ctx.mounted) Navigator.pop(ctx);
+                            _showSnack(
+                              loc.locale.languageCode == 'ru'
+                                  ? '✅ Запрос отправлен администратору!'
+                                  : '✅ Өтүнүч администраторго жиберилди!',
+                              AppColors.success,
+                            );
+                          } catch (e) {
+                            setS(() => sending = false);
+                            _showSnack(loc.get('error'), AppColors.error);
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    disabledBackgroundColor: AppColors.grey200,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: sending
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                              color: Colors.white, strokeWidth: 2),
+                        )
+                      : Text(
+                          loc.locale.languageCode == 'ru'
+                              ? 'Отправить запрос'
+                              : 'Өтүнүч жиберүү',
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 15),
+                        ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-    ),
-  );
-}
-
-  void _goBack() {
-    Navigator.pushAndRemoveUntil(context,
-        MaterialPageRoute(builder: (_) => const HomeScreen()), (route) => false);
+    );
   }
 
-
-
-
-
+  void _goBack() {
+    Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        (route) => false);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final loc    = AppLocalizations.of(context);
-    final p      = DDPalette.of(context);
+    final loc = AppLocalizations.of(context);
+    final p = DDPalette.of(context);
     final isDark = p.isDark;
 
     // ── Адаптивдүү түстөр ──
-    final bgColor      = p.bg;
-    final appBarColor  = p.card;
-    final arrowColor   = p.text;
-    final titleColor   = p.text;
-    final cardBg       = p.card;
+    final bgColor = p.bg;
+    final appBarColor = p.card;
+    final arrowColor = p.text;
+    final titleColor = p.text;
+    final cardBg = p.card;
     final sectionColor = p.text;
-    final contactBg    = isDark ? const Color(0xFF1A2E1A) : const Color(0xFFF0FFF4);
-    final contactBorder= const Color(0xFF22C55E).withOpacity(isDark ? 0.4 : 0.3);
-    final contactText  = isDark ? const Color(0xFF86EFAC) : const Color(0xFF374151);
+    final contactBg =
+        isDark ? const Color(0xFF1A2E1A) : const Color(0xFFF0FFF4);
+    final contactBorder =
+        const Color(0xFF22C55E).withOpacity(isDark ? 0.4 : 0.3);
+    final contactText =
+        isDark ? const Color(0xFF86EFAC) : const Color(0xFF374151);
 
     if (_isLoading) {
       return PopScope(
         canPop: false,
-        onPopInvokedWithResult: (didPop, _) { if (!didPop) _goBack(); },
+        onPopInvokedWithResult: (didPop, _) {
+          if (!didPop) _goBack();
+        },
         child: Scaffold(
           backgroundColor: bgColor,
           body: const Center(child: CircularProgressIndicator()),
@@ -317,17 +357,22 @@ void _showChangePhoneSheet() {
     if (_seller == null) {
       return PopScope(
         canPop: false,
-        onPopInvokedWithResult: (didPop, _) { if (!didPop) _goBack(); },
+        onPopInvokedWithResult: (didPop, _) {
+          if (!didPop) _goBack();
+        },
         child: Scaffold(
           backgroundColor: bgColor,
-          body: Center(child: Text(loc.get('no_info'), style: AppTextStyles.bodyMedium)),
+          body: Center(
+              child: Text(loc.get('no_info'), style: AppTextStyles.bodyMedium)),
         ),
       );
     }
 
     return PopScope(
       canPop: false,
-      onPopInvokedWithResult: (didPop, _) { if (!didPop) _goBack(); },
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _goBack();
+      },
       child: Scaffold(
         backgroundColor: bgColor,
         appBar: AppBar(
@@ -360,49 +405,66 @@ void _showChangePhoneSheet() {
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(18),
-                  boxShadow: [BoxShadow(color: const Color(0xFFD97706).withOpacity(0.3), blurRadius: 16, offset: const Offset(0, 6))],
+                  boxShadow: [
+                    BoxShadow(
+                        color: const Color(0xFFD97706).withOpacity(0.3),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6))
+                  ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(children: [
                       Container(
-                        width: 52, height: 52,
+                        width: 52,
+                        height: 52,
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(14),
                         ),
-                        child: Center(child: Text(
-                          _seller!.shopName.isNotEmpty ? _seller!.shopName[0].toUpperCase() : '🏪',
-                          style: const TextStyle(fontSize: 26, color: Colors.white, fontWeight: FontWeight.bold),
+                        child: Center(
+                            child: Text(
+                          _seller!.shopName.isNotEmpty
+                              ? _seller!.shopName[0].toUpperCase()
+                              : '🏪',
+                          style: const TextStyle(
+                              fontSize: 26,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold),
                         )),
                       ),
                       const SizedBox(width: 14),
-                      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(_seller!.shopName, style: AppTextStyles.headingSmall.copyWith(color: Colors.white)),
-                        const SizedBox(height: 4),
-                        Text(_seller!.name, style: AppTextStyles.labelMedium.copyWith(color: Colors.white70)),
-                      ])),
-
-IconButton(
-
-
-
- onPressed: () async {
-  final updated = await Navigator.push<bool>(context, MaterialPageRoute(
-    builder: (_) => SellerEditProfileScreen(
-      currentName:      _seller!.name,
-      currentShopName:  _seller!.shopName,
-      currentContainer: _seller!.containerNumber,
-    ),
-  ));
-  if (updated == true) _loadSeller();
-},
-  icon: const Icon(Icons.edit, color: Colors.white, size: 20),
-  padding: EdgeInsets.zero,
-  constraints: const BoxConstraints(),
-),
-
+                      Expanded(
+                          child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                            Text(_seller!.shopName,
+                                style: AppTextStyles.headingSmall
+                                    .copyWith(color: Colors.white)),
+                            const SizedBox(height: 4),
+                            Text(_seller!.name,
+                                style: AppTextStyles.labelMedium
+                                    .copyWith(color: Colors.white70)),
+                          ])),
+                      IconButton(
+                        onPressed: () async {
+                          final updated = await Navigator.push<bool>(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => SellerEditProfileScreen(
+                                  currentName: _seller!.name,
+                                  currentShopName: _seller!.shopName,
+                                  currentContainer: _seller!.containerNumber,
+                                ),
+                              ));
+                          if (updated == true) _loadSeller();
+                        },
+                        icon: const Icon(Icons.edit,
+                            color: Colors.white, size: 20),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
                     ]),
                     const SizedBox(height: 16),
                     const Divider(color: Colors.white24),
@@ -410,149 +472,169 @@ IconButton(
                     Row(children: [
                       const Icon(Icons.phone, color: Colors.white70, size: 16),
                       const SizedBox(width: 6),
-                      Text(_seller!.phone, style: AppTextStyles.labelMedium.copyWith(color: Colors.white)),
+                      Text(_seller!.phone,
+                          style: AppTextStyles.labelMedium
+                              .copyWith(color: Colors.white)),
                     ]),
                   ],
                 ),
               ),
               const SizedBox(height: 24),
 
+              GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SellerRulesScreen()),
+                ),
+                child: Container(
+                  width: double.infinity,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: cardBg,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: const Color(0xFFD97706).withOpacity(0.5),
+                    ),
+                    boxShadow: isDark
+                        ? []
+                        : [
+                            BoxShadow(
+                              color: const Color(0xFFD97706).withOpacity(0.08),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                  ),
+                  child: Row(
+                    children: [
+                      // ── Сол жак иконка ──
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFD97706).withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        alignment: Alignment.center,
+                        child: const Text('📋', style: TextStyle(fontSize: 22)),
+                      ),
+                      const SizedBox(width: 14),
 
-GestureDetector(
-  onTap: () => Navigator.push(
-    context,
-    MaterialPageRoute(builder: (_) => const SellerRulesScreen()),
-  ),
-  child: Container(
-    width: double.infinity,
-    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-    decoration: BoxDecoration(
-      color: cardBg,
-      borderRadius: BorderRadius.circular(14),
-      border: Border.all(
-        color: const Color(0xFFD97706).withOpacity(0.5),
-      ),
-      boxShadow: isDark
-          ? []
-          : [
-              BoxShadow(
-                color: const Color(0xFFD97706).withOpacity(0.08),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-    ),
-    child: Row(
-      children: [
-        // ── Сол жак иконка ──
-        Container(
-          width: 42, height: 42,
-          decoration: BoxDecoration(
-            color: const Color(0xFFD97706).withOpacity(0.12),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          alignment: Alignment.center,
-          child: const Text('📋', style: TextStyle(fontSize: 22)),
-        ),
-        const SizedBox(width: 14),
+                      // ── Текст ──
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              loc.get('rules_btn_title'),
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: p.text,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              loc.get('rules_btn_sub'),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.grey500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
 
-        // ── Текст ──
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                loc.get('rules_btn_title'),
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: p.text,
+                      // ── Оң жак жебе ──
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFD97706).withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          size: 14,
+                          color: Color(0xFFD97706),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 3),
-              Text(
-                loc.get('rules_btn_sub'),
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.grey500,
-                ),
-              ),
-            ],
-          ),
-        ),
 
-        // ── Оң жак жебе ──
-        Container(
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: const Color(0xFFD97706).withOpacity(0.12),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Icon(
-            Icons.arrow_forward_ios_rounded,
-            size: 14,
-            color: Color(0xFFD97706),
-          ),
-        ),
-      ],
-    ),
-  ),
-),
-
-const SizedBox(height: 20),
-
-
+              const SizedBox(height: 20),
 
               Text(loc.get('dash_manage'),
-                  style: AppTextStyles.headingSmall.copyWith(color: sectionColor)),
+                  style:
+                      AppTextStyles.headingSmall.copyWith(color: sectionColor)),
               const SizedBox(height: 12),
 
               _buildMenuItem(context,
-                icon: '📦', title: loc.get('my_products'), subtitle: loc.get('dash_products_sub'),
-                onTap: () => Navigator.push(context, MaterialPageRoute(
-                    builder: (_) => SellerProductScreen(sellerUid: _seller!.uid, shopName: _seller!.shopName)))),
-              const SizedBox(height: 10),
-
-             _buildMenuItem(context,
-  icon: '📊', title: loc.get('dash_stats'), subtitle: loc.get('dash_stats_sub'),
-  onTap: () => _showSnack(loc.get('coming_soon'))),
-              const SizedBox(height: 10),
-
-              _buildMenuItem(context,
-                icon: '📍', title: loc.get('dash_location'), subtitle: loc.get('dash_location_sub'),
-                onTap: () async {
-                  await Navigator.push(context, MaterialPageRoute(
-                      builder: (_) => LocationPickerScreen(
-                        shopName: _seller!.shopName, sellerUid: _seller!.uid,
-                        initialLat: _seller!.latitude, initialLng: _seller!.longitude,
-                      )));
-                  _loadSeller();
-                }),
+                  icon: '📦',
+                  title: loc.get('my_products'),
+                  subtitle: loc.get('dash_products_sub'),
+                  onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => SellerProductScreen(
+                              sellerUid: _seller!.uid,
+                              shopName: _seller!.shopName)))),
               const SizedBox(height: 10),
 
               _buildMenuItem(context,
-                icon: '🕐', title: loc.get('dash_hours'),
-                subtitle: '$_workDays  $_workStart — $_workEnd',
-                onTap: () async {
-                  final saved = await showModalBottomSheet<bool>(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (_) => WorkingHoursSheet(
-                      sellerUid: widget.uid, initialStart: _workStart,
-                      initialEnd: _workEnd, initialDays: _workDays,
-                    ),
-                  );
-                  if (saved == true) _loadSeller();
-                }),
+                  icon: '📊',
+                  title: loc.get('dash_stats'),
+                  subtitle: loc.get('dash_stats_sub'),
+                  onTap: () => _showSnack(loc.get('coming_soon'))),
+              const SizedBox(height: 10),
+
+              _buildMenuItem(context,
+                  icon: '📍',
+                  title: loc.get('dash_location'),
+                  subtitle: loc.get('dash_location_sub'), onTap: () async {
+                await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => LocationPickerScreen(
+                              shopName: _seller!.shopName,
+                              sellerUid: _seller!.uid,
+                              initialLat: _seller!.latitude,
+                              initialLng: _seller!.longitude,
+                            )));
+                _loadSeller();
+              }),
+              const SizedBox(height: 10),
+
+              _buildMenuItem(context,
+                  icon: '🕐',
+                  title: loc.get('dash_hours'),
+                  subtitle: '$_workDays  $_workStart — $_workEnd',
+                  onTap: () async {
+                final saved = await showModalBottomSheet<bool>(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (_) => WorkingHoursSheet(
+                    sellerUid: widget.uid,
+                    initialStart: _workStart,
+                    initialEnd: _workEnd,
+                    initialDays: _workDays,
+                  ),
+                );
+                if (saved == true) _loadSeller();
+              }),
               const SizedBox(height: 10),
 
               _buildChatMenuItem(loc, cardBg),
               const SizedBox(height: 10),
 
-             _buildMenuItem(context,
-  icon: '📞', title: loc.get('dash_change_phone'), subtitle: loc.get('dash_change_phone_sub'),
-  onTap: () => _showChangePhoneSheet()),
+              _buildMenuItem(context,
+                  icon: '📞',
+                  title: loc.get('dash_change_phone'),
+                  subtitle: loc.get('dash_change_phone_sub'),
+                  onTap: () => _showChangePhoneSheet()),
               const SizedBox(height: 10),
 
               // _buildSubscriptionButton(loc, isDark),
@@ -567,36 +649,51 @@ const SizedBox(height: 20),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: contactBorder),
                 ),
-                child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const Text('💬', style: TextStyle(fontSize: 22)),
-                  const SizedBox(width: 12),
-                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(loc.get('dash_contact_title'),
-                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF16A34A))),
-                    const SizedBox(height: 4),
-                    Text(loc.get('dash_contact_desc'),
-                        style: TextStyle(fontSize: 13, color: contactText)),
-                    const SizedBox(height: 6),
-                    const Text('+996221000330',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF16A34A))),
-                  ])),
-                ]),
+                child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('💬', style: TextStyle(fontSize: 22)),
+                      const SizedBox(width: 12),
+                      Expanded(
+                          child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                            Text(loc.get('dash_contact_title'),
+                                style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF16A34A))),
+                            const SizedBox(height: 4),
+                            Text(loc.get('dash_contact_desc'),
+                                style: TextStyle(
+                                    fontSize: 13, color: contactText)),
+                            const SizedBox(height: 6),
+                            const Text('+996221000330',
+                                style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF16A34A))),
+                          ])),
+                    ]),
               ),
 
               // ── Админден билдирүүлөр ──
-            SellerAdminChatBanner(isDark: isDark, sellerUid: _seller!.uid),
-const SizedBox(height: 16),
+              SellerAdminChatBanner(isDark: isDark, sellerUid: _seller!.uid),
+              const SizedBox(height: 16),
 
               SizedBox(
-                width: double.infinity, height: 50,
+                width: double.infinity,
+                height: 50,
                 child: OutlinedButton(
                   onPressed: _logout,
                   style: OutlinedButton.styleFrom(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
                     side: const BorderSide(color: AppColors.error, width: 1.5),
                   ),
                   child: Text('🚪  ${loc.get('sign_out')}',
-                      style: AppTextStyles.labelLarge.copyWith(color: AppColors.error)),
+                      style: AppTextStyles.labelLarge
+                          .copyWith(color: AppColors.error)),
                 ),
               ),
               const SizedBox(height: 16),
@@ -667,101 +764,124 @@ const SizedBox(height: 16),
   // }
 
   Widget _buildChatMenuItem(AppLocalizations loc, Color cardBg) {
-  return StreamBuilder<List<ChatModel>>(
-    stream: _chatService.sellerChatsStream(_seller!.uid),
-    builder: (context, snap) {
-      final cp          = DDPalette.of(context);
-      final chats       = snap.data ?? [];
-    final totalUnread = chats.fold<int>(
-  0, (sum, chat) => sum + (chat.sellerUnread as num).toInt(),
-);
-      final titleColor = cp.text;
+    return StreamBuilder<List<ChatModel>>(
+      stream: _chatService.sellerChatsStream(_seller!.uid),
+      builder: (context, snap) {
+        final cp = DDPalette.of(context);
+        final chats = snap.data ?? [];
+        final totalUnread = chats.fold<int>(
+          0,
+          (sum, chat) => sum + (chat.sellerUnread as num).toInt(),
+        );
+        final titleColor = cp.text;
 
-      return GestureDetector(
-        onTap: () => Navigator.push(context, MaterialPageRoute(
-            builder: (_) => ChatListScreen(isSeller: true, sellerId: _seller!.uid))),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: cardBg,
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: [BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            )],
-          ),
-          child: Row(children: [
-            Stack(clipBehavior: Clip.none, children: [
-              const Text('💬', style: TextStyle(fontSize: 28)),
-              if (totalUnread > 0)
-                Positioned(
-                  top: -6, right: -8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: AppColors.error,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.white, width: 1.5),
-                    ),
-                    child: Text(
-                      totalUnread > 99 ? '99+' : '$totalUnread',
-                      style: const TextStyle(
-                        color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold,
+        return GestureDetector(
+          onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (_) =>
+                      ChatListScreen(isSeller: true, sellerId: _seller!.uid))),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: cardBg,
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                )
+              ],
+            ),
+            child: Row(children: [
+              Stack(clipBehavior: Clip.none, children: [
+                const Text('💬', style: TextStyle(fontSize: 28)),
+                if (totalUnread > 0)
+                  Positioned(
+                    top: -6,
+                    right: -8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.error,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.white, width: 1.5),
+                      ),
+                      child: Text(
+                        totalUnread > 99 ? '99+' : '$totalUnread',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
-                ),
-            ]),
-            const SizedBox(width: 14),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(children: [
-                Text(loc.get('dash_messages'),
-                    style: AppTextStyles.labelLarge.copyWith(color: titleColor)),
-                if (totalUnread > 0) ...[
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: AppColors.error,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      '$totalUnread ${loc.get('dash_new')}',
-                      style: const TextStyle(
-                        color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
               ]),
-              const SizedBox(height: 2),
-              Text(
-                totalUnread > 0
-                    ? '$totalUnread ${loc.get('dash_unread')}'
-                    : loc.get('dash_chat_with_customers'),
-                style: AppTextStyles.labelSmall.copyWith(
-                  color: totalUnread > 0 ? AppColors.error : AppColors.grey500,
-                  fontWeight: totalUnread > 0 ? FontWeight.w600 : FontWeight.normal,
-                ),
-              ),
-            ])),
-            const Icon(Icons.arrow_forward_ios, color: AppColors.grey400, size: 16),
-          ]),
-        ),
-      );
-    },
-  );
-}
+              const SizedBox(width: 14),
+              Expanded(
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                    Row(children: [
+                      Text(loc.get('dash_messages'),
+                          style: AppTextStyles.labelLarge
+                              .copyWith(color: titleColor)),
+                      if (totalUnread > 0) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.error,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            '$totalUnread ${loc.get('dash_new')}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ]),
+                    const SizedBox(height: 2),
+                    Text(
+                      totalUnread > 0
+                          ? '$totalUnread ${loc.get('dash_unread')}'
+                          : loc.get('dash_chat_with_customers'),
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: totalUnread > 0
+                            ? AppColors.error
+                            : AppColors.grey500,
+                        fontWeight: totalUnread > 0
+                            ? FontWeight.w600
+                            : FontWeight.normal,
+                      ),
+                    ),
+                  ])),
+              const Icon(Icons.arrow_forward_ios,
+                  color: AppColors.grey400, size: 16),
+            ]),
+          ),
+        );
+      },
+    );
+  }
 
-  Widget _buildMenuItem(BuildContext context, {
+  Widget _buildMenuItem(
+    BuildContext context, {
     required String icon,
     required String title,
     required String subtitle,
     required VoidCallback onTap,
   }) {
-    final p          = DDPalette.of(context);
-    final cardBg     = p.card;
+    final p = DDPalette.of(context);
+    final cardBg = p.card;
     final titleColor = p.text;
 
     return GestureDetector(
@@ -771,17 +891,32 @@ const SizedBox(height: 16),
         decoration: BoxDecoration(
           color: cardBg,
           borderRadius: BorderRadius.circular(14),
-          boxShadow: p.isDark ? [] : [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
+          boxShadow: p.isDark
+              ? []
+              : [
+                  BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2))
+                ],
         ),
         child: Row(children: [
           Text(icon, style: const TextStyle(fontSize: 26)),
           const SizedBox(width: 14),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(title, style: AppTextStyles.labelLarge.copyWith(color: titleColor)),
-            const SizedBox(height: 2),
-            Text(subtitle, style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey500, fontSize: 12)),
-          ])),
-          const Icon(Icons.arrow_forward_ios, color: AppColors.grey400, size: 16),
+          Expanded(
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                Text(title,
+                    style:
+                        AppTextStyles.labelLarge.copyWith(color: titleColor)),
+                const SizedBox(height: 2),
+                Text(subtitle,
+                    style: AppTextStyles.labelSmall
+                        .copyWith(color: AppColors.grey500, fontSize: 12)),
+              ])),
+          const Icon(Icons.arrow_forward_ios,
+              color: AppColors.grey400, size: 16),
         ]),
       ),
     );
@@ -794,15 +929,15 @@ const SizedBox(height: 16),
 class _AdminNotificationsBanner extends StatefulWidget {
   final bool isDark;
   final String sellerUid;
-  const _AdminNotificationsBanner({required this.isDark, required this.sellerUid});
+  const _AdminNotificationsBanner(
+      {required this.isDark, required this.sellerUid});
 
   @override
   State<_AdminNotificationsBanner> createState() =>
       _AdminNotificationsBannerState();
 }
 
-class _AdminNotificationsBannerState
-    extends State<_AdminNotificationsBanner> {
+class _AdminNotificationsBannerState extends State<_AdminNotificationsBanner> {
   int _count = 0;
   bool _loaded = false;
 
@@ -833,16 +968,18 @@ class _AdminNotificationsBannerState
   @override
   Widget build(BuildContext context) {
     final isDark = widget.isDark;
-    final p      = DDPalette.of(context);
+    final p = DDPalette.of(context);
     final isRu = AppLocalizations.of(context).locale.languageCode == 'ru';
     final cardBg = isDark ? const Color(0xFF1E1A2E) : const Color(0xFFFFF8F0);
-    final borderColor = const Color(0xFFD97706).withOpacity(isDark ? 0.4 : 0.35);
+    final borderColor =
+        const Color(0xFFD97706).withOpacity(isDark ? 0.4 : 0.35);
 
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
         MaterialPageRoute(
-            builder: (_) => SellerNotificationsScreen(sellerUid: widget.sellerUid)),
+            builder: (_) =>
+                SellerNotificationsScreen(sellerUid: widget.sellerUid)),
       ),
       child: Container(
         width: double.infinity,
@@ -916,7 +1053,9 @@ class _AdminNotificationsBannerState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    isRu ? 'Уведомления от администратора' : 'Админден билдирүүлөр',
+                    isRu
+                        ? 'Уведомления от администратора'
+                        : 'Админден билдирүүлөр',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
@@ -926,8 +1065,12 @@ class _AdminNotificationsBannerState
                   const SizedBox(height: 3),
                   Text(
                     _loaded && _count > 0
-                        ? (isRu ? 'Есть $_count уведомлений' : '$_count билдирүү бар')
-                        : (isRu ? 'Читайте новые уведомления здесь' : 'Жаңы билдирүүлөрдү бул жерден окуңуз'),
+                        ? (isRu
+                            ? 'Есть $_count уведомлений'
+                            : '$_count билдирүү бар')
+                        : (isRu
+                            ? 'Читайте новые уведомления здесь'
+                            : 'Жаңы билдирүүлөрдү бул жерден окуңуз'),
                     style: const TextStyle(
                       fontSize: 12,
                       color: AppColors.grey500,
