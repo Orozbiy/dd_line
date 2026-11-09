@@ -26,7 +26,7 @@ class TermsMenuItem extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(child: Text(loc.get('terms'),
                 style: AppTextStyles.bodyMedium.copyWith(color: textColor))),
-            Image.asset('assets/icons/settings/ic_chevron_right.png',
+            Image.asset('assets/icons/settings/ic_chevron_right.png', color: const Color(0xFF6B7280),
                 width: 20, height: 20, color: AppColors.grey300),
           ],
         ),

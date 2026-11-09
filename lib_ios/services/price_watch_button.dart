@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../config/theme/app_colors.dart';
-import '../../../config/theme/app_text_styles.dart';
-import '../../../core/supabase_client.dart';
+import '../config/theme/app_colors.dart';
+import '../config/theme/app_text_styles.dart';
+import '../core/supabase_client.dart';
 
 class PriceWatchButton extends StatefulWidget {
   final String productId;

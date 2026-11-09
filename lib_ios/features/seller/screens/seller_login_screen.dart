@@ -11,6 +11,7 @@ import 'seller_dashboard_screen.dart';
 import 'seller_pending_screen.dart';
 import 'seller_register_screen.dart';
 import '../../home/screens/home_screen.dart';
+import '../../../core/seller_session_service.dart';
 
 void unawaited(Future<void> future) {
   future.catchError((e) => debugPrint('⚠️ unawaited ката: $e'));
@@ -137,6 +138,7 @@ class _SellerLoginScreenState extends State<SellerLoginScreen> {
       } else {
         // ✅ Active — токенди жаңырт + dashboard
         unawaited(NotificationService().saveMyToken());
+        await SellerSessionService.instance.saveSession(seller.uid);
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (_) => SellerDashboardScreen(uid: seller.uid)),

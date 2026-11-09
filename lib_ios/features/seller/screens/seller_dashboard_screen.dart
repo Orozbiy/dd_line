@@ -11,6 +11,8 @@ import '../../chat/services/chat_service.dart';
 import 'location_picker_screen.dart';
 import '../../../core/supabase_client.dart';
 import 'seller_login_screen.dart';
+import 'seller_entrance_screen.dart';
+import '../../../core/seller_session_service.dart';
 import '../../home/screens/home_screen.dart';
 import 'seller_close_account_screen.dart';
 import '../widgets/working_hours_sheet.dart';
@@ -99,9 +101,10 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
             onPressed: () async {
               Navigator.pop(context);
               await supabase.auth.signOut();
+              await SellerSessionService.instance.clearSession();
               if (!mounted) return;
               Navigator.pushAndRemoveUntil(context,
-                  MaterialPageRoute(builder: (_) => const SellerLoginScreen()),
+                  MaterialPageRoute(builder: (_) => const SellerEntranceScreen()),
                   (route) => false);
             },
             child: Text(loc.get('yes'), style: const TextStyle(color: AppColors.error)),

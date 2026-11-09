@@ -78,7 +78,7 @@ class _CacheMenuItemState extends State<CacheMenuItem> {
               Text(_appVersion,
                   style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey400)),
             const SizedBox(width: 8),
-            Image.asset('assets/icons/settings/ic_chevron_right.png',
+            Image.asset('assets/icons/settings/ic_chevron_right.png', color: const Color(0xFF6B7280),
                 width: 20, height: 20, color: AppColors.grey300),
           ],
         ),

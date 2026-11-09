@@ -97,7 +97,7 @@ class SettingsScreen extends StatelessWidget {
                             ),
                           ],
                         ),
-                        child: Image.asset('assets/icons/settings/ic_profile.png', width: 46, height: 46, fit: BoxFit.cover),
+                        child: Padding(padding: const EdgeInsets.all(6), child: Image.asset('assets/icons/settings/ic_profile.png', fit: BoxFit.contain)),
                       ),
                       const SizedBox(width: 14),
                       Expanded(
@@ -195,8 +195,9 @@ class SettingsScreen extends StatelessWidget {
                         child: Row(
                           children: [
                             Image.asset(
-                              'assets/icons/settings/ic_notifications.png',
+                              'assets/icons/settings/ic_suggestion.png',
                               width: 36, height: 36, fit: BoxFit.contain,
+                              color: const Color(0xFF6B7280),
                             ),
                             const SizedBox(width: 12),
                             Expanded(

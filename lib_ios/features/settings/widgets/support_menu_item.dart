@@ -42,11 +42,11 @@ class SupportMenuItem extends StatelessWidget {
           children: [
             Image.asset(
               'assets/icons/settings/ic_support.png',
-              width: 36, height: 36, fit: BoxFit.contain,
+              width: 36, height: 36, fit: BoxFit.contain, color: const Color(0xFF6B7280),
             ),
             const SizedBox(width: 12),
             Expanded(child: Text(loc.get('support'), style: AppTextStyles.bodyMedium)),
-            Image.asset('assets/icons/settings/ic_chevron_right.png',
+            Image.asset('assets/icons/settings/ic_chevron_right.png', color: const Color(0xFF6B7280),
                 width: 20, height: 20, color: AppColors.grey300),
           ],
         ),
