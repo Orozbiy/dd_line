@@ -1,12 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 import 'dart:ui';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
-import '../../../config/theme/dd_design.dart';
 import '../../../core/app_localizations.dart';
 import '../../../core/supabase_client.dart';
 import '../../../core/utils/image_utils.dart';
@@ -410,7 +411,7 @@ Future<void> _markRead() async {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final confirm = await showDialog<bool>(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.35),
+      barrierColor: Colors.black.withValues(alpha: 0.35),
       builder: (_) => Dialog(
         backgroundColor: Colors.transparent,
         child: ClipRRect(
@@ -421,13 +422,13 @@ Future<void> _markRead() async {
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: isDark
-                    ? Colors.black.withOpacity(0.55)
-                    : Colors.white.withOpacity(0.65),
+                    ? Colors.black.withValues(alpha: 0.55)
+                    : Colors.white.withValues(alpha: 0.65),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: isDark
-                      ? Colors.white.withOpacity(0.15)
-                      : Colors.black.withOpacity(0.08),
+                      ? Colors.white.withValues(alpha: 0.15)
+                      : Colors.black.withValues(alpha: 0.08),
                 ),
               ),
               child: Column(
@@ -591,15 +592,15 @@ Future<void> _markRead() async {
           child: Container(
             decoration: BoxDecoration(
               color: isDark
-                  ? Colors.black.withOpacity(0.55)
-                  : Colors.white.withOpacity(0.60),
+                  ? Colors.black.withValues(alpha: 0.55)
+                  : Colors.white.withValues(alpha: 0.60),
               borderRadius:
                   const BorderRadius.vertical(top: Radius.circular(20)),
               border: Border(
                 top: BorderSide(
                   color: isDark
-                      ? Colors.white.withOpacity(0.12)
-                      : Colors.black.withOpacity(0.08),
+                      ? Colors.white.withValues(alpha: 0.12)
+                      : Colors.black.withValues(alpha: 0.08),
                 ),
               ),
             ),
@@ -613,7 +614,7 @@ Future<void> _markRead() async {
                       height: 4,
                       decoration: BoxDecoration(
                           color: isDark
-                              ? Colors.white.withOpacity(0.25)
+                              ? Colors.white.withValues(alpha: 0.25)
                               : AppColors.grey300,
                           borderRadius: BorderRadius.circular(2))),
                   const SizedBox(height: 12),
@@ -702,15 +703,15 @@ Future<void> _sendVoiceMessage(String path, int durationSeconds) async {
   if (myId == null) return;
   setState(() => _isSendingImage = true);
   try {
-    final file = File(path);
-    final bytes = await file.readAsBytes();
+    final Uint8List bytes = await File(path).readAsBytes();
 
     String? url;
     try {
       url = await YandexStorageService.instance.uploadAudio(
         bytes,
         folder: 'chat_audio',
-        filename: 'audio_${DateTime.now().millisecondsSinceEpoch}.m4a',
+        filename: 'audio_\${DateTime.now().millisecondsSinceEpoch}.m4a',
+        contentType: 'audio/m4a',
       );
     } catch (e) {
       if (mounted) {
@@ -1028,21 +1029,20 @@ Future<void> _sendVoiceMessage(String path, int durationSeconds) async {
     final myId = _myId;
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final _p     = DDPalette.of(context);
-    final cardColor = _p.card;
+    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
 
     final glassAppBarBg = isDark
-        ? Colors.black.withOpacity(0.45)
-        : Colors.white.withOpacity(0.60);
+        ? Colors.black.withValues(alpha: 0.45)
+        : Colors.white.withValues(alpha: 0.60);
     final glassBottomBg = isDark
-        ? Colors.black.withOpacity(0.40)
-        : Colors.white.withOpacity(0.55);
+        ? Colors.black.withValues(alpha: 0.40)
+        : Colors.white.withValues(alpha: 0.55);
     final glassInputFill = isDark
-        ? Colors.white.withOpacity(0.10)
-        : Colors.black.withOpacity(0.06);
+        ? Colors.white.withValues(alpha: 0.10)
+        : Colors.black.withValues(alpha: 0.06);
     final glassButtonBg = isDark
-        ? Colors.white.withOpacity(0.12)
-        : Colors.black.withOpacity(0.08);
+        ? Colors.white.withValues(alpha: 0.12)
+        : Colors.black.withValues(alpha: 0.08);
 
     return Stack(
       children: [
@@ -1126,7 +1126,9 @@ Future<void> _sendVoiceMessage(String path, int durationSeconds) async {
                                     // ак болуп, ак фондо көрүнбөй калып
                                     // калчу)
                                     style: AppTextStyles.labelLarge.copyWith(
-                                      color: _p.text,
+                                      color: isDark
+                                          ? Colors.white
+                                          : AppColors.black,
                                       fontWeight: FontWeight.w700,
                                     ),
                                     overflow: TextOverflow.ellipsis,
@@ -1267,9 +1269,9 @@ Future<void> _sendVoiceMessage(String path, int durationSeconds) async {
                               border: Border(
                                   top: BorderSide(
                                       color: isDark
-                                          ? Colors.white.withOpacity(0.12)
+                                          ? Colors.white.withValues(alpha: 0.12)
                                           : Colors.black
-                                              .withOpacity(0.08))),
+                                              .withValues(alpha: 0.08))),
                             ),
                             child: Row(
                               children: [
@@ -1326,8 +1328,8 @@ Future<void> _sendVoiceMessage(String path, int durationSeconds) async {
                               border: Border(
                                 top: BorderSide(
                                   color: isDark
-                                      ? Colors.white.withOpacity(0.10)
-                                      : Colors.black.withOpacity(0.07),
+                                      ? Colors.white.withValues(alpha: 0.10)
+                                      : Colors.black.withValues(alpha: 0.07),
                                 ),
                               ),
                             ),
@@ -1354,8 +1356,10 @@ Future<void> _sendVoiceMessage(String path, int durationSeconds) async {
                                                   BorderRadius.circular(22),
                                               border: Border.all(
                                                 color: isDark
-                                                    ? Colors.white.withOpacity(0.15)
-                                                    : Colors.black.withOpacity(0.10),
+                                                    ? Colors.white.withValues(
+                                                        alpha: 0.15)
+                                                    : Colors.black.withValues(
+                                                        alpha: 0.10),
                                               )),
                                           child: const Icon(
                                               Icons.image_outlined,
@@ -1373,7 +1377,7 @@ Future<void> _sendVoiceMessage(String path, int durationSeconds) async {
                                     onSubmitted: (_) => _send(),
                                     // ← Жазылган текст күндүзгү/түнкү режимде ар дайым көрүнүктүү
                                     style: TextStyle(
-                                      color: _p.text,
+                                      color: isDark ? Colors.white : AppColors.black,
                                       fontSize: 15,
                                     ),
                                     cursorColor: AppColors.primary,
@@ -1381,7 +1385,7 @@ Future<void> _sendVoiceMessage(String path, int durationSeconds) async {
                                       hintText: loc.get('chat_hint'),
                                       hintStyle: TextStyle(
                                         color: isDark
-                                            ? Colors.white.withOpacity(0.45)
+                                            ? Colors.white.withValues(alpha: 0.45)
                                             : AppColors.grey400,
                                       ),
                                       filled: true,
@@ -1395,9 +1399,9 @@ Future<void> _sendVoiceMessage(String path, int durationSeconds) async {
                                           borderSide: BorderSide(
                                             color: isDark
                                                 ? Colors.white
-                                                    .withOpacity(0.15)
+                                                    .withValues(alpha: 0.15)
                                                 : Colors.black
-                                                    .withOpacity(0.10),
+                                                    .withValues(alpha: 0.10),
                                           )),
                                       enabledBorder: OutlineInputBorder(
                                           borderRadius:
@@ -1405,9 +1409,9 @@ Future<void> _sendVoiceMessage(String path, int durationSeconds) async {
                                           borderSide: BorderSide(
                                             color: isDark
                                                 ? Colors.white
-                                                    .withOpacity(0.15)
+                                                    .withValues(alpha: 0.15)
                                                 : Colors.black
-                                                    .withOpacity(0.10),
+                                                    .withValues(alpha: 0.10),
                                           )),
                                       focusedBorder: OutlineInputBorder(
                                           borderRadius:

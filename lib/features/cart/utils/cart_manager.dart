@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../../../data/models/product_model.dart';
+import '../../../data/models/product_model.dart';
 
 class CartItem {
   final ProductModel product;

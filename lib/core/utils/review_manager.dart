@@ -12,28 +12,22 @@ class ReviewManager {
 
   static const _table = 'reviews';
 
-  // ── Жылдыз + комментарий сактоо ──────────────────────────────────────────
+  // ── Жылдыз сактоо ─────────────────────────────────────────────────────────
   Future<void> submitRating({
     required String productId,
     required int rating,
-    String? comment,
   }) async {
     final user = supabase.auth.currentUser;
     if (user == null) return;
 
-    final data = <String, dynamic>{
+    // 1) reviews таблицасына сактоо (ар бир колдонуучу 1 рейтинг — upsert)
+    await supabase.from(_table).upsert({
       'product_id': productId,
       'user_id': user.id,
       'rating': rating,
-    };
-    if (comment != null && comment.isNotEmpty) {
-      data['comment'] = comment;
-    }
+    }, onConflict: 'product_id,user_id');
 
-    // 1) reviews таблицасына сактоо (upsert)
-    await supabase.from(_table).upsert(data, onConflict: 'product_id,user_id');
-
-    // 2) Орточо рейтингди жаңыртуу
+    // 2) Орточо рейтингди эсептеп products'та жаңыртуу
     await _updateProductRating(productId);
   }
 
@@ -59,40 +53,6 @@ class ReviewManager {
       }).eq('id', productId);
     } catch (e) {
       // ignore
-    }
-  }
-
-  // ── Пикирлерди алуу (список) ──────────────────────────────────────────────
-  Future<List<Map<String, dynamic>>> getReviews(String productId) async {
-    try {
-      final rows = await supabase
-          .from(_table)
-          .select('rating, comment, user_id, created_at')
-          .eq('product_id', productId)
-          .not('comment', 'is', null)
-          .neq('comment', '')
-          .order('created_at', ascending: false)
-          .limit(20);
-      return List<Map<String, dynamic>>.from(rows as List);
-    } catch (_) {
-      return [];
-    }
-  }
-
-  // ── Учурдагы колдонуучунун рейтинги + комментарийи ───────────────────────
-  Future<Map<String, dynamic>?> getUserRatingAndComment(String productId) async {
-    final user = supabase.auth.currentUser;
-    if (user == null) return null;
-    try {
-      final row = await supabase
-          .from(_table)
-          .select('rating, comment')
-          .eq('product_id', productId)
-          .eq('user_id', user.id)
-          .maybeSingle();
-      return row;
-    } catch (_) {
-      return null;
     }
   }
 

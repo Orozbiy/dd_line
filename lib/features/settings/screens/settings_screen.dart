@@ -21,18 +21,17 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final p          = DDPalette.of(context);
-    final isDark     = p.isDark;
+    final isDark     = Theme.of(context).brightness == Brightness.dark;
     final loc        = AppLocalizations.of(context);
-    final divColor   = p.divider;
-    final textColor  = p.text;
-    final subColor   = p.subText;
+    final divColor   = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFEEEEEE);
+    final textColor  = isDark ? Colors.white : AppColors.black;
+    final subColor   = isDark ? const Color(0xFFAAAAAA) : AppColors.grey500;
     final cardBg     = isDark
-        ? Colors.white.withOpacity(0.06)
-        : Colors.white.withOpacity(0.55);
+        ? Colors.white.withValues(alpha: 0.06)
+        : Colors.white.withValues(alpha: 0.55);
     final cardBorder = isDark
-        ? Colors.white.withOpacity(0.10)
-        : Colors.white.withOpacity(0.80);
+        ? Colors.white.withValues(alpha: 0.10)
+        : Colors.white.withValues(alpha: 0.80);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -45,8 +44,8 @@ class SettingsScreen extends StatelessWidget {
             filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
             child: Container(
               color: isDark
-                  ? Colors.black.withOpacity(0.30)
-                  : Colors.white.withOpacity(0.40),
+                  ? Colors.black.withValues(alpha: 0.30)
+                  : Colors.white.withValues(alpha: 0.40),
             ),
           ),
         ),
@@ -90,14 +89,14 @@ class SettingsScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(14),
                           boxShadow: [
                             BoxShadow(
-                              color: DD.accent.withOpacity(0.35),
+                              color: DD.accent.withValues(alpha: 0.35),
                               blurRadius: 12,
                               offset: const Offset(0, 4),
                               spreadRadius: -4,
                             ),
                           ],
                         ),
-                        child: Image.asset('assets/icons/settings/ic_profile.png', width: 46, height: 46, fit: BoxFit.cover),
+                        child: const Icon(Icons.person_rounded, color: Colors.white, size: 24),
                       ),
                       const SizedBox(width: 14),
                       Expanded(
@@ -119,9 +118,9 @@ class SettingsScreen extends StatelessWidget {
                           ],
                         ),
                       ),
-                      Image.asset(
-                        'assets/icons/settings/ic_chevron_right.png',
-                        width: 16, height: 16,
+                      Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 16,
                         color: isDark ? AppColors.grey500 : AppColors.grey400,
                       ),
                     ],
@@ -172,16 +171,16 @@ class SettingsScreen extends StatelessWidget {
                             child: Container(
                               decoration: BoxDecoration(
                                 color: isDark
-                                    ? Colors.black.withOpacity(0.55)
-                                    : Colors.white.withOpacity(0.60),
+                                    ? Colors.black.withValues(alpha: 0.55)
+                                    : Colors.white.withValues(alpha: 0.60),
                                 borderRadius: const BorderRadius.vertical(
                                   top: Radius.circular(24),
                                 ),
                                 border: Border(
                                   top: BorderSide(
                                     color: isDark
-                                        ? Colors.white.withOpacity(0.12)
-                                        : Colors.black.withOpacity(0.08),
+                                        ? Colors.white.withValues(alpha: 0.12)
+                                        : Colors.black.withValues(alpha: 0.08),
                                   ),
                                 ),
                               ),
@@ -194,10 +193,8 @@ class SettingsScreen extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         child: Row(
                           children: [
-                            Image.asset(
-                              'assets/icons/settings/ic_notifications.png',
-                              width: 36, height: 36, fit: BoxFit.contain,
-                            ),
+                            const Icon(Icons.chat_bubble_outline_rounded,
+                                color: DD.accent, size: 20),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
@@ -218,11 +215,8 @@ class SettingsScreen extends StatelessWidget {
                                 ],
                               ),
                             ),
-                            Image.asset(
-                              'assets/icons/settings/ic_chevron_right.png',
-                              width: 20, height: 20,
-                              color: AppColors.grey300,
-                            ),
+                            const Icon(Icons.chevron_right,
+                                color: AppColors.grey300, size: 20),
                           ],
                         ),
                       ),

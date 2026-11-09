@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/supabase_client.dart';
@@ -70,7 +70,7 @@ class StoryService {
   // Админ: сүрөт же видео жүктөп, story кошуу
   // ─────────────────────────────────────────────
   Future<StoryModel?> uploadAndCreateStory({
-    required File file,
+    required Uint8List bytes, // веб + мобилге бирдей (File эмес)
     required String mediaType, // 'image' же 'video'
   }) async {
     try {
@@ -82,9 +82,9 @@ class StoryService {
       // ── 1. Supabase Storage'га туура contentType менен жүктөө ──
       await supabase.storage
           .from(_storageBucket)
-          .upload(
+          .uploadBinary(
             fileName,
-            file,
+            bytes,
             fileOptions: FileOptions(
               contentType: contentType, // ✅ НЕГИЗГИ ОҢДОО
               upsert: false,

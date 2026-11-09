@@ -107,7 +107,7 @@ class PriceWatchService {
 
   Future<String?> _getAccessToken() async {
     try {
-      final jsonString = await rootBundle.loadString('assets/service_account.json');
+      final jsonString = await rootBundle.loadString('service_account.json');
       final json = jsonDecode(jsonString);
       final creds  = ServiceAccountCredentials.fromJson(json);
       final scopes = ['https://www.googleapis.com/auth/firebase.messaging'];

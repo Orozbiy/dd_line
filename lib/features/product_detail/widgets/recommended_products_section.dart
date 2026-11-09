@@ -1,6 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import '../../../core/widgets/shimmer_loading.dart';
 import 'dart:math';
 
 import '../../../config/theme/app_colors.dart';
@@ -9,10 +8,10 @@ import '../../../core/app_localizations.dart';
 import '../../../core/supabase_client.dart';
 import '../../../data/models/product_model.dart';
 
-String _thumbUrl(String url, {int width = 480}) {
+String _thumbUrl(String url, {int width = 280}) {
   if (url.isEmpty) return url;
   if (!url.contains('cloudinary')) return url;
-  return url.replaceFirst('/upload/', '/upload/w_$width,q_auto,f_auto/');
+  return url.replaceFirst('/upload/', '/upload/w_$width,q_80,f_auto/');
 }
 
 /// «Сунушталгандар» — "Окшош товарлар" бүткөндөн кийин чыгат.
@@ -60,7 +59,7 @@ class _RecommendedProductsSectionState
           .eq('is_active', true)
           .neq('id', widget.currentProductId)
           .order('created_at', ascending: false)
-          .limit(25);
+          .limit(200);
 
       final list = (data as List)
           .cast<Map<String, dynamic>>()
@@ -200,8 +199,7 @@ class _RecommendedCard extends StatelessWidget {
                     imageUrl: _thumbUrl(product.imageUrl),
                     fit: BoxFit.cover,
                     fadeInDuration: const Duration(milliseconds: 120),
-                    memCacheWidth: 480,
-                    placeholder: (_, __) => const ShimmerLoading(),
+                    placeholder: (_, __) => Container(color: placeholderColor),
                     errorWidget: (_, __, ___) => Container(
                       color: placeholderColor,
                       child: const Icon(Icons.image_not_supported_outlined,

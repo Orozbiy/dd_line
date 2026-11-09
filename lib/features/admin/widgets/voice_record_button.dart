@@ -162,7 +162,7 @@ class _VoiceRecordButtonState extends State<VoiceRecordButton> {
         padding: const EdgeInsets.symmetric(horizontal: 14),
         decoration: BoxDecoration(
           color: _isCancelling
-              ? AppColors.error.withOpacity(0.1)
+              ? AppColors.error.withValues(alpha: 0.1)
               : const Color(0xFFF7F7F7),
           borderRadius: BorderRadius.circular(22),
         ),

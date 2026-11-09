@@ -1,132 +1,90 @@
-import 'dart:convert';
-import 'dart:math';
-import 'package:crypto/crypto.dart';
-import 'package:sign_in_with_apple/sign_in_with_apple.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'supabase_client.dart';
 import '../services/notification_service.dart';
 import 'package:flutter/foundation.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'supabase_client.dart';
 
-/// Google Sign-In аркылуу Supabase Auth'ка кирүү/чыгуу логикасы.
-///
-/// Браузер (Custom Tab) аркылуу Google account picker ачылат,
-/// андан кийин deep link менен колдонмого кайтарылып, Supabase
-/// сессиясы автоматтык түзүлөт.
 class AuthService {
   AuthService._();
   static final AuthService instance = AuthService._();
 
-  /// Колдонмонун deep link redirect URL'и.
-  /// AndroidManifest.xml'деги intent-filter жана Supabase Dashboard'дагы
-  /// Redirect URLs менен так дал келиши керек.
-  static const String _redirectUrl = 'io.supabase.ddonline://login-callback/';
-
-  /// Учурдагы Supabase колдонуучусу (же null).
   User? get currentUser => supabase.auth.currentUser;
-
-  /// Колдонуучу кирген-кирбегенин текшерүү.
   bool get isSignedIn => currentUser != null;
-
-  /// Колдонуучунун auth абалынын өзгөрүүлөрүн угуу
-  /// (мис. OAuth callback аркылуу кирген учурда).
   Stream<AuthState> get authStateChanges => supabase.auth.onAuthStateChange;
 
-  /// Google аккаунту аркылуу Supabase'ге кирүү.
-  ///
-  /// Системалык браузерде Google account picker ачылат.
-  /// Натыйжа [authStateChanges] аркылуу [AuthChangeEvent.signedIn]
-  /// окуясы катары келет.
- Future<void> signInWithGoogle() async {
-  try {
-    await supabase.auth.signInWithOAuth(
-      OAuthProvider.google,
-      redirectTo: _redirectUrl,
-      authScreenLaunchMode: LaunchMode.externalApplication, // ✅ inAppWebView эмес
-      queryParams: const {
-        'prompt': 'select_account',
-        'access_type': 'offline',
-      },
-    );
-  } catch (e) {
-    throw AuthException('Кирүүдө ката кетти: $e');
-  }
-}
+  Future<void> signInWithGoogle() async {
+    try {
+      if (kIsWeb) {
+        // ВЕБ: браузер redirect аркылуу — эч кандай return жок,
+        // браузер автоматтык redirect болот
+        await supabase.auth.signInWithOAuth(
+          OAuthProvider.google,
+          redirectTo: 'https://dd-online-web.web.app',
+          authScreenLaunchMode: LaunchMode.externalApplication, 
+        );
+        // Бул жерге эч качан жетпейт — браузер redirect болот
+      } else {
+        // МОБИЛ: нативдүү Google Sign-In picker
+        final GoogleSignIn googleSignIn = GoogleSignIn(
+          scopes: ['email', 'profile'],
+          serverClientId:
+              '1069640136187-9kort80iuekr1jqj2rdd64m8ntug04uj.apps.googleusercontent.com',
+        );
 
-  /// Колдонуучу кирген соң профилди акыркы Google маалыматтары
-  /// менен синхрондоо (аты, сүрөтү, email).
-  ///
-  /// [authStateChanges] боюнча signedIn окуясынан кийин чакыруу керек.
-Future<void> syncProfile() async {
-  final user = currentUser;
-  if (user == null) return;
+        await googleSignIn.signOut();
 
-  final identity =
-      user.identities?.where((i) => i.provider == 'google').firstOrNull;
-  final data = identity?.identityData;
+        final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+        if (googleUser == null) return;
 
-  // Авто ат генерациялоо — профиль жок болсо
-  final autoName = data?['full_name'] as String?
-      ?? data?['name'] as String?
-      ?? user.email?.split('@').first
-      ?? 'Колдонуучу';
+        final GoogleSignInAuthentication googleAuth =
+            await googleUser.authentication;
 
-  final autoAvatar = data?['avatar_url'] as String?
-      ?? data?['picture'] as String?;
+        final idToken = googleAuth.idToken;
+        final accessToken = googleAuth.accessToken;
 
-  try {
-    await supabase.from('profiles').upsert({  // update → upsert
-      'id':            user.id,
-      'full_name':     autoName,
-      'avatar_url':    autoAvatar,
-      'email':         user.email,
-      'role':          'customer',
-      'last_active_at': DateTime.now().toIso8601String(),
-    }, onConflict: 'id');
-  } catch (e) {
-    debugPrint('syncProfile ката: $e');
+        if (idToken == null) {
+          throw Exception('Google ID токен алынган жок');
+        }
+
+        await supabase.auth.signInWithIdToken(
+          provider: OAuthProvider.google,
+          idToken: idToken,
+          accessToken: accessToken,
+        );
+      }
+    } catch (e) {
+      throw Exception('Кирүүдө ката кетти: $e');
+    }
   }
 
-  await NotificationService().saveMyToken();
-}
+  Future<void> syncProfile() async {
+    final user = currentUser;
+    if (user == null) return;
 
-  /// Apple аккаунту аркылуу Supabase'ге кирүү (iOS гана).
-  Future<void> signInWithApple() async {
-    // 1. nonce жаса — Apple жана Supabase экөөнө бирдей жиберилет
-    final rawNonce = _generateNonce();
-    final hashedNonce = sha256.convert(utf8.encode(rawNonce)).toString();
+    final identity =
+        user.identities?.where((i) => i.provider == 'google').firstOrNull;
+    final data = identity?.identityData;
 
-    // 2. Apple'дан credential ал
-    final credential = await SignInWithApple.getAppleIDCredential(
-      scopes: [
-        AppleIDAuthorizationScopes.email,
-        AppleIDAuthorizationScopes.fullName,
-      ],
-      nonce: hashedNonce,
-    );
+    try {
+      await supabase.from('profiles').update({
+        'full_name': data?['full_name'] ?? data?['name'],
+        'avatar_url': data?['avatar_url'] ?? data?['picture'],
+        'email': user.email,
+        'last_active_at': DateTime.now().toIso8601String(),
+      }).eq('id', user.id);
+    } catch (_) {}
 
-    final idToken = credential.identityToken;
-    if (idToken == null) throw AuthException('Apple identity token жок');
-
-    // 3. Supabase'ге кир
-    await supabase.auth.signInWithIdToken(
-      provider: OAuthProvider.apple,
-      idToken: idToken,
-      nonce: rawNonce,
-    );
+    // ВЕБ: push токен уруксат берилгенден кийин (Орнотуулар → Билдирүүлөр)
+    if (!kIsWeb) {
+      try {
+        NotificationService().saveMyToken();
+      } catch (_) {}
+    }
   }
 
-  /// Криптографиялык коопсуз nonce жасоо
-  String _generateNonce([int length = 32]) {
-    const charset = '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
-    final random = Random.secure();
-    return List.generate(length, (_) => charset[random.nextInt(charset.length)]).join();
-  }
-
-  /// Колдонуучунун ролун (customer/seller/admin) алуу.
   Future<String> getUserRole() async {
     final user = currentUser;
     if (user == null) return 'customer';
-
     try {
       final data = await supabase
           .from('profiles')
@@ -139,13 +97,15 @@ Future<void> syncProfile() async {
     }
   }
 
-  /// Тиркемеден чыгуу.
-  ///
-  /// Чыгаар алдында FCM push токенди 'push_tokens' таблицасынан
-  /// өчүрөт, антпесе эски колдонуучунун токенине жаны колдонуучунун
-  /// push-билдирүүлөрү жетип кетет.
   Future<void> signOut() async {
-    await NotificationService().clearMyToken();
+    try {
+      await NotificationService().clearMyToken();
+    } catch (_) {}
+    if (!kIsWeb) {
+      try {
+        await GoogleSignIn().signOut();
+      } catch (_) {}
+    }
     await supabase.auth.signOut();
   }
 }

@@ -86,9 +86,8 @@ class _FlashSaleScreenState extends State<FlashSaleScreen> {
   @override
   Widget build(BuildContext context) {
     final loc    = AppLocalizations.of(context);
-    final p      = DDPalette.of(context);
-    final isDark = p.isDark;
-    final bgColor = p.bg;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF121212) : const Color(0xFFF4F5F7);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -376,7 +375,6 @@ class _FlashCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fp         = DDPalette.of(context);
     final name       = item['title'] as String? ?? '';
     final images     = List<String>.from(item['images'] as List? ?? []);
     final imageUrl   = images.isNotEmpty ? images.first : '';
@@ -418,7 +416,7 @@ class _FlashCard extends StatelessWidget {
               // ── Карточка фону ──
               Container(
                 decoration: BoxDecoration(
-                  color: fp.card,
+                  color: isDark ? const Color(0xFF1A0A0A) : Colors.white,
                   border: Border.all(
                     color: isDark
                         ? const Color(0xFFDC2626).withOpacity(0.30)
@@ -455,11 +453,16 @@ class _FlashCard extends StatelessWidget {
                                 height: 140, width: double.infinity, fit: BoxFit.cover,
                                 placeholder: (_, __) => Container(
                                   height: 140,
-                                  color: fp.field,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(colors: isDark
+                                        ? [const Color(0xFF2A0A0A), const Color(0xFF1A0505)]
+                                        : [AppColors.grey100, AppColors.grey200],
+                                    ),
+                                  ),
                                 ),
-                                errorWidget: (_, __, ___) => Container(height: 140, color: fp.field, child: const Icon(Icons.image_not_supported_outlined, color: AppColors.grey400)),
+                                errorWidget: (_, __, ___) => Container(height: 140, color: isDark ? const Color(0xFF2C2C2C) : AppColors.grey100, child: const Icon(Icons.image_not_supported_outlined, color: AppColors.grey400)),
                               )
-                            : Container(height: 140, color: fp.field, child: const Icon(Icons.image_outlined, color: AppColors.grey400)),
+                            : Container(height: 140, color: isDark ? const Color(0xFF2C2C2C) : AppColors.grey100, child: const Icon(Icons.image_outlined, color: AppColors.grey400)),
                       ),
                       // ── Фото үстүнө градиент ──
                       Positioned(
@@ -528,7 +531,7 @@ class _FlashCard extends StatelessWidget {
                       children: [
                         Text(name, maxLines: 2, overflow: TextOverflow.ellipsis,
                             style: AppTextStyles.labelSmall.copyWith(
-                              color: fp.text,
+                              color: isDark ? Colors.white.withOpacity(0.85) : AppColors.grey600,
                               fontSize: 12, height: 1.3,
                             )),
                         const SizedBox(height: 6),
@@ -553,11 +556,11 @@ class _FlashCard extends StatelessWidget {
                           const SizedBox(height: 3),
                           Row(
                             children: [
-                              Icon(Icons.store_rounded, size: 9, color: fp.subText),
+                              Icon(Icons.store_rounded, size: 9, color: isDark ? Colors.white30 : AppColors.grey400),
                               const SizedBox(width: 3),
                               Expanded(
                                 child: Text(shopName, maxLines: 1, overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(color: fp.subText, fontSize: 10)),
+                                    style: TextStyle(color: isDark ? Colors.white30 : AppColors.grey400, fontSize: 10)),
                               ),
                             ],
                           ),

@@ -10,10 +10,6 @@ import '../../../data/models/product_model.dart';
 import '../../admin/screens/admin_login_screen.dart';
 import '../../chat/screens/chat_list_screen.dart';
 import '../../seller/screens/seller_entrance_screen.dart';
-import '../../seller/screens/seller_dashboard_screen.dart';
-import '../../../core/seller_session_service.dart';
-import '../../../core/supabase_client.dart' as supa;
-import 'package:cached_network_image/cached_network_image.dart';
 import '../../notifications/screens/notifications_screen.dart';
 import '../utils/product_repository.dart';
 import '../widgets/category_list.dart';
@@ -24,19 +20,19 @@ import '../../map/screens/map_screen.dart';
 import '../../settings/screens/settings_screen.dart';
 import '../../chat/services/chat_service.dart';
 import '../../chat/models/chat_model.dart';
+import '../../../core/supabase_client.dart';
 import '../../product_detail/screens/product_detail_screen.dart';
 import '../screens/favorites_screen.dart';
 
 import '../widgets/product_card.dart';
-import '../widgets/product_skeleton_grid.dart';
-import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'dart:ui';
 import '../constants/home_colors.dart';
 import '../widgets/home_bottom_nav.dart';
 // ignore: duplicate_import
+import '../widgets/home_bottom_nav.dart';
 import '../widgets/equal_height_row.dart';
 import '../widgets/home_background.dart';
-import '../../../core/update_checker.dart';
+import '../../../core/update_checker.dart' show UpdateChecker;
 
 // ══════════════════════════════════════════════════════
 // TAB индекстери
@@ -52,8 +48,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen>
-    with SingleTickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen> {
   List<ProductModel> allProducts = [];
   List<ProductModel> displayedProducts = [];
   bool _isLoading = true;
@@ -75,17 +70,11 @@ class _HomeScreenState extends State<HomeScreen>
   bool _hasMore = true;
   static const int _pageSize = ProductRepository.pageSize;
 
-  String? _sellerAvatarUrl;
-
-  // ── Header bounce анимациясы ──
-  late AnimationController _headerBounceCtrl;
-  late Animation<Offset> _headerSlide;
   bool _isNearbyMode = false;
   bool _hasUnread = false;
+  bool _isLocating = false;
   bool _isSearchMode = false;
   Timer? _debounce;
-  final TextEditingController _searchController = TextEditingController();
-  List<ProductModel> _searchResults = []; // издөө натыйжаларынын оригиналы
 
   ProductFilterMode _filterMode = ProductFilterMode.all;
 
@@ -107,15 +96,7 @@ class _HomeScreenState extends State<HomeScreen>
   // DD Online блогу көрүнөбү
 
   // DD Online блогунун бийиктиги: toolbar(52px)
-  // (status bar бийиктиги + 50px) — эки катардын ортосу жакын болсун
-  // iPhone (notch/Dynamic Island): катар status bar'га жакын жайгашат
-  double get _headerTopInset {
-    final top = MediaQuery.of(context).padding.top;
-    final isIOS = Theme.of(context).platform == TargetPlatform.iOS;
-    return (isIOS && top >= 44) ? top - 22 : top;
-  }
-
-  double get _titleBarHeight => _headerTopInset + 50.0;
+  static const double _titleBarHeight = 75.0;
   // Sticky header'дин чыныгы бийиктиги (категория ачылганда өзгөрөт)
   final GlobalKey _headerKey = GlobalKey();
   double? _headerH;
@@ -140,23 +121,7 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void initState() {
     super.initState();
-
-    // ── Header bounce анимациясы — жогорудан ылдыга ──
-    _headerBounceCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 900),
-    );
-    _headerSlide = Tween<Offset>(
-      begin: const Offset(0, -1.0),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _headerBounceCtrl,
-      curve: Curves.elasticOut,
-    ));
-    _headerBounceCtrl.forward();
-
     _loadProducts(); // ← бул бар
-    _loadSellerAvatar();
     _favCount = fav.count;
     _checkUnread();
     fav.addListener(_onFavChanged);
@@ -171,22 +136,6 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
 // ── Жаңы метод ──
-
-  Future<void> _loadSellerAvatar() async {
-    final uid = await SellerSessionService.instance.getSavedUid();
-    if (uid == null || uid.isEmpty) {
-      if (mounted) setState(() => _sellerAvatarUrl = null);
-      return;
-    }
-    try {
-      final row = await supa.supabase.from('stores').select('logo_url').eq('owner_id', uid).maybeSingle();
-      final logo = row?['logo_url'] as String?;
-      if (mounted) setState(() => _sellerAvatarUrl = (logo != null && logo.isNotEmpty) ? logo : null);
-    } catch (_) {
-      if (mounted) setState(() => _sellerAvatarUrl = null);
-    }
-  }
-
   Future<void> _checkAppUpdate() async {
     final langCode = AppLocalizations.of(context).locale.languageCode;
     await UpdateChecker.check(context, langCode);
@@ -219,7 +168,7 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   void _subscribeChatUnread() {
-    final user = supa.supabase.auth.currentUser;
+    final user = supabase.auth.currentUser;
     if (user == null) return;
     _chatSub = ChatService().buyerChatsStream(user.id).listen((chats) {
       if (!mounted) return;
@@ -234,13 +183,13 @@ class _HomeScreenState extends State<HomeScreen>
 
   Future<void> _checkUnread() async {
     try {
-      final userId = supa.supabase.auth.currentUser?.id;
+      final userId = supabase.auth.currentUser?.id;
       if (userId == null) return;
-      final all = await supa.supabase.from('admin_notifications').select('id')
+      final all = await supabase.from('admin_notifications').select('id')
        .isFilter('seller_id', null);
       if ((all as List).isEmpty) return;
       final allIds = all.map((r) => r['id'] as String).toSet();
-            final reads = await supa.supabase
+      final reads = await supabase
           .from('notification_reads')
           .select('notification_id')
           .eq('user_id', userId);
@@ -256,10 +205,8 @@ class _HomeScreenState extends State<HomeScreen>
     fav.removeListener(_onFavChanged);
     _debounce?.cancel();
     _chatSub?.cancel();
-    _searchController.dispose();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
-    _headerBounceCtrl.dispose();
     super.dispose();
   }
 
@@ -270,35 +217,6 @@ class _HomeScreenState extends State<HomeScreen>
       _navVisible = true;
       _titleVisible = true;
     });
-  }
-
-  Future<void> _pullRefresh() async {
-    if (_isLoading) return;
-    if (_isSearchMode && _searchQuery.isNotEmpty) {
-      _onSearchChanged(_searchQuery);
-    } else if (_isNearbyMode) {
-      await _loadNearbyProducts();
-    } else {
-      switch (_filterMode) {
-        case ProductFilterMode.newest:
-          await _loadNewest();
-          break;
-        case ProductFilterMode.popular:
-          await _loadPopular();
-          break;
-        case ProductFilterMode.all:
-          await _loadProducts(refresh: true);
-          break;
-      }
-    }
-  }
-
-  /// Жүктөлүп жатканда спиннердин ордуна товар орундары.
-  Widget _buildSkeletonSliver() {
-    return const SliverPadding(
-      padding: EdgeInsets.fromLTRB(10, 15, 10, 12),
-      sliver: SliverToBoxAdapter(child: ProductSkeletonGrid()),
-    );
   }
 
   Future<void> _loadProducts({bool refresh = false}) async {
@@ -315,6 +233,7 @@ class _HomeScreenState extends State<HomeScreen>
         offset: 0,
         categoryId: _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
       );
+      products.shuffle();
       _hasMore = products.length == _pageSize;
       _offset = products.length;
       if (mounted) {
@@ -327,13 +246,12 @@ class _HomeScreenState extends State<HomeScreen>
       }
     } catch (e) {
       debugPrint('❌ loadProducts: $e');
-      if (mounted) {
+      if (mounted)
         setState(() {
           allProducts = [];
           displayedProducts = [];
           _isLoading = false;
         });
-      }
     }
   }
 
@@ -353,14 +271,12 @@ class _HomeScreenState extends State<HomeScreen>
       );
       _hasMore = products.length == _pageSize;
       _offset = products.length;
-      if (mounted) {
+      if (mounted)
         setState(() {
           allProducts = products;
           displayedProducts = List.from(products);
           _isLoading = false;
         });
-        _applyFilters(); // баа/сорттоо фильтрин колдонуу
-      }
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -372,24 +288,19 @@ class _HomeScreenState extends State<HomeScreen>
       _isNearbyMode = false;
       _isSearchMode = false;
       _offset = 0;
-      _hasMore = true;
+      _hasMore = false;
     });
     try {
       final products = await ProductRepository.instance.fetchPopular(
         categoryId: _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
         limit: _pageSize,
-        offset: 0,
       );
-      _hasMore = products.length == _pageSize;
-      _offset = products.length;
-      if (mounted) {
+      if (mounted)
         setState(() {
           allProducts = products;
           displayedProducts = List.from(products);
           _isLoading = false;
         });
-        _applyFilters(); // баа/сорттоо фильтрин колдонуу
-      }
     } catch (e) {
       debugPrint('❌ loadPopular: $e');
       if (mounted) setState(() => _isLoading = false);
@@ -397,12 +308,6 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   void _onFilterModeChanged(ProductFilterMode mode) {
-    // ── Издөө режиминде турса — издөөнү тазалоо ──
-    if (_isSearchMode || _searchQuery.isNotEmpty) {
-      _searchController.clear();
-      _searchQuery = '';
-      _debounce?.cancel();
-    }
     setState(() => _filterMode = mode);
     switch (mode) {
       case ProductFilterMode.newest:
@@ -422,9 +327,7 @@ class _HomeScreenState extends State<HomeScreen>
         !_hasMore ||
         _isLoading ||
         _isNearbyMode ||
-        _isSearchMode) {
-      return;
-    }
+        _isSearchMode) return;
     _isLoadingMore = true;
     try {
       List<ProductModel> newProducts;
@@ -448,6 +351,7 @@ class _HomeScreenState extends State<HomeScreen>
           categoryId:
               _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
         );
+        newProducts.shuffle();
       }
       _hasMore = newProducts.length == _pageSize;
       _offset += newProducts.length;
@@ -463,15 +367,11 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Future<void> _loadNearbyProducts() async {
-    // ── Издөөнү тазалоо ──
-    if (_searchQuery.isNotEmpty) {
-      _searchController.clear();
-      _searchQuery = '';
-      _debounce?.cancel();
-    }
+    setState(() => _isLocating = true);
     final position = await ProductRepository.instance.getCurrentPosition();
     if (position == null) {
       if (mounted) {
+        setState(() => _isLocating = false);
         final loc = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(loc.get('nearby_error')),
@@ -498,12 +398,14 @@ class _HomeScreenState extends State<HomeScreen>
         allProducts = products;
         displayedProducts = List.from(products);
         _isLoading = false;
+        _isLocating = false;
       });
       _applyFilters();
     } catch (e) {
       debugPrint('❌ loadNearbyProducts: $e');
       setState(() {
         _isLoading = false;
+        _isLocating = false;
       });
     }
   }
@@ -523,8 +425,7 @@ class _HomeScreenState extends State<HomeScreen>
         _isSearchMode = true;
         _isNearbyMode = false;
         _hasMore = false;
-        // _filterMode өзгөртпөйбүз — издөө тазалангандан кийин
-        // мурунку режимге (popular/newest/all) кайтуу үчүн
+        _filterMode = ProductFilterMode.all;
       });
       try {
         final results = await ProductRepository.instance.searchProducts(
@@ -533,12 +434,10 @@ class _HomeScreenState extends State<HomeScreen>
               _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
         );
         if (!mounted) return;
-        _searchResults = results;
         setState(() {
-          displayedProducts = List.from(results);
+          displayedProducts = results;
           _isLoading = false;
         });
-        _applyFilters(); // баа фильтрин издөө натыйжаларына колдонуу
       } catch (e) {
         debugPrint('❌ searchProducts: $e');
         if (!mounted) return;
@@ -554,35 +453,17 @@ class _HomeScreenState extends State<HomeScreen>
     _searchQuery = '';
     _debounce?.cancel();
     setState(() => _isSearchMode = false);
-    // ── Мурунку фильтр режимин калыбына келтирүү ──
-    switch (_filterMode) {
-      case ProductFilterMode.newest:
-        _loadNewest();
-        break;
-      case ProductFilterMode.popular:
-        _loadPopular();
-        break;
-      case ProductFilterMode.all:
-        _loadProducts();
-        break;
-    }
+    _loadProducts();
   }
 
   void _applyFilters() {
-    // ── Издөө режиминде да, кадимки режимде да фильтр колдонулат ──
-    List<ProductModel> source;
-    if (_isSearchMode) {
-      source = List.from(_searchResults);
-    } else {
-      source = List.from(allProducts);
-    }
-
-    List<ProductModel> result = source
+    if (_isSearchMode) return;
+    List<ProductModel> result = List.from(allProducts);
+    result = result
         .where((p) =>
             p.price >= _filter.priceRange.start &&
             p.price <= _filter.priceRange.end)
         .toList();
-
     switch (_filter.sortBy) {
       case 'price_asc':
         result.sort((a, b) => a.price.compareTo(b.price));
@@ -594,10 +475,9 @@ class _HomeScreenState extends State<HomeScreen>
         result.sort((a, b) => (b.rating ?? 0).compareTo(a.rating ?? 0));
         break;
       default:
-        if (_isNearbyMode) {
+        if (_isNearbyMode)
           result.sort((a, b) => (a.distanceKm ?? double.infinity)
               .compareTo(b.distanceKm ?? double.infinity));
-        }
         break;
     }
     setState(() => displayedProducts = result);
@@ -620,25 +500,17 @@ class _HomeScreenState extends State<HomeScreen>
     });
   }
 
-  // Жашыруун админ: "Жөндөөлөр" кнопкасын 13 жолу ээрчий басуу,
-  // ар бир басуунун ортосу 1 секундадан ашпашы керек.
-  void _onNavTapped(int tab) {
-    if (tab != tabSettings) {
-      _adminTapCount = 0;
-      _lastTapTime = null;
-      return;
-    }
+  void _onTitleTap() {
     final now = DateTime.now();
     if (_lastTapTime == null ||
-        now.difference(_lastTapTime!) > const Duration(seconds: 1)) {
+        now.difference(_lastTapTime!) > const Duration(seconds: 2)) {
       _adminTapCount = 1;
     } else {
       _adminTapCount++;
     }
     _lastTapTime = now;
-    if (_adminTapCount >= 13) {
+    if (_adminTapCount >= 15) {
       _adminTapCount = 0;
-      _lastTapTime = null;
       Navigator.push(
           context, MaterialPageRoute(builder: (_) => const AdminLoginScreen()));
     }
@@ -663,7 +535,7 @@ class _HomeScreenState extends State<HomeScreen>
     double padding = 13,
     double radius = 18,
   }) {
-    final _hp = DDPalette.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final color = activeColor ?? DD.accent;
     return _IosBtn(
       onTap: onTap,
@@ -671,7 +543,7 @@ class _HomeScreenState extends State<HomeScreen>
       activeColor: color,
       padding: EdgeInsets.all(padding),
       radius: radius,
-      isDark: _hp.isDark,
+      isDark: isDark,
       child: child,
     );
   }
@@ -684,9 +556,10 @@ class _HomeScreenState extends State<HomeScreen>
   // HOME TAB мазмуну
   // ══════════════════════════════════════════════════════
   Widget _buildHomeTab(AppLocalizations loc, bool isDark) {
-    final p2           = DDPalette.of(context);
-    final dividerColor = p2.divider;
-    final appBarColor = p2.card;
+    final filterIconColor = isDark ? AppColors.grey400 : AppColors.grey600;
+    final dividerColor =
+        isDark ? HomeColors.cardBorder : const Color(0xFFEEEEEE);
+    final appBarColor = isDark ? HomeColors.card : Colors.white;
 
     // ── Search + CategoryList бийиктиги (туруктуу sticky блок) ──
     // search(44+8padding) + divider(1) + pills(44) = ~97
@@ -705,21 +578,33 @@ class _HomeScreenState extends State<HomeScreen>
           // ════════════════════════════════════════════
           NotificationListener<ScrollNotification>(
             onNotification: (n) {
-              if (n.metrics.pixels >= n.metrics.maxScrollExtent - 300) {
+              if (n.metrics.pixels >= n.metrics.maxScrollExtent - 300)
                 _loadMoreProducts();
-              }
               return false;
             },
             child: RefreshIndicator(
-              color: const Color(0xFFFF7A30),
-              backgroundColor: Colors.white,
-              strokeWidth: 2.5,
+              onRefresh: () async {
+                if (_isNearbyMode) {
+                  await _loadNearbyProducts();
+                } else {
+                  switch (_filterMode) {
+                    case ProductFilterMode.newest:
+                      await _loadNewest();
+                      break;
+                    case ProductFilterMode.popular:
+                      await _loadPopular();
+                      break;
+                    case ProductFilterMode.all:
+                      await _loadProducts(refresh: true);
+                      break;
+                  }
+                }
+              },
+              color: DD.accent,
               displacement: 80,
-              onRefresh: _pullRefresh,
               child: CustomScrollView(
                 controller: _scrollController,
-                physics: const BouncingScrollPhysics(
-                    parent: AlwaysScrollableScrollPhysics()),
+                physics: const AlwaysScrollableScrollPhysics(),
                 slivers: [
                   // ── Жогоруда бош орун (sticky header бийиктиги) ──
                   SliverToBoxAdapter(
@@ -746,7 +631,7 @@ if (_isSearchMode || _isNearbyMode ||
               child: Text(
                 '${displayedProducts.length} ${loc.get('results')}',
                 style: AppTextStyles.bodyMedium.copyWith(
-                    color: p2.subText),
+                    color: isDark ? Colors.white70 : Colors.black54),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -755,7 +640,7 @@ if (_isSearchMode || _isNearbyMode ||
               child: Text(
                 '📍 ${displayedProducts.length} ${loc.get('nearby_count')}',
                 style: AppTextStyles.bodyMedium.copyWith(
-                    color: p2.subText),
+                    color: isDark ? Colors.white70 : Colors.black54),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -767,7 +652,7 @@ if (_isSearchMode || _isNearbyMode ||
               child: Text(
                 '${_filterModeLabel(loc)} · ${displayedProducts.length} шт',
                 style: AppTextStyles.bodyMedium.copyWith(
-                    color: p2.subText),
+                    color: isDark ? Colors.white70 : Colors.black54),
                 overflow: TextOverflow.ellipsis,
                 maxLines: 1,
               ),
@@ -790,7 +675,21 @@ if (_isSearchMode || _isNearbyMode ||
 
                   // ── Товарлар ──
                   if (_isLoading)
-                    _buildSkeletonSliver()
+                    SliverFillRemaining(
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const CircularProgressIndicator(
+                                color: DD.accent, strokeWidth: 3),
+                            const SizedBox(height: 16),
+                            Text(loc.get('loading'),
+                                style: const TextStyle(
+                                    color: AppColors.grey500, fontSize: 14)),
+                          ],
+                        ),
+                      ),
+                    )
                   else if (displayedProducts.isEmpty)
                     SliverFillRemaining(
                       child: Center(
@@ -872,9 +771,7 @@ if (_isSearchMode || _isNearbyMode ||
             top: 0,
             left: 0,
             right: 0,
-            child: SlideTransition(
-              position: _headerSlide,
-              child: NotificationListener<SizeChangedLayoutNotification>(
+            child: NotificationListener<SizeChangedLayoutNotification>(
               onNotification: (_) {
                 WidgetsBinding.instance
                     .addPostFrameCallback((_) => mounted ? _measureHeader() : null);
@@ -902,83 +799,63 @@ if (_isSearchMode || _isNearbyMode ||
                         child: SizedBox(
                           height: _titleBarHeight,
                           child: Padding(
-                            padding: EdgeInsets.only(top: _headerTopInset),
+                            padding: const EdgeInsets.only(top: 20),
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 // Дүкөн баскычы
                                 GestureDetector(
-                                  onTap: () async {
-                                    final uid = await SellerSessionService.instance.getSavedUid();
-                                    if (!context.mounted) return;
-                                    if (uid != null && uid.isNotEmpty) {
-                                      await Navigator.push(context, MaterialPageRoute(
-                                        builder: (_) => SellerDashboardScreen(uid: uid),
-                                      ));
-                                    } else {
-                                      await Navigator.push(context, MaterialPageRoute(
-                                        builder: (_) => const SellerEntranceScreen(),
-                                      ));
-                                    }
-                                    if (mounted) setState(() {});
-                                  },
+                                  onTap: () => Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                              builder: (_) =>
+                                                  const SellerEntranceScreen()))
+                                      .then((_) => setState(() {})),
                                   child: Container(
-                                    margin: const EdgeInsets.fromLTRB(8, 4, 4, 4),
-                                    padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 11),
+                                    margin:
+                                        const EdgeInsets.fromLTRB(8, 6, 4, 6),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 17, vertical: 11),
                                     decoration: BoxDecoration(
-                                      gradient: const LinearGradient(
-                                        colors: [
-                                          Color(0xFFCCCCCC),
-                                          Color(0xFFEAEAEA),
-                                          Color(0xFFB8B8B8),
-                                        ],
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                      ),
-                                      borderRadius: BorderRadius.circular(DD.rPill),
+                                      color: DD.accent,
+                                      borderRadius:
+                                          BorderRadius.circular(DD.rPill),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: Colors.black.withOpacity(isDark ? 0.4 : 0.18),
-                                          blurRadius: 10,
+                                          color: DD.accent.withOpacity(
+                                              isDark ? 0.35 : 0.30),
+                                          blurRadius: 12,
                                           offset: const Offset(0, 4),
                                           spreadRadius: -2,
                                         ),
                                       ],
                                     ),
-                                    child: _sellerAvatarUrl != null
-                                        ? ClipOval(
-                                            child: CachedNetworkImage(
-                                              imageUrl: _sellerAvatarUrl!,
-                                              width: 32,
-                                              height: 32,
-                                              fit: BoxFit.cover,
-                                              errorWidget: (_, __, ___) => const Icon(
-                                                  Icons.store_rounded, color: Color(0xFF444444), size: 20),
-                                            ),
-                                          )
-                                        : Text(loc.get('shop'),
-                                            style: const TextStyle(
-                                                color: Color(0xFF333333),
-                                                fontWeight: FontWeight.w700,
-                                                fontSize: 15)),
+                                    child: Text(loc.get('shop'),
+                                        style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 15)),
                                   ),
                                 ),
-                                // DD Online жазуусу (функциясы жок, 22px)
+                                // DD Online логотипи
                                 Expanded(
-                                  child: Center(
-                                    child: ShaderMask(
-                                      shaderCallback: (bounds) =>
-                                          const LinearGradient(
-                                        colors: [DD.accent2, DD.accent],
-                                        begin: Alignment.centerLeft,
-                                        end: Alignment.centerRight,
-                                      ).createShader(bounds),
-                                      child: const Text('DD Online',
-                                          style: TextStyle(
-                                              fontSize: 22,
-                                              fontWeight: FontWeight.w800,
-                                              color: Colors.white,
-                                              letterSpacing: -0.6)),
+                                  child: GestureDetector(
+                                    onTap: _onTitleTap,
+                                    child: Center(
+                                      child: ShaderMask(
+                                        shaderCallback: (bounds) =>
+                                            const LinearGradient(
+                                          colors: [DD.accent2, DD.accent],
+                                          begin: Alignment.centerLeft,
+                                          end: Alignment.centerRight,
+                                        ).createShader(bounds),
+                                        child: const Text('DD Online',
+                                            style: TextStyle(
+                                                fontSize: 26,
+                                                fontWeight: FontWeight.w800,
+                                                color: Colors.white,
+                                                letterSpacing: -0.8)),
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -995,7 +872,12 @@ if (_isSearchMode || _isNearbyMode ||
                                     child: Stack(
                                       clipBehavior: Clip.none,
                                       children: [
-                                        Image.asset('assets/icons/nav/ic_bell.png', width: 28, height: 28),
+                                        Icon(Icons.notifications_outlined,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurface
+                                                .withOpacity(0.8),
+                                            size: 26),
                                         if (_hasUnread)
                                           Positioned(
                                             top: 0,
@@ -1020,14 +902,34 @@ if (_isSearchMode || _isNearbyMode ||
 
                       // ── Search + баскычтар (дайыма туруктуу) ──
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
+                        padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
                         child: Row(
                           children: [
                             Expanded(
                                 child: SearchBarWidget(
-                                    controller: _searchController,
                                     onChanged: _onSearchChanged,
                                     onClear: _onSearchClear)),
+                            const SizedBox(width: 8),
+                            _glassButton(
+                              active: _isNearbyMode,
+                              onTap: _isLocating
+                                  ? () {}
+                                  : (_isNearbyMode
+                                      ? () => _loadProducts(refresh: true)
+                                      : _loadNearbyProducts),
+                              child: _isLocating
+                                  ? const SizedBox(
+                                      width: 22,
+                                      height: 22,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: DD.accent))
+                                  : Icon(Icons.near_me_rounded,
+                                      color: _isNearbyMode
+                                          ? Colors.white
+                                          : filterIconColor,
+                                      size: 22),
+                            ),
                             const SizedBox(width: 8),
                             _glassButton(
                               active: _filterCount > 0,
@@ -1035,7 +937,11 @@ if (_isSearchMode || _isNearbyMode ||
                               child: Stack(
                                 clipBehavior: Clip.none,
                                 children: [
-                                  Image.asset('assets/icons/nav/ic_filter.png', width: 26, height: 26),
+                                  Icon(Icons.tune_rounded,
+                                      color: _filterCount > 0
+                                          ? Colors.white
+                                          : filterIconColor,
+                                      size: 22),
                                   if (_filterCount > 0)
                                     Positioned(
                                       top: -6,
@@ -1066,9 +972,6 @@ if (_isSearchMode || _isNearbyMode ||
 
                       // ── CategoryList (дайыма туруктуу) ──
                       CategoryList(
-                        currentFilterMode: _isSearchMode || _isNearbyMode
-                            ? ProductFilterMode.all
-                            : _filterMode,
                         onCategorySelected: (id) {
                           setState(() => _selectedCategoryId = id);
                           if (_isSearchMode && _searchQuery.isNotEmpty) {
@@ -1089,7 +992,6 @@ if (_isSearchMode || _isNearbyMode ||
             ),
               ), // ← SizeChangedLayoutNotifier
             ), // ← NotificationListener
-            ), // ← SlideTransition
           ), // ← ClipRect
         ],
       ),
@@ -1102,8 +1004,7 @@ if (_isSearchMode || _isNearbyMode ||
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
-    final _bp = DDPalette.of(context);
-    final isDark = _bp.isDark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return PopScope(
       canPop: false,
@@ -1126,25 +1027,7 @@ if (_isSearchMode || _isNearbyMode ||
               left: 0,
               right: 0,
               bottom: 0,
-              child: NotificationListener<UserScrollNotification>(
-                onNotification: (n) {
-                  // Башкы беттен башка 4 табда да: ылдый → навбар жашынат,
-                  // жогору → кайра чыгат
-                  if (_currentTab == tabHome || n.metrics.axis != Axis.vertical) {
-                    return false;
-                  }
-                  if (n.direction == ScrollDirection.reverse &&
-                      n.metrics.pixels > 0 &&
-                      _navVisible) {
-                    setState(() => _navVisible = false);
-                  } else if ((n.direction == ScrollDirection.forward ||
-                          n.metrics.pixels <= 0) &&
-                      !_navVisible) {
-                    setState(() => _navVisible = true);
-                  }
-                  return false;
-                },
-                child: Stack(
+              child: Stack(
                 children: [
                   Offstage(
                     offstage: _currentTab != tabHome,
@@ -1168,7 +1051,6 @@ if (_isSearchMode || _isNearbyMode ||
                   ),
                 ],
               ),
-              ),
             ),
 
             // ── Калкып турган меню баскычы ──
@@ -1178,7 +1060,7 @@ if (_isSearchMode || _isNearbyMode ||
                 curve: Curves.easeInOut,
                 right: 16,
                 bottom: _navVisible
-                    ? HomeBottomNav.footprint(_navBottomPadding) + 16
+                    ? HomeBottomNav.navHeight + _navBottomPadding + 16
                     : 32,
                 child: _MenuFab(onTap: () => openSidePanel(context)),
               ),
@@ -1192,7 +1074,6 @@ if (_isSearchMode || _isNearbyMode ||
               favCount: _favCount,
               bottomPadding: _navBottomPadding,
               onTabSelected: _switchTab,
-              onTabTapped: _onNavTapped,
             ),
           ],
         ),

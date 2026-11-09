@@ -170,7 +170,6 @@ for (final id in toDelete) {
     final loc = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final _p = DDPalette.of(context);
 
     final appBarBg = isDark
         ? Colors.black.withOpacity(0.55)
@@ -204,11 +203,7 @@ for (final id in toDelete) {
                     backgroundColor: appBarBg,
                     elevation: 0,
                     leading: IconButton(
-                      icon: Image.asset(
-                        'assets/icons/chat/ic_close.png',
-                        width: 22, height: 22,
-                        color: theme.colorScheme.onSurface,
-                      ),
+                      icon: Icon(Icons.close, color: theme.colorScheme.onSurface),
                       onPressed: _exitSelectionMode,
                     ),
                     title: Text(
@@ -237,11 +232,8 @@ for (final id in toDelete) {
                         },
                       ),
                       IconButton(
-                        icon: Image.asset(
-                          'assets/icons/chat/ic_delete_chat.png',
-                          width: 22, height: 22,
-                          color: AppColors.error,
-                        ),
+                        icon: const Icon(Icons.delete_outline,
+                            color: AppColors.error),
                         onPressed:
                             _selectedIds.isEmpty ? null : _deleteSelected,
                       ),
@@ -253,7 +245,7 @@ for (final id in toDelete) {
                     title: Text(
                       loc.get('messages'),
                       style: AppTextStyles.headingSmall.copyWith(
-                        color: _p.text,
+                        color: isDark ? Colors.white : AppColors.black,
                       ),
                     ),
                   ),
@@ -337,12 +329,12 @@ for (final id in toDelete) {
                   decoration: BoxDecoration(
                     // ── Жарым өткөрүмдүү карточка ──
                     color: isSelected
-                        ? DD.accent.withOpacity(0.12)
+                        ? DD.accent.withValues(alpha: 0.12)
                         : cardBg,
                     borderRadius: BorderRadius.circular(DD.rCard),
                     border: isSelected
                         ? Border.all(
-                            color: DD.accent.withOpacity(0.4),
+                            color: DD.accent.withValues(alpha: 0.4),
                             width: 1.5)
                         : Border.all(
                             color: isDark
@@ -351,7 +343,7 @@ for (final id in toDelete) {
                             width: 1.0),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(isDark ? 0.15 : 0.04),
+                        color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.04),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -395,7 +387,7 @@ for (final id in toDelete) {
   ),
                     title: Text(displayName,
                         style: AppTextStyles.bodyLarge.copyWith(
-                          color: _p.text,
+                          color: isDark ? Colors.white : AppColors.black,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis),
@@ -438,7 +430,7 @@ for (final id in toDelete) {
                               borderRadius: BorderRadius.circular(DD.rPill),
                               boxShadow: [
                                 BoxShadow(
-                                  color: DD.accent.withOpacity(0.4),
+                                  color: DD.accent.withValues(alpha: 0.4),
                                   blurRadius: 6,
                                   offset: const Offset(0, 2),
                                 ),

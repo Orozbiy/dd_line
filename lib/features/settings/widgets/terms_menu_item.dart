@@ -19,15 +19,11 @@ class TermsMenuItem extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 14),
         child: Row(
           children: [
-            Image.asset(
-              'assets/icons/settings/ic_terms.png',
-              width: 36, height: 36, fit: BoxFit.contain,
-            ),
+            const Icon(Icons.privacy_tip_outlined, color: AppColors.primary, size: 20),
             const SizedBox(width: 12),
             Expanded(child: Text(loc.get('terms'),
                 style: AppTextStyles.bodyMedium.copyWith(color: textColor))),
-            Image.asset('assets/icons/settings/ic_chevron_right.png',
-                width: 20, height: 20, color: AppColors.grey300),
+            const Icon(Icons.chevron_right, color: AppColors.grey300, size: 20),
           ],
         ),
       ),

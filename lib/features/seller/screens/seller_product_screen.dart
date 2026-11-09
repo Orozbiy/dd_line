@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
-import '../../../config/theme/dd_design.dart';
 import '../../../core/app_localizations.dart';
 import '../../../core/utils/image_utils.dart';
 import '../../../core/supabase_client.dart';
@@ -40,15 +39,10 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
 
   List<Map<String, dynamic>> get _filteredProducts {
     if (_selectedCategoryId == null) return _products;
-    final sel = _selectedCategoryId!;
     return _products
-        .where((p) => _catMatches(p['category_id'] as String? ?? '', sel))
+        .where((p) => (p['category_id'] as String? ?? '').startsWith(_selectedCategoryId!))
         .toList();
   }
-
-  /// '1' жана '10'–'17' аралашып кетпеши үчүн так дал келүү же '_' менен башталуу.
-  static bool _catMatches(String categoryId, String selected) =>
-      categoryId == selected || categoryId.startsWith('${selected}_');
 
   final List<Map<String, String>> _legacyCategories = [
     {'id': '1',  'name': 'Кийим-кече',           'icon': '👕'},
@@ -214,9 +208,9 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
 
   // ── Акция: товар тандоо sheet ─────────────────────────────────────────────
   void _showProductPickerForDiscount() {
-    final sp = DDPalette.of(context);
-    final sheetBg = sp.card;
-    final titleColor = sp.text;
+    final isDark  = Theme.of(context).brightness == Brightness.dark;
+    final sheetBg = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final titleColor = isDark ? Colors.white : AppColors.black;
     String query = '';
 
     showModalBottomSheet(
@@ -251,7 +245,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.12),
+                    color: Colors.orange.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(Icons.local_offer_rounded, color: Colors.orange, size: 20),
@@ -275,7 +269,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                   prefixIcon: const Icon(Icons.search_rounded, size: 20),
                   isDense: true,
                   filled: true,
-                  fillColor: sp.field,
+                  fillColor: isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF5F5F5),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
@@ -284,7 +278,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                 ),
               ),
             ),
-            Divider(height: 1, color: sp.divider),
+            Divider(height: 1, color: isDark ? const Color(0xFF2C2C2C) : const Color(0xFFEEEEEE)),
             Expanded(
               child: filtered.isEmpty
                   ? Center(
@@ -320,11 +314,11 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                                   child: imageUrl.isNotEmpty
                                       ? Image.network(imageUrl, fit: BoxFit.cover,
                                           errorBuilder: (_, __, ___) => Container(
-                                            color: sp.field,
+                                            color: isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF0F0F0),
                                             child: const Center(child: Text('📦', style: TextStyle(fontSize: 22))),
                                           ))
                                       : Container(
-                                          color: sp.field,
+                                          color: isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF0F0F0),
                                           child: const Center(child: Text('📦', style: TextStyle(fontSize: 22))),
                                         ),
                                 ),
@@ -355,7 +349,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                                 decoration: BoxDecoration(
-                                  color: Colors.orange.withOpacity(0.12),
+                                  color: Colors.orange.withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
@@ -380,13 +374,12 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
   void _showDiscountSheet(Map<String, dynamic> product) {
     final loc    = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final ds = DDPalette.of(context);
     final price  = (product['price'] as num?)?.toDouble() ?? 0;
     final ctrl   = TextEditingController(text: (product['discount_percent'] as num?)?.toString() ?? '');
     double? discountedPrice;
     int percent = int.tryParse(ctrl.text) ?? 0;
-    final sheetBg   = ds.card;
-    final fieldFill = ds.field;
+    final sheetBg   = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final fieldFill = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF7F7F7);
 
     showModalBottomSheet(
       context: context,
@@ -411,7 +404,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
               const SizedBox(height: 20),
               TextField(
                 controller: ctrl, keyboardType: TextInputType.number, onChanged: recalc,
-                style: TextStyle(color: ds.text),
+                style: TextStyle(color: isDark ? Colors.white : AppColors.black),
                 decoration: InputDecoration(
                   labelText: loc.get('discount_percent_label'), suffixText: '%',
                   filled: true, fillColor: fieldFill,
@@ -449,7 +442,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
-                    disabledBackgroundColor: AppColors.primary.withOpacity(0.4),
+                    disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.4),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     elevation: 0,
                   ),
@@ -517,17 +510,16 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
   Widget build(BuildContext context) {
     final loc      = AppLocalizations.of(context);
     final isDark   = Theme.of(context).brightness == Brightness.dark;
-    final pal      = DDPalette.of(context);
     final filtered = _filteredProducts;
     final usedMainCatIds = _products.map((p) => (p['category_id'] as String? ?? '').split('_')[0]).toSet();
 
-    final bgColor       = pal.bg;
-    final appBarColor   = pal.card;
-    final titleColor    = pal.text;
-    final catBarColor   = pal.card;
-    final cardColor     = pal.card;
-    final prodNameColor = pal.text;
-    final divColor      = pal.divider;
+    final bgColor       = isDark ? const Color(0xFF121212) : const Color(0xFFF4F5F7);
+    final appBarColor   = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final titleColor    = isDark ? Colors.white : AppColors.black;
+    final catBarColor   = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final cardColor     = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final prodNameColor = isDark ? Colors.white : AppColors.black;
+    final divColor      = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFEEEEEE);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -535,10 +527,10 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
         backgroundColor: appBarColor,
         elevation: 0,
         centerTitle: false,
-        iconTheme: IconThemeData(color: pal.text),
+        iconTheme: IconThemeData(color: isDark ? Colors.white : AppColors.grey600),
         title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(loc.get('my_products'), style: AppTextStyles.headingSmall.copyWith(color: titleColor)),
-          Text(widget.shopName, style: AppTextStyles.labelSmall.copyWith(color: pal.subText)),
+          Text(widget.shopName, style: AppTextStyles.labelSmall.copyWith(color: isDark ? Colors.white60 : AppColors.grey500)),
         ]),
         actions: [
           // ── Акция кнопкасы ──
@@ -590,7 +582,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
           // ── Жаңыртуу ──
           IconButton(
             onPressed: _loadProducts,
-            icon: Icon(Icons.refresh, color: pal.subText),
+            icon: Icon(Icons.refresh, color: isDark ? Colors.white70 : AppColors.grey600),
             tooltip: loc.get('refresh'),
           ),
         ],
@@ -604,12 +596,12 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Row(children: [
-                _categoryChip(id: null, icon: '📦', name: loc.get('prod_all'), count: _products.length, isDark: isDark, palette: pal),
+                _categoryChip(id: null, icon: '📦', name: loc.get('prod_all'), count: _products.length, isDark: isDark),
                 const SizedBox(width: 8),
                 ..._allCategories.where((cat) => usedMainCatIds.contains(cat.id)).map((cat) {
-                  final count = _products.where((p) => _catMatches(p['category_id'] as String? ?? '', cat.id)).length;
+                  final count = _products.where((p) => (p['category_id'] as String? ?? '').startsWith(cat.id)).length;
                   return Padding(padding: const EdgeInsets.only(right: 8),
-                      child: _categoryChip(id: cat.id, icon: cat.icon, name: cat.name, count: count, isDark: isDark, palette: pal));
+                      child: _categoryChip(id: cat.id, icon: cat.icon, name: cat.name, count: count, isDark: isDark));
                 }),
                 ..._legacyCategories.where((cat) {
                   final id = cat['id']!;
@@ -619,35 +611,12 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                 }).map((cat) {
                   final count = _products.where((p) => p['category_id'] == cat['id']).length;
                   return Padding(padding: const EdgeInsets.only(right: 8),
-                      child: _categoryChip(id: cat['id'], icon: cat['icon']!, name: cat['name']!, count: count, isDark: isDark, palette: pal));
+                      child: _categoryChip(id: cat['id'], icon: cat['icon']!, name: cat['name']!, count: count, isDark: isDark));
                 }),
               ]),
             ),
           ),
           Divider(height: 1, color: divColor),
-          if (_selectedCategoryId != null && _selectedCategoryId!.contains('_'))
-            Container(
-              width: double.infinity,
-              color: AppColors.primary.withOpacity(isDark ? 0.14 : 0.08),
-              padding: const EdgeInsets.fromLTRB(14, 8, 8, 8),
-              child: Row(children: [
-                const Icon(Icons.filter_alt_rounded, size: 16, color: AppColors.primary),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    _getCategoryName(_selectedCategoryId!),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.labelSmall.copyWith(color: AppColors.primary, fontWeight: FontWeight.w700),
-                  ),
-                ),
-                IconButton(
-                  visualDensity: VisualDensity.compact,
-                  icon: const Icon(Icons.close_rounded, size: 18, color: AppColors.primary),
-                  onPressed: () => setState(() => _selectedCategoryId = null),
-                ),
-              ]),
-            ),
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
@@ -680,7 +649,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                               decoration: BoxDecoration(
                                 color: cardColor,
                                 borderRadius: BorderRadius.circular(14),
-                                boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
+                                boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2))],
                               ),
                               child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                                 Stack(children: [
@@ -723,7 +692,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
                                     Row(children: colors.take(5).map((name) {
                                       final c = _allColors.firstWhere((x) => x['name'] == name, orElse: () => {'hex': 0xFF888888});
                                       return Container(width: 14, height: 14, margin: const EdgeInsets.only(right: 4),
-                                          decoration: BoxDecoration(color: Color(c['hex'] as int), shape: BoxShape.circle, border: Border.all(color: Colors.grey.withOpacity(0.3))));
+                                          decoration: BoxDecoration(color: Color(c['hex'] as int), shape: BoxShape.circle, border: Border.all(color: Colors.grey.withValues(alpha: 0.3))));
                                     }).toList()),
                                   ],
                                   if (sizes.isNotEmpty) ...[
@@ -765,54 +734,19 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
           ),
         ],
       ),
-      floatingActionButton: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          FloatingActionButton.extended(
-            heroTag: 'seller_filter_fab',
-            onPressed: _openCategoryFilter,
-            backgroundColor: pal.card,
-            elevation: 3,
-            icon: Icon(Icons.filter_list_rounded,
-                color: _selectedCategoryId == null ? AppColors.primary : AppColors.success),
-            label: Text(
-              _selectedCategoryId == null ? 'Фильтр' : 'Фильтр ✓',
-              style: AppTextStyles.labelMedium.copyWith(color: pal.text),
-            ),
-          ),
-          const SizedBox(width: 10),
-          FloatingActionButton.extended(
-            heroTag: 'seller_add_fab',
-            onPressed: () => _showProductDialog(),
-            backgroundColor: AppColors.primary,
-            icon: const Icon(Icons.add, color: Colors.white),
-            label: Text(loc.get('add_product'), style: AppTextStyles.labelMedium.copyWith(color: Colors.white)),
-          ),
-        ],
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showProductDialog(),
+        backgroundColor: AppColors.primary,
+        icon: const Icon(Icons.add, color: Colors.white),
+        label: Text(loc.get('add_product'), style: AppTextStyles.labelMedium.copyWith(color: Colors.white)),
       ),
     );
   }
 
-  // ── Категория фильтри: 18 негизги → подкатегория → подэлемент ──
-  Future<void> _openCategoryFilter() async {
-    final picked = await showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _CategoryFilterSheet(
-        categories: _allCategories,
-        products: _products,
-        selectedId: _selectedCategoryId,
-      ),
-    );
-    if (picked == null) return; // жабылды
-    setState(() => _selectedCategoryId = picked.isEmpty ? null : picked);
-  }
-
-  Widget _categoryChip({required String? id, required String icon, required String name, required int count, required bool isDark, DDPalette? palette}) {
+  Widget _categoryChip({required String? id, required String icon, required String name, required int count, required bool isDark}) {
     final isSelected = _selectedCategoryId == id;
-    final unselBg    = palette?.field ?? (isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF0F0F0));
-    final unselText  = palette?.subText ?? (isDark ? Colors.white70 : AppColors.grey600);
+    final unselBg    = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF0F0F0);
+    final unselText  = isDark ? Colors.white70 : AppColors.grey600;
 
     return GestureDetector(
       onTap: () => setState(() => _selectedCategoryId = id),
@@ -827,7 +761,7 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
           const SizedBox(width: 6),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(color: isSelected ? Colors.white.withOpacity(0.25) : AppColors.grey300, borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(color: isSelected ? Colors.white.withValues(alpha: 0.25) : AppColors.grey300, borderRadius: BorderRadius.circular(10)),
             child: Text('$count', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: isSelected ? Colors.white : AppColors.grey600)),
           ),
         ]),
@@ -838,7 +772,6 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
   Future<void> _showProductDialog({Map<String, dynamic>? existing}) async {
     final loc    = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final ep = DDPalette.of(context);
 
     final nameCtrl         = TextEditingController(text: existing?['title'] ?? '');
     final priceCtrl        = TextEditingController(text: existing?['price']?.toString() ?? '');
@@ -882,12 +815,12 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
     bool isLoading    = false;
     String uploadStatus = '';
 
-    final dialogBg  = ep.card;
-    final fieldFill = ep.field;
-    final textColor = ep.text;
-    final labelClr  = ep.subText;
-    final hintClr   = ep.subText;
-    final dropBg    = ep.field;
+    final dialogBg  = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final fieldFill = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF7F7F7);
+    final textColor = isDark ? Colors.white : AppColors.black;
+    final labelClr  = isDark ? const Color(0xFFCCCCCC) : AppColors.grey600;
+    final hintClr   = isDark ? const Color(0xFF666666) : AppColors.grey400;
+    final dropBg    = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF7F7F7);
 
     List<String> sizesForCategory(String mainId, [String? subId, String? subItemId]) {
       if (subId != null) {
@@ -1034,7 +967,6 @@ class _SellerProductScreenState extends State<SellerProductScreen> {
       barrierDismissible: false,
       builder: (_) => StatefulBuilder(
         builder: (ctx, setD) {
-          final loc = AppLocalizations.of(ctx);
           final mainCat      = _allCategories.firstWhere((c) => c.id == selectedMainCatId, orElse: () => _allCategories.first);
           final selectedSub  = selectedSubCatId != null
               ? mainCat.subcategories.where((s) => s.id == selectedSubCatId).firstOrNull
@@ -1110,52 +1042,13 @@ Row(
     final borderClr   = hasNew || hasExisting
         ? AppColors.primary
         : (isFirst
-            ? const Color(0xFFEF4444).withOpacity(0.5)
+            ? const Color(0xFFEF4444).withValues(alpha: 0.5)
             : AppColors.grey300);
 
     return Expanded(
       child: Padding(
         padding: EdgeInsets.only(right: i < 2 ? 8.0 : 0.0),
         child: GestureDetector(
-          onLongPress: () async {
-            // Сурот бар болсо → башка слот менен ордун алмаштыруу
-            final hasImg = newImageBytes[i] != null || existingImages[i].isNotEmpty;
-            if (!hasImg) { pickImage(i, setD); return; }
-            final otherSlots = List.generate(3, (j) => j).where((j) => j != i).toList();
-            final chosen = await showDialog<int>(
-              context: context,
-              builder: (ctx) => AlertDialog(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                title: Text(loc.get('swap_image_title') == 'swap_image_title' ? 'Сүрөттүн ордун алмаштыруу' : loc.get('swap_image_title')),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: otherSlots.map((j) {
-                    final hasJ = newImageBytes[j] != null || existingImages[j].isNotEmpty;
-                    return ListTile(
-                      leading: Icon(hasJ ? Icons.swap_horiz_rounded : Icons.add_photo_alternate_outlined, color: AppColors.primary),
-                      title: Text('${i + 1} → ${j + 1} слот менен алмаштыруу'),
-                      onTap: () => Navigator.pop(ctx, j),
-                    );
-                  }).toList(),
-                ),
-                actions: [
-                  TextButton(onPressed: () => Navigator.pop(ctx), child: Text(loc.get('cancel'))),
-                ],
-              ),
-            );
-            if (chosen != null) {
-              setD(() {
-                // Bytes алмаш
-                final tmpB = newImageBytes[i];
-                newImageBytes[i] = newImageBytes[chosen];
-                newImageBytes[chosen] = tmpB;
-                // URL алмаш
-                final tmpE = existingImages[i];
-                existingImages[i] = existingImages[chosen];
-                existingImages[chosen] = tmpE;
-              });
-            }
-          },
           onTap: () => pickImage(i, setD),
           child: Stack(
             clipBehavior: Clip.none,
@@ -1326,7 +1219,7 @@ Row(
                             padding: const EdgeInsets.symmetric(vertical: 10),
                             decoration: BoxDecoration(
                               color: wholesaleMode == 'price'
-                                  ? const Color(0xFF7C3AED).withOpacity(0.12)
+                                  ? const Color(0xFF7C3AED).withValues(alpha: 0.12)
                                   : (isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF7F7F7)),
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
@@ -1354,7 +1247,7 @@ Row(
                             padding: const EdgeInsets.symmetric(vertical: 10),
                             decoration: BoxDecoration(
                               color: wholesaleMode == 'negotiation'
-                                  ? const Color(0xFF059669).withOpacity(0.12)
+                                  ? const Color(0xFF059669).withValues(alpha: 0.12)
                                   : (isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF7F7F7)),
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
@@ -1394,7 +1287,7 @@ Row(
                           decoration: BoxDecoration(
                             color: isDark ? const Color(0xFF0D1F18) : const Color(0xFFF0FDF4),
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: const Color(0xFF059669).withOpacity(0.4)),
+                            border: Border.all(color: const Color(0xFF059669).withValues(alpha: 0.4)),
                           ),
                           child: Row(children: [
                             const Icon(Icons.handshake_outlined, color: Color(0xFF059669), size: 18),
@@ -1487,7 +1380,7 @@ Row(
 
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.06), borderRadius: BorderRadius.circular(10)),
+                      decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(10)),
                       child: Row(children: [
                         const Icon(Icons.label_outline, size: 16, color: AppColors.primary),
                         const SizedBox(width: 8),
@@ -1582,9 +1475,13 @@ Row(
 
                             for (int i = 0; i < 3; i++) {
                               if (newImageBytes[i] != null) {
-                                // iOS / Android / Web: compress + watermark
-                                final compressed = await compressImage(newImageBytes[i]!);
-                                final Uint8List uploadBytes = await addWatermark(compressed);
+                                final Uint8List uploadBytes;
+                                if (kIsWeb) {
+                                  uploadBytes = newImageBytes[i]!;
+                                } else {
+                                  final compressed = await compressImage(newImageBytes[i]!);
+                                  uploadBytes      = await addWatermark(compressed);
+                                }
                                 final uploaded = await YandexStorageService.instance.uploadImage(
                                   uploadBytes, folder: 'products',
                                 );
@@ -1635,7 +1532,7 @@ Row(
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
-                          disabledBackgroundColor: AppColors.primary.withOpacity(0.6),
+                          disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.6),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                           elevation: 0,
                         ),
@@ -1663,9 +1560,9 @@ Row(
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
           decoration: BoxDecoration(
-            color: const Color(0xFF059669).withOpacity(0.12),
+            color: const Color(0xFF059669).withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: const Color(0xFF059669).withOpacity(0.4)),
+            border: Border.all(color: const Color(0xFF059669).withValues(alpha: 0.4)),
           ),
           child: Row(mainAxisSize: MainAxisSize.min, children: [
             const Icon(Icons.handshake_outlined, color: Color(0xFF059669), size: 10),
@@ -1678,9 +1575,9 @@ Row(
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         decoration: BoxDecoration(
-          color: const Color(0xFF7C3AED).withOpacity(0.12),
+          color: const Color(0xFF7C3AED).withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: const Color(0xFF7C3AED).withOpacity(0.4)),
+          border: Border.all(color: const Color(0xFF7C3AED).withValues(alpha: 0.4)),
         ),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           const Icon(Icons.store_rounded, color: Color(0xFF7C3AED), size: 10),
@@ -1693,9 +1590,9 @@ Row(
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.10),
+        color: AppColors.primary.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: AppColors.primary.withOpacity(0.35)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         const Icon(Icons.person_rounded, color: AppColors.primary, size: 10),
@@ -1719,7 +1616,7 @@ Row(
           Icon(
             Icons.add_photo_alternate_outlined,
             size: 26,
-            color: isRequired ? AppColors.primary.withOpacity(0.7) : AppColors.grey400,
+            color: isRequired ? AppColors.primary.withValues(alpha: 0.7) : AppColors.grey400,
           ),
           const SizedBox(height: 4),
           Text(
@@ -1727,7 +1624,7 @@ Row(
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 12,
-              color: isRequired ? AppColors.primary.withOpacity(0.7) : AppColors.grey400,
+              color: isRequired ? AppColors.primary.withValues(alpha: 0.7) : AppColors.grey400,
             ),
           ),
         ],
@@ -1746,13 +1643,13 @@ Row(
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: isSelected ? AppColors.primary.withOpacity(0.1) : unselBg,
+              color: isSelected ? AppColors.primary.withValues(alpha: 0.1) : unselBg,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: isSelected ? AppColors.primary : Colors.transparent),
             ),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
               Container(width: 14, height: 14,
-                  decoration: BoxDecoration(color: Color(c['hex'] as int), shape: BoxShape.circle, border: Border.all(color: Colors.grey.withOpacity(0.3)))),
+                  decoration: BoxDecoration(color: Color(c['hex'] as int), shape: BoxShape.circle, border: Border.all(color: Colors.grey.withValues(alpha: 0.3)))),
               const SizedBox(width: 6),
               Text(
                 loc.locale.languageCode == 'ru' ? (c['nameRu'] as String? ?? c['name'] as String) : c['name'] as String,
@@ -1920,8 +1817,7 @@ class _SellerFlashSaleScreenState extends State<SellerFlashSaleScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final fp = DDPalette.of(context);
-    final bgColor = fp.bg;
+    final bgColor = isDark ? const Color(0xFF0F0F0F) : const Color(0xFFF5F5F5);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -2035,9 +1931,8 @@ class _FlashProductTile extends StatelessWidget {
     final h = timeLeft.inHours.toString().padLeft(2, '0');
     final mn = (timeLeft.inMinutes % 60).toString().padLeft(2, '0');
 
-    final fp2 = DDPalette.of(context);
-    final cardBg = fp2.card;
-    final border = fp2.divider;
+    final cardBg = isDark ? const Color(0xFF1C1C1C) : Colors.white;
+    final border = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFEEEEEE);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -2065,7 +1960,7 @@ class _FlashProductTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(name, maxLines: 2, overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: fp2.text)),
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isDark ? Colors.white : const Color(0xFF1A1A1A))),
                   const SizedBox(height: 4),
                   Row(children: [
                     Text('${flashPrice.toStringAsFixed(0)} с',
@@ -2140,9 +2035,8 @@ class _AddFlashSheetState extends State<_AddFlashSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final gp = DDPalette.of(context);
-    final sheetBg = gp.card;
-    final subColor = gp.subText;
+    final sheetBg = isDark ? const Color(0xFF1A1A1A) : Colors.white;
+    final subColor = isDark ? Colors.white70 : const Color(0xFF555555);
 
     final filtered = _filteredProducts;
     return Container(
@@ -2188,7 +2082,7 @@ class _AddFlashSheetState extends State<_AddFlashSheet> {
                   prefixIcon: const Icon(Icons.search_rounded, size: 20),
                   isDense: true,
                   filled: true,
-                  fillColor: gp.field,
+                  fillColor: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF5F5F5),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
@@ -2269,7 +2163,7 @@ class _AddFlashSheetState extends State<_AddFlashSheet> {
                           decoration: InputDecoration(
                             hintText: 'Акция бааны киргиз',
                             filled: true,
-                            fillColor: gp.field,
+                            fillColor: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF5F5F5),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide.none,
@@ -2321,7 +2215,7 @@ class _AddFlashSheetState extends State<_AddFlashSheet> {
                             duration: const Duration(milliseconds: 150),
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                             decoration: BoxDecoration(
-                              color: isActive ? AppColors.error : gp.field,
+                              color: isActive ? AppColors.error : (isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF0F0F0)),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
@@ -2411,172 +2305,6 @@ class _EmptyState extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-
-// ══════════════════════════════════════════════════════
-// Категория фильтри барагы
-// ══════════════════════════════════════════════════════
-class _CategoryFilterSheet extends StatelessWidget {
-  final List<CategoryModel> categories;
-  final List<Map<String, dynamic>> products;
-  final String? selectedId;
-
-  const _CategoryFilterSheet({
-    required this.categories,
-    required this.products,
-    required this.selectedId,
-  });
-
-  int _count(String id) => products
-      .where((p) => _SellerProductScreenState._catMatches(
-          p['category_id'] as String? ?? '', id))
-      .length;
-
-  bool _isAll(SubCategoryModel s) => s.name.trim() == 'Баары';
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-    final fg = isDark ? Colors.white : AppColors.black;
-    final sub = isDark ? Colors.white54 : AppColors.grey500;
-
-    Widget row({
-      required String id,
-      required String icon,
-      required String title,
-      double indent = 0,
-      bool bold = false,
-    }) {
-      final n = id.isEmpty ? products.length : _count(id);
-      final active = id.isEmpty ? selectedId == null : selectedId == id;
-      return ListTile(
-        dense: true,
-        contentPadding: EdgeInsets.only(left: 16 + indent, right: 16),
-        leading: Text(icon, style: const TextStyle(fontSize: 18)),
-        title: Text(title,
-            style: TextStyle(
-              color: active ? AppColors.primary : fg,
-              fontWeight: bold || active ? FontWeight.w700 : FontWeight.w500,
-            )),
-        trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: n > 0 ? AppColors.primary.withOpacity(0.12) : Colors.transparent,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Text('$n',
-                style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: n > 0 ? AppColors.primary : sub)),
-          ),
-          if (active) ...[
-            const SizedBox(width: 6),
-            const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 18),
-          ],
-        ]),
-        onTap: () => Navigator.pop(context, id),
-      );
-    }
-
-    return DraggableScrollableSheet(
-      expand: false,
-      initialChildSize: 0.8,
-      maxChildSize: 0.95,
-      minChildSize: 0.4,
-      builder: (_, scroll) => Container(
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(children: [
-          const SizedBox(height: 8),
-          Container(
-            width: 40, height: 4,
-            decoration: BoxDecoration(color: AppColors.grey300, borderRadius: BorderRadius.circular(2)),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
-            child: Row(children: [
-              Expanded(
-                child: Text('Категория боюнча фильтр',
-                    style: TextStyle(color: fg, fontSize: 17, fontWeight: FontWeight.w800)),
-              ),
-              if (selectedId != null)
-                TextButton(
-                  onPressed: () => Navigator.pop(context, ''),
-                  child: const Text('Тазалоо'),
-                ),
-            ]),
-          ),
-          Expanded(
-            child: ListView(
-              controller: scroll,
-              padding: const EdgeInsets.only(bottom: 24),
-              children: [
-                row(id: '', icon: '📦', title: 'Бардык товарлар', bold: true),
-                for (final cat in categories)
-                  Theme(
-                    data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                    child: ExpansionTile(
-                      initiallyExpanded: selectedId != null &&
-                          (selectedId == cat.id || selectedId!.startsWith('${cat.id}_')),
-                      tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-                      leading: Text(cat.icon, style: const TextStyle(fontSize: 20)),
-                      title: Row(children: [
-                        Expanded(
-                          child: Text(cat.name,
-                              style: TextStyle(color: fg, fontWeight: FontWeight.w700)),
-                        ),
-                        Text('${_count(cat.id)}',
-                            style: TextStyle(
-                                color: _count(cat.id) > 0 ? AppColors.primary : sub,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 13)),
-                      ]),
-                      children: [
-                        row(id: cat.id, icon: '📂', title: 'Баары — ${cat.name}', indent: 16, bold: true),
-                        for (final s in cat.subcategories.where((x) => !_isAll(x)))
-                          s.subItems.where((x) => !_isAll(x)).isEmpty
-                              ? row(id: s.id, icon: s.icon, title: s.name, indent: 16)
-                              : Theme(
-                                  data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                                  child: ExpansionTile(
-                                    initiallyExpanded: selectedId != null &&
-                                        (selectedId == s.id || selectedId!.startsWith('${s.id}_')),
-                                    tilePadding: const EdgeInsets.only(left: 32, right: 16),
-                                    leading: Text(s.icon, style: const TextStyle(fontSize: 18)),
-                                    title: Row(children: [
-                                      Expanded(
-                                        child: Text(s.name,
-                                            style: TextStyle(color: fg, fontWeight: FontWeight.w600, fontSize: 14)),
-                                      ),
-                                      Text('${_count(s.id)}',
-                                          style: TextStyle(
-                                              color: _count(s.id) > 0 ? AppColors.primary : sub,
-                                              fontWeight: FontWeight.w700,
-                                              fontSize: 12)),
-                                    ]),
-                                    children: [
-                                      row(id: s.id, icon: '📂', title: 'Баары — ${s.name}', indent: 36, bold: true),
-                                      for (final it in s.subItems.where((x) => !_isAll(x)))
-                                        row(id: it.id, icon: it.icon, title: it.name, indent: 36),
-                                    ],
-                                  ),
-                                ),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ]),
       ),
     );
   }

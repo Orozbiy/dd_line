@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:cached_video_player_plus/cached_video_player_plus.dart';
+import 'package:video_player/video_player.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/story_model.dart';
 import '../services/story_service.dart';
@@ -40,7 +40,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
   bool _isPaused = false;
 
   // ── Video player ──
-  CachedVideoPlayerPlusController? _videoCtrl;
+  VideoPlayerController? _videoCtrl;
   bool _videoReady = false;
   bool _isVideoStory = false;
   
@@ -176,10 +176,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
   // ─────────────────────────────────────────────
   Future<void> _initVideo(String url) async {
     try {
-      final ctrl = CachedVideoPlayerPlusController.networkUrl(
-        Uri.parse(url),
-        invalidateCacheIfOlderThan: const Duration(days: 2),
-      );
+      final ctrl = VideoPlayerController.networkUrl(Uri.parse(url));
       _videoCtrl = ctrl;
 
       await ctrl.initialize();
@@ -483,25 +480,36 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                               borderRadius: BorderRadius.circular(24),
                               border: Border.all(color: Colors.white54),
                             ),
-                            child: Row(
-                              children: [
-                                const Expanded(
-                                  child: Text('Комментарий жазуу...',
-                                      style: TextStyle(
-                                          color: Colors.white70, fontSize: 14)),
-                                ),
-                                if ((_commentCounts[story.id] ?? 0) > 0) ...[
-                                  const Icon(Icons.mode_comment_outlined,
-                                      color: Colors.white70, size: 16),
-                                  const SizedBox(width: 4),
-                                  Text('${_commentCounts[story.id]}',
-                                      style: const TextStyle(
-                                          color: Colors.white70,
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w600)),
-                                ],
+                            child: const Text('Комментарий жазуу...',
+                                style: TextStyle(
+                                    color: Colors.white70, fontSize: 14)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      // Комментарий иконкасы + саны
+                      GestureDetector(
+                        onTap: () => _openComments(),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: Colors.black38,
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.mode_comment_outlined,
+                                  color: Colors.white, size: 22),
+                              if ((_commentCounts[story.id] ?? 0) > 0) ...[
+                                const SizedBox(width: 6),
+                                Text('${_commentCounts[story.id]}',
+                                    style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600)),
                               ],
-                            ),
+                            ],
                           ),
                         ),
                       ),
@@ -567,7 +575,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
           child: SizedBox(
             width:  _videoCtrl!.value.size.width,
             height: _videoCtrl!.value.size.height,
-            child:  CachedVideoPlayerPlus(_videoCtrl!),
+            child:  VideoPlayer(_videoCtrl!),
           ),
         ),
       );
@@ -618,7 +626,7 @@ class _VideoProgressBar extends StatelessWidget {
                       : i == currentIndex
                           ? progress
                           : 0.0,
-                  backgroundColor: Colors.white.withOpacity(0.4),
+                  backgroundColor: Colors.white.withValues(alpha: 0.4),
                   valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               ),

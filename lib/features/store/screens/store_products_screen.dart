@@ -5,7 +5,6 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../product_detail/screens/product_detail_screen.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
-import '../../../config/theme/dd_design.dart';
 import '../../../core/app_localizations.dart';
 import '../../../core/supabase_client.dart';
 import '../../../core/utils/image_utils.dart';
@@ -89,8 +88,7 @@ class _StoreProductsScreenState extends State<StoreProductsScreen> {
           .select('*, stores(*)')
           .eq('store_id', widget.storeId)
           .or('is_active.eq.true,is_active.is.null')
-          .order('created_at', ascending: false)
-          .limit(50);
+          .order('created_at', ascending: false);
 
       final list = (data as List)
           .cast<Map<String, dynamic>>()
@@ -108,10 +106,9 @@ class _StoreProductsScreenState extends State<StoreProductsScreen> {
   Widget build(BuildContext context) {
     final loc    = AppLocalizations.of(context);
     final isRu   = loc.locale.languageCode == 'ru';
-    final p      = DDPalette.of(context);
-    final isDark = p.isDark;
-    final bgColor   = p.bg;
-    final textColor = p.text;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor   = isDark ? const Color(0xFF121212) : const Color(0xFFF4F5F7);
+    final textColor = isDark ? Colors.white : Colors.black87;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -216,7 +213,10 @@ class _StoreProductsScreenState extends State<StoreProductsScreen> {
                                   backgroundColor: Colors.transparent,
                                   backgroundImage: (widget.avatarUrl != null && widget.avatarUrl!.isNotEmpty)
                                       ? CachedNetworkImageProvider(widget.avatarUrl!)
-                                      : const AssetImage('assets/images/seller_default.png') as ImageProvider,
+                                      : null,
+                                  child: (widget.avatarUrl == null || widget.avatarUrl!.isEmpty)
+                                      ? const Icon(Icons.storefront_rounded, color: Colors.white, size: 28)
+                                      : null,
                                 ),
                               ),
                               const SizedBox(width: 14),
@@ -398,14 +398,14 @@ class _StoreProductsScreenState extends State<StoreProductsScreen> {
                             decoration: InputDecoration(
                               hintText: isRu ? 'Поиск товаров...' : 'Товар издөө...',
                               hintStyle: AppTextStyles.bodyMedium.copyWith(
-                                color: p.subText,
+                                color: isDark ? Colors.white38 : AppColors.grey400,
                               ),
                               prefixIcon: Icon(Icons.search_rounded,
-                                  color: p.subText, size: 22),
+                                  color: isDark ? Colors.white38 : AppColors.grey400, size: 22),
                               suffixIcon: _searchQuery.isNotEmpty
                                   ? IconButton(
                                       icon: Icon(Icons.close_rounded,
-                                          color: p.subText, size: 20),
+                                          color: isDark ? Colors.white54 : AppColors.grey500, size: 20),
                                       onPressed: () {
                                         _searchController.clear();
                                         setState(() => _searchQuery = '');
@@ -528,7 +528,6 @@ class _ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final p   = DDPalette.of(context);
     final cur = loc.get('currency');
     final hasDiscount = product.discountedPrice != null &&
         product.discountedPrice! < product.price;
@@ -570,11 +569,11 @@ class _ProductCard extends StatelessWidget {
                     fadeInDuration: const Duration(milliseconds: 120),
                     placeholder: (_, __) => Container(
                       height: 140,
-                      color: p.field,
+                      color: isDark ? const Color(0xFF2C2C2C) : AppColors.grey100,
                     ),
                     errorWidget: (_, __, ___) => Container(
                       height: 140,
-                      color: p.field,
+                      color: isDark ? const Color(0xFF2C2C2C) : AppColors.grey100,
                       child: const Icon(Icons.image_not_supported_outlined, color: AppColors.grey400),
                     ),
                   ),
@@ -590,7 +589,7 @@ class _ProductCard extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: AppTextStyles.labelMedium.copyWith(
-                          color: p.text,
+                          color: isDark ? Colors.white : Colors.black87,
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -698,11 +697,11 @@ class _NavigationGuideSheetState extends State<_NavigationGuideSheet> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
-    final p2 = DDPalette.of(context);
-    final sheetBg = p2.card;
-    final stepBg = p2.field;
-    final stepBorder = p2.divider;
-    final handleColor = p2.divider;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final sheetBg = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final stepBg = isDark ? const Color(0xFF2C2C2C) : Colors.grey[50]!;
+    final stepBorder = isDark ? const Color(0xFF3A3A3A) : Colors.grey[200]!;
+    final handleColor = isDark ? const Color(0xFF3A3A3A) : Colors.grey[300]!;
 
     return Container(
       color: sheetBg,

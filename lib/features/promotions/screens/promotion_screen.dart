@@ -64,10 +64,9 @@ class _PromotionScreenState extends State<PromotionScreen> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
-    final p = DDPalette.of(context);
-    final isDark = p.isDark;
-    final bgColor = p.bg;
-    final inputBg = p.field;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF121212) : const Color(0xFFF4F5F7);
+    final inputBg = isDark ? const Color(0xFF2C2C2C) : AppColors.grey100;
     final filtered = _filtered;
 
     return Scaffold(
@@ -81,7 +80,7 @@ class _PromotionScreenState extends State<PromotionScreen> {
             filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
             child: Container(
               decoration: BoxDecoration(
-                color: (isDark ? DD.bgDark : Colors.white).withOpacity(isDark ? 0.75 : 0.85),
+                color: (isDark ? DD.bgDark : Colors.white).withValues(alpha: isDark ? 0.75 : 0.85),
                 border: Border(
                   bottom: BorderSide(color: isDark ? Colors.white.withOpacity(0.08) : const Color(0xFFEDEDF0)),
                 ),
@@ -98,7 +97,7 @@ class _PromotionScreenState extends State<PromotionScreen> {
               border: Border.all(color: isDark ? Colors.white.withOpacity(0.12) : const Color(0xFFEDEDF0)),
               boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 6, offset: const Offset(0, 2))],
             ),
-            child: Icon(Icons.arrow_back_rounded, color: p.text, size: 18),
+            child: Icon(Icons.arrow_back_rounded, color: isDark ? Colors.white : AppColors.black, size: 18),
           ),
           onPressed: () => Navigator.pop(context),
         ),
@@ -118,13 +117,13 @@ class _PromotionScreenState extends State<PromotionScreen> {
             Text(
               loc.get('promo_title'),
               style: AppTextStyles.headingMedium.copyWith(
-                color: p.text,
+                color: isDark ? Colors.white : AppColors.black,
                 fontSize: 17,
               ),
             ),
           ],
         ),
-        foregroundColor: p.text,
+        foregroundColor: isDark ? Colors.white : AppColors.black,
         centerTitle: true,
       ),
       body: Column(
@@ -229,8 +228,7 @@ class _PromoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
-    final cp = DDPalette.of(context);
-    final isDark = cp.isDark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final cur = loc.get('currency');
     final price = (product['price'] as num?)?.toDouble() ?? 0;
     final discounted =
@@ -273,7 +271,7 @@ class _PromoCard extends StatelessWidget {
               // ── Карточка фону ──
               Container(
                 decoration: BoxDecoration(
-                  color: cp.card,
+                  color: isDark ? const Color(0xFF0E0A07) : Colors.white,
                   border: Border.all(
                     color: isDark
                         ? DD.accent.withOpacity(0.22)

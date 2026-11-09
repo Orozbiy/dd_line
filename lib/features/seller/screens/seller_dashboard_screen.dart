@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
-import '../../../config/theme/dd_design.dart';
 import '../../../core/app_localizations.dart';
 import '../models/seller_model.dart';
 import '../services/seller_service.dart';
+
 import 'seller_product_screen.dart';
 import '../../chat/screens/chat_list_screen.dart';
 import '../../chat/services/chat_service.dart';
@@ -116,7 +116,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
 // ══════════════════════════════════════════════════════
 void _showChangePhoneSheet() {
   final loc     = AppLocalizations.of(context);
-  final p       = DDPalette.of(context);
+  final isDark  = Theme.of(context).brightness == Brightness.dark;
   final ctrl    = TextEditingController();
   bool sending  = false;
 
@@ -131,7 +131,7 @@ void _showChangePhoneSheet() {
           bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
         ),
         decoration: BoxDecoration(
-          color: p.card,
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
@@ -144,7 +144,8 @@ void _showChangePhoneSheet() {
               const SizedBox(width: 10),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(loc.get('dash_change_phone'),
-                    style: AppTextStyles.headingSmall.copyWith(color: p.text)),
+                    style: AppTextStyles.headingSmall.copyWith(
+                        color: isDark ? Colors.white : AppColors.black)),
                 Text(loc.get('dash_change_phone_sub'),
                     style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey500)),
               ])),
@@ -155,7 +156,7 @@ void _showChangePhoneSheet() {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: p.field,
+                color: isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF7F7F7),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Row(children: [
@@ -165,7 +166,8 @@ void _showChangePhoneSheet() {
                   loc.locale.languageCode == 'ru'
                       ? 'Текущий номер: ${_seller?.phone ?? ''}'
                       : 'Учурдагы номер: ${_seller?.phone ?? ''}',
-                  style: AppTextStyles.bodyMedium.copyWith(color: p.subText),
+                  style: AppTextStyles.bodyMedium.copyWith(
+                      color: isDark ? Colors.white70 : AppColors.grey600),
                 ),
               ]),
             ),
@@ -175,7 +177,8 @@ void _showChangePhoneSheet() {
             TextField(
               controller: ctrl,
               keyboardType: TextInputType.phone,
-              style: AppTextStyles.bodyMedium.copyWith(color: p.text),
+              style: AppTextStyles.bodyMedium.copyWith(
+                  color: isDark ? Colors.white : AppColors.black),
               decoration: InputDecoration(
                 labelText: loc.locale.languageCode == 'ru'
                     ? 'Новый номер телефона'
@@ -188,7 +191,7 @@ void _showChangePhoneSheet() {
                   borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
                 ),
                 filled: true,
-                fillColor: p.field,
+                fillColor: isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF7F7F7),
               ),
             ),
             const SizedBox(height: 12),
@@ -197,9 +200,9 @@ void _showChangePhoneSheet() {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.08),
+                color: AppColors.primary.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
               ),
               child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 const Icon(Icons.info_outline, size: 16, color: AppColors.primary),
@@ -286,18 +289,17 @@ void _showChangePhoneSheet() {
   @override
   Widget build(BuildContext context) {
     final loc    = AppLocalizations.of(context);
-    final p      = DDPalette.of(context);
-    final isDark = p.isDark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // ── Адаптивдүү түстөр ──
-    final bgColor      = p.bg;
-    final appBarColor  = p.card;
-    final arrowColor   = p.text;
-    final titleColor   = p.text;
-    final cardBg       = p.card;
-    final sectionColor = p.text;
+    final bgColor      = isDark ? const Color(0xFF121212) : const Color(0xFFF4F5F7);
+    final appBarColor  = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final arrowColor   = isDark ? Colors.white : AppColors.black;
+    final titleColor   = isDark ? Colors.white : AppColors.black;
+    final cardBg       = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final sectionColor = isDark ? Colors.white : AppColors.black;
     final contactBg    = isDark ? const Color(0xFF1A2E1A) : const Color(0xFFF0FFF4);
-    final contactBorder= const Color(0xFF22C55E).withOpacity(isDark ? 0.4 : 0.3);
+    final contactBorder= const Color(0xFF22C55E).withValues(alpha: isDark ? 0.4 : 0.3);
     final contactText  = isDark ? const Color(0xFF86EFAC) : const Color(0xFF374151);
 
     if (_isLoading) {
@@ -357,7 +359,7 @@ void _showChangePhoneSheet() {
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(18),
-                  boxShadow: [BoxShadow(color: const Color(0xFFD97706).withOpacity(0.3), blurRadius: 16, offset: const Offset(0, 6))],
+                  boxShadow: [BoxShadow(color: const Color(0xFFD97706).withValues(alpha: 0.3), blurRadius: 16, offset: const Offset(0, 6))],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -366,7 +368,7 @@ void _showChangePhoneSheet() {
                       Container(
                         width: 52, height: 52,
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(14),
                         ),
                         child: Center(child: Text(
@@ -424,16 +426,16 @@ GestureDetector(
     width: double.infinity,
     padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
     decoration: BoxDecoration(
-      color: cardBg,
+      color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
       borderRadius: BorderRadius.circular(14),
       border: Border.all(
-        color: const Color(0xFFD97706).withOpacity(0.5),
+        color: const Color(0xFFD97706).withValues(alpha: 0.5),
       ),
       boxShadow: isDark
           ? []
           : [
               BoxShadow(
-                color: const Color(0xFFD97706).withOpacity(0.08),
+                color: const Color(0xFFD97706).withValues(alpha: 0.08),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -445,7 +447,7 @@ GestureDetector(
         Container(
           width: 42, height: 42,
           decoration: BoxDecoration(
-            color: const Color(0xFFD97706).withOpacity(0.12),
+            color: const Color(0xFFD97706).withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(10),
           ),
           alignment: Alignment.center,
@@ -463,7 +465,7 @@ GestureDetector(
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: p.text,
+                  color: isDark ? Colors.white : AppColors.black,
                 ),
               ),
               const SizedBox(height: 3),
@@ -482,7 +484,7 @@ GestureDetector(
         Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: const Color(0xFFD97706).withOpacity(0.12),
+            color: const Color(0xFFD97706).withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(8),
           ),
           child: const Icon(
@@ -513,7 +515,6 @@ const SizedBox(height: 20),
              _buildMenuItem(context,
   icon: '📊', title: loc.get('dash_stats'), subtitle: loc.get('dash_stats_sub'),
   onTap: () => _showSnack(loc.get('coming_soon'))),
-              const SizedBox(height: 10),
 
               _buildMenuItem(context,
                 icon: '📍', title: loc.get('dash_location'), subtitle: loc.get('dash_location_sub'),
@@ -630,7 +631,7 @@ const SizedBox(height: 16),
   //     statusText   = loc.get('sub_status_paused');
   //     subtitleText = _seller?.cardMasked ?? '';
   //   } else {
-  //     borderColor  = AppColors.error.withOpacity(0.5);
+  //     borderColor  = AppColors.error.withValues(alpha: 0.5);
   //     bgColor      = isDark ? const Color(0xFF2B0D0D) : const Color(0xFFFFF1F0);
   //     statusText   = loc.get('sub_status_none');
   //     subtitleText = loc.get('sub_link_hint');
@@ -643,8 +644,8 @@ const SizedBox(height: 16),
   //       decoration: BoxDecoration(
   //         color: bgColor,
   //         borderRadius: BorderRadius.circular(14),
-  //         border: Border.all(color: borderColor.withOpacity(0.5)),
-  //         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
+  //         border: Border.all(color: borderColor.withValues(alpha: 0.5)),
+  //         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
   //       ),
   //       child: Row(children: [
   //         const Text('💳', style: TextStyle(fontSize: 26)),
@@ -667,12 +668,12 @@ const SizedBox(height: 16),
   return StreamBuilder<List<ChatModel>>(
     stream: _chatService.sellerChatsStream(_seller!.uid),
     builder: (context, snap) {
-      final cp          = DDPalette.of(context);
+      final isDark      = Theme.of(context).brightness == Brightness.dark;
       final chats       = snap.data ?? [];
     final totalUnread = chats.fold<int>(
   0, (sum, chat) => sum + (chat.sellerUnread as num).toInt(),
 );
-      final titleColor = cp.text;
+      final titleColor = isDark ? Colors.white : AppColors.black;
 
       return GestureDetector(
         onTap: () => Navigator.push(context, MaterialPageRoute(
@@ -683,7 +684,7 @@ const SizedBox(height: 16),
             color: cardBg,
             borderRadius: BorderRadius.circular(14),
             boxShadow: [BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 8,
               offset: const Offset(0, 2),
             )],
@@ -757,9 +758,9 @@ const SizedBox(height: 16),
     required String subtitle,
     required VoidCallback onTap,
   }) {
-    final p          = DDPalette.of(context);
-    final cardBg     = p.card;
-    final titleColor = p.text;
+    final isDark     = Theme.of(context).brightness == Brightness.dark;
+    final cardBg     = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final titleColor = isDark ? Colors.white : AppColors.black;
 
     return GestureDetector(
       onTap: onTap,
@@ -768,7 +769,7 @@ const SizedBox(height: 16),
         decoration: BoxDecoration(
           color: cardBg,
           borderRadius: BorderRadius.circular(14),
-          boxShadow: p.isDark ? [] : [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
+          boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
         ),
         child: Row(children: [
           Text(icon, style: const TextStyle(fontSize: 26)),
@@ -830,10 +831,9 @@ class _AdminNotificationsBannerState
   @override
   Widget build(BuildContext context) {
     final isDark = widget.isDark;
-    final p      = DDPalette.of(context);
     final isRu = AppLocalizations.of(context).locale.languageCode == 'ru';
     final cardBg = isDark ? const Color(0xFF1E1A2E) : const Color(0xFFFFF8F0);
-    final borderColor = const Color(0xFFD97706).withOpacity(isDark ? 0.4 : 0.35);
+    final borderColor = const Color(0xFFD97706).withValues(alpha: isDark ? 0.4 : 0.35);
 
     return GestureDetector(
       onTap: () => Navigator.push(
@@ -852,7 +852,7 @@ class _AdminNotificationsBannerState
               ? []
               : [
                   BoxShadow(
-                    color: const Color(0xFFD97706).withOpacity(0.08),
+                    color: const Color(0xFFD97706).withValues(alpha: 0.08),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -917,7 +917,7 @@ class _AdminNotificationsBannerState
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: p.text,
+                      color: isDark ? Colors.white : AppColors.black,
                     ),
                   ),
                   const SizedBox(height: 3),
@@ -938,7 +938,7 @@ class _AdminNotificationsBannerState
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: const Color(0xFFD97706).withOpacity(0.12),
+                color: const Color(0xFFD97706).withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Icon(

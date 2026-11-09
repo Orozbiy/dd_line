@@ -1,13 +1,11 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
-import '../../../config/theme/dd_design.dart';
 import '../../../core/app_localizations.dart';
 import '../../../core/utils/favorites_manager.dart';
 import '../../../data/models/product_model.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'negotiation_badge.dart';
-import '../../../core/widgets/shimmer_loading.dart';
 
 // Cosmic Dark
 class _CardC {
@@ -71,7 +69,7 @@ class _ProductCardState extends State<ProductCard>
 
   String _thumbUrl(String url) {
     if (url.contains('res.cloudinary.com') && url.contains('/upload/')) {
-      return url.replaceFirst('/upload/', '/upload/w_480,q_auto,f_auto/');
+      return url.replaceFirst('/upload/', '/upload/w_300,q_auto,f_auto/');
     }
     return url;
   }
@@ -80,10 +78,9 @@ class _ProductCardState extends State<ProductCard>
   Widget build(BuildContext context) {
     final isFav       = _favorites.isFavorite(widget.product.id);
     final rating      = widget.product.rating ?? 0.0;
-    final p           = DDPalette.of(context);
-    final isDark      = p.isDark;
-    final textColor   = p.text;
-    final subColor    = p.subText;
+    final isDark      = Theme.of(context).brightness == Brightness.dark;
+    final textColor   = isDark ? Colors.white           : Colors.black87;
+    final subColor    = isDark ? Colors.white60         : Colors.black54;
     final shimmerColor = isDark ? _CardC.shimmer        : const Color(0xFFE8E8E8);
 
     final hasDiscount = widget.product.hasPromotion &&
@@ -101,7 +98,7 @@ class _ProductCardState extends State<ProductCard>
         // ── Карта мазмунуна жараша авто бийиктик ──
         // Эч кандай fixed height жок → mainAxisSize.min аркылуу авто кыскарат
         decoration: BoxDecoration(
-          color: isDark ? _CardC.card : p.card,
+          color: isDark ? _CardC.card : Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: isDark
               ? Border.all(color: _CardC.cardBorder, width: 0.8)
@@ -109,20 +106,20 @@ class _ProductCardState extends State<ProductCard>
           boxShadow: isDark
               ? [
                   BoxShadow(
-                    color: const Color(0xFF3D2080).withOpacity(0.15),
+                    color: const Color(0xFF3D2080).withValues(alpha: 0.15),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
                 ]
               : [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
+                    color: Colors.black.withValues(alpha: 0.08),
                     blurRadius: 16,
                     offset: const Offset(0, 5),
                     spreadRadius: -3,
                   ),
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
+                    color: Colors.black.withValues(alpha: 0.04),
                     blurRadius: 4,
                     offset: const Offset(0, 1),
                   ),
@@ -162,8 +159,8 @@ class _ProductCardState extends State<ProductCard>
                       imageUrl: _thumbUrl(widget.product.imageUrl),
                       fit: BoxFit.cover,
                       fadeInDuration: const Duration(milliseconds: 120),
-                      memCacheWidth: 480,
-                      placeholder: (_, __) => const ShimmerLoading(),
+                      memCacheWidth: 300,
+                      placeholder: (_, __) => const SizedBox.shrink(),
                       errorWidget: (_, __, ___) => Container(
                         color: shimmerColor,
                         child: Icon(Icons.image_not_supported_outlined,
@@ -186,7 +183,7 @@ class _ProductCardState extends State<ProductCard>
                               borderRadius: BorderRadius.circular(badgeRadius),
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.error.withOpacity(0.45),
+                                  color: AppColors.error.withValues(alpha: 0.45),
                                   blurRadius: 6,
                                   offset: const Offset(0, 2),
                                 ),
@@ -212,7 +209,7 @@ class _ProductCardState extends State<ProductCard>
                             color: AppColors.success,
                             borderRadius: BorderRadius.circular(badgeRadius),
                           ),
-                          child: Text(AppLocalizations.of(context).get('badge_new'),
+                          child: Text('Жаңы',
                               style: TextStyle(
                                   color: Colors.white,
                                   fontSize: badgeFontSize,
@@ -228,7 +225,7 @@ class _ProductCardState extends State<ProductCard>
                         child: Container(
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
-                            color: isDark ? _CardC.favBg : p.card,
+                            color: isDark ? _CardC.favBg : Colors.white,
                             shape: BoxShape.circle,
                             border: isDark
                                 ? Border.all(
@@ -236,7 +233,7 @@ class _ProductCardState extends State<ProductCard>
                                 : null,
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.10),
+                                color: Colors.black.withValues(alpha: 0.10),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
                               ),
@@ -389,7 +386,8 @@ class _ProductCardState extends State<ProductCard>
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Image.asset('assets/icons/nav/ic_star.png', width: 16, height: 16),
+                          Icon(Icons.star_rounded,
+                              size: 16, color: Colors.amber[600]),
                           const SizedBox(width: 2),
                           Text(
                             rating.toStringAsFixed(1),

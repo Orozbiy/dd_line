@@ -50,10 +50,10 @@ class _GlassButtonState extends State<GlassButton> {
               width: widget.width,
               height: widget.height,
               decoration: BoxDecoration(
-                color: widget.color.withOpacity(_pressed ? 0.88 : 0.80),
+                color: widget.color.withValues(alpha: _pressed ? 0.88 : 0.80),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: widget.color.withOpacity(0.80),
+                  color: widget.color.withValues(alpha: 0.80),
                   width: 1.2,
                 ),
               ),
@@ -119,7 +119,7 @@ class _GradientButtonState extends State<GradientButton> {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: (_pressed ? pressedColors : baseColors)
-                  .map((c) => c.withOpacity(0.80))
+                  .map((c) => c.withValues(alpha: 0.80))
                   .toList(),
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -127,7 +127,7 @@ class _GradientButtonState extends State<GradientButton> {
             borderRadius: BorderRadius.circular(widget.borderRadius),
             boxShadow: [
               BoxShadow(
-                color: shadowColor.withOpacity(_pressed ? 0.25 : 0.40),
+                color: shadowColor.withValues(alpha: _pressed ? 0.25 : 0.40),
                 blurRadius: _pressed ? 8 : 16,
                 offset: const Offset(0, 4),
                 spreadRadius: -2,

@@ -70,9 +70,9 @@ class DDCountBadge extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: DD.accent.withOpacity(0.12),
+          color: DD.accent.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(DD.rPill),
-          border: Border.all(color: DD.accent.withOpacity(0.35)),
+          border: Border.all(color: DD.accent.withValues(alpha: 0.35)),
         ),
         child: Text(text,
             style: const TextStyle(
@@ -100,7 +100,7 @@ class DDSearchField extends StatelessWidget {
             ? null
             : [
                 BoxShadow(
-                  color: DD.ink.withOpacity(0.06),
+                  color: DD.ink.withValues(alpha: 0.06),
                   blurRadius: 16,
                   offset: const Offset(0, 6),
                   spreadRadius: -4,
@@ -169,7 +169,7 @@ class DDChatListView extends StatelessWidget {
           ? (emptyState ??
               Center(
                   child: Icon(Icons.chat_bubble_outline_rounded,
-                      size: 64, color: p.subText.withOpacity(0.5))))
+                      size: 64, color: p.subText.withValues(alpha: 0.5))))
           : ListView.builder(
               physics: const BouncingScrollPhysics(),
               padding: const EdgeInsets.only(top: 4, bottom: 110),
@@ -342,7 +342,7 @@ class DDShopsListView extends StatelessWidget {
                 borderRadius: BorderRadius.circular(18),
                 boxShadow: [
                   BoxShadow(
-                    color: DD.accent.withOpacity(0.30),
+                    color: DD.accent.withValues(alpha: 0.30),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -394,12 +394,12 @@ class DDShopsListView extends StatelessWidget {
                 height: 40,
                 decoration: BoxDecoration(
                   color: s.hasLocation
-                      ? DD.accent.withOpacity(0.12)
+                      ? DD.accent.withValues(alpha: 0.12)
                       : p.chip,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                       color: s.hasLocation
-                          ? DD.accent.withOpacity(0.4)
+                          ? DD.accent.withValues(alpha: 0.4)
                           : p.chipBorder),
                 ),
                 child: Icon(Icons.near_me_rounded,
@@ -471,7 +471,7 @@ class _DDFavoritesViewState extends State<DDFavoritesView> {
             boxShadow: sel
                 ? [
                     BoxShadow(
-                      color: DD.accent.withOpacity(0.35),
+                      color: DD.accent.withValues(alpha: 0.35),
                       blurRadius: 14,
                       offset: const Offset(0, 5),
                       spreadRadius: -4,
@@ -544,8 +544,8 @@ class DDEmptyState extends StatelessWidget {
           height: 96,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: DD.accent.withOpacity(0.10),
-            border: Border.all(color: DD.accent.withOpacity(0.30)),
+            color: DD.accent.withValues(alpha: 0.10),
+            border: Border.all(color: DD.accent.withValues(alpha: 0.30)),
           ),
           child: Icon(icon, size: 46, color: DD.accent),
         ),

@@ -72,7 +72,7 @@ class CallRequestBubble extends StatelessWidget {
             child: Container(
               constraints: const BoxConstraints(maxWidth: 260),
               decoration: BoxDecoration(
-                color: _bgColor(accepted, declined).withOpacity(0.55),
+                color: _bgColor(accepted, declined).withValues(alpha: 0.55),
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(16),
                   topRight: const Radius.circular(16),
@@ -80,7 +80,7 @@ class CallRequestBubble extends StatelessWidget {
                   bottomRight: Radius.circular(isMe ? 4 : 16),
                 ),
                 border: Border.all(
-                  color: _borderColor(accepted, declined).withOpacity(0.50),
+                  color: _borderColor(accepted, declined).withValues(alpha: 0.50),
                   width: 1,
                 ),
               ),
@@ -134,8 +134,8 @@ class CallRequestBubble extends StatelessWidget {
                             horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(
                           color: accepted
-                              ? AppColors.success.withOpacity(0.1)
-                              : AppColors.error.withOpacity(0.1),
+                              ? AppColors.success.withValues(alpha: 0.1)
+                              : AppColors.error.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -197,11 +197,11 @@ class CallRequestBubble extends StatelessWidget {
                                     const EdgeInsets.symmetric(vertical: 8),
                                 decoration: BoxDecoration(
                                   color:
-                                      AppColors.error.withOpacity(0.1),
+                                      AppColors.error.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
                                     color: AppColors.error
-                                        .withOpacity(0.3),
+                                        .withValues(alpha: 0.3),
                                   ),
                                 ),
                                 child: Center(
@@ -271,15 +271,15 @@ class CallRequestBubble extends StatelessWidget {
   }
 
   Color _borderColor(bool accepted, bool declined) {
-    if (accepted) return AppColors.success.withOpacity(0.3);
-    if (declined) return AppColors.error.withOpacity(0.3);
-    return AppColors.primary.withOpacity(0.25);
+    if (accepted) return AppColors.success.withValues(alpha: 0.3);
+    if (declined) return AppColors.error.withValues(alpha: 0.3);
+    return AppColors.primary.withValues(alpha: 0.25);
   }
 
   Color _iconBg(bool accepted, bool declined) {
-    if (accepted) return AppColors.success.withOpacity(0.15);
-    if (declined) return AppColors.error.withOpacity(0.12);
-    return AppColors.primary.withOpacity(0.12);
+    if (accepted) return AppColors.success.withValues(alpha: 0.15);
+    if (declined) return AppColors.error.withValues(alpha: 0.12);
+    return AppColors.primary.withValues(alpha: 0.12);
   }
 
   IconData _icon(bool accepted, bool declined) {

@@ -2,7 +2,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
-import '../../../config/theme/dd_design.dart';
 import '../../../core/app_localizations.dart';
 import '../../../core/theme_provider.dart';
 import '../../../main.dart';
@@ -15,14 +14,13 @@ class DarkModeToggle extends StatelessWidget {
     final provider = ThemeScope.of(context);
     final loc      = AppLocalizations.of(context);
     final current  = provider.mode;
-    final _tp      = DDPalette.of(context);
-    final isDark   = _tp.isDark;
+    final isDark   = Theme.of(context).brightness == Brightness.dark;
 
-    String currentIconPath() {
+    IconData currentIcon() {
       switch (current) {
-        case AppThemeMode.light:  return 'assets/icons/settings/ic_sun.png';
-        case AppThemeMode.dark:   return 'assets/icons/settings/ic_moon.png';
-        case AppThemeMode.system: return 'assets/icons/settings/ic_system_theme.png';
+        case AppThemeMode.light:  return Icons.wb_sunny_outlined;
+        case AppThemeMode.dark:   return Icons.dark_mode_outlined;
+        case AppThemeMode.system: return Icons.settings_suggest_outlined;
       }
     }
 
@@ -38,10 +36,7 @@ class DarkModeToggle extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          Image.asset(
-            'assets/icons/settings/ic_theme.png',
-            width: 36, height: 36, fit: BoxFit.contain,
-          ),
+          const Icon(Icons.contrast, color: AppColors.primary, size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: Text(loc.get('theme_mode'), style: AppTextStyles.bodyMedium),
@@ -51,11 +46,7 @@ class DarkModeToggle extends StatelessWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Image.asset(
-                currentIconPath(),
-                width: 16, height: 16,
-                color: AppColors.primary,
-              ),
+              Icon(currentIcon(), size: 16, color: AppColors.primary),
               const SizedBox(width: 4),
               Text(
                 currentLabel(),
@@ -73,40 +64,40 @@ class DarkModeToggle extends StatelessWidget {
           PopupMenuButton<AppThemeMode>(
             onSelected: (mode) => provider.setMode(mode),
             color: isDark
-                ? Colors.black.withOpacity(0.65)
-                : Colors.white.withOpacity(0.75),
+                ? Colors.black.withValues(alpha: 0.65)
+                : Colors.white.withValues(alpha: 0.75),
             elevation: 0,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
               side: BorderSide(
                 color: isDark
-                    ? Colors.white.withOpacity(0.15)
-                    : Colors.white.withOpacity(0.50),
+                    ? Colors.white.withValues(alpha: 0.15)
+                    : Colors.white.withValues(alpha: 0.50),
               ),
             ),
             icon: Icon(
               Icons.more_vert,
               size: 20,
-              color: _tp.subText,
+              color: isDark ? Colors.white60 : Colors.black54,
             ),
             itemBuilder: (_) => [
               _buildItem(
                 mode: AppThemeMode.light,
-                iconPath: 'assets/icons/settings/ic_sun.png',
+                icon: Icons.wb_sunny_outlined,
                 label: loc.get('theme_light'),
                 current: current,
                 isDark: isDark,
               ),
               _buildItem(
                 mode: AppThemeMode.dark,
-                iconPath: 'assets/icons/settings/ic_moon.png',
+                icon: Icons.dark_mode_outlined,
                 label: loc.get('theme_dark'),
                 current: current,
                 isDark: isDark,
               ),
               _buildItem(
                 mode: AppThemeMode.system,
-                iconPath: 'assets/icons/settings/ic_system_theme.png',
+                icon: Icons.settings_suggest_outlined,
                 label: loc.get('theme_system'),
                 current: current,
                 isDark: isDark,
@@ -120,7 +111,7 @@ class DarkModeToggle extends StatelessWidget {
 
   PopupMenuItem<AppThemeMode> _buildItem({
     required AppThemeMode mode,
-    required String iconPath,
+    required IconData icon,
     required String label,
     required AppThemeMode current,
     required bool isDark,
@@ -128,13 +119,13 @@ class DarkModeToggle extends StatelessWidget {
     final isSelected = current == mode;
     final color = isSelected
         ? AppColors.primary
-        : (isDark ? Colors.white70 : AppColors.black);
+        : (isDark ? Colors.white70 : Colors.black87);
 
     return PopupMenuItem<AppThemeMode>(
       value: mode,
       child: Row(
         children: [
-          Image.asset(iconPath, width: 18, height: 18, color: color),
+          Icon(icon, size: 18, color: color),
           const SizedBox(width: 10),
           Text(
             label,

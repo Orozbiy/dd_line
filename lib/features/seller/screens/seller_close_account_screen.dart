@@ -135,11 +135,11 @@ class _SellerCloseAccountScreenState extends State<SellerCloseAccountScreen> {
     final arrowColor  = isDark ? Colors.white : AppColors.black;
     final titleColor  = isDark ? Colors.white : AppColors.black;
     final warnBg      = isDark ? const Color(0xFF2B1E0A) : const Color(0xFFFFF8F0);
-    final warnBorder  = AppColors.primary.withOpacity(isDark ? 0.5 : 0.3);
+    final warnBorder  = AppColors.primary.withValues(alpha: isDark ? 0.5 : 0.3);
     final warnText    = isDark ? const Color(0xFFCCCCCC) : AppColors.black;
     final cardBg      = isDark ? const Color(0xFF1E1E1E) : Colors.white;
     final cardBorder  = isDark ? const Color(0xFF2C2C2C) : AppColors.grey200;
-    final selBg       = isDark ? AppColors.primary.withOpacity(0.15) : AppColors.primary.withOpacity(0.08);
+    final selBg       = isDark ? AppColors.primary.withValues(alpha: 0.15) : AppColors.primary.withValues(alpha: 0.08);
     final labelColor  = isDark ? Colors.white : AppColors.black;
     final bottomBg    = isDark ? const Color(0xFF1E1E1E) : Colors.white;
 
@@ -257,7 +257,7 @@ class _SellerCloseAccountScreenState extends State<SellerCloseAccountScreen> {
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                   decoration: BoxDecoration(
                     color: bottomBg,
-                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 12, offset: const Offset(0, -4))],
+                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 12, offset: const Offset(0, -4))],
                   ),
                   child: Column(children: [
                     if (_selectedIds.isNotEmpty)

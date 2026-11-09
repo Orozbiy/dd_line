@@ -40,38 +40,21 @@ class _StoryCommentsSheet extends StatefulWidget {
 
 class _StoryCommentsSheetState extends State<_StoryCommentsSheet> {
   final _ctrl = TextEditingController();
-  final _scroll = ScrollController();
   List<StoryCommentModel> _comments = [];
   bool _loading = true;
   bool _sending = false;
 
   String? get _myId => supabase.auth.currentUser?.id;
-  bool _isAdmin = false;
-
-  Future<void> _checkAdmin() async {
-    final uid = _myId;
-    if (uid == null) return;
-    try {
-      final row = await supabase
-          .from('profiles')
-          .select('is_admin')
-          .eq('id', uid)
-          .maybeSingle();
-      if (mounted) setState(() => _isAdmin = row?['is_admin'] == true);
-    } catch (_) {}
-  }
 
   @override
   void initState() {
     super.initState();
     _load();
-    _checkAdmin();
   }
 
   @override
   void dispose() {
     _ctrl.dispose();
-    _scroll.dispose();
     super.dispose();
   }
 
@@ -106,14 +89,6 @@ class _StoryCommentsSheetState extends State<_StoryCommentsSheet> {
     });
     if (c != null) {
       widget.onCountChanged(_comments.length);
-      // Жаңы комментарий тизменин башында — ошол жерге жылдырабыз
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_scroll.hasClients) {
-          _scroll.animateTo(0,
-              duration: const Duration(milliseconds: 250),
-              curve: Curves.easeOut);
-        }
-      });
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Жөнөтүүдө ката чыкты')),
@@ -160,7 +135,7 @@ class _StoryCommentsSheetState extends State<_StoryCommentsSheet> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey.withOpacity(0.4),
+                color: Colors.grey.withValues(alpha: 0.4),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -170,7 +145,7 @@ class _StoryCommentsSheetState extends State<_StoryCommentsSheet> {
                   style: TextStyle(
                       color: fg, fontSize: 16, fontWeight: FontWeight.w700)),
             ),
-            Divider(height: 1, color: sub.withOpacity(0.2)),
+            Divider(height: 1, color: sub.withValues(alpha: 0.2)),
             Expanded(
               child: _loading
                   ? const Center(child: CircularProgressIndicator())
@@ -181,7 +156,6 @@ class _StoryCommentsSheetState extends State<_StoryCommentsSheet> {
                               style: TextStyle(color: sub)),
                         )
                       : ListView.builder(
-                          controller: _scroll,
                           padding: const EdgeInsets.symmetric(vertical: 8),
                           itemCount: _comments.length,
                           itemBuilder: (_, i) {
@@ -196,7 +170,7 @@ class _StoryCommentsSheetState extends State<_StoryCommentsSheet> {
                                   CircleAvatar(
                                     radius: 17,
                                     backgroundColor:
-                                        Colors.grey.withOpacity(0.3),
+                                        Colors.grey.withValues(alpha: 0.3),
                                     backgroundImage: (c.avatarUrl != null &&
                                             c.avatarUrl!.isNotEmpty)
                                         ? CachedNetworkImageProvider(c.avatarUrl!)
@@ -238,7 +212,7 @@ class _StoryCommentsSheetState extends State<_StoryCommentsSheet> {
                                       ],
                                     ),
                                   ),
-                                  if (mine || _isAdmin)
+                                  if (mine)
                                     GestureDetector(
                                       onTap: () => _delete(c),
                                       child: Padding(
@@ -253,7 +227,7 @@ class _StoryCommentsSheetState extends State<_StoryCommentsSheet> {
                           },
                         ),
             ),
-            Divider(height: 1, color: sub.withOpacity(0.2)),
+            Divider(height: 1, color: sub.withValues(alpha: 0.2)),
             SafeArea(
               top: false,
               child: Padding(

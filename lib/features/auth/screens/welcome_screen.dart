@@ -3,13 +3,13 @@ import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../core/app_localizations.dart';
 import '../../../core/auth_service.dart';
 import '../../home/screens/home_screen.dart';
+import '../../seller/screens/seller_entrance_screen.dart';
 import '../../seller/screens/seller_login_screen.dart';
 import '../../../core/supabase_client.dart';
 import '../../../services/notification_service.dart';
@@ -28,8 +28,9 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   late Animation<Offset> _slideAnim;
 
   bool _isLoading = false;
-  bool _isAppleLoading = false;
+  bool _navigated = false;
   StreamSubscription<AuthState>? _authSub;
+  Timer? _loadingTimeoutTimer;
 
   @override
   void initState() {
@@ -43,7 +44,10 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
     _authSub = AuthService.instance.authStateChanges.listen((data) async {
       if (data.event == AuthChangeEvent.signedIn) {
-        if (!mounted) return;
+        if (!mounted || _navigated) return;
+        _navigated = true;
+        _loadingTimeoutTimer?.cancel();
+
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (_) => const HomeScreen()),
@@ -54,59 +58,74 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         if (user != null) {
           NotificationService().saveMyToken();
           AuthService.instance.syncProfile();
-
-          try {
-            final profile = await supabase
-                .from('profiles')
-                .select('role, seller_status')
-                .eq('id', user.id)
-                .maybeSingle();
-            final role = profile?['role'] as String?;
-            final sellerStatus = profile?['seller_status'] as String?;
-            if (role != 'seller' && sellerStatus != null) {
-              await supabase
-                  .from('profiles')
-                  .update({'seller_status': null}).eq('id', user.id);
-            }
-          } catch (_) {}
+          _checkAndFixSellerStatus(user.id);
         }
-      } else if (data.event == AuthChangeEvent.signedOut && mounted) {
-        setState(() => _isLoading = false);
+      } else if (data.event == AuthChangeEvent.signedOut) {
+        if (mounted) {
+          _loadingTimeoutTimer?.cancel();
+          setState(() {
+            _isLoading = false;
+            _navigated = false;
+          });
+        }
       }
     });
   }
 
+  Future<void> _checkAndFixSellerStatus(String userId) async {
+    try {
+      final profile = await supabase
+          .from('profiles')
+          .select('role, seller_status')
+          .eq('id', userId)
+          .maybeSingle();
+      final role = profile?['role'] as String?;
+      final sellerStatus = profile?['seller_status'] as String?;
+      if (role != 'seller' && sellerStatus != null) {
+        await supabase
+            .from('profiles')
+            .update({'seller_status': null}).eq('id', userId);
+      }
+    } catch (_) {}
+  }
+
   @override
   void dispose() {
+    _loadingTimeoutTimer?.cancel();
     _controller.dispose();
     _authSub?.cancel();
     super.dispose();
   }
 
   Future<void> _handleGoogleSignIn() async {
-    setState(() => _isLoading = true);
+    if (_isLoading) return;
+
+    setState(() {
+      _isLoading = true;
+      _navigated = false;
+    });
+
+    _loadingTimeoutTimer?.cancel();
+
+    // 60 сек таймер
+    _loadingTimeoutTimer = Timer(const Duration(seconds: 60), () {
+      if (mounted && _isLoading) {
+        setState(() => _isLoading = false);
+        _showSnack(
+          '${AppLocalizations.of(context).get('login_error')}: '
+          'Убакыт бүттү. Кайра аракет кылыңыз.',
+          isError: true,
+        );
+      }
+    });
+
     try {
       await AuthService.instance.signInWithGoogle();
-      if (mounted) setState(() => _isLoading = false);
+      // Мобил: _authSub HomeScreen'га багыттайт
     } catch (e) {
+      _loadingTimeoutTimer?.cancel();
       if (mounted) {
         setState(() => _isLoading = false);
-        final loc = AppLocalizations.of(context);
-        _showSnack('${loc.get('login_error')}: $e', isError: true);
-      }
-    }
-  }
-
-  Future<void> _handleAppleSignIn() async {
-    setState(() => _isAppleLoading = true);
-    try {
-      await AuthService.instance.signInWithApple();
-      if (mounted) setState(() => _isAppleLoading = false);
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isAppleLoading = false);
-        // Колдонуучу өзү жаптырса — ката көрсөтпө
-        if (e.toString().contains('canceled') || e.toString().contains('AuthorizationErrorCode.canceled')) return;
         final loc = AppLocalizations.of(context);
         _showSnack('${loc.get('login_error')}: $e', isError: true);
       }
@@ -114,6 +133,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   }
 
   void _showSnack(String msg, {bool isError = false}) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(msg),
       backgroundColor: isError ? AppColors.error : AppColors.primary,
@@ -160,12 +180,12 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                           borderRadius: BorderRadius.circular(28),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFFD97706).withOpacity(0.45),
+                              color: const Color(0xFFD97706).withValues(alpha: 0.45),
                               blurRadius: 28,
                               offset: const Offset(0, 10),
                             ),
                             BoxShadow(
-                              color: const Color(0xFFEF4444).withOpacity(0.25),
+                              color: const Color(0xFFEF4444).withValues(alpha: 0.25),
                               blurRadius: 40,
                               offset: const Offset(0, 16),
                             ),
@@ -204,10 +224,10 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 16, vertical: 8),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.12),
+                              color: Colors.white.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: Colors.white.withOpacity(0.20),
+                                color: Colors.white.withValues(alpha: 0.20),
                               ),
                             ),
                             child: Text(
@@ -225,11 +245,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
                       const Spacer(flex: 2),
 
-                      // ── iOS: Apple гана, Android/Web: Google гана ──
-                      if (defaultTargetPlatform == TargetPlatform.iOS)
-                        _buildAppleButton()
-                      else
-                        _buildGoogleButton(loc),
+                      // ── GOOGLE КИРҮҮ БАСКЫЧЫ (GLASSMORPHISM) ──
+                      _buildGoogleButton(loc),
 
                       const SizedBox(height: 16),
 
@@ -255,6 +272,44 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     );
   }
 
+  Widget _buildSellerButton(AppLocalizations loc) {
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const SellerEntranceScreen()),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.25),
+                width: 1.5,
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.storefront_rounded,
+                    color: AppColors.primary, size: 20),
+                const SizedBox(width: 10),
+                Text(loc.get('seller_login'),
+                    style: AppTextStyles.headingSmall
+                        .copyWith(color: Colors.white70)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildGoogleButton(AppLocalizations loc) {
     // Windows — сатуучу логин
     if (defaultTargetPlatform == TargetPlatform.windows) {
@@ -269,10 +324,10 @@ class _WelcomeScreenState extends State<WelcomeScreen>
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 18),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.75),
+                color: AppColors.primary.withValues(alpha: 0.75),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: Colors.white.withOpacity(0.35),
+                  color: Colors.white.withValues(alpha: 0.35),
                   width: 1.5,
                 ),
               ),
@@ -305,10 +360,10 @@ class _WelcomeScreenState extends State<WelcomeScreen>
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 18),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(_isLoading ? 0.10 : 0.18),
+              color: Colors.white.withValues(alpha: _isLoading ? 0.10 : 0.18),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: Colors.white.withOpacity(0.40),
+                color: Colors.white.withValues(alpha: 0.40),
                 width: 1.5,
               ),
             ),
@@ -332,57 +387,6 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                         loc.get('sign_in_google'),
                         style: AppTextStyles.headingSmall
                             .copyWith(color: Colors.white),
-                      ),
-                    ],
-                  ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAppleButton() {
-    return GestureDetector(
-      onTap: _isAppleLoading ? null : _handleAppleSignIn,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 18),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(_isAppleLoading ? 0.10 : 0.18),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: Colors.white.withOpacity(0.40),
-                width: 1.5,
-              ),
-            ),
-            child: _isAppleLoading
-                ? const Center(
-                    child: SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2.5,
-                      ),
-                    ),
-                  )
-                : const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.apple, color: Colors.white, size: 24),
-                      SizedBox(width: 12),
-                      Text(
-                        'Apple менен кирүү',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
                       ),
                     ],
                   ),
@@ -448,7 +452,6 @@ class _BgPainter extends CustomPainter {
     final w = size.width;
     final h = size.height;
 
-    // ── Негизги кара-күрөң фон ──
     canvas.drawRect(
       Rect.fromLTWH(0, 0, w, h),
       Paint()
@@ -463,7 +466,6 @@ class _BgPainter extends CustomPainter {
         ).createShader(Rect.fromLTWH(0, 0, w, h)),
     );
 
-    // ── Жылып жаткан жарык тегерек 1 (кызгылт-сары) ──
     final cx1 = w * (0.15 + 0.20 * math.sin(t * math.pi));
     final cy1 = h * (0.20 + 0.15 * math.cos(t * math.pi * 1.3));
     canvas.drawCircle(
@@ -472,14 +474,13 @@ class _BgPainter extends CustomPainter {
       Paint()
         ..shader = RadialGradient(
           colors: [
-            const Color(0xFFD97706).withOpacity(0.35),
-            const Color(0xFFD97706).withOpacity(0.0),
+            const Color(0xFFD97706).withValues(alpha: 0.35),
+            const Color(0xFFD97706).withValues(alpha: 0.0),
           ],
         ).createShader(Rect.fromCircle(
             center: Offset(cx1, cy1), radius: w * 0.55)),
-      );
+    );
 
-    // ── Жылып жаткан жарык тегерек 2 (кызыл) ──
     final cx2 = w * (0.75 + 0.15 * math.cos(t * math.pi * 0.9));
     final cy2 = h * (0.65 + 0.20 * math.sin(t * math.pi * 1.1));
     canvas.drawCircle(
@@ -488,14 +489,13 @@ class _BgPainter extends CustomPainter {
       Paint()
         ..shader = RadialGradient(
           colors: [
-            const Color(0xFFEF4444).withOpacity(0.28),
-            const Color(0xFFEF4444).withOpacity(0.0),
+            const Color(0xFFEF4444).withValues(alpha: 0.28),
+            const Color(0xFFEF4444).withValues(alpha: 0.0),
           ],
         ).createShader(Rect.fromCircle(
             center: Offset(cx2, cy2), radius: w * 0.50)),
     );
 
-    // ── Жылып жаткан жарык тегерек 3 (кок) ──
     final cx3 = w * (0.50 + 0.10 * math.sin(t * math.pi * 1.7));
     final cy3 = h * (0.45 + 0.10 * math.cos(t * math.pi * 0.8));
     canvas.drawCircle(
@@ -504,25 +504,23 @@ class _BgPainter extends CustomPainter {
       Paint()
         ..shader = RadialGradient(
           colors: [
-            const Color(0xFF3D2080).withOpacity(0.30),
-            const Color(0xFF3D2080).withOpacity(0.0),
+            const Color(0xFF3D2080).withValues(alpha: 0.30),
+            const Color(0xFF3D2080).withValues(alpha: 0.0),
           ],
         ).createShader(Rect.fromCircle(
             center: Offset(cx3, cy3), radius: w * 0.40)),
     );
 
-    // ── Майда жылдыздар ──
     final rng = math.Random(42);
     for (int i = 0; i < 55; i++) {
       final sx = rng.nextDouble() * w;
       final sy = rng.nextDouble() * h;
       final sr = rng.nextDouble() * 1.2 + 0.3;
-      // жылдыз жаркылдоо
       final blink = (math.sin(t * math.pi * 2 + i * 1.3) + 1) / 2;
       canvas.drawCircle(
         Offset(sx, sy),
         sr,
-        Paint()..color = Colors.white.withOpacity(0.20 + blink * 0.35),
+        Paint()..color = Colors.white.withValues(alpha: 0.20 + blink * 0.35),
       );
     }
   }
@@ -570,11 +568,10 @@ class _GoogleGPainter extends CustomPainter {
       );
     }
 
-    // Google түстөрү ак фонго ылайыкталган жарык версия
-    drawArc(-90, 90,  const Color(0xFF6EA8FE)); // көк
-    drawArc(0,   90,  const Color(0xFF57D079)); // жашыл
-    drawArc(90,  90,  const Color(0xFFFFDA6A)); // сары
-    drawArc(180, 90,  const Color(0xFFFF7F7F)); // кызыл
+    drawArc(-90, 90,  const Color(0xFF6EA8FE));
+    drawArc(0,   90,  const Color(0xFF57D079));
+    drawArc(90,  90,  const Color(0xFFFFDA6A));
+    drawArc(180, 90,  const Color(0xFFFF7F7F));
   }
 
   @override

@@ -20,8 +20,8 @@ class FavBadge extends StatelessWidget {
         // фонунун үстүндө), болбосо палитранын субтексти ──
         Icon(
           active ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-          size: 26,
-          color: active ? const Color(0xFFFF7A30) : p.subText,
+          color: active ? Colors.white : p.subText,
+          size: 23,
         ),
 
         // ── Badge — 0 болсо жашырылат ──
@@ -34,17 +34,17 @@ class FavBadge extends StatelessWidget {
               constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
               decoration: BoxDecoration(
-                color: DD.accent,
+                color: active ? Colors.white : DD.accent,
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: p.card,
+                  color: p.isDark ? const Color(0xFF15120F) : Colors.white,
                   width: 1.5,
                 ),
               ),
               child: Text(
                 count > 99 ? '99+' : '$count',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: active ? DD.accent : Colors.white,
                   fontSize: 9,
                   fontWeight: FontWeight.bold,
                   height: 1.2,

@@ -1,10 +1,7 @@
-import 'dart:io';
 import 'dart:math';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:path_provider/path_provider.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../core/services/yandex_storage_service.dart';
@@ -48,7 +45,6 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
   // presigned URL'дери менен ExoPlayer'де туура иштебей, бир нече
   // миллисекунд ("зыың") үн чыгарып токтоп калчу — ошон үчүн ойнотуудан
   // мурун файлды ТОЛУК жүктөп алып, андан кийин локалдык файлдан ойнотобуз.
-  String? _localFilePath;
 
   static const int _barCount = 27;
   late final List<double> _barHeights = _generateBarHeights(widget.audioUrl);
@@ -142,64 +138,17 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
     }
   }
 
-  /// Presigned URL алуу — жеке bucket үчүн убактылуу signed URL
+  /// Ойнотуучу URL: Backblaze (колдонмодон жүктөлгөн, жеке bucket) болсо —
+  /// убактылуу signed URL; Supabase (веб'ден жүктөлгөн) болсо — түз URL.
   String _getPlayUrl() {
     try {
-      final signed = YandexStorageService.instance.presignedUrl(widget.audioUrl);
-      debugPrint('🔊 Presigned URL: $signed');
-      return signed;
+      if (YandexStorageService.extractObjectKey(widget.audioUrl) == null) {
+        return widget.audioUrl;
+      }
+      return YandexStorageService.instance.presignedUrl(widget.audioUrl);
     } catch (e) {
       debugPrint('🔊❌ Presigned URL жасалбады: $e, түп URL колдонулат');
       return widget.audioUrl;
-    }
-  }
-
-  /// Аудиону ОЙНОТУУДАН МУРУН толук жүктөп алып, телефондо убактылуу
-  /// файлга сактайт — ошондон кийин GANA ойнотулат.
-  ///
-  /// МААНИЛҮҮ: мурда UrlSource(presignedUrl) аркылуу ТҮЗ агым (stream)
-  /// түрүндө ойнотулчу. Android'деги ExoPlayer Backblaze B2'нин
-  /// presigned URL'дериндеги HTTP Range сурамдарын туура иштете албай,
-  /// бир аз буфер алгандан кийин ("зыың" деген кыска добуш) агымды
-  /// "бүттү" деп токтоткузуп коёт эле — аудио толук ойнолбой калчу.
-  /// Файлды толук жүктөп, локалдык файлдан ойнотуу бул көйгөйдү
-  /// толугу менен айланып өтөт.
-  Future<String?> _ensureLocalFile() async {
-    final existing = _localFilePath;
-    if (existing != null && await File(existing).exists()) {
-      debugPrint('🔊 Жергиликтүү кэштен колдонулат: $existing');
-      return existing;
-    }
-
-    try {
-      final playUrl = _getPlayUrl();
-      debugPrint('🔊⬇️ Толук жүктөлүп алынат: $playUrl');
-      final response = await http
-          .get(Uri.parse(playUrl))
-          .timeout(const Duration(seconds: 25));
-
-      if (response.statusCode != 200) {
-        debugPrint(
-            '🔊❌ Жүктөө катасы: HTTP ${response.statusCode}, body=${response.body}');
-        return null;
-      }
-      if (response.bodyBytes.isEmpty) {
-        debugPrint('🔊❌ Жүктөлгөн файл бош (0 байт)');
-        return null;
-      }
-
-      final dir = await getTemporaryDirectory();
-      final safeName = 'voice_cache_${widget.audioUrl.hashCode}.m4a';
-      final file = File('${dir.path}/$safeName');
-      await file.writeAsBytes(response.bodyBytes, flush: true);
-
-      debugPrint(
-          '🔊✅ Жергиликтүү файлга сакталды: ${file.path} (${response.bodyBytes.length}B)');
-      _localFilePath = file.path;
-      return file.path;
-    } catch (e) {
-      debugPrint('🔊❌ Жүктөп алуу катасы: $e');
-      return null;
     }
   }
 
@@ -247,16 +196,10 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
             _currentSeconds = 0;
           });
         }
-        // Аудионун толук файлын жүктөп алабыз, андан кийин ЛОКАЛДЫК
-        // файлдан ойнотобуз (ExoPlayer'дин B2 presigned URL менен
-        // стрим кылуудагы "зыың" маселесин айланып өтүү үчүн).
-        final localPath = await _ensureLocalFile();
-        if (localPath == null) {
-          throw Exception(
-              'Аудио жүктөлбөдү (интернет байланышын текшериңиз)');
-        }
-        debugPrint('🔊▶️ play() чакырылат (локалдык файл): $localPath');
-        await _player.play(DeviceFileSource(localPath));
+        // ВЕБ: браузердин <audio> элементи URL'ди түздөн-түз стрим кылат
+        final playUrl = _getPlayUrl();
+        debugPrint('🔊▶️ play() чакырылат: $playUrl');
+        await _player.play(UrlSource(playUrl));
         debugPrint('🔊✅ play() ийгиликтүү чакырылды');
       }
       _activePlayer = _player;
@@ -296,11 +239,11 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
   Widget build(BuildContext context) {
     final iconColor     = widget.isMe ? Colors.white : AppColors.primary;
     final trackColor    = widget.isMe
-        ? Colors.white.withOpacity(0.3)
+        ? Colors.white.withValues(alpha: 0.3)
         : AppColors.grey200;
     final progressColor = widget.isMe ? Colors.white : AppColors.primary;
     final subColor      = widget.isMe
-        ? Colors.white.withOpacity(0.70)
+        ? Colors.white.withValues(alpha: 0.70)
         : AppColors.grey400;
 
     final displaySeconds = _currentSeconds > 0
@@ -322,8 +265,8 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
                 height: 36,
                 decoration: BoxDecoration(
                   color: widget.isMe
-                      ? Colors.white.withOpacity(0.2)
-                      : AppColors.primary.withOpacity(0.1),
+                      ? Colors.white.withValues(alpha: 0.2)
+                      : AppColors.primary.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: _isLoading
@@ -422,7 +365,7 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
                           size: 14,
                           color: widget.isRead
                               ? Colors.white
-                              : Colors.white.withOpacity(0.6),
+                              : Colors.white.withValues(alpha: 0.6),
                         ),
                       ],
                     ],

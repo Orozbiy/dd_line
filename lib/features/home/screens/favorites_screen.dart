@@ -219,12 +219,11 @@ class _FavoritesScreenState extends State<FavoritesScreen>
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
-    final p = DDPalette.of(context);
-    final isDark = p.isDark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isKy = loc.locale.languageCode == 'ky';
 
-    final bgColor = p.bg;
-    final cardColor = p.card;
+    final bgColor = isDark ? DD.bgDark : DD.bgLight;
+    final cardColor = isDark ? const Color(0xFF15120F) : Colors.white;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -240,7 +239,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
             : Colors.white.withOpacity(0.65),
         elevation: 0,
         automaticallyImplyLeading: false,
-        foregroundColor: p.text,
+        foregroundColor: isDark ? Colors.white : AppColors.black,
         title: _selectionMode
             ? Row(children: [
                 GestureDetector(
@@ -256,7 +255,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
             : Text(
                 loc.get('favorites'),
                 style: AppTextStyles.headingMedium.copyWith(
-                  color: p.text,
+                  color: isDark ? Colors.white : AppColors.black,
                 ),
               ),
         actions: _selectionMode
@@ -343,7 +342,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
+        color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(DD.rPill),
       ),
       child: Text(
@@ -429,8 +428,8 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                       color: isSelected
                           ? AppColors.primary
                           : (isDark2
-                              ? Colors.white.withOpacity(0.15)
-                              : Colors.black.withOpacity(0.08)),
+                              ? Colors.white.withValues(alpha: 0.15)
+                              : Colors.black.withValues(alpha: 0.08)),
                       shape: BoxShape.circle,
                       border: Border.all(
                         color: isSelected
@@ -440,7 +439,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.15),
+                          color: Colors.black.withValues(alpha: 0.15),
                           blurRadius: 4,
                         ),
                       ],
@@ -458,7 +457,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                   child: Container(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(14),
-                      color: Colors.black.withOpacity(0.18),
+                      color: Colors.black.withValues(alpha: 0.18),
                     ),
                   ),
                 ),
@@ -526,11 +525,11 @@ class _FavoritesScreenState extends State<FavoritesScreen>
         borderRadius: BorderRadius.circular(DD.rCard),
         border: Border.all(
             color: isDark
-                ? DD.accent2.withOpacity(0.14)
+                ? DD.accent2.withValues(alpha: 0.14)
                 : const Color(0xFFF0F0F2)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.06),
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.06),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -647,9 +646,8 @@ class _ProductFavCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fp = DDPalette.of(context);
-    final cardColor = fp.card;
-    final shimmerColor = fp.field;
+    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final shimmerColor = isDark ? const Color(0xFF2C2C2C) : AppColors.grey100;
     final thumbUrl = toCloudinaryThumb(product.imageUrl, width: 400);
 
     return Container(
@@ -693,7 +691,7 @@ class _ProductFavCard extends StatelessWidget {
                 Text(
                   product.name,
                   style: AppTextStyles.labelMedium.copyWith(
-                    color: fp.text,
+                    color: isDark ? Colors.white : AppColors.black,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,

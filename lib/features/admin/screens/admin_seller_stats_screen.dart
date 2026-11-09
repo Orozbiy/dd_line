@@ -233,7 +233,7 @@ class _AdminSellerStatsScreenState extends State<AdminSellerStatsScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.15),
+          color: Colors.white.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Column(
@@ -292,7 +292,7 @@ class _AdminSellerStatsScreenState extends State<AdminSellerStatsScreen> {
         decoration: BoxDecoration(
           color: selected
               ? AppColors.primary
-              : AppColors.primary.withOpacity(0.1),
+              : AppColors.primary.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
@@ -355,13 +355,13 @@ class _SellerCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: paid
-              ? AppColors.success.withOpacity(0.4)
-              : AppColors.error.withOpacity(0.2),
+              ? AppColors.success.withValues(alpha: 0.4)
+              : AppColors.error.withValues(alpha: 0.2),
           width: 0.8,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -380,7 +380,7 @@ class _SellerCard extends StatelessWidget {
                   height: 32,
                   decoration: BoxDecoration(
                     color: rank <= 3
-                        ? AppColors.primary.withOpacity(0.15)
+                        ? AppColors.primary.withValues(alpha: 0.15)
                         : AppColors.grey200,
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -430,8 +430,8 @@ class _SellerCard extends StatelessWidget {
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: paid
-                        ? AppColors.success.withOpacity(0.12)
-                        : AppColors.error.withOpacity(0.1),
+                        ? AppColors.success.withValues(alpha: 0.12)
+                        : AppColors.error.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(

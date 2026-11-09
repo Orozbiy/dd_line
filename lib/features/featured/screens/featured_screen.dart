@@ -70,12 +70,13 @@ class _FeaturedScreenState extends State<FeaturedScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final p          = DDPalette.of(context);
-    final isDark     = p.isDark;
-    final bgColor    = p.bg;
-    final divColor   = p.divider;
-    final inputFill  = p.field;
-    final titleColor = p.text;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+  
+
+    final bgColor    = isDark ? const Color(0xFF121212) : const Color(0xFFF4F5F7);
+    final divColor   = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFEEEEEE);
+    final inputFill  = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF0F0F0);
+    final titleColor = isDark ? Colors.white : AppColors.black;
 
     final filtered = _filtered;
 
@@ -107,7 +108,7 @@ class _FeaturedScreenState extends State<FeaturedScreen> {
               border: Border.all(color: isDark ? Colors.white.withOpacity(0.12) : const Color(0xFFEDEDF0)),
               boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 6, offset: const Offset(0, 2))],
             ),
-            child: Icon(Icons.arrow_back_rounded, color: p.text, size: 18),
+            child: Icon(Icons.arrow_back_rounded, color: isDark ? Colors.white : AppColors.black, size: 18),
           ),
           onPressed: () => Navigator.pop(context),
         ),

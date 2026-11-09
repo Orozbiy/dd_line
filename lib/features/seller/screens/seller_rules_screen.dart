@@ -86,7 +86,7 @@ class SellerRulesScreen extends StatelessWidget {
             decoration: BoxDecoration(
               color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFF0FFF4),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFF22C55E).withOpacity(0.4)),
+              border: Border.all(color: const Color(0xFF22C55E).withValues(alpha: 0.4)),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -118,16 +118,16 @@ class SellerRulesScreen extends StatelessWidget {
   }) {
     // Кара режимде: фон өтө жарык болбосун, текст ак
     final tipBg = isDark
-        ? rule.accentColor.withOpacity(0.18)
-        : rule.accentColor.withOpacity(0.10);
+        ? rule.accentColor.withValues(alpha: 0.18)
+        : rule.accentColor.withValues(alpha: 0.10);
     final tipTextColor = isDark ? Colors.white : Colors.black;
     final tagBg = isDark
-        ? rule.accentColor.withOpacity(0.22)
-        : rule.accentColor.withOpacity(0.12);
+        ? rule.accentColor.withValues(alpha: 0.22)
+        : rule.accentColor.withValues(alpha: 0.12);
     final tagTextColor = isDark ? Colors.white : Colors.black;
     final numBg = isDark
-        ? rule.accentColor.withOpacity(0.25)
-        : rule.accentColor.withOpacity(0.15);
+        ? rule.accentColor.withValues(alpha: 0.25)
+        : rule.accentColor.withValues(alpha: 0.15);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -136,7 +136,7 @@ class SellerRulesScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: isDark
             ? []
-            : [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
+            : [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -171,12 +171,12 @@ class _PriceWatchButtonState extends State<PriceWatchButton>
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
             color: _isWatching
-                ? AppColors.primary.withOpacity(0.12)
+                ? AppColors.primary.withValues(alpha: 0.12)
                 : (isDark ? const Color(0xFF2C2C2C) : AppColors.grey100),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: _isWatching
-                  ? AppColors.primary.withOpacity(0.5)
+                  ? AppColors.primary.withValues(alpha: 0.5)
                   : Colors.transparent,
               width: 1.5,
             ),

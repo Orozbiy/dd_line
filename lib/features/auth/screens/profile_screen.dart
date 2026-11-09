@@ -1,16 +1,14 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
-import '../../../config/theme/dd_design.dart';
 import '../../../core/app_localizations.dart';
 import '../../../core/auth_service.dart';
 import '../../../core/supabase_client.dart';
 import 'welcome_screen.dart';
-import '../../settings/screens/delete_account_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -79,21 +77,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final loc    = AppLocalizations.of(context);
     final picker = ImagePicker();
     final picked = await picker.pickImage(
-        source: ImageSource.gallery, imageQuality: 75, maxWidth: 320, maxHeight: 320);
+        source: ImageSource.gallery, imageQuality: 70, maxWidth: 512);
     if (picked == null) return;
 
     setState(() => _isUploadingPhoto = true);
     try {
       final user = supabase.auth.currentUser;
       if (user == null) return;
-      final file        = File(picked.path);
+      // Веб + мобил: File эмес, байттар менен жүктөйбүз
+      final Uint8List bytes = await picked.readAsBytes();
       final storagePath = 'avatars/${user.id}.jpg';
-      await supabase.storage.from('product-images').upload(
-            storagePath, file,
-            fileOptions: const FileOptions(upsert: true));
-      // ?v= — жаңы сүрөт кэште эски болуп калбашы үчүн
+      await supabase.storage.from('product-images').uploadBinary(
+            storagePath, bytes,
+            fileOptions: const FileOptions(
+                upsert: true, contentType: 'image/jpeg'));
       final url =
-          '${supabase.storage.from('product-images').getPublicUrl(storagePath)}?v=${DateTime.now().millisecondsSinceEpoch}';
+          supabase.storage.from('product-images').getPublicUrl(storagePath);
       await supabase
           .from('profiles')
           .update({'avatar_url': url}).eq('id', user.id);
@@ -142,8 +141,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _showAvatarOptionsSheet() {
     final loc    = AppLocalizations.of(context);
-    final _pp    = DDPalette.of(context);
-    final isDark = _pp.isDark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     showModalBottomSheet(
       context: context,
@@ -185,25 +183,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
                 ListTile(
-                  leading: Image.asset(
-                    'assets/icons/profile/ic_camera.png',
-                    width: 24, height: 24,
-                    color: AppColors.primary,
-                  ),
+                  leading: const Icon(Icons.photo_camera_outlined,
+                      color: AppColors.primary),
                   title: Text(loc.get('profile_change_photo'),
                       style: AppTextStyles.labelLarge.copyWith(
-                          color: _pp.text)),
+                          color: isDark ? Colors.white : AppColors.black)),
                   onTap: () {
                     Navigator.pop(context);
                     _pickAndUploadAvatar();
                   },
                 ),
                 ListTile(
-                  leading: Image.asset(
-                    'assets/icons/profile/ic_delete.png',
-                    width: 24, height: 24,
-                    color: AppColors.error,
-                  ),
+                  leading: const Icon(Icons.delete_outline,
+                      color: AppColors.error),
                   title: Text(loc.get('profile_delete_photo'),
                       style: AppTextStyles.labelLarge
                           .copyWith(color: AppColors.error)),
@@ -330,8 +322,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _showEditSheet() {
     final loc    = AppLocalizations.of(context);
-    final _ep    = DDPalette.of(context);
-    final isDark = _ep.isDark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     showModalBottomSheet(
       context: context,
@@ -377,11 +368,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 16),
                 Text(loc.get('profile_edit_title'),
                     style: AppTextStyles.headingMedium.copyWith(
-                        color: _ep.text)),
+                        color: isDark ? Colors.white : AppColors.black)),
                 const SizedBox(height: 20),
                 Text(loc.get('profile_label_name'),
                     style: AppTextStyles.bodySmall.copyWith(
-                        color: _ep.subText)),
+                        color: isDark
+                            ? Colors.white70
+                            : AppColors.grey500)),
                 const SizedBox(height: 6),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
@@ -390,7 +383,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: TextField(
                       controller: _fullNameController,
                       style: AppTextStyles.labelLarge.copyWith(
-                          color: _ep.text),
+                          color: isDark ? Colors.white : AppColors.black),
                       decoration: InputDecoration(
                         hintText: loc.get('profile_hint_name'),
                         hintStyle: TextStyle(
@@ -567,18 +560,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final loc      = AppLocalizations.of(context);
-    final _bp      = DDPalette.of(context);
-    final isDark   = _bp.isDark;
-    final textColor = _bp.text;
-    final subColor  = _bp.subText;
-    final divColor  = _bp.divider;
+    final isDark   = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : AppColors.black;
+    final subColor  = isDark ? const Color(0xFFAAAAAA) : AppColors.grey500;
+    final divColor  = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFEEEEEE);
 
     final subtitleText = _isSeller
         ? 'Сатуучу'
         : (_email.isNotEmpty ? _email : '—');
 
     return Scaffold(
-      backgroundColor: _bp.bg,
+      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF4F5F7),
       extendBodyBehindAppBar: true,
 
       // ── AppBar — размытие (settings стилинде) ──
@@ -608,11 +600,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         actions: [
           IconButton(
             onPressed: _showEditSheet,
-            icon: Image.asset(
-              'assets/icons/profile/ic_edit.png',
-              width: 24, height: 24,
-              color: AppColors.primary,
-            ),
+            icon: const Icon(Icons.edit_outlined, color: AppColors.primary),
           ),
         ],
       ),
@@ -620,15 +608,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       body: _isLoading
           ? const Center(
               child: CircularProgressIndicator(color: AppColors.primary))
-          : Column(
-              children: [
-            Expanded(
-              child: SingleChildScrollView(
+          : SingleChildScrollView(
               padding: EdgeInsets.fromLTRB(
                 20,
                 MediaQuery.of(context).padding.top + kToolbarHeight + 16,
                 20,
-                24,
+                120,
               ),
               child: Column(
                 children: [
@@ -648,7 +633,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   width: 96, height: 96,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
-                                    gradient: (_avatarUrl == null && !_isSeller)
+                                    gradient: _avatarUrl == null
                                         ? const LinearGradient(colors: [
                                             Color(0xFFD97706),
                                             Color(0xFFEF4444)
@@ -658,12 +643,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         ? DecorationImage(
                                             image: NetworkImage(_avatarUrl!),
                                             fit: BoxFit.cover)
-                                        : (_isSeller
-                                            ? const DecorationImage(
-                                                image: AssetImage(
-                                                    'assets/images/seller_default.png'),
-                                                fit: BoxFit.cover)
-                                            : null),
+                                        : null,
                                     border: Border.all(
                                       color: isDark
                                           ? Colors.white.withOpacity(0.15)
@@ -679,7 +659,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       ),
                                     ],
                                   ),
-                                  child: (_avatarUrl == null && !_isSeller)
+                                  child: _avatarUrl == null
                                       ? Center(
                                           child: Text(
                                             _fullName.isNotEmpty
@@ -704,7 +684,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       color: AppColors.primary,
                                       shape: BoxShape.circle,
                                       border: Border.all(
-                                          color: _bp.bg,
+                                          color: isDark
+                                              ? const Color(0xFF1A1A1A)
+                                              : Colors.white,
                                           width: 2),
                                     ),
                                     child: _isUploadingPhoto
@@ -764,7 +746,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       child: Column(
                         children: [
                           _profileItem(
-                            'assets/icons/profile/ic_person.png',
+                            Icons.person_outline,
                             loc.get('profile_label_name'),
                             _fullName,
                             textColor: textColor,
@@ -773,8 +755,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           Divider(height: 1, color: divColor),
                           _profileItem(
                             _isSeller
-                                ? 'assets/icons/profile/ic_store_profile.png'
-                                : 'assets/icons/profile/ic_email.png',
+                                ? Icons.store_outlined
+                                : Icons.email_outlined,
                             _isSeller ? 'Аккаунт' : 'Email',
                             _isSeller
                                 ? 'Сатуучу аккаунту'
@@ -784,7 +766,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           Divider(height: 1, color: divColor),
                           _profileItem(
-                            'assets/icons/profile/ic_phone.png',
+                            Icons.phone_outlined,
                             loc.get('profile_label_phone'),
                             _phone,
                             textColor: textColor,
@@ -820,11 +802,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Image.asset(
-                                'assets/icons/profile/ic_logout.png',
-                                width: 20, height: 20,
-                                color: AppColors.error,
-                              ),
+                              const Icon(Icons.logout,
+                                  color: AppColors.error, size: 20),
                               const SizedBox(width: 8),
                               Text(
                                 loc.get('profile_signout_btn'),
@@ -838,85 +817,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 32),
                 ],
               ),
-            )),
-            _buildDeleteAccountBar(isDark, loc),
-              ],
             ),
-    );
-  }
-
-  // ── Аккаунтту өчүрүү: экрандын эң түбүндө, айнек стили, 3:4 иконка-кнопка ──
-  Widget _buildDeleteAccountBar(bool isDark, AppLocalizations loc) {
-    final bottomInset = MediaQuery.of(context).padding.bottom;
-    const double btnW = 48; // 3 : 4  →  48 × 64
-    const double btnH = 64;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(20, 8, 20, bottomInset + 12),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const DeleteAccountScreen()),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                child: Container(
-                  width: btnW,
-                  height: btnH,
-                  decoration: BoxDecoration(
-                    color: AppColors.error.withOpacity(isDark ? 0.12 : 0.08),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: AppColors.error.withOpacity(isDark ? 0.25 : 0.20),
-                    ),
-                  ),
-                  child: Center(
-                    child: Image.asset(
-                      'assets/icons/profile/ic_remove_account.png',
-                      width: 26, height: 26,
-                      color: AppColors.error,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  loc.get('delete_account_btn'),
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.error,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  loc.get('delete_account_subtitle'),
-                  style: AppTextStyles.labelSmall.copyWith(
-                    color: AppColors.error.withOpacity(0.6),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 
   Widget _profileItem(
-    String iconPath,
+    IconData icon,
     String label,
     String value, {
     required Color textColor,
@@ -933,13 +842,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               color: AppColors.primary.withOpacity(0.12),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Center(
-              child: Image.asset(
-                iconPath,
-                width: 20, height: 20,
-                color: AppColors.primary,
-              ),
-            ),
+            child: Icon(icon, color: AppColors.primary, size: 18),
           ),
           const SizedBox(width: 14),
           Column(

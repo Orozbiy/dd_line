@@ -1,11 +1,16 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:http/http.dart' as http;
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class YandexStorageService {
   YandexStorageService._();
   static final YandexStorageService instance = YandexStorageService._();
+
+  // ── ВЕБ: Supabase Storage (Backblaze'ге браузерден түз жүктөө CORS'ко такалат) ──
+  static const _supaBucket = 'product-images';
 
   static const _accessKeyId = '00372b9ef8f7c080000000001';
   static const _secretKey   = 'K003kbcRF9atVj3Si0xJG9dfLe7BiS8';
@@ -111,6 +116,10 @@ class YandexStorageService {
   }) async {
     final name = filename ?? '${folder}_${DateTime.now().millisecondsSinceEpoch}.jpg';
     final objectKey = '$folder/$name';
+    // ВЕБ → Supabase, МОБИЛ → Backblaze
+    if (kIsWeb) {
+      return _supabaseUpload(bytes, path: objectKey, contentType: contentType);
+    }
     return _put(bytes, objectKey, contentType);
   }
 
@@ -118,10 +127,38 @@ class YandexStorageService {
     Uint8List bytes, {
     required String folder,
     String? filename,
+    String contentType = 'audio/m4a',
   }) async {
     final name = filename ?? 'audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
     final objectKey = '$folder/$name';
-    return _put(bytes, objectKey, 'audio/m4a');
+    if (kIsWeb) {
+      return _supabaseUpload(bytes, path: objectKey, contentType: contentType);
+    }
+    return _put(bytes, objectKey, contentType);
+  }
+
+  // ═══════════════════════════════════════
+  // Supabase жүктөө (веб)
+  // ═══════════════════════════════════════
+  Future<String?> _supabaseUpload(
+    Uint8List bytes, {
+    required String path,
+    required String contentType,
+  }) async {
+    try {
+      final storage = Supabase.instance.client.storage.from(_supaBucket);
+      await storage.uploadBinary(
+        path,
+        bytes,
+        fileOptions: FileOptions(contentType: contentType, upsert: true),
+      );
+      final url = storage.getPublicUrl(path);
+      debugPrint('✅ Supabase жүктөлдү: $url');
+      return url;
+    } catch (e) {
+      debugPrint('❌ Supabase ката: $e');
+      return null;
+    }
   }
 
   Future<String?> _put(Uint8List body, String objectKey, String contentType) async {

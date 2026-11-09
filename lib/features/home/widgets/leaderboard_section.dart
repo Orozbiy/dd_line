@@ -26,7 +26,6 @@
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
-import '../../../config/theme/dd_design.dart';
 import '../../../core/supabase_client.dart';
 
 class LeaderboardSection extends StatefulWidget {
@@ -99,9 +98,8 @@ class _LeaderboardSectionState extends State<LeaderboardSection> {
     if (_loading) return const SizedBox.shrink();
     if (_leaders.isEmpty) return const SizedBox.shrink();
 
-    final p         = DDPalette.of(context);
-    final isDark    = p.isDark;
-    final cardColor = p.card;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -116,7 +114,7 @@ class _LeaderboardSectionState extends State<LeaderboardSection> {
               Text(
                 'Топ алуучулар',
                 style: AppTextStyles.headingSmall.copyWith(
-                  color: p.text,
+                  color: isDark ? Colors.white : AppColors.black,
                 ),
               ),
               const Spacer(),
@@ -126,7 +124,7 @@ class _LeaderboardSectionState extends State<LeaderboardSection> {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.12),
+                    color: AppColors.primary.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -157,7 +155,9 @@ class _LeaderboardSectionState extends State<LeaderboardSection> {
               color: cardColor,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: p.divider,
+                color: isDark
+                    ? const Color(0xFF2C2C2C)
+                    : const Color(0xFFEEEEEE),
                 width: 0.5,
               ),
             ),
@@ -215,10 +215,10 @@ class _Podium extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(
-        color: DDPalette.of(context).card,
+        color: isDark ? const Color(0xFF1A1A1A) : const Color(0xFFFAFAFA),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: DDPalette.of(context).divider,
+          color: isDark ? const Color(0xFF2C2C2C) : const Color(0xFFEEEEEE),
           width: 0.5,
         ),
       ),
@@ -246,7 +246,7 @@ class _Podium extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(color: colors[idx], width: 2.5),
-                    color: DDPalette.of(context).field,
+                    color: isDark ? const Color(0xFF2C2C2C) : AppColors.grey100,
                   ),
                   child: avatarUrl.isNotEmpty
                       ? ClipOval(
@@ -268,7 +268,7 @@ class _Podium extends StatelessWidget {
                   style: TextStyle(
                     fontSize: isFirst ? 13 : 11,
                     fontWeight: FontWeight.w600,
-                    color: DDPalette.of(context).text,
+                    color: isDark ? Colors.white : AppColors.black,
                   ),
                 ),
                 // Балл
@@ -286,12 +286,12 @@ class _Podium extends StatelessWidget {
                   height: heights[idx],
                   margin: const EdgeInsets.symmetric(horizontal: 4),
                   decoration: BoxDecoration(
-                    color: colors[idx].withOpacity(0.18),
+                    color: colors[idx].withValues(alpha: 0.18),
                     borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(8),
                     ),
                     border: Border.all(
-                      color: colors[idx].withOpacity(0.4),
+                      color: colors[idx].withValues(alpha: 0.4),
                       width: 0.8,
                     ),
                   ),
@@ -336,8 +336,8 @@ class _LeaderRow extends StatelessWidget {
     final name = item['full_name'] as String? ?? 'Колдонуучу';
     final score = item['total_score'] as int? ?? 0;
     final orders = item['orders_count'] as int? ?? 0;
-    final lp       = DDPalette.of(context);
-    final divColor = lp.divider;
+    final divColor =
+        isDark ? const Color(0xFF2C2C2C) : const Color(0xFFEEEEEE);
 
     return Column(
       children: [
@@ -363,7 +363,9 @@ class _LeaderRow extends StatelessWidget {
                 height: 34,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: lp.field,
+                  color: isDark
+                      ? const Color(0xFF2C2C2C)
+                      : AppColors.grey100,
                 ),
                 child: _Initials(
                   name: name,
@@ -384,7 +386,7 @@ class _LeaderRow extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
-                        color: lp.text,
+                        color: isDark ? Colors.white : AppColors.black,
                       ),
                     ),
                     Text(
@@ -434,10 +436,10 @@ class _MyRankCard extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(14, 8, 14, 0),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(isDark ? 0.15 : 0.08),
+        color: AppColors.primary.withValues(alpha: isDark ? 0.15 : 0.08),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: AppColors.primary.withOpacity(0.3),
+          color: AppColors.primary.withValues(alpha: 0.3),
           width: 0.8,
         ),
       ),
@@ -456,7 +458,7 @@ class _MyRankCard extends StatelessWidget {
             '📍 Сениң орнуң',
             style: TextStyle(
               fontSize: 13,
-              color: DDPalette.of(context).subText,
+              color: isDark ? Colors.white70 : AppColors.grey600,
             ),
           ),
           const Spacer(),

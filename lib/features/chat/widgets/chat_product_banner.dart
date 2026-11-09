@@ -3,7 +3,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
-import '../../../config/theme/dd_design.dart';
 import '../../../core/app_localizations.dart';
 import '../../../core/supabase_client.dart';
 import '../../../core/utils/image_utils.dart';
@@ -64,7 +63,6 @@ class _ChatProductBannerState extends State<ChatProductBanner> {
 
     final loc    = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final _p     = DDPalette.of(context);
 
     final name        = (_product?['title'] as String?) ?? widget.productName ?? '';
     final images      = List<String>.from(_product?['images'] as List? ?? []);
@@ -78,16 +76,18 @@ class _ChatProductBannerState extends State<ChatProductBanner> {
 
     // ── Glassmorphism түстөрү ──
     final bgColor     = isDark
-        ? Colors.white.withOpacity(0.07)
-        : Colors.white.withOpacity(0.55);
+        ? Colors.white.withValues(alpha: 0.07)
+        : Colors.white.withValues(alpha: 0.55);
     final borderColor = isDark
-        ? Colors.white.withOpacity(0.15)
-        : Colors.white.withOpacity(0.80);
-    final textColor   = _p.text;
-    final subColor    = _p.subText;
+        ? Colors.white.withValues(alpha: 0.15)
+        : Colors.white.withValues(alpha: 0.80);
+    final textColor   = isDark ? Colors.white : AppColors.black;
+    final subColor    = isDark
+        ? Colors.white.withValues(alpha: 0.55)
+        : AppColors.grey500;
     final dividerColor = isDark
-        ? Colors.white.withOpacity(0.12)
-        : Colors.white.withOpacity(0.60);
+        ? Colors.white.withValues(alpha: 0.12)
+        : Colors.white.withValues(alpha: 0.60);
 
     return AnimatedSize(
       duration: const Duration(milliseconds: 250),
@@ -205,7 +205,7 @@ class _ChatProductBannerState extends State<ChatProductBanner> {
                                           style: TextStyle(
                                             fontSize: 13,
                                             color: isDark
-                                                ? Colors.white.withOpacity(0.45)
+                                                ? Colors.white.withValues(alpha: 0.45)
                                                 : AppColors.grey400,
                                             decoration:
                                                 TextDecoration.lineThrough,
@@ -232,7 +232,7 @@ class _ChatProductBannerState extends State<ChatProductBanner> {
                                 ? Icons.keyboard_arrow_up_rounded
                                 : Icons.keyboard_arrow_down_rounded,
                             color: isDark
-                                ? Colors.white.withOpacity(0.50)
+                                ? Colors.white.withValues(alpha: 0.50)
                                 : AppColors.grey400,
                           ),
                         ],
@@ -327,13 +327,13 @@ class _ChatProductBannerState extends State<ChatProductBanner> {
       height: 52,
       decoration: BoxDecoration(
         color: isDark
-            ? Colors.white.withOpacity(0.08)
-            : AppColors.grey100.withOpacity(0.60),
+            ? Colors.white.withValues(alpha: 0.08)
+            : AppColors.grey100.withValues(alpha: 0.60),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Icon(Icons.image_outlined,
           color: isDark
-              ? Colors.white.withOpacity(0.30)
+              ? Colors.white.withValues(alpha: 0.30)
               : AppColors.grey300,
           size: 26),
     );

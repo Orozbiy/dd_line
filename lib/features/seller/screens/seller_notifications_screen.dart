@@ -4,11 +4,9 @@
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import '../../../core/app_localizations.dart';
 
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
-import '../../../config/theme/dd_design.dart';
 import '../../../core/supabase_client.dart';
 
 class SellerNotificationsScreen extends StatefulWidget {
@@ -65,18 +63,16 @@ class _SellerNotificationsScreenState
 
   @override
   Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context);
-    final p = DDPalette.of(context);
-    final isDark    = p.isDark;
-    final bgColor   = p.bg;
-    final cardColor = p.card;
-    final textColor = p.text;
-    final subColor  = p.subText;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor   = isDark ? const Color(0xFF121212) : Colors.white;
+    final cardColor = isDark ? const Color(0xFF1E1E1E) : const Color(0xFFF7F8FA);
+    final textColor = isDark ? Colors.white : AppColors.black;
+    final subColor  = isDark ? Colors.white60 : AppColors.grey500;
 
     return Scaffold(
       backgroundColor: bgColor,
       appBar: AppBar(
-        backgroundColor: p.card,
+        backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
@@ -88,7 +84,7 @@ class _SellerNotificationsScreenState
             const Text('🔔', style: TextStyle(fontSize: 20)),
             const SizedBox(width: 8),
             Text(
-              loc.get('seller_notifications_title'),
+              'Админден билдирүүлөр',
               style: AppTextStyles.headingMedium.copyWith(color: textColor),
             ),
           ],
@@ -112,11 +108,11 @@ class _SellerNotificationsScreenState
                       Icon(
                         Icons.notifications_none_rounded,
                         size: 72,
-                        color: isDark ? Colors.white24 : p.divider,
+                        color: isDark ? Colors.white24 : Colors.grey[300],
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        loc.get('no_notifications'),
+                        'Азырынча билдирүү жок',
                         style: AppTextStyles.bodyMedium
                             .copyWith(color: subColor),
                       ),
@@ -149,7 +145,7 @@ class _SellerNotificationsScreenState
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black
-                                  .withOpacity(isDark ? 0.3 : 0.04),
+                                  .withValues(alpha: isDark ? 0.3 : 0.04),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
@@ -247,7 +243,9 @@ class _SellerNotificationsScreenState
                                   fit: BoxFit.cover,
                                   placeholder: (_, __) => Container(
                                     height: 200,
-                                    color: p.field,
+                                    color: isDark
+                                        ? const Color(0xFF2A2560)
+                                        : const Color(0xFFEEEEEE),
                                     child: const Center(
                                       child: CircularProgressIndicator(
                                           color: AppColors.primary,

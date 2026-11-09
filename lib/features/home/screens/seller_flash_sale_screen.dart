@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../config/theme/app_colors.dart';
-import '../../../config/theme/dd_design.dart';
 import '../../../core/app_localizations.dart';
 import '../../../core/supabase_client.dart';
 
@@ -147,10 +146,9 @@ class _SellerFlashSaleScreenState extends State<SellerFlashSaleScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final loc     = AppLocalizations.of(context);
-    final p       = DDPalette.of(context);
-    final isDark  = p.isDark;
-    final bgColor = p.bg;
+    final loc = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF0F0F0F) : const Color(0xFFF5F5F5);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -162,7 +160,7 @@ class _SellerFlashSaleScreenState extends State<SellerFlashSaleScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          '⚡ ${loc.get('flash_sale_title')}',
+          ' ${loc.get('flash_sale_title')}',
           style: const TextStyle(
               color: Colors.white, fontWeight: FontWeight.bold, fontSize: 17),
         ),
@@ -276,9 +274,8 @@ class _FlashProductTile extends StatelessWidget {
     final h = timeLeft.inHours.toString().padLeft(2, '0');
     final mn = (timeLeft.inMinutes % 60).toString().padLeft(2, '0');
 
-    final tp     = DDPalette.of(context);
-    final cardBg = tp.card;
-    final border = tp.divider;
+    final cardBg = isDark ? const Color(0xFF1C1C1C) : Colors.white;
+    final border = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFEEEEEE);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -328,7 +325,8 @@ class _FlashProductTile extends StatelessWidget {
                       style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: tp.text)),
+                          color:
+                              isDark ? Colors.white : const Color(0xFF1A1A1A))),
                   const SizedBox(height: 4),
                   Row(children: [
                     Text('${flashPrice.toStringAsFixed(0)} с',
@@ -340,10 +338,12 @@ class _FlashProductTile extends StatelessWidget {
                     if (discPct > 0)
                       Text('${origPrice.toStringAsFixed(0)} с',
                           style: TextStyle(
-                              color: tp.subText,
+                              color:
+                                  isDark ? Colors.white38 : AppColors.grey400,
                               fontSize: 11,
                               decoration: TextDecoration.lineThrough,
-                              decorationColor: tp.subText)),
+                              decorationColor:
+                                  isDark ? Colors.white38 : AppColors.grey400)),
                     if (discPct > 0) ...[
                       const SizedBox(width: 6),
                       Container(
@@ -417,10 +417,10 @@ class _AddFlashSheetState extends State<_AddFlashSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final loc      = AppLocalizations.of(context);
-    final sp       = DDPalette.of(context);
-    final sheetBg  = sp.card;
-    final subColor = sp.subText;
+    final loc = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final sheetBg = isDark ? const Color(0xFF1A1A1A) : Colors.white;
+    final subColor = isDark ? Colors.white70 : const Color(0xFF555555);
 
     return Container(
       decoration: BoxDecoration(
@@ -454,7 +454,8 @@ class _AddFlashSheetState extends State<_AddFlashSheet> {
                     style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w800,
-                        color: sp.text)),
+                        color:
+                            isDark ? Colors.white : const Color(0xFF1A1A1A))),
               ]),
             ),
 
@@ -554,7 +555,9 @@ class _AddFlashSheetState extends State<_AddFlashSheet> {
                           decoration: InputDecoration(
                             hintText: loc.get('promo_price_hint'),
                             filled: true,
-                            fillColor: sp.field,
+                            fillColor: isDark
+                                ? const Color(0xFF2A2A2A)
+                                : const Color(0xFFF5F5F5),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide.none,
@@ -617,7 +620,11 @@ class _AddFlashSheetState extends State<_AddFlashSheet> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 16, vertical: 8),
                             decoration: BoxDecoration(
-                              color: isActive ? AppColors.error : sp.field,
+                              color: isActive
+                                  ? AppColors.error
+                                  : (isDark
+                                      ? const Color(0xFF2A2A2A)
+                                      : const Color(0xFFF0F0F0)),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(

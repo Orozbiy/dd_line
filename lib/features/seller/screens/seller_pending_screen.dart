@@ -17,27 +17,20 @@ class SellerPendingScreen extends StatefulWidget {
   State<SellerPendingScreen> createState() => _SellerPendingScreenState();
 }
 
-class _SellerPendingScreenState extends State<SellerPendingScreen>
-    with SingleTickerProviderStateMixin {
+class _SellerPendingScreenState extends State<SellerPendingScreen> {
   Timer? _timer;
   final _sellerService = SellerService();
-  late final AnimationController _pulseCtrl;
 
   @override
   void initState() {
     super.initState();
-    _pulseCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1600),
-    )..repeat();
-    // ✅ Ар 3 секундда статусту текшер
+    // ✅ Ар 5 секундда статусту текшер
     _timer = Timer.periodic(const Duration(seconds: 3), (_) => _checkStatus());
   }
 
   @override
   void dispose() {
     _timer?.cancel();
-    _pulseCtrl.dispose();
     super.dispose();
   }
 
@@ -82,44 +75,24 @@ if (seller.status == SellerStatus.approved) {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const Spacer(flex: 2),
-              // ✅ Пульсациялаган анимация (iOS/Android экөөндө тең так иштейт)
-              SizedBox(
-                width: 180,
-                height: 180,
-                child: AnimatedBuilder(
-                  animation: _pulseCtrl,
-                  builder: (context, child) {
-                    return Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        // Сырткы толкундар (ripple)
-                        _buildRipple(0.0),
-                        _buildRipple(0.5),
-                        child!,
-                      ],
-                    );
-                  },
-                  child: Container(
-                    width: 120,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFD97706), Color(0xFFEF4444)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(30),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFD97706).withOpacity(0.3),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: const Center(child: Text('⏳', style: TextStyle(fontSize: 56))),
+              Container(
+                width: 120, height: 120,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFD97706), Color(0xFFEF4444)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
+                  borderRadius: BorderRadius.circular(30),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFD97706).withValues(alpha: 0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
                 ),
+                child: const Center(child: Text('⏳', style: TextStyle(fontSize: 56))),
               ),
               const SizedBox(height: 28),
               Text(
@@ -133,9 +106,9 @@ if (seller.status == SellerStatus.approved) {
                 style: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey500, height: 1.5),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 20),
-              // ✅ 3 чекит жүгүргөн анимация
-              _buildDots(),
+              const SizedBox(height: 16),
+              // ✅ Жүктөлүп жатканын көрсөт
+              const CircularProgressIndicator(color: AppColors.primary),
               const Spacer(flex: 3),
               SizedBox(
                 width: double.infinity, height: 54,
@@ -162,55 +135,6 @@ if (seller.status == SellerStatus.approved) {
       ),
     );
   }
-
-  // Пульсациялаган толкун (ripple) тегерек
-  Widget _buildRipple(double offset) {
-    final t = (_pulseCtrl.value + offset) % 1.0;
-    return Opacity(
-      opacity: (1.0 - t) * 0.5,
-      child: Container(
-        width: 120 + t * 60,
-        height: 120 + t * 60,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: const Color(0xFFD97706).withOpacity(0.6),
-            width: 2,
-          ),
-        ),
-      ),
-    );
-  }
-
-  // Удаалаш секирген 3 чекит
-  Widget _buildDots() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(3, (i) {
-        return AnimatedBuilder(
-          animation: _pulseCtrl,
-          builder: (context, _) {
-            final t = (_pulseCtrl.value * 2 - i * 0.25) % 1.0;
-            final scale = 0.6 + 0.4 * (t < 0.5 ? t * 2 : (1 - t) * 2);
-            return Container(
-              margin: const EdgeInsets.symmetric(horizontal: 5),
-              child: Transform.scale(
-                scale: scale,
-                child: Container(
-                  width: 10,
-                  height: 10,
-                  decoration: const BoxDecoration(
-                    color: AppColors.primary,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      }),
-    );
-  }
 }
 
 class SellerRejectedScreen extends StatelessWidget {
@@ -232,8 +156,8 @@ class SellerRejectedScreen extends StatelessWidget {
     final bgColor    = isDark ? const Color(0xFF121212) : Colors.white;
     final titleColor = isDark ? Colors.white : AppColors.black;
     final iconBg     = isDark
-        ? AppColors.error.withOpacity(0.2)
-        : AppColors.error.withOpacity(0.1);
+        ? AppColors.error.withValues(alpha: 0.2)
+        : AppColors.error.withValues(alpha: 0.1);
 
     return Scaffold(
       backgroundColor: bgColor,

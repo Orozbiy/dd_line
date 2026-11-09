@@ -143,7 +143,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   : RefreshIndicator(
                       onRefresh: _load,
                       color: DD.accent,
-                      backgroundColor: p.card,
+                      backgroundColor: p.isDark ? DD.ink : Colors.white,
                       child: ListView.separated(
                         padding: EdgeInsets.fromLTRB(
                           16,
@@ -223,12 +223,12 @@ class _GlassAppBar extends StatelessWidget {
           padding: EdgeInsets.only(top: topPad),
           decoration: BoxDecoration(
             color: palette.isDark
-                ? const Color(0xFF15120F).withOpacity(0.60)
-                : Colors.white.withOpacity(0.70),
+                ? const Color(0xFF15120F).withValues(alpha: 0.60)
+                : Colors.white.withValues(alpha: 0.70),
             border: Border(
               bottom: BorderSide(
                 color: palette.isDark
-                    ? DD.accent2.withOpacity(0.18)
+                    ? DD.accent2.withValues(alpha: 0.18)
                     : Colors.white,
                 width: 1.0,
               ),
@@ -255,7 +255,7 @@ class _GlassAppBar extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: DD.accent.withOpacity(0.35),
+                        color: DD.accent.withValues(alpha: 0.35),
                         blurRadius: 10,
                         offset: const Offset(0, 3),
                         spreadRadius: -3,
@@ -308,13 +308,13 @@ class _CircleBtn extends StatelessWidget {
         height: 40,
         decoration: BoxDecoration(
           color: palette.isDark
-              ? Colors.white.withOpacity(0.08)
-              : Colors.black.withOpacity(0.05),
+              ? Colors.white.withValues(alpha: 0.08)
+              : Colors.black.withValues(alpha: 0.05),
           shape: BoxShape.circle,
           border: Border.all(
             color: palette.isDark
-                ? Colors.white.withOpacity(0.10)
-                : Colors.black.withOpacity(0.06),
+                ? Colors.white.withValues(alpha: 0.10)
+                : Colors.black.withValues(alpha: 0.06),
           ),
         ),
         child: Icon(icon, color: palette.text, size: 20),
@@ -351,7 +351,7 @@ class _EmptyState extends StatelessWidget {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: DD.accent.withOpacity(0.30),
+                  color: DD.accent.withValues(alpha: 0.30),
                   blurRadius: 24,
                   offset: const Offset(0, 8),
                   spreadRadius: -8,
@@ -416,17 +416,17 @@ class _NotificationCard extends StatelessWidget {
     // ── Фон ──
     final Color cardBg = isRead
         ? (isDark
-            ? Colors.white.withOpacity(0.05)
-            : Colors.white.withOpacity(0.80))
+            ? Colors.white.withValues(alpha: 0.05)
+            : Colors.white.withValues(alpha: 0.80))
         : (isDark
-            ? DD.accent.withOpacity(0.12)
-            : DD.accent.withOpacity(0.08));
+            ? DD.accent.withValues(alpha: 0.12)
+            : DD.accent.withValues(alpha: 0.08));
 
     final Color borderColor = isRead
         ? (isDark
-            ? Colors.white.withOpacity(0.08)
+            ? Colors.white.withValues(alpha: 0.08)
             : Colors.white)
-        : DD.accent.withOpacity(0.45);
+        : DD.accent.withValues(alpha: 0.45);
 
     return GestureDetector(
       onTap: onTap,
@@ -448,7 +448,7 @@ class _NotificationCard extends StatelessWidget {
                   ? null
                   : [
                       BoxShadow(
-                        color: DD.accent.withOpacity(0.20),
+                        color: DD.accent.withValues(alpha: 0.20),
                         blurRadius: 16,
                         offset: const Offset(0, 6),
                         spreadRadius: -8,
@@ -470,7 +470,7 @@ class _NotificationCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(14),
                         boxShadow: [
                           BoxShadow(
-                            color: DD.accent.withOpacity(0.35),
+                            color: DD.accent.withValues(alpha: 0.35),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                             spreadRadius: -4,
@@ -507,7 +507,7 @@ class _NotificationCard extends StatelessWidget {
                                         BorderRadius.circular(DD.rPill),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: DD.accent.withOpacity(0.40),
+                                        color: DD.accent.withValues(alpha: 0.40),
                                         blurRadius: 6,
                                         offset: const Offset(0, 2),
                                         spreadRadius: -2,
@@ -553,8 +553,8 @@ class _NotificationCard extends StatelessWidget {
                       placeholder: (_, __) => Container(
                         height: 200,
                         color: isDark
-                            ? Colors.white.withOpacity(0.06)
-                            : Colors.black.withOpacity(0.04),
+                            ? Colors.white.withValues(alpha: 0.06)
+                            : Colors.black.withValues(alpha: 0.04),
                         child: const Center(
                           child: CircularProgressIndicator(
                               color: DD.accent, strokeWidth: 2),
@@ -563,8 +563,8 @@ class _NotificationCard extends StatelessWidget {
                       errorWidget: (_, __, ___) => Container(
                         height: 60,
                         color: isDark
-                            ? Colors.white.withOpacity(0.04)
-                            : Colors.black.withOpacity(0.03),
+                            ? Colors.white.withValues(alpha: 0.04)
+                            : Colors.black.withValues(alpha: 0.03),
                         child: const Icon(Icons.broken_image_outlined,
                             color: AppColors.grey400),
                       ),
@@ -581,13 +581,13 @@ class _NotificationCard extends StatelessWidget {
                           horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
                         color: isDark
-                            ? Colors.white.withOpacity(0.06)
-                            : Colors.black.withOpacity(0.04),
+                            ? Colors.white.withValues(alpha: 0.06)
+                            : Colors.black.withValues(alpha: 0.04),
                         borderRadius: BorderRadius.circular(DD.rPill),
                         border: Border.all(
                           color: isDark
-                              ? Colors.white.withOpacity(0.10)
-                              : Colors.black.withOpacity(0.06),
+                              ? Colors.white.withValues(alpha: 0.10)
+                              : Colors.black.withValues(alpha: 0.06),
                         ),
                       ),
                       child: Row(

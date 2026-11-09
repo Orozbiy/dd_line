@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
-import '../../../config/theme/dd_design.dart';
 import '../../../core/app_localizations.dart';
 import '../../../core/chat_background_provider.dart';
 
@@ -27,13 +26,12 @@ class _ChatBackgroundSettingsScreenState
 
   @override
   Widget build(BuildContext context) {
-    final _sp       = DDPalette.of(context);
-    final isDark    = _sp.isDark;
-    final textColor = _sp.text;
+    final isDark    = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : AppColors.black;
     final loc       = AppLocalizations.of(context);
 
     return Scaffold(
-      backgroundColor: _sp.bg,
+      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF4F5F7),
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -43,8 +41,8 @@ class _ChatBackgroundSettingsScreenState
             filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
             child: Container(
               color: isDark
-                  ? Colors.black.withOpacity(0.30)
-                  : Colors.white.withOpacity(0.40),
+                  ? Colors.black.withValues(alpha: 0.30)
+                  : Colors.white.withValues(alpha: 0.40),
             ),
           ),
         ),
@@ -86,12 +84,12 @@ class _ChatBackgroundSettingsScreenState
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                               decoration: BoxDecoration(
                                 color: isDark
-                                    ? Colors.white.withOpacity(0.12)
-                                    : Colors.white.withOpacity(0.65),
+                                    ? Colors.white.withValues(alpha: 0.12)
+                                    : Colors.white.withValues(alpha: 0.65),
                                 border: Border.all(
                                   color: isDark
-                                      ? Colors.white.withOpacity(0.15)
-                                      : Colors.white.withOpacity(0.80),
+                                      ? Colors.white.withValues(alpha: 0.15)
+                                      : Colors.white.withValues(alpha: 0.80),
                                 ),
                                 borderRadius: const BorderRadius.only(
                                   topLeft: Radius.circular(14),
@@ -126,7 +124,7 @@ class _ChatBackgroundSettingsScreenState
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.primary.withOpacity(0.35),
+                                color: AppColors.primary.withValues(alpha: 0.35),
                                 blurRadius: 8,
                                 offset: const Offset(0, 3),
                               ),
@@ -173,17 +171,17 @@ class _ChatBackgroundSettingsScreenState
                         child: Container(
                           decoration: BoxDecoration(
                             color: isActive
-                                ? AppColors.primary.withOpacity(isDark ? 0.18 : 0.10)
+                                ? AppColors.primary.withValues(alpha: isDark ? 0.18 : 0.10)
                                 : (isDark
-                                    ? Colors.white.withOpacity(0.06)
-                                    : Colors.white.withOpacity(0.55)),
+                                    ? Colors.white.withValues(alpha: 0.06)
+                                    : Colors.white.withValues(alpha: 0.55)),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
                               color: isActive
-                                  ? AppColors.primary.withOpacity(0.70)
+                                  ? AppColors.primary.withValues(alpha: 0.70)
                                   : (isDark
-                                      ? Colors.white.withOpacity(0.10)
-                                      : Colors.white.withOpacity(0.80)),
+                                      ? Colors.white.withValues(alpha: 0.10)
+                                      : Colors.white.withValues(alpha: 0.80)),
                               width: isActive ? 1.5 : 1.0,
                             ),
                           ),
@@ -230,7 +228,7 @@ class _ChatBackgroundSettingsScreenState
                                     color: isActive
                                         ? AppColors.primary
                                         : (isDark
-                                            ? Colors.white.withOpacity(0.25)
+                                            ? Colors.white.withValues(alpha: 0.25)
                                             : AppColors.grey300),
                                     width: 1.5,
                                   ),

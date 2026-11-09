@@ -60,10 +60,8 @@ class _CacheMenuItemState extends State<CacheMenuItem> {
         padding: const EdgeInsets.symmetric(vertical: 14),
         child: Row(
           children: [
-            Image.asset(
-              'assets/icons/settings/ic_cache.png',
-              width: 36, height: 36, fit: BoxFit.contain,
-            ),
+            const Icon(Icons.cleaning_services_outlined,
+                color: AppColors.primary, size: 20),
             const SizedBox(width: 12),
             Expanded(
               child: Text(loc.get('cache'), style: AppTextStyles.bodyMedium),
@@ -78,8 +76,7 @@ class _CacheMenuItemState extends State<CacheMenuItem> {
               Text(_appVersion,
                   style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey400)),
             const SizedBox(width: 8),
-            Image.asset('assets/icons/settings/ic_chevron_right.png',
-                width: 20, height: 20, color: AppColors.grey300),
+            const Icon(Icons.chevron_right, color: AppColors.grey300, size: 20),
           ],
         ),
       ),

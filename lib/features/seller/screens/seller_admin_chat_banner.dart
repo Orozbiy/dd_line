@@ -231,7 +231,7 @@ class _SellerAdminChatBannerState extends State<SellerAdminChatBanner> {
     final isRu = loc.locale.languageCode == 'ru';
     final cardBg = isDark ? const Color(0xFF1E1A2E) : const Color(0xFFFFF8F0);
     final borderColor =
-        const Color(0xFFD97706).withOpacity(isDark ? 0.4 : 0.35);
+        const Color(0xFFD97706).withValues(alpha: isDark ? 0.4 : 0.35);
 
     return GestureDetector(
       onTap: _opening ? null : _openOrCreateChat,
@@ -246,7 +246,7 @@ class _SellerAdminChatBannerState extends State<SellerAdminChatBanner> {
               ? []
               : [
                   BoxShadow(
-                    color: const Color(0xFFD97706).withOpacity(0.08),
+                    color: const Color(0xFFD97706).withValues(alpha: 0.08),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -354,7 +354,7 @@ class _SellerAdminChatBannerState extends State<SellerAdminChatBanner> {
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: const Color(0xFFD97706).withOpacity(0.12),
+                color: const Color(0xFFD97706).withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Icon(

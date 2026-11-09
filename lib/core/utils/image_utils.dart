@@ -1,5 +1,6 @@
 import 'dart:ui' as ui;
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 
@@ -10,6 +11,7 @@ Future<Uint8List> compressImage(
   int maxWidth = 800,
   int maxHeight = 800,
 }) async {
+  if (kIsWeb) return bytes;
   final result = await FlutterImageCompress.compressWithList(
     bytes,
     minWidth: maxWidth,
@@ -23,6 +25,7 @@ Future<Uint8List> compressImage(
 
 /// Чат сүрөттөрү үчүн
 Future<Uint8List> compressChatImage(Uint8List bytes) async {
+  if (kIsWeb) return bytes;
   return FlutterImageCompress.compressWithList(
     bytes,
     minWidth: 800,
@@ -34,6 +37,7 @@ Future<Uint8List> compressChatImage(Uint8List bytes) async {
 
 /// Story сүрөттөрү үчүн
 Future<Uint8List> compressStoryImage(Uint8List bytes) async {
+  if (kIsWeb) return bytes;
   return FlutterImageCompress.compressWithList(
     bytes,
     minWidth: 1080,
@@ -48,8 +52,10 @@ Future<Uint8List> compressStoryImage(Uint8List bytes) async {
 // WATERMARK — dart:ui, сервер жок
 // ─────────────────────────────────────────────────────────────
 
-/// Товар сүрөтүнө "DD Online" watermark кош — ылдыйкы оң бурч, 80% opacity, мандарин
+/// Товар сүрөтүнө "DD Online" watermark кош
 Future<Uint8List> addWatermark(Uint8List bytes) async {
+  if (kIsWeb) return bytes;
+
   final codec = await ui.instantiateImageCodec(bytes);
   final frame = await codec.getNextFrame();
   final src   = frame.image;
@@ -62,76 +68,51 @@ Future<Uint8List> addWatermark(Uint8List bytes) async {
     final canvas   = Canvas(recorder);
     canvas.drawImage(src, Offset.zero, Paint());
 
-    // 80% opacity = 0xCC (255 * 0.8 ≈ 204 = 0xCC)
-    const opacity    = 0xCC;
-    // Капсула фону: кара (жарык/кара теманын суроту да норм болсун үчүн)
-    const bgOpacity  = 0x99; // ~60% тунук кара фон
+    final fontSize  = w * 0.042;
+    final textColor = const Color(0x26FFFFFF);
 
-    // Размерлер сүрөттүн өлчөмүнө жараша
-    final badgeH   = h * 0.09;           // badge бийиктиги
-    final badgeW   = w * 0.40;           // badge туурасы
-    final margin   = w * 0.025;          // четтен аралык
-    final bx       = w - badgeW - margin; // он жак
-    final by       = h - badgeH - margin; // ылдыйкы
+    final positions = [
+      Offset(w * 0.18, h * 0.50),
+      Offset(w * 0.82, h * 0.50),
+      Offset(w * 0.50, h * 0.18),
+      Offset(w * 0.50, h * 0.82),
+      Offset(w * 0.50, h * 0.50),
+    ];
 
-    // Кара жарым-жарым фон капсула
-    final bgPaint = Paint()
-      ..color = ui.Color.fromARGB(bgOpacity, 0, 0, 0);
-    final radius = badgeH / 2;
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(bx, by, badgeW, badgeH),
-        Radius.circular(radius),
-      ),
-      bgPaint,
-    );
-
-    // "D" чоң тамга — МАНДАРИН (#FF8A00)
-    final dSize    = badgeH * 0.65;
-    final dPb = ui.ParagraphBuilder(ui.ParagraphStyle(
-      textAlign:  TextAlign.left,
-      fontSize:   dSize,
-      fontWeight: FontWeight.w900,
-    ))
-      ..pushStyle(ui.TextStyle(
-        color:      ui.Color.fromARGB(opacity, 0xFF, 0x8A, 0x00), // мандарин
-        fontSize:   dSize,
-        fontWeight: FontWeight.w900,
+    for (final pos in positions) {
+      final pb = ui.ParagraphBuilder(ui.ParagraphStyle(
+        textAlign:  TextAlign.center,
+        fontSize:   fontSize,
+        fontWeight: FontWeight.bold,
       ))
-      ..addText('D');
-    final dPara = dPb.build()
-      ..layout(ui.ParagraphConstraints(width: dSize * 1.2));
-    canvas.drawParagraph(
-      dPara,
-      Offset(bx + badgeH * 0.18, by + (badgeH - dSize) / 2 - 1),
-    );
+        ..pushStyle(ui.TextStyle(
+          color:         textColor,
+          fontSize:      fontSize,
+          fontWeight:    FontWeight.bold,
+          letterSpacing: fontSize * 0.1,
+        ))
+        ..addText('DD Online');
 
-    // "DD Online" текст — ак
-    final txtSize = badgeH * 0.34;
-    final txtPb = ui.ParagraphBuilder(ui.ParagraphStyle(
-      textAlign:  TextAlign.left,
-      fontSize:   txtSize,
-      fontWeight: FontWeight.bold,
-    ))
-      ..pushStyle(ui.TextStyle(
-        color:         ui.Color.fromARGB(opacity, 255, 255, 255), // ак
-        fontSize:      txtSize,
-        fontWeight:    FontWeight.bold,
-        letterSpacing: 0.5,
-      ))
-      ..addText('DD Online');
-    final txtPara = txtPb.build()
-      ..layout(ui.ParagraphConstraints(width: badgeW * 0.7));
-    canvas.drawParagraph(
-      txtPara,
-      Offset(bx + dSize * 1.0 + badgeH * 0.22, by + (badgeH - txtSize) / 2),
-    );
+      final para = pb.build()
+        ..layout(ui.ParagraphConstraints(width: w * 0.5));
+
+      canvas.save();
+      canvas.translate(pos.dx, pos.dy);
+      canvas.rotate(-45 * 3.14159265 / 180);
+      canvas.drawParagraph(
+        para,
+        Offset(-para.longestLine / 2, -para.height / 2),
+      );
+      canvas.restore();
+    }
 
     final picture  = recorder.endRecording();
     final finalImg = await picture.toImage(src.width, src.height);
 
     try {
-      final byteData = await finalImg.toByteData(format: ui.ImageByteFormat.png);
+      final byteData = await finalImg.toByteData(
+        format: ui.ImageByteFormat.png,
+      );
       return FlutterImageCompress.compressWithList(
         byteData!.buffer.asUint8List(),
         minWidth:  src.width,
@@ -147,10 +128,42 @@ Future<Uint8List> addWatermark(Uint8List bytes) async {
   }
 }
 
-// Cloudinary URL thumbnail
-String toCloudinaryThumb(String url, {int width = 400}) {
+// ─────────────────────────────────────────────────────────────
+// THUMBNAIL URL — бардык storage'ларды колдойт
+// ─────────────────────────────────────────────────────────────
+
+/// Универсал thumbnail URL
+/// Cloudinary, Supabase, Backblaze B2 URL'дарын туура иштетет
+String toThumbUrl(String url, {int width = 400}) {
+  if (url.isEmpty) return url;
+
+  // Cloudinary — трансформация параметри менен
   if (url.contains('res.cloudinary.com') && url.contains('/upload/')) {
     return url.replaceFirst('/upload/', '/upload/w_$width,q_auto,f_auto/');
   }
+
+  // Supabase Storage — width/quality/resize параметрлери менен
+  if (url.contains('supabase.co/storage')) {
+    final uri = Uri.tryParse(url);
+    if (uri != null) {
+      final params = Map<String, String>.from(uri.queryParameters);
+      params['width']   = width.toString();
+      params['quality'] = '80';
+      params['resize']  = 'cover';
+      return uri.replace(queryParameters: params).toString();
+    }
+  }
+
+  // Backblaze B2 — трансформация жок, өзгөртүүсүз
+  if (url.contains('backblazeb2.com') || url.contains('s3.eu-central-003')) {
+    return url;
+  }
+
   return url;
+}
+
+/// Эски функция — артка шайкештик үчүн сакталды
+/// Жаңы код toThumbUrl колдонсун
+String toCloudinaryThumb(String url, {int width = 400}) {
+  return toThumbUrl(url, width: width);
 }

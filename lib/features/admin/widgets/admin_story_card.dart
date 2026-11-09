@@ -20,7 +20,7 @@ class AdminStoryCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? const Color(0xFF1E1E1E) : Colors.white;
     final borderColor = story.isActive
-        ? AppColors.success.withOpacity(0.6)
+        ? AppColors.success.withValues(alpha: 0.6)
         : AppColors.grey300;
 
     return Container(
@@ -31,7 +31,7 @@ class AdminStoryCard extends StatelessWidget {
         border: Border.all(color: borderColor, width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -158,8 +158,8 @@ class AdminStoryCard extends StatelessWidget {
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: story.isActive
-                          ? AppColors.error.withOpacity(0.1)
-                          : AppColors.success.withOpacity(0.1),
+                          ? AppColors.error.withValues(alpha: 0.1)
+                          : AppColors.success.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Icon(
@@ -181,7 +181,7 @@ class AdminStoryCard extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: AppColors.error.withOpacity(0.1),
+                      color: AppColors.error.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(

@@ -30,12 +30,11 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyAzd1LbkUnJfnkxnXUDA2K74MsZS8S0Uvs',
-    appId: '1:1069640136187:ios:278589aa8f4f909d9ac75e',
+    apiKey: 'AIzaSyAyWZOEDlWyGGHftlRqzsNjFIKD9sXR_u0',
+    appId: '1:1069640136187:ios:f3be5c885566b7ff9ac75e',
     messagingSenderId: '1069640136187',
     projectId: 'dd-online-web',
     storageBucket: 'dd-online-web.firebasestorage.app',
-    iosBundleId: 'com.ddonline.app',
   );
 
   static const FirebaseOptions web = FirebaseOptions(

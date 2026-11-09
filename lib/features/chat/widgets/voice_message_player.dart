@@ -91,7 +91,7 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
   Widget build(BuildContext context) {
     final iconColor = widget.isMe ? Colors.white : AppColors.primary;
     final trackColor = widget.isMe
-        ? Colors.white.withOpacity(0.3)
+        ? Colors.white.withValues(alpha: 0.3)
         : AppColors.grey200;
     final progressColor = widget.isMe ? Colors.white : AppColors.primary;
 
@@ -112,8 +112,8 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
               height: 36,
               decoration: BoxDecoration(
                 color: widget.isMe
-                    ? Colors.white.withOpacity(0.2)
-                    : AppColors.primary.withOpacity(0.1),
+                    ? Colors.white.withValues(alpha: 0.2)
+                    : AppColors.primary.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: _isLoading
@@ -155,7 +155,7 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
                   style: AppTextStyles.labelSmall.copyWith(
                     fontSize: 11,
                     color: widget.isMe
-                        ? Colors.white.withOpacity(0.75)
+                        ? Colors.white.withValues(alpha: 0.75)
                         : AppColors.grey400,
                   ),
                 ),

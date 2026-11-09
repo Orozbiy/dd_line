@@ -1,6 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import '../../../core/widgets/shimmer_loading.dart';
 
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
@@ -8,12 +7,12 @@ import '../../../core/app_localizations.dart';
 import '../../../core/supabase_client.dart';
 import '../../../data/models/product_model.dart';
 // Cloudinary URL — сапаты 80%, кичине размер
-String _thumbUrl(String url, {int width = 480}) {
+String _thumbUrl(String url, {int width = 280}) {
   if (url.isEmpty) return url;
   if (!url.contains('cloudinary')) return url;
   return url.replaceFirst(
     '/upload/',
-    '/upload/w_$width,q_auto,f_auto/',
+    '/upload/w_$width,q_80,f_auto/',
   );
 }
 
@@ -223,8 +222,8 @@ class _SimilarProductCard extends StatelessWidget {
                     imageUrl: _thumbUrl(product.imageUrl),
                     fit: BoxFit.cover,
                     fadeInDuration: const Duration(milliseconds: 120),
-                    memCacheWidth: 480,
-                    placeholder: (_, __) => const ShimmerLoading(),
+                    placeholder: (_, __) =>
+                        Container(color: placeholderColor),
                     errorWidget: (_, __, ___) => Container(
                       color: placeholderColor,
                       child: const Icon(Icons.image_not_supported_outlined,

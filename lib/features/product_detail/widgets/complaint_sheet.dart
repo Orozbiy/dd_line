@@ -196,15 +196,9 @@ class _ComplaintSheetState extends State<ComplaintSheet> {
     final fillColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF5F5F5);
     final handleColor = isDark ? const Color(0xFF3A3A3A) : Colors.grey[300]!;
 
-    final mq = MediaQuery.of(context);
-    final maxH = (mq.size.height - mq.viewInsets.bottom - mq.padding.top - 24)
-        .clamp(200.0, mq.size.height * 0.92)
-        .toDouble();
     return Padding(
-      padding: EdgeInsets.only(bottom: mq.viewInsets.bottom),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(maxHeight: maxH),
-        child: Container(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Container(
         decoration: BoxDecoration(
           color: bg,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -254,12 +248,6 @@ class _ComplaintSheetState extends State<ComplaintSheet> {
                         ),
                       ],
                     ),
-                  ),
-                  // Артка (жабуу) баскычы
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: Icon(Icons.close_rounded, color: subColor),
-                    tooltip: widget.isRu ? 'Закрыть' : 'Жабуу',
                   ),
                 ],
               ),
@@ -556,7 +544,6 @@ class _ComplaintSheetState extends State<ComplaintSheet> {
             ],
           ),
         ),
-      ),
       ),
     );
   }

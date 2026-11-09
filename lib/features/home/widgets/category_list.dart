@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
-import '../../../config/theme/dd_design.dart';
 import '../../../core/app_localizations.dart';
 import '../models/category_model.dart';
 import 'dart:ui';
@@ -11,13 +10,11 @@ enum ProductFilterMode { all, newest, popular }
 class CategoryList extends StatefulWidget {
   final Function(String) onCategorySelected;
   final Function(ProductFilterMode)? onFilterModeChanged;
-  final ProductFilterMode? currentFilterMode; // тышкы синхрондоо
 
   const CategoryList({
     super.key,
     required this.onCategorySelected,
     this.onFilterModeChanged,
-    this.currentFilterMode,
   });
 
   @override
@@ -35,19 +32,6 @@ class _CategoryListState extends State<CategoryList> {
   void initState() {
     super.initState();
     _categories = CategoryModel.getCategories();
-    if (widget.currentFilterMode != null) {
-      _filterMode = widget.currentFilterMode!;
-    }
-  }
-
-  @override
-  void didUpdateWidget(covariant CategoryList oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // Тышкы filterMode өзгөрсө — ички абалды синхрондоо
-    if (widget.currentFilterMode != null &&
-        widget.currentFilterMode != _filterMode) {
-      setState(() => _filterMode = widget.currentFilterMode!);
-    }
   }
 
   CategoryModel? get _selectedCategory {
@@ -122,7 +106,7 @@ class _CategoryListState extends State<CategoryList> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withOpacity(0.1),
+      barrierColor: Colors.black.withValues(alpha: 0.1),
       builder: (_) => _CategoryBottomSheet(
         categories: _categories,
         selectedId: _selectedCategoryId,
@@ -149,10 +133,9 @@ class _CategoryListState extends State<CategoryList> {
     final loc    = AppLocalizations.of(context);
     final cat    = _selectedCategory;
     final sub    = _selectedSub;
-    final _cp    = DDPalette.of(context);
-    final isDark = _cp.isDark;
-    final inactiveBg    = _cp.field;
-    final inactiveColor = _cp.subText;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final inactiveBg    = isDark ? const Color(0xFF2C2C2C) : AppColors.grey100;
+    final inactiveColor = isDark ? AppColors.grey400 : AppColors.grey600;
 
     final activeCatColor = cat != null
         ? Color(int.parse('0xFF${cat.color}'))
@@ -410,9 +393,9 @@ class _PillRow extends StatelessWidget {
     // Нейтрал көгүш — ар башка категория түсү эмес, бирдей стил
     const neutralBlue = Color(0xFF3B82F6);
     final unselBg     = isDark
-        ? neutralBlue.withOpacity(0.08)
-        : neutralBlue.withOpacity(0.06);
-    final unselBorder = neutralBlue.withOpacity(isDark ? 0.20 : 0.15);
+        ? neutralBlue.withValues(alpha: 0.08)
+        : neutralBlue.withValues(alpha: 0.06);
+    final unselBorder = neutralBlue.withValues(alpha: isDark ? 0.20 : 0.15);
     final unselText   = isDark
         ? Colors.white.withOpacity(0.75)
         : const Color(0xFF1E3A5F).withOpacity(0.70);
@@ -438,19 +421,19 @@ class _PillRow extends StatelessWidget {
                 padding: padding,
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? neutralBlue.withOpacity(isDark ? 0.30 : 0.18)
+                      ? neutralBlue.withValues(alpha: isDark ? 0.30 : 0.18)
                       : unselBg,
                   borderRadius: BorderRadius.circular(22),
                   border: Border.all(
                     color: isSelected
-                        ? neutralBlue.withOpacity(isDark ? 0.60 : 0.45)
+                        ? neutralBlue.withValues(alpha: isDark ? 0.60 : 0.45)
                         : unselBorder,
                     width: isSelected ? 1.5 : 1.0,
                   ),
                   boxShadow: isSelected
                       ? [
                           BoxShadow(
-                            color: neutralBlue.withOpacity(0.20),
+                            color: neutralBlue.withValues(alpha: 0.20),
                             blurRadius: 6,
                             offset: const Offset(0, 2),
                           )
@@ -484,7 +467,7 @@ class _PillRow extends StatelessWidget {
                               ? (isDark
                                   ? Colors.white.withOpacity(0.8)
                                   : const Color(0xFF1E3A5F).withOpacity(0.8))
-                              : neutralBlue.withOpacity(0.50),
+                              : neutralBlue.withValues(alpha: 0.50),
                         ),
                       ],
                     ],
@@ -536,7 +519,7 @@ class _CategoryBottomSheet extends StatelessWidget {
         child: Container(
           constraints: BoxConstraints(maxHeight: maxH),
           decoration: BoxDecoration(
-            color: bgColor.withOpacity(0.70),
+            color: bgColor.withValues(alpha: 0.70),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
@@ -583,14 +566,14 @@ class _CategoryBottomSheet extends StatelessWidget {
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
                             color: isSelected
-                                ? catColor.withOpacity(0.85)
-                                : neutralBg.withOpacity(borderAlpha),
+                                ? catColor.withValues(alpha: 0.85)
+                                : neutralBg.withValues(alpha: borderAlpha),
                             width: isSelected ? 2.5 : 1.0,
                           ),
                           boxShadow: isSelected
                               ? [
                                   BoxShadow(
-                                    color: catColor.withOpacity(0.35),
+                                    color: catColor.withValues(alpha: 0.35),
                                     blurRadius: 12,
                                     offset: const Offset(0, 3),
                                   )
@@ -616,7 +599,7 @@ class _CategoryBottomSheet extends StatelessWidget {
                                         : _catFallback(catColor, cat.icon),
                                     if (isSelected)
                                       Container(
-                                        color: catColor.withOpacity(0.20),
+                                        color: catColor.withValues(alpha: 0.20),
                                       ),
                                   ],
                                 ),
@@ -665,7 +648,7 @@ class _CategoryBottomSheet extends StatelessWidget {
     return Container(
       width: double.infinity,
       height: 60,
-      color: color.withOpacity(0.12),
+      color: color.withValues(alpha: 0.12),
       child: Center(
         child: Text(icon, style: const TextStyle(fontSize: 26)),
       ),

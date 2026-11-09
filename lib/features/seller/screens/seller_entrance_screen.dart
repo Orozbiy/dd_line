@@ -55,7 +55,7 @@ class SellerEntranceScreen extends StatelessWidget {
               width: 260, height: 260,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFFD97706).withOpacity(isDark ? 0.12 : 0.10),
+                color: const Color(0xFFD97706).withValues(alpha: isDark ? 0.12 : 0.10),
               ),
             ),
           ),
@@ -65,7 +65,7 @@ class SellerEntranceScreen extends StatelessWidget {
               width: 220, height: 220,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFFEF4444).withOpacity(isDark ? 0.08 : 0.07),
+                color: const Color(0xFFEF4444).withValues(alpha: isDark ? 0.08 : 0.07),
               ),
             ),
           ),
@@ -117,26 +117,48 @@ class SellerEntranceScreen extends StatelessWidget {
                 children: [
                   const Spacer(flex: 2),
 
-                  // ── Лого (күмүш монета) ──
-                  Container(
-                    width: 150, height: 150,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(isDark ? 0.5 : 0.22),
-                          blurRadius: 28,
-                          offset: const Offset(0, 12),
-                          spreadRadius: -6,
+                  // ── Лого (айнек шар) ──
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(32),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                      child: Container(
+                        width: 120, height: 120,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFD97706), Color(0xFFEF4444)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(32),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFD97706).withValues(alpha: 0.35),
+                              blurRadius: 24,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.25),
+                            width: 1.5,
+                          ),
                         ),
-                      ],
-                    ),
-                    child: Image.asset(
-                      'assets/images/seller_register.png',
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => const Center(
-                        child: Icon(Icons.storefront_rounded,
-                            size: 62, color: Colors.white),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(30),
+                          child: Image.asset(
+                            'assets/images/seller_logo.jpg',
+                            width: 120,
+                            height: 120,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => const Center(
+                              child: Icon(
+                                Icons.storefront_rounded,
+                                size: 62,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -155,7 +177,7 @@ class SellerEntranceScreen extends StatelessWidget {
                     loc.get('shop_desc'),
                     style: AppTextStyles.bodyMedium.copyWith(
                       color: isDark
-                          ? Colors.white.withOpacity(0.55)
+                          ? Colors.white.withValues(alpha: 0.55)
                           : AppColors.grey500,
                       height: 1.5,
                     ),
@@ -237,19 +259,19 @@ class _GlassButton extends StatelessWidget {
               color: isPrimary
                   ? null
                   : (isDark
-                      ? Colors.white.withOpacity(0.08)
-                      : Colors.white.withOpacity(0.55)),
+                      ? Colors.white.withValues(alpha: 0.08)
+                      : Colors.white.withValues(alpha: 0.55)),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: isPrimary
-                    ? Colors.white.withOpacity(0.25)
-                    : const Color(0xFFD97706).withOpacity(0.60),
+                    ? Colors.white.withValues(alpha: 0.25)
+                    : const Color(0xFFD97706).withValues(alpha: 0.60),
                 width: 1.5,
               ),
               boxShadow: isPrimary
                   ? [
                       BoxShadow(
-                        color: const Color(0xFFD97706).withOpacity(0.30),
+                        color: const Color(0xFFD97706).withValues(alpha: 0.30),
                         blurRadius: 16,
                         offset: const Offset(0, 6),
                       ),

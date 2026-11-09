@@ -5,9 +5,9 @@ import 'package:flutter/material.dart';
 class DD {
   DD._();
 
-  // Түстөр — Мандарин + Күмүш бренд палитрасы
-  static const accent = Color(0xFFFF7A30);   // Мандарин (негизги)
-  static const accent2 = Color(0xFFFF9B50);  // Мандарин жеңил
+  // Түстөр (Figma: #E84427 негизги, #E86827 экинчи, #23262F / #353945 текст)
+  static const accent = Color(0xFFE84427);
+  static const accent2 = Color(0xFFE86827);
   static const ink = Color(0xFF23262F);
   static const inkSoft = Color(0xFF353945);
   static const mint = Color(0xFFEDFFEF);
@@ -31,14 +31,14 @@ class DD {
   static BoxDecoration glass({double radius = rCard, double fill = 0.08}) =>
       BoxDecoration(
         borderRadius: BorderRadius.circular(radius),
-        border: Border.all(color: Colors.white.withOpacity(0.55)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.55)),
         gradient: RadialGradient(
           center: Alignment.topLeft,
           radius: 1.4,
           colors: [
-            Colors.white.withOpacity(0.40 * (fill / 0.08).clamp(0.3, 1)),
-            Colors.white.withOpacity(0.12),
-            Colors.white.withOpacity(0.0),
+            Colors.white.withValues(alpha: 0.40 * (fill / 0.08).clamp(0.3, 1)),
+            Colors.white.withValues(alpha: 0.12),
+            Colors.white.withValues(alpha: 0.0),
           ],
         ),
       );
@@ -51,21 +51,21 @@ class DD {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Colors.white.withOpacity(0.07),
-                  Colors.white.withOpacity(0.02),
+                  Colors.white.withValues(alpha: 0.07),
+                  Colors.white.withValues(alpha: 0.02),
                 ],
               )
             : null,
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(
           color: isDark
-              ? accent2.withOpacity(0.18)
+              ? accent2.withValues(alpha: 0.18)
               : const Color(0xFFF0F0F2),
         ),
         boxShadow: isDark
             ? [
                 BoxShadow(
-                  color: accent.withOpacity(0.06),
+                  color: accent.withValues(alpha: 0.06),
                   blurRadius: 24,
                   offset: const Offset(0, 8),
                   spreadRadius: -8,
@@ -73,7 +73,7 @@ class DD {
               ]
             : [
                 BoxShadow(
-                  color: ink.withOpacity(0.07),
+                  color: ink.withValues(alpha: 0.07),
                   blurRadius: 22,
                   offset: const Offset(0, 8),
                   spreadRadius: -4,
@@ -154,7 +154,7 @@ class _DDBgPainter extends CustomPainter {
 
   void _blob(Canvas c, Offset o, double r, Color color) {
     final paint = Paint();
-    paint.shader = RadialGradient(colors: [color, color.withOpacity(0)])
+    paint.shader = RadialGradient(colors: [color, color.withValues(alpha: 0)])
         .createShader(Rect.fromCircle(center: o, radius: r));
     c.drawCircle(o, r, paint);
   }
@@ -166,14 +166,14 @@ class _DDBgPainter extends CustomPainter {
     canvas.drawRect(Offset.zero & s, bgPaint);
     if (isDark) {
       _blob(canvas, Offset(s.width * 0.12, s.height * 0.05), s.width * 0.9,
-          DD.accent2.withOpacity(0.26));
+          DD.accent2.withValues(alpha: 0.26));
       _blob(canvas, Offset(s.width * 0.95, s.height * 0.92), s.width * 0.95,
-          DD.accent.withOpacity(0.20));
+          DD.accent.withValues(alpha: 0.20));
     } else {
       _blob(canvas, Offset(s.width * 0.2, s.height * 0.04), s.width * 0.75,
-          DD.accent2.withOpacity(0.14));
+          DD.accent2.withValues(alpha: 0.14));
       _blob(canvas, Offset(s.width * 0.98, s.height * 0.02), s.width * 0.5,
-          DD.accent.withOpacity(0.10));
+          DD.accent.withValues(alpha: 0.10));
     }
   }
 
@@ -225,7 +225,7 @@ class DDIconBadge extends StatelessWidget {
           borderRadius: BorderRadius.circular(size * 0.34),
           boxShadow: [
             BoxShadow(
-              color: DD.accent.withOpacity(0.30),
+              color: DD.accent.withValues(alpha: 0.30),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -262,7 +262,7 @@ class DDPillButton extends StatelessWidget {
               ? null
               : [
                   BoxShadow(
-                    color: DD.accent.withOpacity(0.40),
+                    color: DD.accent.withValues(alpha: 0.40),
                     blurRadius: 18,
                     offset: const Offset(0, 6),
                     spreadRadius: -4,

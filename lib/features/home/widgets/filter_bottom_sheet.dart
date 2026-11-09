@@ -134,8 +134,8 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
       duration: const Duration(milliseconds: 200),
       decoration: BoxDecoration(
         color: isDark
-            ? Colors.white.withOpacity(0.06)
-            : Colors.black.withOpacity(0.03),
+            ? Colors.white.withValues(alpha: 0.06)
+            : Colors.black.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: Colors.transparent,
@@ -280,7 +280,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.10),
+                              color: AppColors.primary.withValues(alpha: 0.10),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
@@ -297,10 +297,10 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                         data: SliderTheme.of(context).copyWith(
                           activeTrackColor: AppColors.primary,
                           inactiveTrackColor:
-                              AppColors.primary.withOpacity(0.15),
+                              AppColors.primary.withValues(alpha: 0.15),
                           thumbColor: AppColors.primary,
                           overlayColor:
-                              AppColors.primary.withOpacity(0.12),
+                              AppColors.primary.withValues(alpha: 0.12),
                           trackHeight: 4,
                         ),
                         child: RangeSlider(
@@ -384,7 +384,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                                 horizontal: 16, vertical: 14),
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? AppColors.primary.withOpacity(0.12)
+                                  ? AppColors.primary.withValues(alpha: 0.12)
                                   : sortItemBg,
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
