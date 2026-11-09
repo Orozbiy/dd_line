@@ -1,0 +1,6 @@
+@echo off
+echo 📱 iOS үчүн lib_ios/ → lib/ орнотулуп жатат...
+xcopy /E /Y /I lib_ios\* lib\
+echo ✅ lib_ios → lib дайындалды
+echo 🚀 Flutter iOS иштетилет...
+flutter run -d "iPhone" %*

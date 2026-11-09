@@ -1,0 +1,6 @@
+@echo off
+echo 🤖 Android үчүн lib_android/ → lib/ орнотулуп жатат...
+xcopy /E /Y /I lib_android\* lib\
+echo ✅ lib_android → lib дайындалды
+echo 🚀 Flutter Android иштетилет...
+flutter run -d android %*
