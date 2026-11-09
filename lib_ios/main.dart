@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:app_links/app_links.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -33,53 +34,125 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 }
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  debugPrint('🚀 MAIN БАШТАЛДЫ');
+  runZonedGuarded(() async {
+    WidgetsFlutterBinding.ensureInitialized();
 
-  if (defaultTargetPlatform != TargetPlatform.windows) {
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  }
+    // Бардык Flutter каталарын кармайбыз
+    FlutterError.onError = (details) {
+      debugPrint('❌ FlutterError: \${details.exceptionAsString()}');
+      debugPrint('❌ Stack: \${details.stack}');
+      _showErrorApp('Flutter Error:\n\${details.exceptionAsString()}');
+    };
 
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    debugPrint('🚀 MAIN БАШТАЛДЫ');
 
-  // ── Supabase жана Firebase бири-бирине көз каранды эмес —
-  // параллелдүү инициализациялоо старттын убактысын кыскартат ──
-  debugPrint('🚀 Supabase + Firebase init (параллелдүү)...');
-  await Future.wait([
-    SupabaseInit.init(),
-    _initFirebase(),
-  ]);
+    if (defaultTargetPlatform != TargetPlatform.windows) {
+      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    }
 
-  // Screen builders — circular import чечүү үчүн
-  NotificationService.registerScreenBuilders(
-    chatScreen: (chatId, sellerName, productId, productName, productImage,
-        isSeller, buyerId, sellerId, otherAvatarUrl) =>
-        ChatScreen(
-          chatId: chatId,
-          sellerName: sellerName,
-          productId: productId,
-          productName: productName,
-          productImage: productImage,
-          isSeller: isSeller,
-          buyerId: buyerId,
-          sellerId: sellerId,
-          otherAvatarUrl: otherAvatarUrl,
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+
+    // Supabase init
+    debugPrint('🚀 Supabase init...');
+    try {
+      await SupabaseInit.init();
+      debugPrint('✅ Supabase OK');
+    } catch (e, st) {
+      debugPrint('❌ Supabase ката: \$e\n\$st');
+      _showErrorApp('Supabase init failed:\n\$e');
+      return;
+    }
+
+    // Firebase init
+    debugPrint('🚀 Firebase init...');
+    try {
+      await _initFirebase();
+      debugPrint('✅ Firebase OK');
+    } catch (e, st) {
+      debugPrint('❌ Firebase ката: \$e\n\$st');
+      _showErrorApp('Firebase init failed:\n\$e');
+      return;
+    }
+
+    // Screen builders
+    NotificationService.registerScreenBuilders(
+      chatScreen: (chatId, sellerName, productId, productName, productImage,
+          isSeller, buyerId, sellerId, otherAvatarUrl) =>
+          ChatScreen(
+            chatId: chatId,
+            sellerName: sellerName,
+            productId: productId,
+            productName: productName,
+            productImage: productImage,
+            isSeller: isSeller,
+            buyerId: buyerId,
+            sellerId: sellerId,
+            otherAvatarUrl: otherAvatarUrl,
+          ),
+      productDetail: (product) => ProductDetailScreen(product: product as ProductModel),
+      notifications: () => const NotificationsScreen(),
+    );
+
+    // Калган инициализация
+    debugPrint('🚀 Cart/Favorites/Notifications...');
+    try {
+      await Future.wait([
+        NotificationService().handleInitialMessage(),
+        CartManager.instance.loadFromPrefs(),
+        FavoritesManager().loadFromPrefs(),
+        ChatBackgroundProvider.instance.load(),
+      ]);
+      debugPrint('✅ Баары даяр');
+    } catch (e, st) {
+      debugPrint('❌ Startup ката: \$e\n\$st');
+      // Бул каталар критикалык эмес — колдонмо ачылсын
+    }
+
+    debugPrint('🚀 runApp...');
+    runApp(const ActiveStatusTracker(child: DDOnlineApp()));
+  }, (error, stack) {
+    debugPrint('❌ Zone ката: \$error\n\$stack');
+    _showErrorApp('Startup error:\n\$error');
+  });
+}
+
+void _showErrorApp(String message) {
+  runApp(MaterialApp(
+    debugShowCheckedModeBanner: false,
+    home: Scaffold(
+      backgroundColor: const Color(0xFF1A1A1A),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.error_outline, color: Color(0xFFFF5555), size: 48),
+              const SizedBox(height: 16),
+              const Text(
+                'DD Online — Старт катасы',
+                style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: SelectableText(
+                    message,
+                    style: const TextStyle(color: Color(0xFFCCCCCC), fontSize: 13, fontFamily: 'monospace'),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Бул скриншотту скриньшот кылып жонот',
+                style: TextStyle(color: Color(0xFF888888), fontSize: 12),
+              ),
+            ],
+          ),
         ),
-    productDetail: (product) => ProductDetailScreen(product: product as ProductModel),
-    notifications: () => const NotificationsScreen(),
-  );
-
-  // ── Калган баштапкы жүктөөлөр бири-бирин көз карандысыз —
-  // параллелдүү аткарылат (SharedPreferences окуу + push billdirүү) ──
-  debugPrint('🚀 handleInitialMessage + Cart/Favorites/ChatBg (параллелдүү)...');
-  await Future.wait([
-    NotificationService().handleInitialMessage(),
-    CartManager.instance.loadFromPrefs(),
-    FavoritesManager().loadFromPrefs(),
-    ChatBackgroundProvider.instance.load(),
-  ]);
-  debugPrint('🚀 runApp...');
-  runApp(const ActiveStatusTracker(child: DDOnlineApp()));
+      ),
+    ),
+  ));
 }
 
 Future<void> _initFirebase() async {
