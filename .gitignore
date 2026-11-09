@@ -50,3 +50,16 @@ service_account.json
 ios/Flutter/Generated.xcconfig
 ios/Flutter/ephemeral/
 ios/Flutter/.last_build_id
+
+# Build caches
+android/.gradle/
+android/app/.cxx/
+android/app/build/
+android/build/
+
+# Secrets
+.env.secrets
+
+# Temp files
+build_log.txt
+Claude outputs/
