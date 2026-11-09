@@ -7,11 +7,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../../config/theme/app_colors.dart';
-import '../../../../config/theme/dd_design.dart';
-import '../../../../config/theme/app_text_styles.dart';
-import '../../../../core/app_localizations.dart';
-import '../../../../core/supabase_client.dart';
+import '../../../config/theme/app_colors.dart';
+import '../../../config/theme/dd_design.dart';
+import '../../../config/theme/app_text_styles.dart';
+import '../../../core/app_localizations.dart';
+import '../../../core/supabase_client.dart';
 import '../models/chat_model.dart';
 import '../services/chat_service.dart';
 import 'chat_screen.dart';
@@ -152,7 +152,6 @@ class _ChatListScreenState extends State<ChatListScreen> {
    final prefs = await SharedPreferences.getInstance();
 for (final id in toDelete) {
   try {
-    // ← смс кэшин тазала
     await prefs.remove('messages_$id');
     await _service.deleteChat(id, isSeller: widget.isSeller);
   } catch (e) {
@@ -160,10 +159,6 @@ for (final id in toDelete) {
   }
 }
   }
-
-  // ════════════════════════════════════════════════════
-  // BUILD
-  // ════════════════════════════════════════════════════
 
   @override
   Widget build(BuildContext context) {
@@ -176,12 +171,10 @@ for (final id in toDelete) {
         ? Colors.black.withOpacity(0.55)
         : Colors.white.withOpacity(0.95);
 
-    // ── Чат карточка фону ──
     final cardBg = isDark
         ? Colors.white.withOpacity(0.06)
         : Colors.white;
 
-    // ── Scaffold фону: сатуучудан ачылса таза ак/кара ──
     final scaffoldBg = isDark ? DD.bgDark : DD.bgLight;
 
     final myId = supabase.auth.currentUser?.id ?? '';
@@ -193,7 +186,6 @@ for (final id in toDelete) {
       backgroundColor: scaffoldBg,
       extendBodyBehindAppBar: false,
 
-      // ── AppBar — размытие ──
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(kToolbarHeight),
         child: ClipRect(
@@ -297,7 +289,6 @@ for (final id in toDelete) {
           }
 
           return ListView.builder(
-            // ── AppBar бийиктигин эсепке алуу ──
             padding: EdgeInsets.fromLTRB(
                 12, kToolbarHeight + MediaQuery.of(context).padding.top + 8, 12, 12),
             itemCount: chats.length,
@@ -328,14 +319,12 @@ for (final id in toDelete) {
                 ChatScreen.fromChat(chat, isSeller: widget.isSeller),
           ),
         );
-        // Кайткандан кийин кэшти жаңырт (жаңы чат тизмеде чыксын)
         if (mounted) await _loadCache();
       },
                 child: AnimatedContainer(
                  duration: const Duration(milliseconds: 10),
                   margin: const EdgeInsets.only(bottom: 10),
                   decoration: BoxDecoration(
-                    // ── Жарым өткөрүмдүү карточка ──
                     color: isSelected
                         ? DD.accent.withOpacity(0.12)
                         : cardBg,
@@ -492,9 +481,6 @@ for (final id in toDelete) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────
-// SKELETON
-// ─────────────────────────────────────────────────────────────
 class _ChatSkeletonList extends StatefulWidget {
   @override
   State<_ChatSkeletonList> createState() => _ChatSkeletonListState();

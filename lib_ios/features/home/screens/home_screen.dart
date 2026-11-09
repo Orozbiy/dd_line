@@ -995,7 +995,7 @@ if (_isSearchMode || _isNearbyMode ||
                                     child: Stack(
                                       clipBehavior: Clip.none,
                                       children: [
-                                        Image.asset('assets/icons/nav/ic_bell.png', width: 28, height: 28),
+                                        Image.asset('assets/icons/nav/ic_bell.png', width: 28, height: 28, color: isDark ? Colors.white70 : const Color(0xFF6B7280)),
                                         if (_hasUnread)
                                           Positioned(
                                             top: 0,
@@ -1035,7 +1035,7 @@ if (_isSearchMode || _isNearbyMode ||
                               child: Stack(
                                 clipBehavior: Clip.none,
                                 children: [
-                                  Image.asset('assets/icons/nav/ic_filter.png', width: 26, height: 26),
+                                  Image.asset('assets/icons/nav/ic_filter.png', width: 26, height: 26, color: isDark ? Colors.white70 : const Color(0xFF6B7280)),
                                   if (_filterCount > 0)
                                     Positioned(
                                       top: -6,

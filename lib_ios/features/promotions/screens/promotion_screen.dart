@@ -1,13 +1,14 @@
 import 'dart:ui';
+
 import 'package:flutter/material.dart';
-import '../../../../config/theme/app_colors.dart';
-import '../../../../config/theme/app_text_styles.dart';
-import '../../../../config/theme/dd_design.dart';
+
+import '../../../config/theme/app_colors.dart';
+import '../../../config/theme/app_text_styles.dart';
+import '../../../config/theme/dd_design.dart';
 import '../../../core/app_localizations.dart';
 import '../../../core/supabase_client.dart';
 import '../../../data/models/product_model.dart';
 import '../../product_detail/screens/product_detail_screen.dart';
-
 
 class PromotionScreen extends StatefulWidget {
   const PromotionScreen({super.key});
@@ -81,9 +82,13 @@ class _PromotionScreenState extends State<PromotionScreen> {
             filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
             child: Container(
               decoration: BoxDecoration(
-                color: (isDark ? DD.bgDark : Colors.white).withOpacity(isDark ? 0.75 : 0.85),
+                color: (isDark ? DD.bgDark : Colors.white)
+                    .withOpacity(isDark ? 0.75 : 0.85),
                 border: Border(
-                  bottom: BorderSide(color: isDark ? Colors.white.withOpacity(0.08) : const Color(0xFFEDEDF0)),
+                  bottom: BorderSide(
+                      color: isDark
+                          ? Colors.white.withOpacity(0.08)
+                          : const Color(0xFFEDEDF0)),
                 ),
               ),
             ),
@@ -91,12 +96,23 @@ class _PromotionScreenState extends State<PromotionScreen> {
         ),
         leading: IconButton(
           icon: Container(
-            width: 36, height: 36,
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
               color: isDark ? Colors.white.withOpacity(0.08) : Colors.white,
               shape: BoxShape.circle,
-              border: Border.all(color: isDark ? Colors.white.withOpacity(0.12) : const Color(0xFFEDEDF0)),
-              boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 6, offset: const Offset(0, 2))],
+              border: Border.all(
+                  color: isDark
+                      ? Colors.white.withOpacity(0.12)
+                      : const Color(0xFFEDEDF0)),
+              boxShadow: isDark
+                  ? []
+                  : [
+                      BoxShadow(
+                          color: Colors.black.withOpacity(0.06),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2))
+                    ],
             ),
             child: Icon(Icons.arrow_back_rounded, color: p.text, size: 18),
           ),
@@ -106,13 +122,20 @@ class _PromotionScreenState extends State<PromotionScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 30, height: 30,
+              width: 30,
+              height: 30,
               decoration: BoxDecoration(
                 gradient: DD.accentGradient,
                 borderRadius: BorderRadius.circular(10),
-                boxShadow: [BoxShadow(color: DD.accent.withOpacity(0.35), blurRadius: 8, offset: const Offset(0, 3))],
+                boxShadow: [
+                  BoxShadow(
+                      color: DD.accent.withOpacity(0.35),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3))
+                ],
               ),
-              child: const Icon(Icons.local_offer_rounded, color: Colors.white, size: 16),
+              child: const Icon(Icons.local_offer_rounded,
+                  color: Colors.white, size: 16),
             ),
             const SizedBox(width: 8),
             Text(
@@ -285,9 +308,11 @@ class _PromoCard extends StatelessWidget {
               // ── Фон жарык (dark режим) ──
               if (isDark)
                 Positioned(
-                  top: -20, left: -20,
+                  top: -20,
+                  left: -20,
                   child: Container(
-                    width: 90, height: 90,
+                    width: 90,
+                    height: 90,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       gradient: RadialGradient(colors: [
@@ -304,7 +329,8 @@ class _PromoCard extends StatelessWidget {
                   Stack(
                     children: [
                       ClipRRect(
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                        borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(20)),
                         child: imageUrl.isNotEmpty
                             ? Image.network(
                                 imageUrl,
@@ -314,31 +340,55 @@ class _PromoCard extends StatelessWidget {
                                 errorBuilder: (_, __, ___) => Container(
                                   height: 150,
                                   decoration: BoxDecoration(
-                                    gradient: LinearGradient(colors: isDark
-                                        ? [const Color(0xFF1A0E07), const Color(0xFF120A04)]
-                                        : [AppColors.grey100, AppColors.grey200]),
+                                    gradient: LinearGradient(
+                                        colors: isDark
+                                            ? [
+                                                const Color(0xFF1A0E07),
+                                                const Color(0xFF120A04)
+                                              ]
+                                            : [
+                                                AppColors.grey100,
+                                                AppColors.grey200
+                                              ]),
                                   ),
-                                  child: const Center(child: Icon(Icons.image_not_supported_outlined, color: AppColors.grey400)),
+                                  child: const Center(
+                                      child: Icon(
+                                          Icons.image_not_supported_outlined,
+                                          color: AppColors.grey400)),
                                 ),
                               )
                             : Container(
                                 height: 150,
                                 decoration: BoxDecoration(
-                                  gradient: LinearGradient(colors: isDark
-                                      ? [const Color(0xFF1A0E07), const Color(0xFF120A04)]
-                                      : [AppColors.grey100, AppColors.grey200]),
+                                  gradient: LinearGradient(
+                                      colors: isDark
+                                          ? [
+                                              const Color(0xFF1A0E07),
+                                              const Color(0xFF120A04)
+                                            ]
+                                          : [
+                                              AppColors.grey100,
+                                              AppColors.grey200
+                                            ]),
                                 ),
-                                child: const Center(child: Icon(Icons.image_outlined, color: AppColors.grey400)),
+                                child: const Center(
+                                    child: Icon(Icons.image_outlined,
+                                        color: AppColors.grey400)),
                               ),
                       ),
                       // ── Фото үстүнө градиент ──
                       Positioned(
-                        bottom: 0, left: 0, right: 0,
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
                         child: Container(
                           height: 55,
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
-                              colors: [Colors.transparent, Colors.black.withOpacity(0.45)],
+                              colors: [
+                                Colors.transparent,
+                                Colors.black.withOpacity(0.45)
+                              ],
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
                             ),
@@ -347,38 +397,56 @@ class _PromoCard extends StatelessWidget {
                       ),
                       if (percent > 0)
                         Positioned(
-                          top: 8, left: 8,
+                          top: 8,
+                          left: 8,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
                               gradient: DD.accentGradient,
                               borderRadius: BorderRadius.circular(9),
-                              boxShadow: [BoxShadow(color: DD.accent.withOpacity(0.4), blurRadius: 8, offset: const Offset(0, 2))],
+                              boxShadow: [
+                                BoxShadow(
+                                    color: DD.accent.withOpacity(0.4),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2))
+                              ],
                             ),
                             child: Text('-$percent%',
-                                style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800)),
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800)),
                           ),
                         ),
                       // ── "Аксия" белгиси ──
                       Positioned(
-                        bottom: 8, right: 8,
+                        bottom: 8,
+                        right: 8,
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(8),
                           child: BackdropFilter(
                             filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 7, vertical: 3),
                               decoration: BoxDecoration(
                                 color: Colors.black.withOpacity(0.50),
                                 borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.white.withOpacity(0.15)),
+                                border: Border.all(
+                                    color: Colors.white.withOpacity(0.15)),
                               ),
                               child: const Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.local_offer_rounded, color: Colors.white70, size: 10),
+                                  Icon(Icons.local_offer_rounded,
+                                      color: Colors.white70, size: 10),
                                   SizedBox(width: 3),
-                                  Text('Аксия', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700)),
+                                  Text('Аксия',
+                                      style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w700)),
                                 ],
                               ),
                             ),
@@ -395,8 +463,11 @@ class _PromoCard extends StatelessWidget {
                       children: [
                         Text(name,
                             style: AppTextStyles.labelLarge.copyWith(
-                              color: isDark ? Colors.white.withOpacity(0.90) : AppColors.black,
-                              fontSize: 13, height: 1.3,
+                              color: isDark
+                                  ? Colors.white.withOpacity(0.90)
+                                  : AppColors.black,
+                              fontSize: 13,
+                              height: 1.3,
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis),
@@ -404,12 +475,20 @@ class _PromoCard extends StatelessWidget {
                           const SizedBox(height: 3),
                           Row(
                             children: [
-                              Icon(Icons.store_rounded, size: 10, color: isDark ? Colors.white30 : AppColors.grey400),
+                              Icon(Icons.store_rounded,
+                                  size: 10,
+                                  color: isDark
+                                      ? Colors.white30
+                                      : AppColors.grey400),
                               const SizedBox(width: 3),
                               Expanded(
                                 child: Text(shopName,
-                                    style: AppTextStyles.bodySmall.copyWith(color: isDark ? Colors.white30 : AppColors.grey500),
-                                    maxLines: 1, overflow: TextOverflow.ellipsis),
+                                    style: AppTextStyles.bodySmall.copyWith(
+                                        color: isDark
+                                            ? Colors.white30
+                                            : AppColors.grey500),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis),
                               ),
                             ],
                           ),
@@ -422,9 +501,18 @@ class _PromoCard extends StatelessWidget {
                             Text(
                               '${discounted.toStringAsFixed(0)} $cur',
                               style: TextStyle(
-                                color: isDark ? const Color(0xFF4ADE80) : AppColors.success,
-                                fontSize: 16, fontWeight: FontWeight.w800,
-                                shadows: isDark ? [const Shadow(color: Color(0x404ADE80), blurRadius: 8)] : [],
+                                color: isDark
+                                    ? const Color(0xFF4ADE80)
+                                    : AppColors.success,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                shadows: isDark
+                                    ? [
+                                        const Shadow(
+                                            color: Color(0x404ADE80),
+                                            blurRadius: 8)
+                                      ]
+                                    : [],
                               ),
                             ),
                             if (percent > 0) ...[

@@ -67,7 +67,7 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
       decoration: InputDecoration(
         hintText: loc.get('search_hint'),
         hintStyle: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey400),
-        prefixIcon: Padding(padding: const EdgeInsets.all(10), child: Image.asset('assets/icons/nav/ic_search.png', width: 22, height: 22)),
+        prefixIcon: Padding(padding: const EdgeInsets.all(10), child: Image.asset('assets/icons/nav/ic_search.png', width: 22, height: 22, color: const Color(0xFF6B7280))),
         suffixIcon: _controller.text.isNotEmpty
             ? GestureDetector(
                 behavior: HitTestBehavior.opaque,

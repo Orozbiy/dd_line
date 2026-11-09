@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../../../data/models/product_model.dart';
+import '../../../data/models/product_model.dart';
 
 class CartItem {
   final ProductModel product;
@@ -42,7 +42,6 @@ class CartManager {
 
   double get totalPrice => _items.fold(0, (sum, i) => sum + i.totalPrice);
 
-  // --- SharedPreferences жүктөө ---
   Future<void> loadFromPrefs() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_kCartKey);
@@ -54,7 +53,6 @@ class CartManager {
     } catch (_) {}
   }
 
-  // --- SharedPreferences сактоо ---
   Future<void> _saveToPrefs() async {
     final prefs = await SharedPreferences.getInstance();
     final encoded = jsonEncode(_items.map((e) => e.toJson()).toList());

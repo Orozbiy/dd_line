@@ -1,8 +1,3 @@
-// ═══════════════════════════════════════════════════════════════
-// lib/features/product_detail/widgets/price_watch_button.dart
-// ProductDetailScreen'дин баа бөлүмүнө кошулат
-// ═══════════════════════════════════════════════════════════════
-
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
@@ -10,196 +5,118 @@ import '../../../core/supabase_client.dart';
 
 class PriceWatchButton extends StatefulWidget {
   final String productId;
-  final String productName;
-
-  const PriceWatchButton({
-    super.key,
-    required this.productId,
-    required this.productName,
-  });
+  const PriceWatchButton({super.key, required this.productId});
 
   @override
   State<PriceWatchButton> createState() => _PriceWatchButtonState();
 }
 
-class _PriceWatchButtonState extends State<PriceWatchButton>
-    with SingleTickerProviderStateMixin {
-  bool _isWatching = false;
-  bool _loading    = true;
-  late AnimationController _animCtrl;
-  late Animation<double>   _scaleAnim;
+class _PriceWatchButtonState extends State<PriceWatchButton> {
+  bool _watching = false;
+  bool _loading  = true;
 
   @override
   void initState() {
     super.initState();
-    _animCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 200),
-    );
-    _scaleAnim = Tween<double>(begin: 1.0, end: 1.2).animate(
-      CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut),
-    );
-    _checkWatchStatus();
+    _checkStatus();
   }
 
-  @override
-  void dispose() {
-    _animCtrl.dispose();
-    super.dispose();
-  }
-
-  Future<void> _checkWatchStatus() async {
+  Future<void> _checkStatus() async {
     final user = supabase.auth.currentUser;
-    if (user == null) {
-      if (mounted) setState(() => _loading = false);
-      return;
-    }
+    if (user == null) { setState(() => _loading = false); return; }
     try {
-      final row = await supabase
+      final rows = await supabase
           .from('price_watch')
           .select('id')
-          .eq('user_id', user.id)
           .eq('product_id', widget.productId)
-          .maybeSingle();
-
-      if (mounted) {
-        setState(() {
-          _isWatching = row != null;
-          _loading    = false;
-        });
-      }
+          .eq('user_id', user.id);
+      setState(() {
+        _watching = (rows as List).isNotEmpty;
+        _loading  = false;
+      });
     } catch (_) {
-      if (mounted) setState(() => _loading = false);
+      setState(() => _loading = false);
     }
   }
 
   Future<void> _toggle() async {
     final user = supabase.auth.currentUser;
     if (user == null) {
-      // Кирүү суралат
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('🔔 Кабарлама алуу үчүн кирүү керек'),
-          backgroundColor: AppColors.primary,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
+        const SnackBar(content: Text('Кирүү керек!')),
       );
       return;
     }
-
-    // Анимация
-    _animCtrl.forward().then((_) => _animCtrl.reverse());
-
-    final wasWatching = _isWatching;
-    setState(() => _isWatching = !_isWatching);
-
+    setState(() => _loading = true);
     try {
-      if (wasWatching) {
-        // Алып салуу
+      if (_watching) {
         await supabase
             .from('price_watch')
             .delete()
-            .eq('user_id', user.id)
-            .eq('product_id', widget.productId);
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('🔕 Кабарлама өчүрүлдү'),
-              backgroundColor: AppColors.grey500,
-              duration: const Duration(seconds: 2),
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-          );
-        }
+            .eq('product_id', widget.productId)
+            .eq('user_id', user.id);
+        setState(() => _watching = false);
       } else {
-        // Кошуу
         await supabase.from('price_watch').insert({
-          'user_id':    user.id,
           'product_id': widget.productId,
+          'user_id':    user.id,
         });
-
+        setState(() => _watching = true);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(children: [
-                const Text('🔔 ', style: TextStyle(fontSize: 18)),
-                Expanded(
-                  child: Text(
-                    'Баа түшсө кабарлайбыз!',
-                    style: AppTextStyles.labelMedium.copyWith(color: Colors.white),
-                  ),
-                ),
-              ]),
-              backgroundColor: AppColors.primary,
-              duration: const Duration(seconds: 2),
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            const SnackBar(
+              content: Text('🔔 Баа түшсө кабарлама келет!'),
+              backgroundColor: Color(0xFF16A34A),
             ),
           );
         }
       }
     } catch (e) {
-      // Ката болсо — кайтарабыз
-      if (mounted) setState(() => _isWatching = wasWatching);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ката: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    if (_loading) {
-      return const SizedBox(
-        width: 40, height: 40,
-        child: Center(
-          child: SizedBox(
-            width: 18, height: 18,
-            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+    return GestureDetector(
+      onTap: _loading ? null : _toggle,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: _watching
+              ? const Color(0xFFEFF6FF)
+              : const Color(0xFFFFF8F0),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: _watching ? Colors.blue : AppColors.primary,
           ),
         ),
-      );
-    }
-
-    return ScaleTransition(
-      scale: _scaleAnim,
-      child: GestureDetector(
-        onTap: _toggle,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: _isWatching
-                ? AppColors.primary.withOpacity(0.12)
-                : (isDark ? const Color(0xFF2C2C2C) : AppColors.grey100),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: _isWatching
-                  ? AppColors.primary.withOpacity(0.5)
-                  : Colors.transparent,
-              width: 1.5,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                _isWatching ? Icons.notifications_active : Icons.notifications_none_outlined,
-                color: _isWatching ? AppColors.primary : AppColors.grey500,
-                size: 18,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                _isWatching ? 'Кабар күтүүдө' : 'Баа түшсө кабарла',
-                style: AppTextStyles.labelSmall.copyWith(
-                  color: _isWatching ? AppColors.primary : AppColors.grey500,
-                  fontWeight: _isWatching ? FontWeight.w600 : FontWeight.normal,
+        child: _loading
+            ? const SizedBox(
+                width: 18, height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(
+                  _watching ? Icons.notifications_active : Icons.notifications_none,
+                  size: 18,
+                  color: _watching ? Colors.blue : AppColors.primary,
                 ),
-              ),
-            ],
-          ),
-        ),
+                const SizedBox(width: 6),
+                Text(
+                  _watching ? 'Күтүүдө 🔔' : 'Баа түшсө кабарла',
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color: _watching ? Colors.blue : AppColors.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ]),
       ),
     );
   }
