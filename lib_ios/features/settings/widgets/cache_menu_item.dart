@@ -12,49 +12,31 @@ class CacheMenuItem extends StatefulWidget {
 }
 
 class _CacheMenuItemState extends State<CacheMenuItem> {
-  static const String _appVersion = 'v20.04';
-  bool _isClearing = false;
+  bool _clearing = false;
 
-  Future<void> _onTap(BuildContext context) async {
-    if (_isClearing) return;
-    setState(() => _isClearing = true);
+  Future<void> _clearCache(BuildContext context) async {
     final loc = AppLocalizations.of(context);
+    setState(() => _clearing = true);
     try {
       await DefaultCacheManager().emptyCache();
-      PaintingBinding.instance.imageCache.clear();
-      PaintingBinding.instance.imageCache.clearLiveImages();
-
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(loc.get('cache_cleared')),
-          backgroundColor: AppColors.success,
-          behavior: SnackBarBehavior.floating,
-          shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(Radius.circular(12))),
-        ),
-      );
-    } catch (e) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${loc.get('cache_error')}: $e'),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-          shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(Radius.circular(12))),
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(loc.get('cache_cleared')),
+        backgroundColor: AppColors.success,
+        behavior: SnackBarBehavior.floating,
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+      ));
     } finally {
-      if (mounted) setState(() => _isClearing = false);
+      if (mounted) setState(() => _clearing = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
+    final version = '20.04';
     return InkWell(
-      onTap: () => _onTap(context),
+      onTap: _clearing ? null : () => _clearCache(context),
       borderRadius: BorderRadius.circular(12),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 14),
@@ -63,23 +45,22 @@ class _CacheMenuItemState extends State<CacheMenuItem> {
             Image.asset(
               'assets/icons/settings/ic_cache.png',
               width: 36, height: 36, fit: BoxFit.contain,
+              color: const Color(0xFF6B7280),
             ),
             const SizedBox(width: 12),
-            Expanded(
-              child: Text(loc.get('cache'), style: AppTextStyles.bodyMedium),
-            ),
-            if (_isClearing)
-              const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
-              )
+            Expanded(child: Text(loc.get('clear_cache'), style: AppTextStyles.bodyMedium)),
+            if (_clearing)
+              const SizedBox(width: 20, height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary))
             else
-              Text(_appVersion,
+              Text('v$version',
                   style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey400)),
             const SizedBox(width: 8),
-            Image.asset('assets/icons/settings/ic_chevron_right.png', color: const Color(0xFF6B7280),
-                width: 20, height: 20, color: AppColors.grey300),
+            Image.asset(
+              'assets/icons/settings/ic_chevron_right.png',
+              width: 20, height: 20,
+              color: const Color(0xFF6B7280),
+            ),
           ],
         ),
       ),

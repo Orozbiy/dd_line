@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../core/app_localizations.dart';
@@ -15,11 +16,10 @@ class ChatBgMenuItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final loc        = AppLocalizations.of(context);
-    final isDark     = Theme.of(context).brightness == Brightness.dark;
-    final textColor  = isDark ? Colors.white : AppColors.black;
-    final subColor   = isDark ? const Color(0xFFAAAAAA) : AppColors.grey500;
-    final arrowColor = isDark ? const Color(0xFF666666) : AppColors.grey400;
+    final loc = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : AppColors.black;
+    final subColor = isDark ? const Color(0xFFAAAAAA) : AppColors.grey500;
 
     return ListenableBuilder(
       listenable: provider,
@@ -32,13 +32,16 @@ class ChatBgMenuItem extends StatelessWidget {
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 14), // ← 12→14 башкалар менен бирдей
+          padding: const EdgeInsets.symmetric(
+              vertical: 14), // ← 12→14 башкалар менен бирдей
           child: Row(
             children: [
               // ← Контейнер жок, жөн гана Icon — CacheMenuItem/SupportMenuItem/TermsMenuItem сыяктуу
               Image.asset(
                 'assets/icons/settings/ic_chat_bg.png',
-                width: 36, height: 36, fit: BoxFit.contain,
+                width: 36,
+                height: 36,
+                fit: BoxFit.contain,
               ),
               const SizedBox(width: 12), // ← 14→12 башкалар менен бирдей
               Expanded(
@@ -47,19 +50,20 @@ class ChatBgMenuItem extends StatelessWidget {
                   children: [
                     Text(
                       loc.get('chat_background'),
-                      style: AppTextStyles.bodyMedium.copyWith(color: textColor),
+                      style:
+                          AppTextStyles.bodyMedium.copyWith(color: textColor),
                     ),
                     const SizedBox(height: 2),
-                 // provider.theme.label → provider.theme.localizedLabel(context)
-Text(
-  provider.theme.localizedLabel(context),
-  style: AppTextStyles.labelSmall.copyWith(color: subColor),
-),
+                    // provider.theme.label → provider.theme.localizedLabel(context)
+                    Text(
+                      provider.theme.localizedLabel(context),
+                      style: AppTextStyles.labelSmall.copyWith(color: subColor),
+                    ),
                   ],
                 ),
               ),
-              Image.asset('assets/icons/settings/ic_chevron_right.png', color: const Color(0xFF6B7280),
-                  width: 20, height: 20, color: arrowColor),
+              Image.asset('assets/icons/settings/ic_chevron_right.png',
+                  width: 20, height: 20, color: const Color(0xFF6B7280)),
             ],
           ),
         ),
