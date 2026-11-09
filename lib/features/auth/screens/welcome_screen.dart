@@ -1,20 +1,18 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../core/app_localizations.dart';
 import '../../../core/auth_service.dart';
+import '../../home/screens/home_screen.dart';
+import '../../seller/screens/seller_entrance_screen.dart';
+import '../../seller/screens/seller_login_screen.dart';
 import '../../../core/supabase_client.dart';
 import '../../../services/notification_service.dart';
-import '../../home/screens/home_screen.dart';
-import 'package:sign_in_with_apple/sign_in_with_apple.dart';
-import '../../seller/screens/seller_login_screen.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -134,20 +132,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     }
   }
 
-  Future<void> _handleAppleSignIn() async {
-    if (_isLoading) return;
-    setState(() { _isLoading = true; _navigated = false; });
-    try {
-      await AuthService.instance.signInWithApple();
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        _showSnack('Apple кирүүдө ката: $e', isError: true);
-      }
-    }
-  }
-
-    void _showSnack(String msg, {bool isError = false}) {
+  void _showSnack(String msg, {bool isError = false}) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(msg),
@@ -195,14 +180,12 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                           borderRadius: BorderRadius.circular(28),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFFD97706)
-                                  .withValues(alpha: 0.45),
+                              color: const Color(0xFFD97706).withValues(alpha: 0.45),
                               blurRadius: 28,
                               offset: const Offset(0, 10),
                             ),
                             BoxShadow(
-                              color: const Color(0xFFEF4444)
-                                  .withValues(alpha: 0.25),
+                              color: const Color(0xFFEF4444).withValues(alpha: 0.25),
                               blurRadius: 40,
                               offset: const Offset(0, 16),
                             ),
@@ -265,13 +248,6 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                       // ── GOOGLE КИРҮҮ БАСКЫЧЫ (GLASSMORPHISM) ──
                       _buildGoogleButton(loc),
 
-                      const SizedBox(height: 12),
-
-                      // ── APPLE КИРҮҮ БАСКЫЧЫ (iOS гана) ──
-                      if (defaultTargetPlatform == TargetPlatform.iOS ||
-                          defaultTargetPlatform == TargetPlatform.macOS)
-                        _buildAppleButton(loc),
-
                       const SizedBox(height: 16),
 
                       // Terms жазуу
@@ -292,6 +268,44 @@ class _WelcomeScreenState extends State<WelcomeScreen>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSellerButton(AppLocalizations loc) {
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const SellerEntranceScreen()),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.25),
+                width: 1.5,
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.storefront_rounded,
+                    color: AppColors.primary, size: 20),
+                const SizedBox(width: 10),
+                Text(loc.get('seller_login'),
+                    style: AppTextStyles.headingSmall
+                        .copyWith(color: Colors.white70)),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -463,8 +477,8 @@ class _BgPainter extends CustomPainter {
             const Color(0xFFD97706).withValues(alpha: 0.35),
             const Color(0xFFD97706).withValues(alpha: 0.0),
           ],
-        ).createShader(
-            Rect.fromCircle(center: Offset(cx1, cy1), radius: w * 0.55)),
+        ).createShader(Rect.fromCircle(
+            center: Offset(cx1, cy1), radius: w * 0.55)),
     );
 
     final cx2 = w * (0.75 + 0.15 * math.cos(t * math.pi * 0.9));
@@ -478,8 +492,8 @@ class _BgPainter extends CustomPainter {
             const Color(0xFFEF4444).withValues(alpha: 0.28),
             const Color(0xFFEF4444).withValues(alpha: 0.0),
           ],
-        ).createShader(
-            Rect.fromCircle(center: Offset(cx2, cy2), radius: w * 0.50)),
+        ).createShader(Rect.fromCircle(
+            center: Offset(cx2, cy2), radius: w * 0.50)),
     );
 
     final cx3 = w * (0.50 + 0.10 * math.sin(t * math.pi * 1.7));
@@ -493,8 +507,8 @@ class _BgPainter extends CustomPainter {
             const Color(0xFF3D2080).withValues(alpha: 0.30),
             const Color(0xFF3D2080).withValues(alpha: 0.0),
           ],
-        ).createShader(
-            Rect.fromCircle(center: Offset(cx3, cy3), radius: w * 0.40)),
+        ).createShader(Rect.fromCircle(
+            center: Offset(cx3, cy3), radius: w * 0.40)),
     );
 
     final rng = math.Random(42);
@@ -514,49 +528,6 @@ class _BgPainter extends CustomPainter {
   @override
   bool shouldRepaint(_BgPainter old) => old.t != t;
 }
-
-
-  Widget _buildAppleButton(AppLocalizations loc) {
-    return GestureDetector(
-      onTap: _isLoading ? null : _handleAppleSignIn,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 18),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: _isLoading ? 0.10 : 0.18),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.40),
-                width: 1.5,
-              ),
-            ),
-            child: _isLoading
-                ? const SizedBox.shrink()
-                : Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.apple, color: Colors.white, size: 24),
-                      const SizedBox(width: 12),
-                      Text(
-                        'Apple менен кирүү',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-          ),
-        ),
-      ),
-    );
-  }
 
 // ══════════════════════════════════════════════════════
 // GOOGLE ЛОГО
@@ -597,10 +568,10 @@ class _GoogleGPainter extends CustomPainter {
       );
     }
 
-    drawArc(-90, 90, const Color(0xFF6EA8FE));
-    drawArc(0, 90, const Color(0xFF57D079));
-    drawArc(90, 90, const Color(0xFFFFDA6A));
-    drawArc(180, 90, const Color(0xFFFF7F7F));
+    drawArc(-90, 90,  const Color(0xFF6EA8FE));
+    drawArc(0,   90,  const Color(0xFF57D079));
+    drawArc(90,  90,  const Color(0xFFFFDA6A));
+    drawArc(180, 90,  const Color(0xFFFF7F7F));
   }
 
   @override

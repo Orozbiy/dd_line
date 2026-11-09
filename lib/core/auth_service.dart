@@ -1,7 +1,3 @@
-import 'dart:convert';
-import 'dart:math';
-import 'package:crypto/crypto.dart';
-import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import '../services/notification_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -59,45 +55,6 @@ class AuthService {
     } catch (e) {
       throw Exception('Кирүүдө ката кетти: $e');
     }
-  }
-
-  /// Apple ID аркылуу Supabase'ге кирүү (iOS гана).
-  Future<void> signInWithApple() async {
-    try {
-      final rawNonce = _generateNonce();
-      final nonce = _sha256ofString(rawNonce);
-
-      final credential = await SignInWithApple.getAppleIDCredential(
-        scopes: [
-          AppleIDAuthorizationScopes.email,
-          AppleIDAuthorizationScopes.fullName,
-        ],
-        nonce: nonce,
-      );
-
-      final idToken = credential.identityToken;
-      if (idToken == null) throw Exception('Apple ID токен алынган жок');
-
-      await supabase.auth.signInWithIdToken(
-        provider: OAuthProvider.apple,
-        idToken: idToken,
-        nonce: rawNonce,
-      );
-    } catch (e) {
-      throw Exception('Apple кирүүдө ката: $e');
-    }
-  }
-
-  String _generateNonce([int length = 32]) {
-    const charset = '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
-    final random = Random.secure();
-    return List.generate(length, (_) => charset[random.nextInt(charset.length)]).join();
-  }
-
-  String _sha256ofString(String input) {
-    final bytes = utf8.encode(input);
-    final digest = sha256.convert(bytes);
-    return digest.toString();
   }
 
   Future<void> syncProfile() async {
