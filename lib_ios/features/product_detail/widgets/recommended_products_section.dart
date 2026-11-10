@@ -38,13 +38,9 @@ class _RecommendedProductsSectionState
   final List<ProductModel> _products = [];
   bool _loading = true;
   final _rnd = Random();
-  // ── Бир жолу жүктөлүп, аралаштырылып, ушул өлчөмдө көрсөтүлөт.
-  // Мурда "акырына жакындаганда дагы жүктөө" логикасы бар эле, бирок
-  // GridView.builder shrinkWrap:true болгондуктан бардык элементтер
-  // дароо курулат да, шарт ар бир rebuild'де кайра туура келип,
-  // чексиз сурам чынжырын (жана "түбөлүк жүктөлүп" турган UI'ду)
-  // жаратчу. Андыктан эми бир жолу гана, чектелген санда жүктөйбүз.
-  static const int _maxItems = 40;
+  static const int _maxItems = 35;
+  static const int _initialShow = 6;
+  int _showCount = _initialShow;
 
   @override
   void initState() {
@@ -60,7 +56,7 @@ class _RecommendedProductsSectionState
           .eq('is_active', true)
           .neq('id', widget.currentProductId)
           .order('created_at', ascending: false)
-          .limit(25);
+          .limit(35);
 
       final list = (data as List)
           .cast<Map<String, dynamic>>()
@@ -122,13 +118,13 @@ class _RecommendedProductsSectionState
               ),
             ),
           )
-        else
+        else ...[
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: _products.length,
+              itemCount: _showCount.clamp(0, _products.length),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
                 mainAxisSpacing: 10,
@@ -143,6 +139,21 @@ class _RecommendedProductsSectionState
               ),
             ),
           ),
+          // ── "Дагы көрсөтүү" баскычы ──
+          if (_products.length > _showCount)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Center(
+                child: TextButton(
+                  onPressed: () => setState(() => _showCount += 12),
+                  child: Text(
+                    loc.locale.languageCode == 'ru' ? 'Показать ещё' : 'Дагы көрсөтүү',
+                    style: const TextStyle(color: AppColors.primary, fontSize: 15),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ],
     );
   }
