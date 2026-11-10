@@ -167,6 +167,9 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
+    // Чатты ачканда дароо badge тазала (Supabase запросун күтпөй)
+    const badgeCh = MethodChannel('dd_online/badge');
+    badgeCh.invokeMethod('clearBadge').catchError((_) {});
     _initChat();
     _markRead();
     _loadMyName();
