@@ -5,6 +5,7 @@ import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../core/supabase_client.dart';
 import '../../product_detail/widgets/fullscreen_image_screen.dart';
+import '../../../core/dd_image_cache.dart';
 
 /// Скриншоттор сакталуучу Supabase Storage bucket
 const String _kShotBucket = 'complaint-screenshots';
@@ -536,6 +537,7 @@ class _AdminComplaintsScreenState extends State<AdminComplaintsScreen> {
                   width: 52,
                   height: 52,
                   child: CachedNetworkImage(
+                    cacheManager: DDImageCache.manager,
                     imageUrl: screenshotUrl,
                     fit: BoxFit.cover,
                     placeholder: (_, __) => Container(color: AppColors.grey200),
@@ -822,6 +824,7 @@ class _ComplaintDetailSheet extends StatelessWidget {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: CachedNetworkImage(
+                    cacheManager: DDImageCache.manager,
                     imageUrl: screenshotUrl,
                     width: double.infinity,
                     fit: BoxFit.fitWidth,

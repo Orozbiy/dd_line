@@ -9,6 +9,7 @@ import '../../../core/app_localizations.dart';
 import '../../../core/supabase_client.dart';
 import '../../../core/utils/image_utils.dart';
 import '../../../data/models/product_model.dart';
+import '../../../core/dd_image_cache.dart';
 class StoreProductsScreen extends StatefulWidget {
   final String storeId;
   final String shopName;
@@ -212,7 +213,7 @@ class _StoreProductsScreenState extends State<StoreProductsScreen> {
                                   radius: 28,
                                   backgroundColor: Colors.transparent,
                                   backgroundImage: (widget.avatarUrl != null && widget.avatarUrl!.isNotEmpty)
-                                      ? CachedNetworkImageProvider(widget.avatarUrl!)
+                                      ? CachedNetworkImageProvider(widget.avatarUrl!, cacheManager: DDImageCache.manager)
                                       : null,
                                   child: (widget.avatarUrl == null || widget.avatarUrl!.isEmpty)
                                       ? const Icon(Icons.storefront_rounded, color: Colors.white, size: 28)
@@ -561,6 +562,7 @@ class _ProductCard extends StatelessWidget {
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
                   child: CachedNetworkImage(
+                    cacheManager: DDImageCache.manager,
                     imageUrl: toCloudinaryThumb(product.imageUrl, width: 400),
                     height: 140,
                     width: double.infinity,

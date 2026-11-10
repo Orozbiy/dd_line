@@ -9,6 +9,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../config/theme/app_colors.dart';
 import '../../../../core/supabase_client.dart';
 import '../../../../core/app_localizations.dart';
+import '../../../../core/dd_image_cache.dart';
 
 // ─── Модель ────────────────────────────────────────────────────────────────
 class _RouletteEntry {
@@ -783,6 +784,7 @@ class _RouletteScreenState extends State<RouletteScreen>
       return ClipRRect(
         borderRadius: BorderRadius.circular(size / 2),
         child: CachedNetworkImage(
+          cacheManager: DDImageCache.manager,
           imageUrl: url,
           width: size, height: size, fit: BoxFit.cover,
           errorWidget: (_, __, ___) => _avatarFallback(name, size),

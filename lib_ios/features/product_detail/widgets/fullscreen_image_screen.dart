@@ -4,6 +4,7 @@
 // ══════════════════════════════════════════════════════
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import '../../../core/dd_image_cache.dart';
 
 class FullscreenImageScreen extends StatefulWidget {
   final List<String> images;
@@ -166,6 +167,7 @@ class _ZoomableImageState extends State<_ZoomableImage> {
   @override
   Widget build(BuildContext context) {
     final image = CachedNetworkImage(
+      cacheManager: DDImageCache.manager,
       imageUrl: widget.url,
       width: widget.screenSize.width,
       height: widget.screenSize.height,

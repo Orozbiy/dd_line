@@ -1,9 +1,11 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../config/theme/dd_design.dart';
 import '../../../core/app_localizations.dart';
 import '../utils/cart_manager.dart';
+import '../../../core/dd_image_cache.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -143,12 +145,13 @@ class _CartScreenState extends State<CartScreen> {
                           children: [
                             ClipRRect(
                               borderRadius: BorderRadius.circular(10),
-                              child: Image.network(
-                                item.product.imageUrl,
+                              child: CachedNetworkImage(
+                                cacheManager: DDImageCache.manager,
+                                imageUrl: item.product.imageUrl,
                                 width: 80,
                                 height: 80,
                                 fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Container(
+                                errorWidget: (_, __, ___) => Container(
                                   width: 80,
                                   height: 80,
                                   color: p.field,

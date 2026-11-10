@@ -13,6 +13,7 @@ import '../../../data/models/product_model.dart';
 import '../../product_detail/screens/product_detail_screen.dart';
 import '../../store/screens/store_products_screen.dart';
 import '../../../core/supabase_client.dart';
+import '../../../core/dd_image_cache.dart';
 
 class FavoritesScreen extends StatefulWidget {
   const FavoritesScreen({super.key});
@@ -557,6 +558,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
           // ── CachedNetworkImage менен алмаштырылды ──
           child: imageUrl != null && imageUrl.isNotEmpty
               ? CachedNetworkImage(
+                  cacheManager: DDImageCache.manager,
                   imageUrl: imageUrl,
                   width: 52,
                   height: 52,
@@ -659,6 +661,7 @@ class _ProductFavCard extends StatelessWidget {
           Expanded(
             child: product.imageUrl.isNotEmpty
                 ? CachedNetworkImage(
+                    cacheManager: DDImageCache.manager,
                     imageUrl: thumbUrl,
                     width: double.infinity,
                     fit: BoxFit.cover,

@@ -37,6 +37,7 @@ import '../widgets/home_bottom_nav.dart';
 import '../widgets/equal_height_row.dart';
 import '../widgets/home_background.dart';
 import '../../../core/update_checker.dart';
+import '../../../core/dd_image_cache.dart';
 
 // ══════════════════════════════════════════════════════
 // TAB индекстери
@@ -954,6 +955,7 @@ if (_isSearchMode || _isNearbyMode ||
                                     child: _sellerAvatarUrl != null
                                         ? ClipOval(
                                             child: CachedNetworkImage(
+                                              cacheManager: DDImageCache.manager,
                                               imageUrl: _sellerAvatarUrl!,
                                               width: 32,
                                               height: 32,

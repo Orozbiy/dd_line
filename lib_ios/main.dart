@@ -25,6 +25,7 @@ import 'features/chat/screens/chat_screen.dart';
 import 'features/product_detail/screens/product_detail_screen.dart';
 import 'data/models/product_model.dart';
 import 'core/chat_background_provider.dart';
+import 'core/dd_image_cache.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -37,6 +38,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 Future<void> main() async {
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
+    DDImageCache.configureMemoryCache(); // сүрөт кэшин чоңойтуу
 
     // Flutter каталарын логго гана жазабыз — тиркемени жаппайбыз
     FlutterError.onError = (details) {

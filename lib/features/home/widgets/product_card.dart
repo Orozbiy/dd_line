@@ -5,6 +5,7 @@ import '../../../core/app_localizations.dart';
 import '../../../core/utils/favorites_manager.dart';
 import '../../../data/models/product_model.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../core/dd_image_cache.dart';
 import 'negotiation_badge.dart';
 
 // Cosmic Dark
@@ -156,6 +157,7 @@ class _ProductCardState extends State<ProductCard>
                   children: [
                     Container(color: shimmerColor),
                     CachedNetworkImage(
+                      cacheManager: DDImageCache.manager,
                       imageUrl: _thumbUrl(widget.product.imageUrl),
                       fit: BoxFit.cover,
                       fadeInDuration: const Duration(milliseconds: 120),

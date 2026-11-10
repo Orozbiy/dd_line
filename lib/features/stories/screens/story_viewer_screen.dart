@@ -10,6 +10,7 @@ import '../widgets/story_progress_bar.dart';
 import '../widgets/story_like_button.dart';
 import '../widgets/story_comments_sheet.dart';
 import '../../../core/app_localizations.dart';
+import '../../../core/dd_image_cache.dart';
 
 class StoryViewerScreen extends StatefulWidget {
   final List<StoryModel> stories;
@@ -536,6 +537,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
   Widget _buildMedia(StoryModel story) {
     if (story.isImage) {
       return CachedNetworkImage(
+        cacheManager: DDImageCache.manager,
         key:      ValueKey(story.id),
         imageUrl: story.mediaUrl,
         fit:      BoxFit.cover,

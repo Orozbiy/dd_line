@@ -3,6 +3,7 @@ import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../core/app_localizations.dart';
+import '../../../core/dd_image_cache.dart';
 
 class CacheMenuItem extends StatefulWidget {
   const CacheMenuItem({super.key});
@@ -21,6 +22,7 @@ class _CacheMenuItemState extends State<CacheMenuItem> {
     final loc = AppLocalizations.of(context);
     try {
       await DefaultCacheManager().emptyCache();
+      await DDImageCache.manager.emptyCache(); // сүрөт кэши
       PaintingBinding.instance.imageCache.clear();
       PaintingBinding.instance.imageCache.clearLiveImages();
 

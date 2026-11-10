@@ -9,6 +9,7 @@ import '../../../core/app_localizations.dart';
 import '../../../core/supabase_client.dart';
 import '../../../data/models/product_model.dart';
 import '../../product_detail/screens/product_detail_screen.dart';
+import '../../../core/dd_image_cache.dart';
 
 class FlashSaleManageScreen extends StatefulWidget {
   const FlashSaleManageScreen({super.key});
@@ -264,6 +265,7 @@ class _FlashCard extends StatelessWidget {
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                   child: imageUrl.isNotEmpty
                       ? CachedNetworkImage(
+                          cacheManager: DDImageCache.manager,
                           imageUrl: imageUrl,
                           height: 140, width: double.infinity, fit: BoxFit.cover,
                           placeholder: (_, __) => Container(height: 140, color: isDark ? const Color(0xFF2C2C2C) : AppColors.grey100),

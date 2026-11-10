@@ -6,6 +6,7 @@ import '../../../config/theme/app_text_styles.dart';
 import '../../../core/app_localizations.dart';
 import '../../../core/supabase_client.dart';
 import '../../../core/utils/image_utils.dart';
+import '../../../core/dd_image_cache.dart';
 
 class ChatProductBanner extends StatefulWidget {
   final String? productId;
@@ -119,6 +120,7 @@ class _ChatProductBannerState extends State<ChatProductBanner> {
                             borderRadius: BorderRadius.circular(8),
                             child: imageUrl.isNotEmpty
                                 ? CachedNetworkImage(
+                                    cacheManager: DDImageCache.manager,
                                     imageUrl: toCloudinaryThumb(imageUrl, width: 150),
                                     width: 52,
                                     height: 52,

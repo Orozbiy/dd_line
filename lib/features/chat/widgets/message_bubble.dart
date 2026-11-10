@@ -9,6 +9,7 @@ import '../../../core/app_localizations.dart';
 import '../../../core/utils/image_utils.dart';
 import '../models/message_model.dart';
 import '../widgets/voice_message_player_mobile.dart';
+import '../../../core/dd_image_cache.dart';
 
 // ══════════════════════════════════════════════════════
 // GLASSMORPHISM HELPER
@@ -145,6 +146,7 @@ class _FullscreenChatImage extends StatelessWidget {
                   child: Hero(
                     tag: heroTag,
                     child: CachedNetworkImage(
+                      cacheManager: DDImageCache.manager,
                       // Fullscreen: жогорку сапат (1200px), бирок Cloudinary аркылуу оптимизацияланган
                       imageUrl: toCloudinaryThumb(imageUrl, width: 1200),
                       fit: BoxFit.contain,
@@ -438,6 +440,7 @@ class MessageBubble extends StatelessWidget {
                             child: Hero(
                               tag: heroTag,
                               child: CachedNetworkImage(
+                                cacheManager: DDImageCache.manager,
                                 // Чатта preview: 400px сжатталган thumbnail (тез жүктөлөт)
                                 imageUrl: toCloudinaryThumb(message.imageUrl!, width: 400),
                                 width: 220,

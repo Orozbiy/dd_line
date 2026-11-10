@@ -22,6 +22,7 @@ import 'firebase_options.dart';
 import 'services/notification_service.dart';
 
 import 'core/update_checker.dart';
+import 'core/dd_image_cache.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -34,6 +35,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 // ──────────────────────────────────────────────────────
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  DDImageCache.configureMemoryCache(); // сүрөт кэшин чоңойтуу
   debugPrint('🚀 MAIN — Android');
 
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);

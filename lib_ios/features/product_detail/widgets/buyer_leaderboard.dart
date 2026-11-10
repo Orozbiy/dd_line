@@ -12,6 +12,7 @@ import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../core/app_localizations.dart';
 import '../../../core/supabase_client.dart';
+import '../../../core/dd_image_cache.dart';
 
 class BuyerLeaderboard extends StatefulWidget {
   final String productId;
@@ -307,7 +308,7 @@ class _BuyerLeaderboardState extends State<BuyerLeaderboard> {
           radius: 20,
           backgroundColor: AppColors.primary.withOpacity(0.1),
           backgroundImage:
-              avatar != null ? CachedNetworkImageProvider(avatar) : null,
+              avatar != null ? CachedNetworkImageProvider(avatar, cacheManager: DDImageCache.manager) : null,
           child: avatar == null
               ? Text(
                   name.isNotEmpty ? name[0].toUpperCase() : '?',

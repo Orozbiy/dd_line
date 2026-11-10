@@ -26,6 +26,7 @@ import '../widgets/pulse_box.dart';
 import '../../seller/widgets/working_hours_sheet.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../widgets/share_widget.dart';
+import '../../../core/dd_image_cache.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final ProductModel product;
@@ -422,6 +423,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
               child: Hero(
                 tag: 'product_image_${_product.id}_$index',
                 child: CachedNetworkImage(
+                  cacheManager: DDImageCache.manager,
                   imageUrl: toCloudinaryThumb(url, width: 1080),
                   fit: BoxFit.cover,
                   fadeInDuration: Duration.zero,
@@ -491,6 +493,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
                             child: CachedNetworkImage(
+                              cacheManager: DDImageCache.manager,
                               imageUrl: toCloudinaryThumb(allImages[i], width: 120),
                               fit: BoxFit.cover,
                               placeholder: (_, __) => Container(color: Colors.white12),
@@ -1004,7 +1007,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                                                     radius: 30,
                                                     backgroundColor: isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF1F5F9),
                                                     backgroundImage:
-                                                        CachedNetworkImageProvider(_avatarUrl!, maxWidth: 160, maxHeight: 160),
+                                                        CachedNetworkImageProvider(_avatarUrl!, maxWidth: 160, maxHeight: 160, cacheManager: DDImageCache.manager),
                                                   )
                                                 : CircleAvatar(
                                                     radius: 30,
