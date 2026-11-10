@@ -221,11 +221,17 @@ class _HomeScreenState extends State<HomeScreen>
   void _subscribeChatUnread() {
     final user = supa.supabase.auth.currentUser;
     if (user == null) return;
-    _chatSub = ChatService().buyerChatsStream(user.id).listen((chats) {
-      if (!mounted) return;
-      final total = chats.fold<int>(0, (sum, c) => sum + c.buyerUnread);
-      setState(() => _totalUnreadChat = total);
-    });
+    _chatSub = ChatService().buyerChatsStream(user.id).listen(
+      (chats) {
+        if (!mounted) return;
+        final total = chats.fold<int>(0, (sum, c) => sum + c.buyerUnread);
+        setState(() => _totalUnreadChat = total);
+      },
+      onError: (e) {
+        // JWT token же Realtime катасы — тиркемени жаппайбыз, логго жазабыз
+        debugPrint('⚠️ buyerChatsStream ката: \$e');
+      },
+    );
   }
 
   void _onFavChanged() {

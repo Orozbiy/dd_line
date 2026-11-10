@@ -156,7 +156,8 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
     if (!_isValid) return;
     setState(() => _saving = true);
     try {
-      final uid = supabase.auth.currentUser!.id;
+      final uid = supabase.auth.currentUser?.id;
+      if (uid == null) return;
       final lat = double.parse(_latCtrl.text.trim());
       final lng = double.parse(_lngCtrl.text.trim());
       await _service.updateLocation(uid, lat, lng);

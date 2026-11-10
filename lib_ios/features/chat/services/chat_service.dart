@@ -263,7 +263,13 @@ class ChatService {
             ),
             callback: (_) => fetch(),
           )
-          .subscribe();
+          .subscribe((status, [error]) {
+            // JWT token жарактуулук мөөнөтү өтсө же башка ката болсо —
+            // логго гана жазабыз, тиркемени жаппайбыз.
+            if (error != null) {
+              debugPrint('⚠️ Realtime subscribe ката: \$status — \$error');
+            }
+          });
     },
     onCancel: () {
       if (channel != null) supabase.removeChannel(channel!);

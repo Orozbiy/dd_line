@@ -245,6 +245,9 @@ class _ChatScreenState extends State<ChatScreen> {
   if (myId != null &&
       _cachedMessages.any((m) => m.senderId != myId && !m.isRead))
     _markRead();
+}, onError: (e) {
+  // JWT token же Realtime катасы — тиркемени жаппайбыз, логго жазабыз
+  debugPrint('⚠️ messagesStream ката: \$e');
 });
   }
 
@@ -393,13 +396,32 @@ Future<void> _markRead() async {
 }
 
   /// Окулбаган билдирүүлөрдүн санын эсептеп badge'ди жаңыртат (iOS)
+  /// Колдонуучунун ÖЗ чаттарындагы окулбагандарды гана санайт
   Future<void> _updateBadgeCount() async {
     try {
       final myId = supabase.auth.currentSession?.user.id;
       if (myId == null) return;
+
+      // Колдонуучунун катышкан чаттарынын id'лерин ал
+      final chatRows = await supabase
+          .from('chats')
+          .select('id')
+          .or('buyer_id.eq.\$myId,seller_id.eq.\$myId');
+      final chatIds = (chatRows as List)
+          .map((r) => r['id'] as String)
+          .toList();
+
+      if (chatIds.isEmpty) {
+        const channel = MethodChannel('dd_online/badge');
+        await channel.invokeMethod('clearBadge');
+        return;
+      }
+
+      // Ошол чаттардагы окулбаган, мен жөнөтпөгөн билдирүүлөрдү гана сана
       final res = await supabase
           .from('messages')
           .select('id')
+          .inFilter('chat_id', chatIds)
           .eq('is_read', false)
           .neq('sender_id', myId);
       final count = (res as List).length;
