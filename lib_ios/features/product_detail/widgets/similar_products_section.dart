@@ -7,6 +7,7 @@ import '../../../config/theme/app_text_styles.dart';
 import '../../../core/app_localizations.dart';
 import '../../../core/supabase_client.dart';
 import '../../../data/models/product_model.dart';
+
 // Cloudinary URL — сапаты 80%, кичине размер
 String _thumbUrl(String url, {int width = 480}) {
   if (url.isEmpty) return url;
@@ -22,6 +23,8 @@ class SimilarProductsSection extends StatefulWidget {
   final String currentProductId;
   final String? categoryId;
   final Widget Function(ProductModel product)? productBuilder;
+  /// Сырткы ScrollController — scroll астына жакындаганда дагы жүктөйт
+  final ScrollController? scrollController;
 
   const SimilarProductsSection({
     super.key,
@@ -29,6 +32,7 @@ class SimilarProductsSection extends StatefulWidget {
     required this.currentProductId,
     this.categoryId,
     this.productBuilder,
+    this.scrollController,
   });
 
   @override
@@ -38,15 +42,54 @@ class SimilarProductsSection extends StatefulWidget {
 class _SimilarProductsSectionState extends State<SimilarProductsSection> {
   final List<ProductModel> _products = [];
   bool _loading = false;
-  static const int _maxItems = 35;
-  static const int _initialShow = 6; // Алгач 6 товар көрсөтөт
-  int _showCount = _initialShow;
+  bool _loadingMore = false;
+
+  static const int _pageSize = 20; // Бир жолу 20 товар
+  static const int _maxFetch = 60; // Суpabaseдан максималдуу
+
+  int _showCount = _pageSize; // Азырынча канча товар көрсөтүлөт
 
   @override
   void initState() {
     super.initState();
-    _products.addAll(widget.initialProducts.take(_maxItems));
+    _products.addAll(widget.initialProducts.take(_maxFetch));
     _load();
+    // Сырткы ScrollController бар болсо — scroll listener кошобуз
+    widget.scrollController?.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    widget.scrollController?.removeListener(_onScroll);
+    super.dispose();
+  }
+
+  /// Scroll астына жакындаганда дагы 20 товар кошот
+  void _onScroll() {
+    final sc = widget.scrollController;
+    if (sc == null || !sc.hasClients) return;
+    // Баракчанын астынан 300px калганда — дагы жүктөйт
+    final nearBottom = sc.position.pixels >= sc.position.maxScrollExtent - 300;
+    if (nearBottom && !_loadingMore && _showCount < _products.length) {
+      _showMore();
+    }
+  }
+
+  /// Дагы 20 товар көрсөт
+  void _showMore() {
+    if (_loadingMore) return;
+    setState(() {
+      _loadingMore = true;
+    });
+    // Кичинекей delay — UI жаңыруусу үчүн
+    Future.delayed(const Duration(milliseconds: 150), () {
+      if (mounted) {
+        setState(() {
+          _showCount = (_showCount + _pageSize).clamp(0, _products.length);
+          _loadingMore = false;
+        });
+      }
+    });
   }
 
   Future<void> _load() async {
@@ -69,18 +112,18 @@ class _SimilarProductsSectionState extends State<SimilarProductsSection> {
             .eq('category_id', widget.categoryId!)
             .eq('is_active', true)
             .not('id', 'in', '(${existingIds.join(',')})')
-            .limit(_maxItems);
+            .limit(_maxFetch);
       }
 
       // 2. Окшош товар жок же аз болсо — башка каалаган товарлар
-      if (data.length < _maxItems) {
+      if (data.length < _maxFetch) {
         final extra = await supabase
             .from('products')
             .select('*, stores(store_name)')
             .eq('is_active', true)
             .not('id', 'in', '(${existingIds.join(',')})')
             .order('views_count', ascending: false)
-            .limit(_maxItems - data.length);
+            .limit(_maxFetch - data.length);
         data = [...data, ...extra];
       }
 
@@ -107,6 +150,7 @@ class _SimilarProductsSectionState extends State<SimilarProductsSection> {
 
     final loc = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final visibleCount = _showCount.clamp(0, _products.length);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -120,51 +164,59 @@ class _SimilarProductsSectionState extends State<SimilarProductsSection> {
           ),
         ),
 
-        // ── 2 колонкалуу GRID (алгач 6, андан "Дагы" баскычы) ──
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: _showCount.clamp(0, _products.length),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              mainAxisSpacing: 10,
-              crossAxisSpacing: 10,
-              childAspectRatio: 0.72,
-            ),
-            itemBuilder: (context, i) => _SimilarProductCard(
-              product: _products[i],
-              isDark: isDark,
-              cur: loc.get('currency'),
-              productBuilder: widget.productBuilder,
-            ),
-          ),
-        ),
-
-        // ── Жүктөлүп жатат индикатор ──
-        if (_loading)
+        // ── 2 колонкалуу GRID (алгач 20, астыга scroll кылса дагы 20) ──
+        if (_loading && _products.isEmpty)
           const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
+            padding: EdgeInsets.symmetric(vertical: 24),
             child: Center(
               child: SizedBox(
                 width: 24, height: 24,
                 child: CircularProgressIndicator(strokeWidth: 2.5, color: AppColors.primary),
               ),
             ),
+          )
+        else
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: visibleCount,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: 10,
+                crossAxisSpacing: 10,
+                childAspectRatio: 0.72,
+              ),
+              itemBuilder: (context, i) => _SimilarProductCard(
+                product: _products[i],
+                isDark: isDark,
+                cur: loc.get('currency'),
+                productBuilder: widget.productBuilder,
+              ),
+            ),
           ),
 
-        // ── "Дагы көрсөтүү" баскычы ──
-        if (!_loading && _products.length > _showCount)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
+        // ── Дагы жүктөлүп жатат индикатор (scroll кылганда) ──
+        if (_loadingMore)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
             child: Center(
-              child: TextButton(
-                onPressed: () => setState(() => _showCount += 12),
-                child: Text(
-                  loc.locale.languageCode == 'ru' ? 'Показать ещё' : 'Дагы көрсөтүү',
-                  style: const TextStyle(color: AppColors.primary, fontSize: 15),
-                ),
+              child: SizedBox(
+                width: 20, height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+              ),
+            ),
+          ),
+
+        // ── Баштапкы жүктөлүп жатат индикатор ──
+        if (_loading && _products.isNotEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Center(
+              child: SizedBox(
+                width: 24, height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2.5, color: AppColors.primary),
               ),
             ),
           ),
