@@ -38,20 +38,15 @@ class SimilarProductsSection extends StatefulWidget {
 class _SimilarProductsSectionState extends State<SimilarProductsSection> {
   final List<ProductModel> _products = [];
   bool _loading = false;
-  // ── Мурда "акырына жакындаганда дагы жүктөө" логикасы бар эле, бирок
-  // GridView.builder shrinkWrap:true менен бардык элементти дароо
-  // курат, андыктан шарт кайра-кайра туура келип, чексиз/кайталанган
-  // сурам чынжырын жаратчу. Эми бир жолу гана, чектелген санда
-  // жүктөйбүз — "чексиз жүктөлүп туруу" багы жоюлат. ──
-  static const int _maxItems = 20;
+  static const int _maxItems = 35;
+  static const int _initialShow = 6; // Алгач 6 товар көрсөтөт
+  int _showCount = _initialShow;
 
   @override
   void initState() {
     super.initState();
     _products.addAll(widget.initialProducts.take(_maxItems));
-    if (_products.length < 4) {
-      _load();
-    }
+    _load();
   }
 
   Future<void> _load() async {
@@ -125,13 +120,13 @@ class _SimilarProductsSectionState extends State<SimilarProductsSection> {
           ),
         ),
 
-        // ── 2 колонкалуу GRID ──
+        // ── 2 колонкалуу GRID (алгач 6, андан "Дагы" баскычы) ──
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            itemCount: _products.length,
+            itemCount: _showCount.clamp(0, _products.length),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
               mainAxisSpacing: 10,
@@ -153,11 +148,22 @@ class _SimilarProductsSectionState extends State<SimilarProductsSection> {
             padding: EdgeInsets.symmetric(vertical: 16),
             child: Center(
               child: SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.5,
-                  color: AppColors.primary,
+                width: 24, height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2.5, color: AppColors.primary),
+              ),
+            ),
+          ),
+
+        // ── "Дагы көрсөтүү" баскычы ──
+        if (!_loading && _products.length > _showCount)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Center(
+              child: TextButton(
+                onPressed: () => setState(() => _showCount += 12),
+                child: Text(
+                  loc.locale.languageCode == 'ru' ? 'Показать ещё' : 'Дагы көрсөтүү',
+                  style: const TextStyle(color: AppColors.primary, fontSize: 15),
                 ),
               ),
             ),

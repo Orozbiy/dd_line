@@ -69,6 +69,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
       !(_storeLat == 0 && _storeLng == 0);
 
   final ValueNotifier<bool> _buttonsVisible = ValueNotifier<bool>(true);
+  final ScrollController _pageScrollController = ScrollController();
 
   @override
   void initState() {
@@ -355,6 +356,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
     WidgetsBinding.instance.removeObserver(this);
     _imagePageController.dispose();
     _buttonsVisible.dispose();
+    _pageScrollController.dispose();
     super.dispose();
   }
 
@@ -763,6 +765,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
         children: [
           Positioned.fill(child: _DDGlow(isDark: isDark)),
           CustomScrollView(
+            controller: _pageScrollController,
             slivers: [
               SliverAppBar(
                 expandedHeight: 320,
@@ -1319,10 +1322,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                             currentProductId: _product.id,
                             categoryId: _product.category,
                             productBuilder: (p) => ProductDetailScreen(product: p),
+                            scrollController: _pageScrollController,
                           ),
                           RecommendedProductsSection(
                             currentProductId: _product.id,
                             productBuilder: (p) => ProductDetailScreen(product: p),
+                            scrollController: _pageScrollController,
                           ),
                           const SizedBox(height: 100),
                         ],
