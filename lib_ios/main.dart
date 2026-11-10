@@ -39,9 +39,9 @@ Future<void> main() async {
 
     // Бардык Flutter каталарын кармайбыз
     FlutterError.onError = (details) {
-      debugPrint('❌ FlutterError: \${details.exceptionAsString()}');
-      debugPrint('❌ Stack: \${details.stack}');
-      _showErrorApp('Flutter Error:\n\${details.exceptionAsString()}');
+      debugPrint('❌ FlutterError: ${details.exceptionAsString()}');
+      debugPrint('❌ Stack: ${details.stack}');
+      _showErrorApp('Flutter Error:\n${details.exceptionAsString()}');
     };
 
     debugPrint('🚀 MAIN БАШТАЛДЫ');
@@ -59,7 +59,7 @@ Future<void> main() async {
       debugPrint('✅ Supabase OK');
     } catch (e, st) {
       debugPrint('❌ Supabase ката: \$e\n\$st');
-      _showErrorApp('Supabase init failed:\n\$e');
+      _showErrorApp('Supabase init failed:\n${e}');
       return;
     }
 
@@ -70,7 +70,7 @@ Future<void> main() async {
       debugPrint('✅ Firebase OK');
     } catch (e, st) {
       debugPrint('❌ Firebase ката: \$e\n\$st');
-      _showErrorApp('Firebase init failed:\n\$e');
+      _showErrorApp('Firebase init failed:\n${e}');
       return;
     }
 
@@ -111,8 +111,8 @@ Future<void> main() async {
     debugPrint('🚀 runApp...');
     runApp(const ActiveStatusTracker(child: DDOnlineApp()));
   }, (error, stack) {
-    debugPrint('❌ Zone ката: \$error\n\$stack');
-    _showErrorApp('Startup error:\n\$error');
+    debugPrint('❌ Zone ката: ${error}\n${stack}');
+    _showErrorApp('Startup error:\n${error}');
   });
 }
 
