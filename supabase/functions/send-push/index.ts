@@ -97,7 +97,7 @@ serve(async (req) => {
                 },
               },
               apns: {
-                payload: { aps: { sound: "default", badge: unreadBadge } },
+                payload: { aps: { sound: "default" } },
                 headers: { "apns-priority": "10" },
               },
               data: {

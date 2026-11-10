@@ -429,11 +429,8 @@ Future<void> _markRead() async {
           .neq('sender_id', myId);
       final count = (res as List).length;
       const channel = MethodChannel('dd_online/badge');
-      if (count == 0) {
-        await channel.invokeMethod('clearBadge');
-      } else {
-        await channel.invokeMethod('setBadge', {'count': count});
-      }
+      // Badge толугу менен өчүрүлдү — сан койбойбуз
+      await channel.invokeMethod('clearBadge');
     } catch (_) {}
   }
 

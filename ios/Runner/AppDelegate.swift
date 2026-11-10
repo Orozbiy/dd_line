@@ -19,7 +19,11 @@ import YandexMapsMobile
       badgeChannel.setMethodCallHandler { (call, result) in
         DispatchQueue.main.async {
           if call.method == "clearBadge" {
-            UIApplication.shared.applicationIconBadgeNumber = 0
+            if #available(iOS 16.0, *) {
+              UNUserNotificationCenter.current().setBadgeCount(0)
+            } else {
+              UIApplication.shared.applicationIconBadgeNumber = 0
+            }
             result(nil)
           } else if call.method == "setBadge",
                     let args = call.arguments as? [String: Any],

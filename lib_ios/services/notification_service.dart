@@ -464,7 +464,6 @@ class NotificationService {
               'payload': {
                 'aps': {
                   'sound':             'default',
-                  'badge':              1,
                   'content-available':  1,
                 },
               },
@@ -554,7 +553,7 @@ class NotificationService {
                 },
                 'apns': {
                   'payload': {
-                    'aps': {'sound': 'default', 'badge': 1},
+                    'aps': {'sound': 'default'},
                   },
                   'headers': {'apns-priority': '10'},
                 },
