@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/services.dart';
 import 'dart:convert';
 import 'dart:ui';
 import 'package:audioplayers/audioplayers.dart';
@@ -385,8 +386,32 @@ Future<void> _markRead() async {
       }).toList();
     });
     await _saveMessagesCache(_cachedMessages);
+
+    // iOS badge санын жаңырт
+    _updateBadgeCount();
   }
 }
+
+  /// Окулбаган билдирүүлөрдүн санын эсептеп badge'ди жаңыртат (iOS)
+  Future<void> _updateBadgeCount() async {
+    try {
+      final myId = supabase.auth.currentSession?.user.id;
+      if (myId == null) return;
+      final res = await supabase
+          .from('messages')
+          .select('id')
+          .eq('is_read', false)
+          .neq('sender_id', myId);
+      final count = (res as List).length;
+      const channel = MethodChannel('dd_online/badge');
+      if (count == 0) {
+        await channel.invokeMethod('clearBadge');
+      } else {
+        await channel.invokeMethod('setBadge', {'count': count});
+      }
+    } catch (_) {}
+  }
+
   void _scrollToBottom() {
     if (_scrollCtrl.hasClients) {
       Future.delayed(const Duration(milliseconds: 100), () {

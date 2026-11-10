@@ -11,20 +11,24 @@ import YandexMapsMobile
     YMKMapKit.setApiKey("619e1277-6ba0-426f-aa5b-9d3a900e0da2")
     GeneratedPluginRegistrant.register(with: self)
 
-    // Badge тазалоо үчүн MethodChannel — optional cast (crash болбосун)
     if let controller = window?.rootViewController as? FlutterViewController {
       let badgeChannel = FlutterMethodChannel(
         name: "dd_online/badge",
         binaryMessenger: controller.binaryMessenger
       )
       badgeChannel.setMethodCallHandler { (call, result) in
-        if call.method == "clearBadge" {
-          DispatchQueue.main.async {
+        DispatchQueue.main.async {
+          if call.method == "clearBadge" {
             UIApplication.shared.applicationIconBadgeNumber = 0
+            result(nil)
+          } else if call.method == "setBadge",
+                    let args = call.arguments as? [String: Any],
+                    let count = args["count"] as? Int {
+            UIApplication.shared.applicationIconBadgeNumber = count
+            result(nil)
+          } else {
+            result(FlutterMethodNotImplemented)
           }
-          result(nil)
-        } else {
-          result(FlutterMethodNotImplemented)
         }
       }
     }
@@ -32,7 +36,6 @@ import YandexMapsMobile
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
-  // Колдонмо foreground'го келгенде badge автоматтык тазаланат
   override func applicationDidBecomeActive(_ application: UIApplication) {
     super.applicationDidBecomeActive(application)
     UIApplication.shared.applicationIconBadgeNumber = 0
