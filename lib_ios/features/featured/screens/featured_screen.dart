@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../config/theme/dd_design.dart';
+import '../../../core/paged_loader.dart';
 import '../../../core/supabase_client.dart';
 import '../../../data/models/product_model.dart';
 import '../../home/widgets/product_grid.dart';
@@ -16,56 +18,59 @@ class FeaturedScreen extends StatefulWidget {
 }
 
 class _FeaturedScreenState extends State<FeaturedScreen> {
-  List<ProductModel> _products = [];
-  bool _isLoading = true;
   String _searchQuery = '';
+  Timer? _searchDebounce;
   final TextEditingController _searchController = TextEditingController();
+
+  // Алгач 25 товар, астыга scroll кылганда дагы 25 (серверден).
+  late final PagedLoader<ProductModel> _pager = PagedLoader<ProductModel>(
+    fetchPage: _fetchPage,
+    idOf: (p) => p.id,
+  );
+
+  void _notify() {
+    if (mounted) setState(() {});
+  }
 
   @override
   void initState() {
     super.initState();
-    _loadFeaturedProducts();
+    _pager.refresh(_notify);
   }
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadFeaturedProducts() async {
-    setState(() => _isLoading = true);
-    try {
-      final data = await supabase
-          .from('products')
-          .select('*, stores(store_name, owner_id)')
-          .eq('is_featured', true)
-          .eq('is_active', true)
-          .order('created_at', ascending: false);
-
-      final list = (data as List)
-          .cast<Map<String, dynamic>>()
-          .map((row) => ProductModel.fromMap(row))
-          .toList();
-
-      if (mounted) {
-        setState(() {
-          _products = list;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      debugPrint('❌ FeaturedScreen loadProducts: $e');
-      if (mounted) setState(() => _isLoading = false);
-    }
+  Future<List<ProductModel>> _fetchPage(int from, int to) async {
+    var query = supabase
+        .from('products')
+        .select('*, stores(store_name, owner_id)')
+        .eq('is_featured', true)
+        .eq('is_active', true);
+    final q = _searchQuery.trim();
+    if (q.isNotEmpty) query = query.ilike('title', ilikePattern(q));
+    final data = await query
+        .order('created_at', ascending: false)
+        .order('id', ascending: true)
+        .range(from, to);
+    return (data as List)
+        .cast<Map<String, dynamic>>()
+        .map((row) => ProductModel.fromMap(row))
+        .toList();
   }
 
-  List<ProductModel> get _filtered {
-    if (_searchQuery.trim().isEmpty) return _products;
-   
-    return _products
-     
-        .toList();
+  Future<void> _loadFeaturedProducts() => _pager.refresh(_notify);
+
+  // Издөө серверде жүрөт — бардык өзгөчө товарлардан издейт.
+  void _onSearchChanged(String v) {
+    setState(() => _searchQuery = v);
+    _searchDebounce?.cancel();
+    _searchDebounce =
+        Timer(const Duration(milliseconds: 350), _loadFeaturedProducts);
   }
 
   @override
@@ -77,7 +82,9 @@ class _FeaturedScreenState extends State<FeaturedScreen> {
     final inputFill  = p.field;
     final titleColor = p.text;
 
-    final filtered = _filtered;
+    final filtered = _pager.items;
+    final isFirstLoad =
+        !_pager.loadedOnce || (_pager.isLoading && filtered.isEmpty);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -163,7 +170,7 @@ class _FeaturedScreenState extends State<FeaturedScreen> {
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
             child: TextField(
               controller: _searchController,
-              onChanged: (v) => setState(() => _searchQuery = v),
+              onChanged: _onSearchChanged,
               style: AppTextStyles.bodyMedium.copyWith(
                   color: isDark ? Colors.white : AppColors.black),
               decoration: InputDecoration(
@@ -176,7 +183,7 @@ class _FeaturedScreenState extends State<FeaturedScreen> {
                     ? GestureDetector(
                         onTap: () {
                           _searchController.clear();
-                          setState(() => _searchQuery = '');
+                          _onSearchChanged('');
                         },
                         child: const Icon(Icons.close_rounded,
                             color: AppColors.grey400),
@@ -198,13 +205,13 @@ class _FeaturedScreenState extends State<FeaturedScreen> {
           ),
 
           // ── Табылган саны ──
-          if (!_isLoading && _searchQuery.isNotEmpty)
+          if (!isFirstLoad && _searchQuery.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  '${filtered.length} товар табылды',
+                  '${filtered.length}${_pager.hasMore ? '+' : ''} товар табылды',
                   style:
                       AppTextStyles.bodySmall.copyWith(color: AppColors.grey500),
                 ),
@@ -215,7 +222,7 @@ class _FeaturedScreenState extends State<FeaturedScreen> {
 
           // ── Товарлар ──
           Expanded(
-            child: _isLoading
+            child: isFirstLoad
                 ? const Center(
                     child: CircularProgressIndicator(color: AppColors.primary))
                 : filtered.isEmpty
@@ -223,13 +230,25 @@ class _FeaturedScreenState extends State<FeaturedScreen> {
                     : RefreshIndicator(
                         onRefresh: _loadFeaturedProducts,
                         color: const Color(0xFF10B981),
-                        child: ProductGrid(
-                          products: filtered,
-                          onProductTap: (product) => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  ProductDetailScreen(product: product),
+                        child: NotificationListener<ScrollNotification>(
+                          onNotification: (n) {
+                            if (PagedLoader.nearEnd(n)) {
+                              _pager.loadMore(_notify);
+                            }
+                            return false;
+                          },
+                          child: ProductGrid(
+                            products: filtered,
+                            footer: PagedFooter(
+                              visible: _pager.isLoadingMore,
+                              color: const Color(0xFF10B981),
+                            ),
+                            onProductTap: (product) => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    ProductDetailScreen(product: product),
+                              ),
                             ),
                           ),
                         ),
@@ -243,23 +262,27 @@ class _FeaturedScreenState extends State<FeaturedScreen> {
   }
 
   Widget _buildEmpty(bool isDark) {
+    final searching = _searchQuery.trim().isNotEmpty;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text('⭐', style: TextStyle(fontSize: 64)),
+          Text(searching ? '🔍' : '⭐', style: const TextStyle(fontSize: 64)),
           const SizedBox(height: 16),
           Text(
-            'Өзгөчө товар жок',
+            searching ? 'Эч нерсе табылган жок' : 'Өзгөчө товар жок',
             style: AppTextStyles.headingSmall.copyWith(
                 color: isDark ? Colors.white70 : AppColors.black),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Сатуучулар азырынча өзгөчө\nтовар белгилеген жок',
-            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey500),
-            textAlign: TextAlign.center,
-          ),
+          if (!searching) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Сатуучулар азырынча өзгөчө\nтовар белгилеген жок',
+              style:
+                  AppTextStyles.bodyMedium.copyWith(color: AppColors.grey500),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ],
       ),
     );
