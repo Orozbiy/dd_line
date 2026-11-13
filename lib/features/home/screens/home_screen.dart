@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../config/theme/dd_design.dart';
@@ -483,6 +484,109 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => displayedProducts = result);
   }
 
+  // ══════════════════════════════════════════════════════
+  // ЖҮКТӨП АЛ БАННЕРИ — Play Store + App Store
+  // ══════════════════════════════════════════════════════
+  static const String _playStoreUrl =
+      'https://play.google.com/store/apps/details?id=com.dd.online';
+  static const String _appStoreUrl =
+      'https://apps.apple.com/kg/app/dd-online/id6830260768?l=ru';
+
+  Future<void> _openStore(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  Widget _buildDownloadBanner(bool isDark) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 8, 12, 24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDark
+              ? [const Color(0xFF1A1A2E), const Color(0xFF16213E)]
+              : [const Color(0xFFF0F4FF), const Color(0xFFE8F0FE)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark
+              ? DD.accent.withOpacity(0.3)
+              : DD.accent.withOpacity(0.15),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: DD.accent.withOpacity(isDark ? 0.15 : 0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+        child: Column(
+          children: [
+            // Башкы текст
+            ShaderMask(
+              shaderCallback: (bounds) => const LinearGradient(
+                colors: [DD.accent2, DD.accent],
+              ).createShader(bounds),
+              child: const Text(
+                'DD Online',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Колдонмону жүктөп ал',
+              style: TextStyle(
+                fontSize: 13,
+                color: isDark ? Colors.white60 : Colors.black54,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Баскычтар
+            Row(
+              children: [
+                // Google Play
+                Expanded(
+                  child: _StoreButton(
+                    onTap: () => _openStore(_playStoreUrl),
+                    icon: _GooglePlayIcon(),
+                    label: 'Google Play',
+                    sublabel: 'жүктөп ал',
+                    isDark: isDark,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                // App Store
+                Expanded(
+                  child: _StoreButton(
+                    onTap: () => _openStore(_appStoreUrl),
+                    icon: const Icon(Icons.apple, color: Colors.white, size: 28),
+                    label: 'App Store',
+                    sublabel: 'жүктөп ал',
+                    isDark: isDark,
+                    isApple: true,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _resetFilters() {
     setState(() {
       _filter = FilterOptions(
@@ -717,6 +821,9 @@ if (_isSearchMode || _isNearbyMode ||
                       ),
                     )
                   else ...[
+                    SliverToBoxAdapter(
+                      child: _buildDownloadBanner(isDark),
+                    ),
                     SliverPadding(
                       padding: const EdgeInsets.fromLTRB(10, 15, 10, 12),
                       // SliverGrid childAspectRatio колдонбойбуз — ал бардык
@@ -1387,4 +1494,174 @@ class _IosLabelBtnState extends State<_IosLabelBtn> {
       ),
     );
   }
+}
+
+// ══════════════════════════════════════════════════════
+// МАГАЗИН БАСКЫЧЫ (Play Store / App Store)
+// ══════════════════════════════════════════════════════
+class _StoreButton extends StatefulWidget {
+  final VoidCallback onTap;
+  final Widget icon;
+  final String label;
+  final String sublabel;
+  final bool isDark;
+  final bool isApple;
+
+  const _StoreButton({
+    required this.onTap,
+    required this.icon,
+    required this.label,
+    required this.sublabel,
+    required this.isDark,
+    this.isApple = false,
+  });
+
+  @override
+  State<_StoreButton> createState() => _StoreButtonState();
+}
+
+class _StoreButtonState extends State<_StoreButton> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: widget.onTap,
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedScale(
+        scale: _pressed ? 0.95 : 1.0,
+        duration: const Duration(milliseconds: 80),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: widget.isApple
+                  ? [const Color(0xFF1C1C1E), const Color(0xFF3A3A3C)]
+                  : [const Color(0xFF1A73E8), const Color(0xFF0D47A1)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: (widget.isApple
+                        ? Colors.black
+                        : const Color(0xFF1A73E8))
+                    .withOpacity(0.35),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(width: 28, height: 28, child: widget.icon),
+              const SizedBox(width: 10),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    widget.sublabel,
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  Text(
+                    widget.label,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// GOOGLE PLAY ЗНАЧОГУ
+// ══════════════════════════════════════════════════════
+class _GooglePlayIcon extends StatelessWidget {
+  const _GooglePlayIcon();
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      size: const Size(28, 28),
+      painter: _GooglePlayPainter(),
+    );
+  }
+}
+
+class _GooglePlayPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+
+    // Google Play үч бурчтуктары
+    final colors = [
+      const Color(0xFF4FC3F7), // cyan
+      const Color(0xFFAED581), // green
+      const Color(0xFFFF8A65), // orange
+      const Color(0xFFE57373), // red
+    ];
+
+    // Оң жакка карай үч бурчтук (play button shape)
+    final path1 = Path()
+      ..moveTo(0, h * 0.08)
+      ..lineTo(w * 0.55, h * 0.5)
+      ..lineTo(0, h * 0.92)
+      ..close();
+
+    final paint1 = Paint()
+      ..shader = LinearGradient(
+        colors: [colors[0], colors[1]],
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+      ).createShader(Rect.fromLTWH(0, 0, w, h));
+    canvas.drawPath(path1, paint1);
+
+    // Жогорку оң бурч
+    final path2 = Path()
+      ..moveTo(0, h * 0.08)
+      ..lineTo(w * 0.55, h * 0.5)
+      ..lineTo(w, h * 0.28)
+      ..lineTo(w * 0.15, 0)
+      ..close();
+    canvas.drawPath(path2, Paint()..color = colors[0]);
+
+    // Ылдыңкы оң бурч
+    final path3 = Path()
+      ..moveTo(0, h * 0.92)
+      ..lineTo(w * 0.55, h * 0.5)
+      ..lineTo(w, h * 0.72)
+      ..lineTo(w * 0.15, h)
+      ..close();
+    canvas.drawPath(path3, Paint()..color = colors[2]);
+
+    // Оң жак учу
+    final path4 = Path()
+      ..moveTo(w * 0.55, h * 0.5)
+      ..lineTo(w, h * 0.28)
+      ..lineTo(w, h * 0.72)
+      ..close();
+    canvas.drawPath(path4, Paint()..color = colors[3]);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
