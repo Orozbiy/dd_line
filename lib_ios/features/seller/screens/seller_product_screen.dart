@@ -14,6 +14,7 @@ import '../../home/models/category_model.dart';
 
 import '../../../core/services/yandex_storage_service.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import '../../../core/dd_image_cache.dart';
 
 class SellerProductScreen extends StatefulWidget {
   final String sellerUid;
@@ -2053,7 +2054,7 @@ class _FlashProductTile extends StatelessWidget {
           ClipRRect(
             borderRadius: const BorderRadius.horizontal(left: Radius.circular(16)),
             child: imageUrl.isNotEmpty
-                ? CachedNetworkImage(imageUrl: imageUrl, width: 80, height: 80, fit: BoxFit.cover)
+                ? CachedNetworkImage(cacheManager: DDImageCache.manager, imageUrl: imageUrl, width: 80, height: 80, fit: BoxFit.cover)
                 : Container(width: 80, height: 80, color: border, child: const Icon(Icons.image_outlined, color: AppColors.grey400)),
           ),
           const SizedBox(width: 12),
@@ -2234,7 +2235,7 @@ class _AddFlashSheetState extends State<_AddFlashSheet> {
                           ClipRRect(
                             borderRadius: BorderRadius.circular(10),
                             child: img.isNotEmpty
-                                ? CachedNetworkImage(imageUrl: img, width: 70, height: 70, fit: BoxFit.cover)
+                                ? CachedNetworkImage(cacheManager: DDImageCache.manager, imageUrl: img, width: 70, height: 70, fit: BoxFit.cover)
                                 : Container(width: 70, height: 70, color: Colors.grey.withOpacity(0.2)),
                           ),
                           const SizedBox(height: 2),

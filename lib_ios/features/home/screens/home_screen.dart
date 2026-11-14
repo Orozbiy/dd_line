@@ -37,6 +37,7 @@ import '../widgets/home_bottom_nav.dart';
 import '../widgets/equal_height_row.dart';
 import '../widgets/home_background.dart';
 import '../../../core/update_checker.dart';
+import '../../../core/dd_image_cache.dart';
 
 // ══════════════════════════════════════════════════════
 // TAB индекстери
@@ -221,11 +222,17 @@ class _HomeScreenState extends State<HomeScreen>
   void _subscribeChatUnread() {
     final user = supa.supabase.auth.currentUser;
     if (user == null) return;
-    _chatSub = ChatService().buyerChatsStream(user.id).listen((chats) {
-      if (!mounted) return;
-      final total = chats.fold<int>(0, (sum, c) => sum + c.buyerUnread);
-      setState(() => _totalUnreadChat = total);
-    });
+    _chatSub = ChatService().buyerChatsStream(user.id).listen(
+      (chats) {
+        if (!mounted) return;
+        final total = chats.fold<int>(0, (sum, c) => sum + c.buyerUnread);
+        setState(() => _totalUnreadChat = total);
+      },
+      onError: (e) {
+        // JWT token же Realtime катасы — тиркемени жаппайбыз, логго жазабыз
+        debugPrint('⚠️ buyerChatsStream ката: \$e');
+      },
+    );
   }
 
   void _onFavChanged() {
@@ -948,6 +955,7 @@ if (_isSearchMode || _isNearbyMode ||
                                     child: _sellerAvatarUrl != null
                                         ? ClipOval(
                                             child: CachedNetworkImage(
+                                              cacheManager: DDImageCache.manager,
                                               imageUrl: _sellerAvatarUrl!,
                                               width: 32,
                                               height: 32,

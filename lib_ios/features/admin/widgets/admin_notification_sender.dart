@@ -18,6 +18,7 @@ import '../../../config/theme/app_text_styles.dart';
 import '../../../core/services/yandex_storage_service.dart';
 import '../../../core/supabase_client.dart';
 import '../../../services/notification_service.dart';
+import '../../../core/dd_image_cache.dart';
 
 class AdminNotificationSender extends StatefulWidget {
   final String searchQuery;
@@ -761,6 +762,7 @@ class _AdminNotificationSenderState extends State<AdminNotificationSender> {
                             ClipRRect(
                               borderRadius: BorderRadius.circular(10),
                               child: CachedNetworkImage(
+                                cacheManager: DDImageCache.manager,
                                 imageUrl: imageUrl,
                                 width: double.infinity,
                                 height: 160,

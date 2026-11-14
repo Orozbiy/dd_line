@@ -4,6 +4,7 @@
 // ══════════════════════════════════════════════════════
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import '../../../core/dd_image_cache.dart';
 
 class FullscreenImageScreen extends StatefulWidget {
   final List<String> images;
@@ -56,6 +57,7 @@ class _FullscreenImageScreenState extends State<FullscreenImageScreen> {
                   ? Hero(
                       tag: widget.heroTag,
                       child: CachedNetworkImage(
+                        cacheManager: DDImageCache.manager,
                         imageUrl: url,
                         width: screenSize.width,
                         height: screenSize.height,
@@ -69,6 +71,7 @@ class _FullscreenImageScreenState extends State<FullscreenImageScreen> {
                       ),
                     )
                   : CachedNetworkImage(
+                      cacheManager: DDImageCache.manager,
                       imageUrl: url,
                       width: screenSize.width,
                       height: screenSize.height,

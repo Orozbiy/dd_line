@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/supabase_client.dart';
 import '../models/story_comment_model.dart';
 import '../services/story_service.dart';
+import '../../../core/dd_image_cache.dart';
 
 /// Instagram сыяктуу: астынан чыккан комментарий барагы.
 /// [onCountChanged] — комментарий кошулганда/өчүрүлгөндө жаңы санды кайтарат.
@@ -173,7 +174,7 @@ class _StoryCommentsSheetState extends State<_StoryCommentsSheet> {
                                         Colors.grey.withValues(alpha: 0.3),
                                     backgroundImage: (c.avatarUrl != null &&
                                             c.avatarUrl!.isNotEmpty)
-                                        ? CachedNetworkImageProvider(c.avatarUrl!)
+                                        ? CachedNetworkImageProvider(c.avatarUrl!, cacheManager: DDImageCache.manager)
                                         : null,
                                     child: (c.avatarUrl == null ||
                                             c.avatarUrl!.isEmpty)

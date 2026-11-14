@@ -10,6 +10,7 @@ import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../config/theme/dd_design.dart';
 import '../../../core/supabase_client.dart';
+import '../../../core/dd_image_cache.dart';
 
 class SellerNotificationsScreen extends StatefulWidget {
   final String sellerUid;
@@ -241,6 +242,7 @@ class _SellerNotificationsScreenState
                                   bottomRight: Radius.circular(16),
                                 ),
                                 child: CachedNetworkImage(
+                                  cacheManager: DDImageCache.manager,
                                   imageUrl: imageUrl,
                                   width: double.infinity,
                                   height: 200,

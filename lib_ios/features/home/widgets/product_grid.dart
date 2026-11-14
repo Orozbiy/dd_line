@@ -7,10 +7,14 @@ class ProductGrid extends StatelessWidget {
   final List<ProductModel> products;
   final Function(ProductModel) onProductTap;
 
+  /// Тизменин аягына кошулуучу виджет (мис. pagination индикатору).
+  final Widget? footer;
+
   const ProductGrid({
     super.key,
     required this.products,
     required this.onProductTap,
+    this.footer,
   });
 
   @override
@@ -51,11 +55,13 @@ class ProductGrid extends StatelessWidget {
     // IntrinsicHeight колдонбойбуз (ал бийиктикти ашыкча эсептеп, карта
     // астында боштук калтырат). Ордуна _EqualHeightRow: карталарды өлчөп,
     // эң узунун табып, баарын так ошол бийиктикке келтирет.
+    final rowCount = (products.length / columns).ceil();
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(hPad, 8, hPad, 120),
       cacheExtent: MediaQuery.of(context).size.height * 2,
-      itemCount: (products.length / columns).ceil(),
+      itemCount: rowCount + (footer != null ? 1 : 0),
       itemBuilder: (context, rowIndex) {
+        if (rowIndex >= rowCount) return footer!;
         return Padding(
           padding: const EdgeInsets.only(bottom: spacing),
           child: EqualHeightRow(

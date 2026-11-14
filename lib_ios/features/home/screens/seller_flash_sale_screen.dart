@@ -8,6 +8,7 @@ import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/dd_design.dart';
 import '../../../core/app_localizations.dart';
 import '../../../core/supabase_client.dart';
+import '../../../core/dd_image_cache.dart';
 
 class SellerFlashSaleScreen extends StatefulWidget {
   final String storeId;
@@ -303,6 +304,7 @@ class _FlashProductTile extends StatelessWidget {
                 const BorderRadius.horizontal(left: Radius.circular(16)),
             child: imageUrl.isNotEmpty
                 ? CachedNetworkImage(
+                    cacheManager: DDImageCache.manager,
                     imageUrl: imageUrl,
                     width: 80,
                     height: 80,
@@ -505,6 +507,7 @@ class _AddFlashSheetState extends State<_AddFlashSheet> {
                             borderRadius: BorderRadius.circular(10),
                             child: img.isNotEmpty
                                 ? CachedNetworkImage(
+                                    cacheManager: DDImageCache.manager,
                                     imageUrl: img,
                                     width: 70,
                                     height: 70,

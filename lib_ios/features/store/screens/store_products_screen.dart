@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -7,9 +8,11 @@ import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../config/theme/dd_design.dart';
 import '../../../core/app_localizations.dart';
+import '../../../core/paged_loader.dart';
 import '../../../core/supabase_client.dart';
 import '../../../core/utils/image_utils.dart';
 import '../../../data/models/product_model.dart';
+import '../../../core/dd_image_cache.dart';
 class StoreProductsScreen extends StatefulWidget {
   final String storeId;
   final String shopName;
@@ -37,8 +40,18 @@ class StoreProductsScreen extends StatefulWidget {
 }
 
 class _StoreProductsScreenState extends State<StoreProductsScreen> {
-  List<ProductModel> _products = [];
-  bool _isLoading = true;
+  // Алгач 25 товар, астыга scroll кылганда дагы 25 (серверден).
+  late final PagedLoader<ProductModel> _pager = PagedLoader<ProductModel>(
+    fetchPage: _fetchPage,
+    idOf: (p) => p.id,
+  );
+  List<ProductModel> get _products => _pager.items;
+  int? _totalCount;
+  Timer? _searchDebounce;
+
+  void _notify() {
+    if (mounted) setState(() {});
+  }
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
@@ -56,7 +69,8 @@ class _StoreProductsScreenState extends State<StoreProductsScreen> {
     _lat = widget.latitude;
     _lng = widget.longitude;
     _loadStoreLocation();
-    _loadProducts();
+    _pager.refresh(_notify);
+    _loadTotalCount();
   }
 
   Future<void> _loadStoreLocation() async {
@@ -78,30 +92,52 @@ class _StoreProductsScreenState extends State<StoreProductsScreen> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadProducts() async {
-    try {
-      final data = await supabase
-          .from('products')
-          .select('*, stores(*)')
-          .eq('store_id', widget.storeId)
-          .or('is_active.eq.true,is_active.is.null')
-          .order('created_at', ascending: false)
-          .limit(50);
-
-      final list = (data as List)
-          .cast<Map<String, dynamic>>()
-          .map((row) => ProductModel.fromMap(row))
-          .toList();
-
-      if (mounted) setState(() { _products = list; _isLoading = false; });
-    } catch (e) {
-      debugPrint('❌ _loadProducts: $e');
-      if (mounted) setState(() => _isLoading = false);
+  Future<List<ProductModel>> _fetchPage(int from, int to) async {
+    var query = supabase
+        .from('products')
+        .select('*, stores(*)')
+        .eq('store_id', widget.storeId)
+        .or('is_active.eq.true,is_active.is.null');
+    if (_searchQuery.isNotEmpty) {
+      query = query.ilike('title', ilikePattern(_searchQuery));
     }
+    final data = await query
+        .order('created_at', ascending: false)
+        .order('id', ascending: true)
+        .range(from, to);
+    return (data as List)
+        .cast<Map<String, dynamic>>()
+        .map((row) => ProductModel.fromMap(row))
+        .toList();
+  }
+
+  // Сатуучунун жалпы товар саны (карточкадагы сан үчүн) — `id` гана алынат.
+  Future<void> _loadTotalCount() async {
+    try {
+      final rows = await supabase
+          .from('products')
+          .select('id')
+          .eq('store_id', widget.storeId)
+          .or('is_active.eq.true,is_active.is.null');
+      if (mounted) setState(() => _totalCount = (rows as List).length);
+    } catch (e) {
+      debugPrint('❌ _loadTotalCount: $e');
+    }
+  }
+
+  // Издөө серверде жүрөт — сатуучунун бардык товарларынан издейт.
+  void _onSearchChanged(String v) {
+    setState(() => _searchQuery = v.trim());
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(
+      const Duration(milliseconds: 350),
+      () => _pager.refresh(_notify),
+    );
   }
 
   @override
@@ -149,9 +185,14 @@ class _StoreProductsScreenState extends State<StoreProductsScreen> {
         ),
       ),
 
-      body: _isLoading
+      body: !_pager.loadedOnce
           ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-          : CustomScrollView(
+          : NotificationListener<ScrollNotification>(
+              onNotification: (n) {
+                if (PagedLoader.nearEnd(n)) _pager.loadMore(_notify);
+                return false;
+              },
+              child: CustomScrollView(
               slivers: [
                 // ── Сатуучу карточкасы ──
                 SliverToBoxAdapter(
@@ -215,7 +256,7 @@ class _StoreProductsScreenState extends State<StoreProductsScreen> {
                                   radius: 28,
                                   backgroundColor: Colors.transparent,
                                   backgroundImage: (widget.avatarUrl != null && widget.avatarUrl!.isNotEmpty)
-                                      ? CachedNetworkImageProvider(widget.avatarUrl!)
+                                      ? CachedNetworkImageProvider(widget.avatarUrl!, cacheManager: DDImageCache.manager)
                                       : const AssetImage('assets/images/seller_default.png') as ImageProvider,
                                 ),
                               ),
@@ -290,7 +331,7 @@ class _StoreProductsScreenState extends State<StoreProductsScreen> {
                                     child: Column(
                                       children: [
                                         Text(
-                                          '${_products.length}',
+                                          '${_totalCount ?? _products.length}',
                                           style: AppTextStyles.headingSmall.copyWith(
                                             color: AppColors.primary,
                                             fontWeight: FontWeight.w800,
@@ -393,7 +434,7 @@ class _StoreProductsScreenState extends State<StoreProductsScreen> {
                           ),
                           child: TextField(
                             controller: _searchController,
-                            onChanged: (v) => setState(() => _searchQuery = v.trim().toLowerCase()),
+                            onChanged: _onSearchChanged,
                             style: AppTextStyles.bodyMedium.copyWith(color: textColor),
                             decoration: InputDecoration(
                               hintText: isRu ? 'Поиск товаров...' : 'Товар издөө...',
@@ -408,7 +449,7 @@ class _StoreProductsScreenState extends State<StoreProductsScreen> {
                                           color: p.subText, size: 20),
                                       onPressed: () {
                                         _searchController.clear();
-                                        setState(() => _searchQuery = '');
+                                        _onSearchChanged('');
                                       },
                                     )
                                   : null,
@@ -423,7 +464,13 @@ class _StoreProductsScreenState extends State<StoreProductsScreen> {
                 ),
 
                 // ── Товарлар ──
-                if (_products.isEmpty)
+                if (_products.isEmpty && _pager.isLoading)
+                  const SliverFillRemaining(
+                    child: Center(
+                      child: CircularProgressIndicator(color: AppColors.primary),
+                    ),
+                  )
+                else if (_products.isEmpty && _searchQuery.isEmpty)
                   SliverFillRemaining(
                     child: Center(
                       child: Column(
@@ -442,11 +489,7 @@ class _StoreProductsScreenState extends State<StoreProductsScreen> {
                 else
                   Builder(
                     builder: (_) {
-                      final filtered = _searchQuery.isEmpty
-                          ? _products
-                          : _products
-                              .where((p) => p.name.toLowerCase().contains(_searchQuery))
-                              .toList();
+                      final filtered = _products;
 
                       if (filtered.isEmpty) {
                         return SliverFillRemaining(
@@ -507,7 +550,16 @@ class _StoreProductsScreenState extends State<StoreProductsScreen> {
                       );
                     },
                   ),
+
+                // ── Дагы жүктөлүп жатат ──
+                SliverToBoxAdapter(
+                  child: PagedFooter(
+                    visible: _pager.isLoadingMore,
+                    color: AppColors.primary,
+                  ),
+                ),
               ],
+            ),
             ),
     );
   }
@@ -562,6 +614,7 @@ class _ProductCard extends StatelessWidget {
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
                   child: CachedNetworkImage(
+                    cacheManager: DDImageCache.manager,
                     imageUrl: toCloudinaryThumb(product.imageUrl, width: 400),
                     height: 140,
                     width: double.infinity,

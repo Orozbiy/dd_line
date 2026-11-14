@@ -176,7 +176,7 @@ class NotificationService {
       final productId = message.data['productId'] as String?;
       final type      = message.data['type']      as String? ?? 'chat_message';
 
-      await Future.delayed(const Duration(milliseconds: 1500));
+      await Future.delayed(const Duration(milliseconds: 300));
 
       if (type == 'admin_broadcast') {
         await _navigateToNotifications();
@@ -262,6 +262,7 @@ class NotificationService {
         return;
       }
 
+      // Баарын параллел жүктөйбүз — 3 запрос бирдикте иштейт
       final row = await supabase
           .from('chats')
           .select('id, seller_id, buyer_id, product_id, seller_name')
@@ -276,39 +277,34 @@ class NotificationService {
       final isSeller = row['seller_id'] == user.id;
       debugPrint('🔍 isSeller=$isSeller (userId=${user.id}, sellerId=${row['seller_id']}, buyerId=${row['buyer_id']})');
 
-      String productName  = '';
-      String productImage = '';
       final productId = row['product_id'] as String?;
-      if (productId != null) {
-        try {
-          final product = await supabase
-              .from('products')
-              .select('title, images')
-              .eq('id', productId)
-              .maybeSingle();
-          if (product != null) {
-            productName = product['title'] as String? ?? '';
-            final images = product['images'] as List?;
-            productImage = (images != null && images.isNotEmpty)
-                ? images.first as String
-                : '';
-          }
-        } catch (_) {}
-      }
-
-      String otherAvatarUrl = '';
       final otherUserId = isSeller
           ? row['buyer_id']  as String? ?? ''
           : row['seller_id'] as String? ?? '';
-      try {
-        final profile = await supabase
-            .from('profiles')
-            .select('avatar_url')
-            .eq('id', otherUserId)
-            .maybeSingle();
-        final rawAvatar = profile?['avatar_url'] as String? ?? '';
-        otherAvatarUrl = rawAvatar.startsWith('http') ? rawAvatar : '';
-      } catch (_) {}
+
+      // product жана profile запростарын параллел иштетебиз
+      final results = await Future.wait([
+        productId != null
+            ? supabase.from('products').select('title, images').eq('id', productId).maybeSingle().catchError((_) => null)
+            : Future.value(null),
+        otherUserId.isNotEmpty
+            ? supabase.from('profiles').select('avatar_url').eq('id', otherUserId).maybeSingle().catchError((_) => null)
+            : Future.value(null),
+      ]);
+
+      String productName  = '';
+      String productImage = '';
+      final productData = results[0] as Map<String, dynamic>?;
+      if (productData != null) {
+        productName = productData['title'] as String? ?? '';
+        final images = productData['images'] as List?;
+        productImage = (images != null && images.isNotEmpty) ? images.first as String : '';
+      }
+
+      String otherAvatarUrl = '';
+      final profileData = results[1] as Map<String, dynamic>?;
+      final rawAvatar = profileData?['avatar_url'] as String? ?? '';
+      otherAvatarUrl = rawAvatar.startsWith('http') ? rawAvatar : '';
 
       context = navigatorKey.currentContext;
       if (context == null || !context.mounted) return;
@@ -468,7 +464,6 @@ class NotificationService {
               'payload': {
                 'aps': {
                   'sound':             'default',
-                  'badge':              1,
                   'content-available':  1,
                 },
               },
@@ -558,7 +553,7 @@ class NotificationService {
                 },
                 'apns': {
                   'payload': {
-                    'aps': {'sound': 'default', 'badge': 1},
+                    'aps': {'sound': 'default'},
                   },
                   'headers': {'apns-priority': '10'},
                 },

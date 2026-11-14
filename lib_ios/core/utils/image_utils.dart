@@ -48,7 +48,7 @@ Future<Uint8List> compressStoryImage(Uint8List bytes) async {
 // WATERMARK — dart:ui, сервер жок
 // ─────────────────────────────────────────────────────────────
 
-/// Товар сүрөтүнө "DD Online" watermark кош — ылдыйкы оң бурч, 80% opacity, мандарин
+/// Товар сүрөтүнө "DD Online" watermark кош — оң аст бурч, мандарин, 16px, фонсуз
 Future<Uint8List> addWatermark(Uint8List bytes) async {
   final codec = await ui.instantiateImageCodec(bytes);
   final frame = await codec.getNextFrame();
@@ -62,70 +62,42 @@ Future<Uint8List> addWatermark(Uint8List bytes) async {
     final canvas   = Canvas(recorder);
     canvas.drawImage(src, Offset.zero, Paint());
 
-    // 80% opacity = 0xCC (255 * 0.8 ≈ 204 = 0xCC)
-    const opacity    = 0xCC;
-    // Капсула фону: кара (жарык/кара теманын суроту да норм болсун үчүн)
-    const bgOpacity  = 0x99; // ~60% тунук кара фон
+    // Сүрөттүн өлчөмүнө жараша шрифт размерин масштабтайбыз
+    // Базалык: 800px туурасы → 16px. Пропорционалдуу.
+    final fontSize = (w / 800) * 16.0;
+    final margin   = w * 0.018; // оң жана ылдыйкы четтен аралык
 
-    // Размерлер сүрөттүн өлчөмүнө жараша
-    final badgeH   = h * 0.09;           // badge бийиктиги
-    final badgeW   = w * 0.40;           // badge туурасы
-    final margin   = w * 0.025;          // четтен аралык
-    final bx       = w - badgeW - margin; // он жак
-    final by       = h - badgeH - margin; // ылдыйкы
+    // Текст өлчөмүн алдын ала биле алмайбыз, ошон үчүн максималдуу туурасын колдонобуз
+    final maxTextWidth = w * 0.5;
 
-    // Кара жарым-жарым фон капсула
-    final bgPaint = Paint()
-      ..color = ui.Color.fromARGB(bgOpacity, 0, 0, 0);
-    final radius = badgeH / 2;
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(bx, by, badgeW, badgeH),
-        Radius.circular(radius),
-      ),
-      bgPaint,
-    );
-
-    // "D" чоң тамга — МАНДАРИН (#FF8A00)
-    final dSize    = badgeH * 0.65;
-    final dPb = ui.ParagraphBuilder(ui.ParagraphStyle(
+    final pb = ui.ParagraphBuilder(ui.ParagraphStyle(
       textAlign:  TextAlign.left,
-      fontSize:   dSize,
-      fontWeight: FontWeight.w900,
+      fontSize:   fontSize,
+      fontWeight: FontWeight.w700,
     ))
       ..pushStyle(ui.TextStyle(
-        color:      ui.Color.fromARGB(opacity, 0xFF, 0x8A, 0x00), // мандарин
-        fontSize:   dSize,
-        fontWeight: FontWeight.w900,
-      ))
-      ..addText('D');
-    final dPara = dPb.build()
-      ..layout(ui.ParagraphConstraints(width: dSize * 1.2));
-    canvas.drawParagraph(
-      dPara,
-      Offset(bx + badgeH * 0.18, by + (badgeH - dSize) / 2 - 1),
-    );
-
-    // "DD Online" текст — ак
-    final txtSize = badgeH * 0.34;
-    final txtPb = ui.ParagraphBuilder(ui.ParagraphStyle(
-      textAlign:  TextAlign.left,
-      fontSize:   txtSize,
-      fontWeight: FontWeight.bold,
-    ))
-      ..pushStyle(ui.TextStyle(
-        color:         ui.Color.fromARGB(opacity, 255, 255, 255), // ак
-        fontSize:      txtSize,
-        fontWeight:    FontWeight.bold,
-        letterSpacing: 0.5,
+        color:         const ui.Color(0xCCFF8A00), // мандарин, 80% opacity
+        fontSize:      fontSize,
+        fontWeight:    FontWeight.w700,
+        letterSpacing: 0.3,
+        shadows: [
+          ui.Shadow(
+            color:  const ui.Color(0x88000000), // жеңил көлөкө — окуу оңой болсун
+            offset: ui.Offset(0.5, 0.5),
+            blurRadius: 1.5,
+          ),
+        ],
       ))
       ..addText('DD Online');
-    final txtPara = txtPb.build()
-      ..layout(ui.ParagraphConstraints(width: badgeW * 0.7));
-    canvas.drawParagraph(
-      txtPara,
-      Offset(bx + dSize * 1.0 + badgeH * 0.22, by + (badgeH - txtSize) / 2),
-    );
+
+    final para = pb.build()
+      ..layout(ui.ParagraphConstraints(width: maxTextWidth));
+
+    // Оң аст бурчка: x = w - textWidth - margin, y = h - textHeight - margin
+    final tx = w - para.longestLine - margin;
+    final ty = h - para.height - margin;
+
+    canvas.drawParagraph(para, ui.Offset(tx, ty));
 
     final picture  = recorder.endRecording();
     final finalImg = await picture.toImage(src.width, src.height);

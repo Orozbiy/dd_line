@@ -7,6 +7,7 @@ import '../../../config/theme/dd_design.dart';
 import '../../../core/app_localizations.dart';
 import '../../../core/supabase_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../core/dd_image_cache.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -546,6 +547,7 @@ class _NotificationCard extends StatelessWidget {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(14),
                     child: CachedNetworkImage(
+                      cacheManager: DDImageCache.manager,
                       imageUrl: imageUrl!,
                       width: double.infinity,
                       height: 200,

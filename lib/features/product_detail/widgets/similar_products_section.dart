@@ -6,6 +6,7 @@ import '../../../config/theme/app_text_styles.dart';
 import '../../../core/app_localizations.dart';
 import '../../../core/supabase_client.dart';
 import '../../../data/models/product_model.dart';
+import '../../../core/dd_image_cache.dart';
 // Cloudinary URL — сапаты 80%, кичине размер
 String _thumbUrl(String url, {int width = 280}) {
   if (url.isEmpty) return url;
@@ -219,6 +220,7 @@ class _SimilarProductCard extends StatelessWidget {
                 fit: StackFit.expand,
                 children: [
                   CachedNetworkImage(
+                    cacheManager: DDImageCache.manager,
                     imageUrl: _thumbUrl(product.imageUrl),
                     fit: BoxFit.cover,
                     fadeInDuration: const Duration(milliseconds: 120),

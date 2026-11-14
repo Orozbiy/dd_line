@@ -28,7 +28,33 @@ serve(async (req) => {
       .from("push_tokens")
       .select("token")
       .eq("user_id", uid);
-    console.log("STEP4: tokens=" + JSON.stringify(tokens) + " err=" + JSON.stringify(tokErr));
+        console.log("STEP4: tokens=" + JSON.stringify(tokens) + " err=" + JSON.stringify(tokErr));
+
+    // Алуучунун чыныгы окулбаган билдирүүлөрүн санайбыз
+    console.log("STEP4b: counting unread messages for uid=" + uid);
+    let unreadBadge = 1;
+    try {
+      const { data: chatRows } = await sb
+        .from("chats")
+        .select("id")
+        .or(`buyer_id.eq.${uid},seller_id.eq.${uid}`);
+      const chatIds = (chatRows ?? []).map((r: any) => r.id as string);
+      if (chatIds.length > 0) {
+        const { count } = await sb
+          .from("messages")
+          .select("id", { count: "exact", head: true })
+          .in("chat_id", chatIds)
+          .eq("is_read", false)
+          .neq("sender_id", uid);
+        unreadBadge = count ?? 1;
+      } else {
+        unreadBadge = 0;
+      }
+    } catch (badgeErr) {
+      console.log("STEP4b badge count ката: " + String(badgeErr));
+      unreadBadge = 1;
+    }
+    console.log("STEP4b: unreadBadge=" + unreadBadge);
 
     if (!tokens || tokens.length === 0)
       return new Response(JSON.stringify({ sent: 0, reason: "no tokens" }), {
@@ -71,7 +97,7 @@ serve(async (req) => {
                 },
               },
               apns: {
-                payload: { aps: { sound: "default", badge: 1 } },
+                payload: { aps: { sound: "default" } },
                 headers: { "apns-priority": "10" },
               },
               data: {

@@ -8,9 +8,11 @@ import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../config/theme/dd_design.dart';
 import '../../../core/app_localizations.dart';
+import '../../../core/paged_loader.dart';
 import '../../../core/supabase_client.dart';
 import '../../../data/models/product_model.dart';
 import '../../product_detail/screens/product_detail_screen.dart';
+import '../../../core/dd_image_cache.dart';
 
 class FlashSaleScreen extends StatefulWidget {
   const FlashSaleScreen({super.key});
@@ -20,12 +22,22 @@ class FlashSaleScreen extends StatefulWidget {
 }
 
 class _FlashSaleScreenState extends State<FlashSaleScreen> {
-  List<Map<String, dynamic>> _items = [];
-  bool _loading = true;
+  // Алгач 25 товар, астыга scroll кылганда дагы 25 (серверден).
+  late final PagedLoader<Map<String, dynamic>> _pager =
+      PagedLoader<Map<String, dynamic>>(
+    fetchPage: _fetchPage,
+    idOf: (row) => row['id'],
+  );
+
+  List<Map<String, dynamic>> get _items => _pager.items;
 
   DateTime? _nearestEnd;
   Duration _remaining = Duration.zero;
   Timer? _timer;
+
+  void _notify() {
+    if (mounted) setState(() {});
+  }
 
   @override
   void initState() {
@@ -39,42 +51,44 @@ class _FlashSaleScreenState extends State<FlashSaleScreen> {
     super.dispose();
   }
 
+  Future<List<Map<String, dynamic>>> _fetchPage(int from, int to) async {
+    final now = DateTime.now().toUtc().toIso8601String();
+    final rows = await supabase
+        .from('products')
+        .select('id, title, images, price, flash_sale_price, flash_end_time, stores(store_name)')
+        .eq('is_flash_sale', true)
+        .eq('is_active', true)
+        .gt('flash_end_time', now)
+        .order('flash_end_time', ascending: true)
+        .order('id', ascending: true)
+        .range(from, to);
+    return (rows as List).map((r) => Map<String, dynamic>.from(r as Map)).toList();
+  }
+
   Future<void> _load() async {
-    setState(() => _loading = true);
-    try {
-      final now = DateTime.now().toUtc().toIso8601String();
-      final rows = await supabase
-          .from('products')
-          .select('id, title, images, price, flash_sale_price, flash_end_time, stores(store_name)')
-          .eq('is_flash_sale', true)
-          .eq('is_active', true)
-          .gt('flash_end_time', now)
-          .order('flash_end_time', ascending: true);
+    await _pager.refresh(_notify);
+    if (!mounted) return;
 
-      final items = (rows as List).map((r) => Map<String, dynamic>.from(r as Map)).toList();
-
-      DateTime? nearest;
-      for (final item in items) {
-        final endStr = item['flash_end_time'] as String?;
-        if (endStr != null) {
-          final t = DateTime.parse(endStr).toLocal();
-          if (nearest == null || t.isBefore(nearest)) nearest = t;
-        }
+    // Товарлар flash_end_time боюнча иреттелген — эң жакын бүтүү
+    // убактысы биринчи беттин ичинде.
+    DateTime? nearest;
+    for (final item in _items) {
+      final endStr = item['flash_end_time'] as String?;
+      if (endStr != null) {
+        final t = DateTime.parse(endStr).toLocal();
+        if (nearest == null || t.isBefore(nearest)) nearest = t;
       }
-
-      if (mounted) {
-        setState(() { _items = items; _nearestEnd = nearest; _loading = false; });
-        _startTimer();
-      }
-    } catch (e) {
-      if (mounted) setState(() => _loading = false);
     }
+    setState(() => _nearestEnd = nearest);
+    _startTimer();
   }
 
   void _startTimer() {
     _timer?.cancel();
     if (_nearestEnd == null) return;
     _remaining = _nearestEnd!.difference(DateTime.now());
+    // Жүктөө ката берип, эски тизме калса — чексиз кайра жүктөбөйт.
+    if (_remaining.isNegative) return;
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
       final r = _nearestEnd!.difference(DateTime.now());
@@ -150,7 +164,7 @@ class _FlashSaleScreenState extends State<FlashSaleScreen> {
           // ── Фон жарыктары ──
           Positioned.fill(child: _FlashBackground(isDark: isDark)),
 
-          _loading
+          !_pager.loadedOnce || (_pager.isLoading && _items.isEmpty)
               ? const Center(child: CircularProgressIndicator(color: AppColors.error))
               : _items.isEmpty
                   ? _EmptyState()
@@ -161,16 +175,43 @@ class _FlashSaleScreenState extends State<FlashSaleScreen> {
                           child: RefreshIndicator(
                             onRefresh: _load,
                             color: AppColors.error,
-                            child: GridView.builder(
-                              padding: const EdgeInsets.fromLTRB(14, 14, 14, 24),
-                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                crossAxisSpacing: 12,
-                                mainAxisSpacing: 12,
-                                childAspectRatio: 0.72,
+                            child: NotificationListener<ScrollNotification>(
+                              onNotification: (n) {
+                                if (PagedLoader.nearEnd(n)) {
+                                  _pager.loadMore(_notify);
+                                }
+                                return false;
+                              },
+                              child: CustomScrollView(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                slivers: [
+                                  SliverPadding(
+                                    padding: const EdgeInsets.fromLTRB(14, 14, 14, 8),
+                                    sliver: SliverGrid(
+                                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: 2,
+                                        crossAxisSpacing: 12,
+                                        mainAxisSpacing: 12,
+                                        childAspectRatio: 0.72,
+                                      ),
+                                      delegate: SliverChildBuilderDelegate(
+                                        (ctx, i) => _FlashCard(
+                                          key: ValueKey(_items[i]['id']),
+                                          item: _items[i],
+                                          isDark: isDark,
+                                        ),
+                                        childCount: _items.length,
+                                      ),
+                                    ),
+                                  ),
+                                  SliverToBoxAdapter(
+                                    child: PagedFooter(
+                                      visible: _pager.isLoadingMore,
+                                      color: AppColors.error,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              itemCount: _items.length,
-                              itemBuilder: (ctx, i) => _FlashCard(item: _items[i], isDark: isDark),
                             ),
                           ),
                         ),
@@ -372,7 +413,7 @@ class _TimeBox extends StatelessWidget {
 class _FlashCard extends StatelessWidget {
   final Map<String, dynamic> item;
   final bool isDark;
-  const _FlashCard({required this.item, required this.isDark});
+  const _FlashCard({super.key, required this.item, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
@@ -451,6 +492,7 @@ class _FlashCard extends StatelessWidget {
                         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
                         child: imageUrl.isNotEmpty
                             ? CachedNetworkImage(
+                                cacheManager: DDImageCache.manager,
                                 imageUrl: imageUrl,
                                 height: 140, width: double.infinity, fit: BoxFit.cover,
                                 placeholder: (_, __) => Container(

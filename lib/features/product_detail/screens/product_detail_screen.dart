@@ -25,6 +25,7 @@ import '../../store/screens/store_products_screen.dart';
 import '../widgets/review_section.dart';
 import '../widgets/pulse_box.dart';
 import '../widgets/share_widget.dart';
+import '../../../core/dd_image_cache.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final ProductModel product;
@@ -431,6 +432,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
               child: Hero(
                 tag: 'product_image_${_product.id}_$index',
                 child: CachedNetworkImage(
+                  cacheManager: DDImageCache.manager,
                   imageUrl: toCloudinaryThumb(url, width: 800),
                   fit: BoxFit.cover,
                   fadeInDuration: const Duration(milliseconds: 150),
@@ -501,6 +503,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
                             child: CachedNetworkImage(
+                              cacheManager: DDImageCache.manager,
                               imageUrl: toCloudinaryThumb(allImages[i], width: 120),
                               fit: BoxFit.cover,
                               placeholder: (_, __) => Container(color: Colors.white12),
@@ -1013,7 +1016,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                                             radius: 30,
                                             backgroundColor: DD.accent,
                                             backgroundImage: (_avatarUrl != null && _avatarUrl!.isNotEmpty)
-                                                ? CachedNetworkImageProvider(_avatarUrl!)
+                                                ? CachedNetworkImageProvider(_avatarUrl!, cacheManager: DDImageCache.manager)
                                                 : null,
                                             child: (_avatarUrl == null || _avatarUrl!.isEmpty)
                                                 ? const Icon(

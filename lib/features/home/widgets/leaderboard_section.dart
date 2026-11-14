@@ -23,10 +23,12 @@
 //   WHERE user_id = '<user_id>';
 // ══════════════════════════════════════════════════════════════════════════════
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../core/supabase_client.dart';
+import '../../../core/dd_image_cache.dart';
 
 class LeaderboardSection extends StatefulWidget {
   const LeaderboardSection({super.key});
@@ -250,10 +252,11 @@ class _Podium extends StatelessWidget {
                   ),
                   child: avatarUrl.isNotEmpty
                       ? ClipOval(
-                          child: Image.network(
-                            avatarUrl,
+                          child: CachedNetworkImage(
+                            cacheManager: DDImageCache.manager,
+                            imageUrl: avatarUrl,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) =>
+                            errorWidget: (_, __, ___) =>
                                 _Initials(name: name, color: colors[idx]),
                           ),
                         )

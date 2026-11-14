@@ -1,14 +1,18 @@
+import 'dart:async';
 import 'dart:ui';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../config/theme/dd_design.dart';
 import '../../../core/app_localizations.dart';
+import '../../../core/paged_loader.dart';
 import '../../../core/supabase_client.dart';
 import '../../../data/models/product_model.dart';
 import '../../product_detail/screens/product_detail_screen.dart';
+import '../../../core/dd_image_cache.dart';
 
 class PromotionScreen extends StatefulWidget {
   const PromotionScreen({super.key});
@@ -20,46 +24,56 @@ class PromotionScreen extends StatefulWidget {
 class _PromotionScreenState extends State<PromotionScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-  List<Map<String, dynamic>> _allProducts = [];
-  bool _isLoading = true;
+  Timer? _searchDebounce;
+
+  // Алгач 25 товар, астыга scroll кылганда дагы 25 (серверден).
+  late final PagedLoader<Map<String, dynamic>> _pager =
+      PagedLoader<Map<String, dynamic>>(
+    fetchPage: _fetchPage,
+    idOf: (row) => row['id'],
+  );
+
+  void _notify() {
+    if (mounted) setState(() {});
+  }
 
   @override
   void initState() {
     super.initState();
-    _loadPromos();
+    _pager.refresh(_notify);
   }
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadPromos() async {
-    setState(() => _isLoading = true);
-    try {
-      final rows = await supabase
-          .from('products')
-          .select('*, stores(store_name, owner_id)')
-          .eq('has_promotion', true);
-      setState(() {
-        _allProducts = (rows as List)
-            .map((r) => Map<String, dynamic>.from(r as Map))
-            .toList();
-        _isLoading = false;
-      });
-    } catch (_) {
-      setState(() => _isLoading = false);
-    }
+  Future<List<Map<String, dynamic>>> _fetchPage(int from, int to) async {
+    var query = supabase
+        .from('products')
+        .select('*, stores(store_name, owner_id)')
+        .eq('has_promotion', true);
+    final q = _searchQuery.trim();
+    if (q.isNotEmpty) query = query.ilike('title', ilikePattern(q));
+    final rows = await query
+        .order('created_at', ascending: false)
+        .order('id', ascending: true)
+        .range(from, to);
+    return (rows as List)
+        .map((r) => Map<String, dynamic>.from(r as Map))
+        .toList();
   }
 
-  List<Map<String, dynamic>> get _filtered {
-    if (_searchQuery.isEmpty) return _allProducts;
-    return _allProducts
-        .where((p) => (p['title'] as String? ?? '')
-            .toLowerCase()
-            .contains(_searchQuery.toLowerCase()))
-        .toList();
+  Future<void> _loadPromos() => _pager.refresh(_notify);
+
+  // Издөө серверде жүрөт — бардык акция товарларынан издейт,
+  // жүктөлгөн 25тен гана эмес.
+  void _onSearchChanged(String v) {
+    setState(() => _searchQuery = v);
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 350), _loadPromos);
   }
 
   @override
@@ -69,7 +83,8 @@ class _PromotionScreenState extends State<PromotionScreen> {
     final isDark = p.isDark;
     final bgColor = p.bg;
     final inputBg = p.field;
-    final filtered = _filtered;
+    final filtered = _pager.items;
+    final isFirstLoad = _pager.isLoading && filtered.isEmpty;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -158,7 +173,7 @@ class _PromotionScreenState extends State<PromotionScreen> {
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
             child: TextField(
               controller: _searchController,
-              onChanged: (v) => setState(() => _searchQuery = v),
+              onChanged: _onSearchChanged,
               decoration: InputDecoration(
                 hintText: loc.get('promo_search_hint'),
                 hintStyle: AppTextStyles.bodyMedium,
@@ -168,7 +183,7 @@ class _PromotionScreenState extends State<PromotionScreen> {
                     ? GestureDetector(
                         onTap: () {
                           _searchController.clear();
-                          setState(() => _searchQuery = '');
+                          _onSearchChanged('');
                         },
                         child: const Icon(Icons.close_rounded,
                             color: AppColors.grey400),
@@ -189,12 +204,13 @@ class _PromotionScreenState extends State<PromotionScreen> {
             ),
           ),
 
-          if (_searchQuery.isNotEmpty)
+          if (_searchQuery.isNotEmpty && !isFirstLoad)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: Text('${filtered.length} ${loc.get('promo_found')}',
+                child: Text(
+                    '${filtered.length}${_pager.hasMore ? '+' : ''} ${loc.get('promo_found')}',
                     style: AppTextStyles.bodySmall),
               ),
             ),
@@ -202,7 +218,7 @@ class _PromotionScreenState extends State<PromotionScreen> {
           const SizedBox(height: 8),
 
           Expanded(
-            child: _isLoading
+            child: isFirstLoad || !_pager.loadedOnce
                 ? const Center(
                     child: CircularProgressIndicator(color: AppColors.primary))
                 : filtered.isEmpty
@@ -213,7 +229,7 @@ class _PromotionScreenState extends State<PromotionScreen> {
                             const Text('😔', style: TextStyle(fontSize: 48)),
                             const SizedBox(height: 12),
                             Text(
-                              _allProducts.isEmpty
+                              _searchQuery.trim().isEmpty
                                   ? loc.get('promo_empty')
                                   : loc.get('promo_not_found'),
                               style: AppTextStyles.bodyMedium,
@@ -224,18 +240,44 @@ class _PromotionScreenState extends State<PromotionScreen> {
                     : RefreshIndicator(
                         onRefresh: _loadPromos,
                         color: AppColors.primary,
-                        child: GridView.builder(
-                          padding: const EdgeInsets.fromLTRB(12, 4, 12, 2),
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 10,
-                            mainAxisSpacing: 10,
-                            childAspectRatio: 0.68,
+                        child: NotificationListener<ScrollNotification>(
+                          onNotification: (n) {
+                            if (PagedLoader.nearEnd(n)) {
+                              _pager.loadMore(_notify);
+                            }
+                            return false;
+                          },
+                          child: CustomScrollView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            slivers: [
+                              SliverPadding(
+                                padding:
+                                    const EdgeInsets.fromLTRB(12, 4, 12, 2),
+                                sliver: SliverGrid(
+                                  gridDelegate:
+                                      const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 2,
+                                    crossAxisSpacing: 10,
+                                    mainAxisSpacing: 10,
+                                    childAspectRatio: 0.68,
+                                  ),
+                                  delegate: SliverChildBuilderDelegate(
+                                    (context, i) => _PromoCard(
+                                      key: ValueKey(filtered[i]['id']),
+                                      product: filtered[i],
+                                    ),
+                                    childCount: filtered.length,
+                                  ),
+                                ),
+                              ),
+                              SliverToBoxAdapter(
+                                child: PagedFooter(
+                                  visible: _pager.isLoadingMore,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ],
                           ),
-                          itemCount: filtered.length,
-                          itemBuilder: (context, i) =>
-                              _PromoCard(product: filtered[i]),
                         ),
                       ),
           ),
@@ -247,7 +289,7 @@ class _PromotionScreenState extends State<PromotionScreen> {
 
 class _PromoCard extends StatelessWidget {
   final Map<String, dynamic> product;
-  const _PromoCard({required this.product});
+  const _PromoCard({super.key, required this.product});
 
   @override
   Widget build(BuildContext context) {
@@ -332,12 +374,13 @@ class _PromoCard extends StatelessWidget {
                         borderRadius: const BorderRadius.vertical(
                             top: Radius.circular(20)),
                         child: imageUrl.isNotEmpty
-                            ? Image.network(
-                                imageUrl,
+                            ? CachedNetworkImage(
+                                cacheManager: DDImageCache.manager,
+                                imageUrl: imageUrl,
                                 height: 150,
                                 width: double.infinity,
                                 fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Container(
+                                errorWidget: (_, __, ___) => Container(
                                   height: 150,
                                   decoration: BoxDecoration(
                                     gradient: LinearGradient(

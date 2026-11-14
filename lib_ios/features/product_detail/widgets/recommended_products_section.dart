@@ -8,6 +8,7 @@ import '../../../config/theme/app_text_styles.dart';
 import '../../../core/app_localizations.dart';
 import '../../../core/supabase_client.dart';
 import '../../../data/models/product_model.dart';
+import '../../../core/dd_image_cache.dart';
 
 String _thumbUrl(String url, {int width = 480}) {
   if (url.isEmpty) return url;
@@ -17,15 +18,18 @@ String _thumbUrl(String url, {int width = 480}) {
 
 /// «Сунушталгандар» — "Окшош товарлар" бүткөндөн кийин чыгат.
 /// Категориясына карабай, БАРДЫК товарлардан аралаштырылган тизме.
-/// Бир жолу жүктөлөт — андан ары чексиз "жүктөлүп" тура бербейт.
+/// Scroll астына жакындаганда автоматтык 20+20 pagination.
 class RecommendedProductsSection extends StatefulWidget {
   final String currentProductId;
   final Widget Function(ProductModel product)? productBuilder;
+  /// Сырткы ScrollController — scroll астына жакындаганда дагы жүктөйт
+  final ScrollController? scrollController;
 
   const RecommendedProductsSection({
     super.key,
     required this.currentProductId,
     this.productBuilder,
+    this.scrollController,
   });
 
   @override
@@ -37,15 +41,53 @@ class _RecommendedProductsSectionState
     extends State<RecommendedProductsSection> {
   final List<ProductModel> _products = [];
   bool _loading = true;
+  bool _loadingMore = false;
   final _rnd = Random();
-  static const int _maxItems = 35;
-  static const int _initialShow = 6;
-  int _showCount = _initialShow;
+
+  static const int _pageSize = 20; // Бир жолу 20 товар
+  static const int _maxFetch = 60; // Суpabaseдан максималдуу
+
+  int _showCount = _pageSize; // Азырынча канча товар көрсөтүлөт
 
   @override
   void initState() {
     super.initState();
     _load();
+    // Сырткы ScrollController бар болсо — scroll listener кошобуз
+    widget.scrollController?.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    widget.scrollController?.removeListener(_onScroll);
+    super.dispose();
+  }
+
+  /// Scroll астына жакындаганда дагы 20 товар кошот
+  void _onScroll() {
+    final sc = widget.scrollController;
+    if (sc == null || !sc.hasClients) return;
+    // Баракчанын астынан 300px калганда — дагы жүктөйт
+    final nearBottom = sc.position.pixels >= sc.position.maxScrollExtent - 300;
+    if (nearBottom && !_loadingMore && _showCount < _products.length) {
+      _showMore();
+    }
+  }
+
+  /// Дагы 20 товар көрсөт
+  void _showMore() {
+    if (_loadingMore) return;
+    setState(() {
+      _loadingMore = true;
+    });
+    Future.delayed(const Duration(milliseconds: 150), () {
+      if (mounted) {
+        setState(() {
+          _showCount = (_showCount + _pageSize).clamp(0, _products.length);
+          _loadingMore = false;
+        });
+      }
+    });
   }
 
   Future<void> _load() async {
@@ -56,7 +98,7 @@ class _RecommendedProductsSectionState
           .eq('is_active', true)
           .neq('id', widget.currentProductId)
           .order('created_at', ascending: false)
-          .limit(35);
+          .limit(_maxFetch);
 
       final list = (data as List)
           .cast<Map<String, dynamic>>()
@@ -68,7 +110,7 @@ class _RecommendedProductsSectionState
         setState(() {
           _products
             ..clear()
-            ..addAll(list.take(_maxItems));
+            ..addAll(list.take(_maxFetch));
         });
       }
     } catch (e) {
@@ -84,6 +126,7 @@ class _RecommendedProductsSectionState
 
     final loc = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final visibleCount = _showCount.clamp(0, _products.length);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -124,7 +167,7 @@ class _RecommendedProductsSectionState
             child: GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: _showCount.clamp(0, _products.length),
+              itemCount: visibleCount,
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
                 mainAxisSpacing: 10,
@@ -139,21 +182,22 @@ class _RecommendedProductsSectionState
               ),
             ),
           ),
-          // ── "Дагы көрсөтүү" баскычы ──
-          if (_products.length > _showCount)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
+          // ── Дагы жүктөлүп жатат индикатор (scroll кылганда) ──
+          if (_loadingMore)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
               child: Center(
-                child: TextButton(
-                  onPressed: () => setState(() => _showCount += 12),
-                  child: Text(
-                    loc.locale.languageCode == 'ru' ? 'Показать ещё' : 'Дагы көрсөтүү',
-                    style: const TextStyle(color: AppColors.primary, fontSize: 15),
+                child: SizedBox(
+                  width: 20, height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.primary,
                   ),
                 ),
               ),
             ),
         ],
+        const SizedBox(height: 16),
       ],
     );
   }
@@ -208,6 +252,7 @@ class _RecommendedCard extends StatelessWidget {
                 fit: StackFit.expand,
                 children: [
                   CachedNetworkImage(
+                    cacheManager: DDImageCache.manager,
                     imageUrl: _thumbUrl(product.imageUrl),
                     fit: BoxFit.cover,
                     fadeInDuration: const Duration(milliseconds: 120),
