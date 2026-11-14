@@ -31,11 +31,13 @@ class FilterOptions {
 class FilterBottomSheet extends StatefulWidget {
   final FilterOptions initialOptions;
   final Function(FilterOptions) onApply;
+  final ScrollController? scrollController;
 
   const FilterBottomSheet({
     super.key,
     required this.initialOptions,
     required this.onApply,
+    this.scrollController,
   });
 
   static Future<void> show(
@@ -47,9 +49,18 @@ class FilterBottomSheet extends StatefulWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => FilterBottomSheet(
-        initialOptions: initialOptions,
-        onApply: onApply,
+      useSafeArea: false,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.80,
+        minChildSize: 0.30,
+        maxChildSize: 0.95,
+        snap: true,
+        snapSizes: const [0.30, 0.80, 0.95],
+        builder: (context, scrollController) => FilterBottomSheet(
+          initialOptions: initialOptions,
+          onApply: onApply,
+          scrollController: scrollController,
+        ),
       ),
     );
   }
@@ -81,8 +92,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
   void initState() {
     super.initState();
     _priceRange = widget.initialOptions.priceRange;
-    _minCtrl =
-        TextEditingController(text: _priceRange.start.toInt().toString());
+    _minCtrl = TextEditingController(text: _priceRange.start.toInt().toString());
     _maxCtrl = TextEditingController(text: _priceRange.end.toInt().toString());
     _selectedSizes = List.from(widget.initialOptions.selectedSizes);
     _sortBy = widget.initialOptions.sortBy;
@@ -159,8 +169,8 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
           border: InputBorder.none,
           enabledBorder: InputBorder.none,
           focusedBorder: InputBorder.none,
-          filled: true, // ← КОШ
-          fillColor: Colors.transparent, // ← КОШ
+          filled: true,
+          fillColor: Colors.transparent,
           isDense: true,
           contentPadding: const EdgeInsets.symmetric(vertical: 12),
         ),
@@ -173,7 +183,6 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
     final loc = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // ── Размытие фон үчүн жарым өткөрүмдүү түстөр ──
     final bgColor = isDark
         ? Colors.black.withOpacity(0.55)
         : Colors.white.withOpacity(0.65);
@@ -196,12 +205,13 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
         child: Container(
+          height: double.infinity,
           decoration: BoxDecoration(
             color: bgColor,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisSize: MainAxisSize.max,
             children: [
               // ── Жогорку сызык ──
               Container(
@@ -261,8 +271,10 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
 
               Divider(color: dividerColor, height: 24),
 
-              Flexible(
+              // ── Скроллдолуучу мазмун ──
+              Expanded(
                 child: SingleChildScrollView(
+                  controller: widget.scrollController,
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -299,8 +311,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                           inactiveTrackColor:
                               AppColors.primary.withOpacity(0.15),
                           thumbColor: AppColors.primary,
-                          overlayColor:
-                              AppColors.primary.withOpacity(0.12),
+                          overlayColor: AppColors.primary.withOpacity(0.12),
                           trackHeight: 4,
                         ),
                         child: RangeSlider(
@@ -337,7 +348,8 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                             ),
                           ),
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 10),
                             child: Text('—',
                                 style: AppTextStyles.bodyMedium
                                     .copyWith(color: textColor)),
@@ -467,8 +479,9 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                                 child: Text(
                                   size,
                                   style: AppTextStyles.labelLarge.copyWith(
-                                    color:
-                                        isSelected ? Colors.white : textColor,
+                                    color: isSelected
+                                        ? Colors.white
+                                        : textColor,
                                   ),
                                 ),
                               ),

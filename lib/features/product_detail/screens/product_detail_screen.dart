@@ -18,6 +18,7 @@ import '../../../core/supabase_client.dart';
 import '../../../core/utils/favorites_manager.dart';
 import '../../../core/utils/image_utils.dart';
 import '../../../data/models/product_model.dart';
+import '../../seller/widgets/working_hours_sheet.dart';
 import '../../chat/screens/chat_screen.dart';
 import '../../chat/services/chat_service.dart';
 import '../../store/screens/store_products_screen.dart';
@@ -368,6 +369,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
 
   bool _isOpenNow() {
     if (_workStart.isEmpty || _workEnd.isEmpty) return false;
+    if (_workDays.isNotEmpty &&
+        !WorkingHoursSheet.parseDays(_workDays)
+            .contains(DateTime.now().weekday - 1)) {
+      return false;
+    }
     final now = TimeOfDay.now();
     TimeOfDay parse(String t) {
       final p = t.split(':');

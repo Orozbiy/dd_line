@@ -10,6 +10,8 @@ import '../../../data/models/product_model.dart';
 import '../../admin/screens/admin_login_screen.dart';
 import '../../chat/screens/chat_list_screen.dart';
 import '../../seller/screens/seller_entrance_screen.dart';
+import '../../seller/screens/seller_dashboard_screen.dart';
+import '../../../core/seller_session_service.dart';
 import '../../notifications/screens/notifications_screen.dart';
 import '../utils/product_repository.dart';
 import '../widgets/category_list.dart';
@@ -805,12 +807,20 @@ if (_isSearchMode || _isNearbyMode ||
                               children: [
                                 // Дүкөн баскычы
                                 GestureDetector(
-                                  onTap: () => Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                              builder: (_) =>
-                                                  const SellerEntranceScreen()))
-                                      .then((_) => setState(() {})),
+                                  onTap: () async {
+                                    final uid = await SellerSessionService.instance.getSavedUid();
+                                    if (!context.mounted) return;
+                                    if (uid != null && uid.isNotEmpty) {
+                                      await Navigator.push(context, MaterialPageRoute(
+                                        builder: (_) => SellerDashboardScreen(uid: uid),
+                                      ));
+                                    } else {
+                                      await Navigator.push(context, MaterialPageRoute(
+                                        builder: (_) => const SellerEntranceScreen(),
+                                      ));
+                                    }
+                                    if (mounted) setState(() {});
+                                  },
                                   child: Container(
                                     margin:
                                         const EdgeInsets.fromLTRB(8, 6, 4, 6),
