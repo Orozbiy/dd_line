@@ -1,5 +1,6 @@
-import 'dart:ui' as ui;
 import 'dart:typed_data';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 
@@ -52,37 +53,38 @@ Future<Uint8List> compressStoryImage(Uint8List bytes) async {
 Future<Uint8List> addWatermark(Uint8List bytes) async {
   final codec = await ui.instantiateImageCodec(bytes);
   final frame = await codec.getNextFrame();
-  final src   = frame.image;
+  final src = frame.image;
 
   try {
     final w = src.width.toDouble();
     final h = src.height.toDouble();
 
     final recorder = ui.PictureRecorder();
-    final canvas   = Canvas(recorder);
+    final canvas = Canvas(recorder);
     canvas.drawImage(src, Offset.zero, Paint());
 
     // Сүрөттүн өлчөмүнө жараша шрифт размерин масштабтайбыз
     // Базалык: 800px туурасы → 16px. Пропорционалдуу.
     final fontSize = (w / 800) * 16.0;
-    final margin   = w * 0.018; // оң жана ылдыйкы четтен аралык
+    final margin = w * 0.018; // оң жана ылдыйкы четтен аралык
 
     // Текст өлчөмүн алдын ала биле алмайбыз, ошон үчүн максималдуу туурасын колдонобуз
     final maxTextWidth = w * 0.5;
 
     final pb = ui.ParagraphBuilder(ui.ParagraphStyle(
-      textAlign:  TextAlign.left,
-      fontSize:   fontSize,
+      textAlign: TextAlign.left,
+      fontSize: fontSize,
       fontWeight: FontWeight.w700,
     ))
       ..pushStyle(ui.TextStyle(
-        color:         const ui.Color(0xCCFF8A00), // мандарин, 80% opacity
-        fontSize:      fontSize,
-        fontWeight:    FontWeight.w700,
+        color: const ui.Color(0xCCFF8A00), // мандарин, 80% opacity
+        fontSize: fontSize,
+        fontWeight: FontWeight.w700,
         letterSpacing: 0.3,
         shadows: [
           ui.Shadow(
-            color:  const ui.Color(0x88000000), // жеңил көлөкө — окуу оңой болсун
+            color:
+                const ui.Color(0x88000000), // жеңил көлөкө — окуу оңой болсун
             offset: ui.Offset(0.5, 0.5),
             blurRadius: 1.5,
           ),
@@ -99,17 +101,18 @@ Future<Uint8List> addWatermark(Uint8List bytes) async {
 
     canvas.drawParagraph(para, ui.Offset(tx, ty));
 
-    final picture  = recorder.endRecording();
+    final picture = recorder.endRecording();
     final finalImg = await picture.toImage(src.width, src.height);
 
     try {
-      final byteData = await finalImg.toByteData(format: ui.ImageByteFormat.png);
-      return FlutterImageCompress.compressWithList(
+      final byteData =
+          await finalImg.toByteData(format: ui.ImageByteFormat.png);
+      return await FlutterImageCompress.compressWithList(
         byteData!.buffer.asUint8List(),
-        minWidth:  src.width,
+        minWidth: src.width,
         minHeight: src.height,
-        quality:   88,
-        format:    CompressFormat.jpeg,
+        quality: 88,
+        format: CompressFormat.jpeg,
       );
     } finally {
       finalImg.dispose();

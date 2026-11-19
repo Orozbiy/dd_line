@@ -1,5 +1,6 @@
-import 'dart:ui' as ui;
 import 'dart:typed_data';
+import 'dart:ui' as ui;
+
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
@@ -58,17 +59,17 @@ Future<Uint8List> addWatermark(Uint8List bytes) async {
 
   final codec = await ui.instantiateImageCodec(bytes);
   final frame = await codec.getNextFrame();
-  final src   = frame.image;
+  final src = frame.image;
 
   try {
     final w = src.width.toDouble();
     final h = src.height.toDouble();
 
     final recorder = ui.PictureRecorder();
-    final canvas   = Canvas(recorder);
+    final canvas = Canvas(recorder);
     canvas.drawImage(src, Offset.zero, Paint());
 
-    final fontSize  = w * 0.042;
+    final fontSize = w * 0.042;
     final textColor = const Color(0x26FFFFFF);
 
     final positions = [
@@ -81,20 +82,19 @@ Future<Uint8List> addWatermark(Uint8List bytes) async {
 
     for (final pos in positions) {
       final pb = ui.ParagraphBuilder(ui.ParagraphStyle(
-        textAlign:  TextAlign.center,
-        fontSize:   fontSize,
+        textAlign: TextAlign.center,
+        fontSize: fontSize,
         fontWeight: FontWeight.bold,
       ))
         ..pushStyle(ui.TextStyle(
-          color:         textColor,
-          fontSize:      fontSize,
-          fontWeight:    FontWeight.bold,
+          color: textColor,
+          fontSize: fontSize,
+          fontWeight: FontWeight.bold,
           letterSpacing: fontSize * 0.1,
         ))
         ..addText('DD Online');
 
-      final para = pb.build()
-        ..layout(ui.ParagraphConstraints(width: w * 0.5));
+      final para = pb.build()..layout(ui.ParagraphConstraints(width: w * 0.5));
 
       canvas.save();
       canvas.translate(pos.dx, pos.dy);
@@ -106,19 +106,19 @@ Future<Uint8List> addWatermark(Uint8List bytes) async {
       canvas.restore();
     }
 
-    final picture  = recorder.endRecording();
+    final picture = recorder.endRecording();
     final finalImg = await picture.toImage(src.width, src.height);
 
     try {
       final byteData = await finalImg.toByteData(
         format: ui.ImageByteFormat.png,
       );
-      return FlutterImageCompress.compressWithList(
+      return await FlutterImageCompress.compressWithList(
         byteData!.buffer.asUint8List(),
-        minWidth:  src.width,
+        minWidth: src.width,
         minHeight: src.height,
-        quality:   88,
-        format:    CompressFormat.jpeg,
+        quality: 88,
+        format: CompressFormat.jpeg,
       );
     } finally {
       finalImg.dispose();
@@ -147,9 +147,9 @@ String toThumbUrl(String url, {int width = 400}) {
     final uri = Uri.tryParse(url);
     if (uri != null) {
       final params = Map<String, String>.from(uri.queryParameters);
-      params['width']   = width.toString();
+      params['width'] = width.toString();
       params['quality'] = '80';
-      params['resize']  = 'cover';
+      params['resize'] = 'cover';
       return uri.replace(queryParameters: params).toString();
     }
   }
