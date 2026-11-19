@@ -1,0 +1,108 @@
+{
+  "project_info": {
+    "project_number": "1069640136187",
+    "project_id": "dd-online-web",
+    "storage_bucket": "dd-online-web.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1069640136187:android:05b350390e38255b9ac75e",
+        "android_client_info": {
+          "package_name": "com.ddonline.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1069640136187-jvgme6np3nso9kmvjpcsbb58f4mnod3p.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ddonline.app",
+            "certificate_hash": "1a31077bea49762fa0f66187daf2a33d10c5807f"
+          }
+        },
+        {
+          "client_id": "1069640136187-k1hsm5e4nhupp3bahkiqtfd1v6cggq4h.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ddonline.app",
+            "certificate_hash": "b96c9c5f6b00af000dfc2dd4c5ef75c1c3f5afe2"
+          }
+        },
+        {
+          "client_id": "1069640136187-qq0q9ab40vrr8ib5859ggh2vto03mfil.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ddonline.app",
+            "certificate_hash": "087023a411fa873869713421159017a3db854620"
+          }
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCdk-9EaMFpf-gMe6bfXpbpgDKpZ6ox4KY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1069640136187-9kort80iuekr1jqj2rdd64m8ntug04uj.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1069640136187-p2h2jr2tmp3gge61ahe9dt360i1j876k.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.ddonline.app",
+                "app_store_id": "6830260768"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1069640136187:android:b15cfe9a1296c2c59ac75e",
+        "android_client_info": {
+          "package_name": "com.example.dd_online"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1069640136187-93qgka15u2e415s20431kmk9jako2smo.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.dd_online",
+            "certificate_hash": "087023a411fa873869713421159017a3db854620"
+          }
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCdk-9EaMFpf-gMe6bfXpbpgDKpZ6ox4KY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1069640136187-9kort80iuekr1jqj2rdd64m8ntug04uj.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1069640136187-p2h2jr2tmp3gge61ahe9dt360i1j876k.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.ddonline.app",
+                "app_store_id": "6830260768"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
