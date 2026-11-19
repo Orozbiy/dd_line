@@ -3,7 +3,7 @@ description: "Дордойдогу интерактивдүү онлайн ба�
 
 publish_to: 'none'
 
-version: 1.0.3+34
+version: 1.0.4+39
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -31,7 +31,6 @@ dependencies:
   http: ^1.2.0
   firebase_messaging: ^16.3.0
   flutter_local_notifications: ^18.0.0
-  googleapis_auth: ^1.4.1
   flutter_image_compress: ^2.2.0
   geolocator: ^13.0.0
   permission_handler: ^11.3.0
@@ -60,7 +59,7 @@ flutter_launcher_icons:
 flutter:
   uses-material-design: true
   assets:
-    
+
     - assets/icon/
     - assets/icons/
     - assets/icons/nav/
