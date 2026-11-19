@@ -1,20 +1,37 @@
-import 'dart:convert';
+import 'dart:io';
+
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:googleapis_auth/auth_io.dart';
-import 'package:http/http.dart' as http;
-import '../core/supabase_client.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
 import '../core/services/in_app_notification_banner.dart';
-import '../features/chat/screens/chat_screen.dart';
-import '../features/product_detail/screens/product_detail_screen.dart';
+import '../core/supabase_client.dart';
 import '../data/models/product_model.dart';
+import '../features/chat/screens/chat_screen.dart';
 import '../features/notifications/screens/notifications_screen.dart';
+import '../features/product_detail/screens/product_detail_screen.dart';
 
 // ─────────────────────────────────────────────────────────────
 // GLOBAL NAVIGATOR KEY — MaterialApp'ка берилет
 // ─────────────────────────────────────────────────────────────
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+// ─────────────────────────────────────────────────────────────
+// ANDROID NOTIFICATION CHANNEL
+// ─────────────────────────────────────────────────────────────
+const AndroidNotificationChannel _androidChannel = AndroidNotificationChannel(
+  'chat_messages',
+  'Чат билдирүүлөр',
+  description: 'Чат жана жарнама билдирүүлөр',
+  importance: Importance.high,
+  playSound: true,
+);
+
+// ─────────────────────────────────────────────────────────────
+// LOCAL NOTIFICATIONS PLUGIN
+// ─────────────────────────────────────────────────────────────
+final FlutterLocalNotificationsPlugin _localNotifications =
+    FlutterLocalNotificationsPlugin();
 
 // ─────────────────────────────────────────────────────────────
 // NOTIFICATION SERVICE
@@ -43,47 +60,84 @@ class NotificationService {
       sound: true,
     );
 
+    // ── Android: flutter_local_notifications инициализациясы ──
+    if (Platform.isAndroid) {
+      const AndroidInitializationSettings initAndroid =
+          AndroidInitializationSettings('@drawable/ic_notification');
+      const InitializationSettings initSettings =
+          InitializationSettings(android: initAndroid);
+
+      await _localNotifications.initialize(
+        initSettings,
+        onDidReceiveNotificationResponse: (details) {
+          if (details.payload != null && details.payload!.isNotEmpty) {
+            _handlePayload(details.payload!);
+          }
+        },
+      );
+
+      // Android 8+ — notification channel программалык түрдө түзүлөт
+      await _localNotifications
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.createNotificationChannel(_androidChannel);
+
+      debugPrint('✅ Android notification channel "chat_messages" түзүлдү');
+    }
+
     // ── Foreground message ──
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      final chatId    = message.data['chatId']    as String?;
+      final chatId = message.data['chatId'] as String?;
       final productId = message.data['productId'] as String?;
-      final type      = message.data['type']      as String? ?? 'chat_message';
+      final type = message.data['type'] as String? ?? 'chat_message';
 
-      final title = message.notification?.title
-          ?? message.data['senderName']
-          ?? 'DD Online';
-      final body  = message.notification?.body
-          ?? message.data['body']
-          ?? 'Жаңы билдирүү';
+      final title = message.notification?.title ??
+          message.data['senderName'] ??
+          'DD Online';
+      final body =
+          message.notification?.body ?? message.data['body'] ?? 'Жаңы билдирүү';
 
       String payload = '';
       if (type == 'admin_broadcast') {
         payload = 'notifications';
-      } else if (type == 'chat_message' && chatId != null && chatId.isNotEmpty) {
+      } else if (type == 'chat_message' &&
+          chatId != null &&
+          chatId.isNotEmpty) {
         payload = 'chat:$chatId';
-      } else if (type == 'price_drop' && productId != null && productId.isNotEmpty) {
+      } else if (type == 'price_drop' &&
+          productId != null &&
+          productId.isNotEmpty) {
         payload = 'product:$productId';
       } else if (chatId != null && chatId.isNotEmpty) {
         payload = 'chat:$chatId';
       }
 
-      // ✅ Веб — дайыма SnackBar
-      _showWebSnackbar(title, body, payload);
+      if (Platform.isAndroid) {
+        // ✅ Android — система heads-up notification (үстүнөн чыгат)
+        _showAndroidLocalNotification(title, body, payload);
+      } else {
+        // ✅ iOS / Веб — InAppBanner же SnackBar
+        _showWebSnackbar(title, body, payload);
+      }
     });
 
     // ── Background → Foreground tap ──
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) async {
-      final chatId    = message.data['chatId']    as String?;
+      final chatId = message.data['chatId'] as String?;
       final productId = message.data['productId'] as String?;
-      final type      = message.data['type']      as String? ?? 'chat_message';
+      final type = message.data['type'] as String? ?? 'chat_message';
 
       await Future.delayed(const Duration(milliseconds: 800));
 
       if (type == 'admin_broadcast') {
         _openNotifications();
-      } else if (type == 'chat_message' && chatId != null && chatId.isNotEmpty) {
+      } else if (type == 'chat_message' &&
+          chatId != null &&
+          chatId.isNotEmpty) {
         await _navigateToChat(chatId);
-      } else if (type == 'price_drop' && productId != null && productId.isNotEmpty) {
+      } else if (type == 'price_drop' &&
+          productId != null &&
+          productId.isNotEmpty) {
         await navigateToProductPublic(productId);
       } else if (chatId != null && chatId.isNotEmpty) {
         await _navigateToChat(chatId);
@@ -96,16 +150,46 @@ class NotificationService {
   Future<void> handleInitialMessage() async {
     final message = await FirebaseMessaging.instance.getInitialMessage();
     if (message == null) return;
-    final chatId    = message.data['chatId']    as String?;
+    final chatId = message.data['chatId'] as String?;
     final productId = message.data['productId'] as String?;
-    final type      = message.data['type']      as String? ?? 'chat_message';
+    final type = message.data['type'] as String? ?? 'chat_message';
     await Future.delayed(const Duration(milliseconds: 1000));
     if (type == 'admin_broadcast') {
       _openNotifications();
-    } else if (type == 'price_drop' && productId != null && productId.isNotEmpty) {
+    } else if (type == 'price_drop' &&
+        productId != null &&
+        productId.isNotEmpty) {
       await navigateToProductPublic(productId);
     } else if (chatId != null && chatId.isNotEmpty) {
       await _navigateToChat(chatId);
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // ANDROID: Flutter Local Notification (foreground системалык popup)
+  // ─────────────────────────────────────────────────────────────
+  Future<void> _showAndroidLocalNotification(
+      String title, String body, String payload) async {
+    try {
+      await _localNotifications.show(
+        DateTime.now().millisecondsSinceEpoch & 0x7FFFFFFF,
+        title,
+        body,
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'chat_messages',
+            'Чат билдирүүлөр',
+            channelDescription: 'Чат жана жарнама билдирүүлөр',
+            importance: Importance.high,
+            priority: Priority.high,
+            playSound: true,
+            icon: '@drawable/ic_notification',
+          ),
+        ),
+        payload: payload,
+      );
+    } catch (e) {
+      debugPrint('⚠️ Android local notification ката: $e');
     }
   }
 
@@ -201,102 +285,101 @@ class NotificationService {
   // NAVIGATE TO CHAT
   // ─────────────────────────────────────────────────────────────
   Future<void> _navigateToChat(String chatId) async {
-  BuildContext? context;
-  for (int i = 0; i < 20; i++) {
-    context = navigatorKey.currentContext;
-    if (context != null) break;
-    await Future.delayed(const Duration(milliseconds: 200));
-  }
+    BuildContext? context;
+    for (int i = 0; i < 20; i++) {
+      context = navigatorKey.currentContext;
+      if (context != null) break;
+      await Future.delayed(const Duration(milliseconds: 200));
+    }
 
-  if (context == null) {
-    NotificationService.pendingChatId = chatId;
-    return;
-  }
-
-  try {
-    final user = supabase.auth.currentUser;
-    if (user == null) {
+    if (context == null) {
       NotificationService.pendingChatId = chatId;
       return;
     }
 
-    // ✅ seller_name жок — stores'тен алабыз
-    final row = await supabase
-        .from('chats')
-        .select('id, seller_id, buyer_id, product_id')
-        .eq('id', chatId)
-        .maybeSingle();
-
-    if (row == null) return;
-
-    final isSeller  = row['seller_id'] == user.id;
-    final sellerId  = row['seller_id'] as String? ?? '';
-
-    // ✅ seller_name — stores таблицасынан
-    String sellerName = 'Сатуучу';
     try {
-      final store = await supabase
-          .from('stores')
-          .select('store_name')
-          .eq('owner_id', sellerId)
-          .maybeSingle();
-      sellerName = store?['store_name'] as String? ?? 'Сатуучу';
-    } catch (_) {}
+      final user = supabase.auth.currentUser;
+      if (user == null) {
+        NotificationService.pendingChatId = chatId;
+        return;
+      }
 
-    String productName  = '';
-    String productImage = '';
-    final productId = row['product_id'] as String?;
-    if (productId != null) {
+      // ✅ seller_name жок — stores'тен алабыз
+      final row = await supabase
+          .from('chats')
+          .select('id, seller_id, buyer_id, product_id')
+          .eq('id', chatId)
+          .maybeSingle();
+
+      if (row == null) return;
+
+      final isSeller = row['seller_id'] == user.id;
+      final sellerId = row['seller_id'] as String? ?? '';
+
+      // ✅ seller_name — stores таблицасынан
+      String sellerName = 'Сатуучу';
       try {
-        final product = await supabase
-            .from('products')
-            .select('title, images')
-            .eq('id', productId)
+        final store = await supabase
+            .from('stores')
+            .select('store_name')
+            .eq('owner_id', sellerId)
             .maybeSingle();
-        if (product != null) {
-          productName  = product['title'] as String? ?? '';
-          final images = product['images'] as List?;
-          productImage = (images != null && images.isNotEmpty)
-              ? images.first as String
-              : '';
-        }
+        sellerName = store?['store_name'] as String? ?? 'Сатуучу';
       } catch (_) {}
-    }
 
-    String otherAvatarUrl = '';
-    final otherUserId = isSeller
-        ? row['buyer_id']  as String? ?? ''
-        : sellerId;
-    try {
-      final profile = await supabase
-          .from('profiles')
-          .select('avatar_url')
-          .eq('id', otherUserId)
-          .maybeSingle();
-      otherAvatarUrl = profile?['avatar_url'] as String? ?? '';
-    } catch (_) {}
+      String productName = '';
+      String productImage = '';
+      final productId = row['product_id'] as String?;
+      if (productId != null) {
+        try {
+          final product = await supabase
+              .from('products')
+              .select('title, images')
+              .eq('id', productId)
+              .maybeSingle();
+          if (product != null) {
+            productName = product['title'] as String? ?? '';
+            final images = product['images'] as List?;
+            productImage = (images != null && images.isNotEmpty)
+                ? images.first as String
+                : '';
+          }
+        } catch (_) {}
+      }
 
-    context = navigatorKey.currentContext;
-    if (context == null || !context.mounted) return;
+      String otherAvatarUrl = '';
+      final otherUserId =
+          isSeller ? row['buyer_id'] as String? ?? '' : sellerId;
+      try {
+        final profile = await supabase
+            .from('profiles')
+            .select('avatar_url')
+            .eq('id', otherUserId)
+            .maybeSingle();
+        otherAvatarUrl = profile?['avatar_url'] as String? ?? '';
+      } catch (_) {}
 
-    Navigator.of(context, rootNavigator: true).push(
-      MaterialPageRoute(
-        builder: (_) => _ChatScreenProxy(
-          chatId:         chatId,
-          sellerName:     sellerName,
-          productName:    productName,
-          productImage:   productImage,
-          isSeller:       isSeller,
-          buyerId:        row['buyer_id']  as String? ?? '',
-          sellerId:       sellerId,
-          otherAvatarUrl: otherAvatarUrl,
+      context = navigatorKey.currentContext;
+      if (context == null || !context.mounted) return;
+
+      Navigator.of(context, rootNavigator: true).push(
+        MaterialPageRoute(
+          builder: (_) => _ChatScreenProxy(
+            chatId: chatId,
+            sellerName: sellerName,
+            productName: productName,
+            productImage: productImage,
+            isSeller: isSeller,
+            buyerId: row['buyer_id'] as String? ?? '',
+            sellerId: sellerId,
+            otherAvatarUrl: otherAvatarUrl,
+          ),
         ),
-      ),
-    );
-  } catch (e) {
-    debugPrint('❌ _navigateToChat ката: $e');
+      );
+    } catch (e) {
+      debugPrint('❌ _navigateToChat ката: $e');
+    }
   }
-}
 
   // ─────────────────────────────────────────────────────────────
   // NAVIGATE TO PRODUCT
@@ -329,7 +412,8 @@ class NotificationService {
       if (context == null || !context.mounted) return;
 
       Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => ProductDetailScreen(product: product)),
+        MaterialPageRoute(
+            builder: (_) => ProductDetailScreen(product: product)),
       );
     } catch (e) {
       debugPrint('❌ _navigateToProduct ката: $e');
@@ -337,7 +421,7 @@ class NotificationService {
   }
 
   // ─────────────────────────────────────────────────────────────
-  // SEND CHAT NOTIFICATION — FCM v1
+  // SEND CHAT NOTIFICATION — Supabase Edge Function аркылуу
   // ─────────────────────────────────────────────────────────────
   Future<void> sendChatNotification({
     required String receiverUid,
@@ -346,55 +430,18 @@ class NotificationService {
     required String chatId,
   }) async {
     try {
-      final tokenRow = await supabase
-          .from('push_tokens')
-          .select('token')
-          .eq('user_id', receiverUid)
-          .order('updated_at', ascending: false)
-          .limit(1)
-          .maybeSingle();
-
-      final fcmToken = tokenRow?['token'] as String?;
-      if (fcmToken == null || fcmToken.isEmpty) return;
-
-      final accessToken = await _getAccessToken();
-      if (accessToken == null) return;
-
-      const projectId = 'dd-online-web';
-      const url =
-          'https://fcm.googleapis.com/v1/projects/$projectId/messages:send';
-
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {
-          'Authorization': 'Bearer $accessToken',
-          'Content-Type':  'application/json',
+      final response = await supabase.functions.invoke(
+        'send-push',
+        body: {
+          'receiver_uid': receiverUid,
+          'title': senderName,
+          'body': messageText,
+          'chat_id': chatId,
         },
-        body: jsonEncode({
-          'message': {
-            'token': fcmToken,
-            'notification': {'title': senderName, 'body': messageText},
-            'webpush': {
-              'notification': {
-                'title': senderName,
-                'body':  messageText,
-                'icon':  '/icons/Icon-192.png',
-              },
-              'fcm_options': {'link': '/'},
-            },
-            'data': {
-              'chatId':     chatId,
-              'type':       'chat_message',
-              'senderName': senderName,
-              'title':      senderName,
-              'body':       messageText,
-            },
-          },
-        }),
       );
 
-      if (response.statusCode != 200) {
-        debugPrint('❌ FCM ката: ${response.statusCode} — ${response.body}');
+      if (response.status != 200) {
+        debugPrint('❌ send-push ката: ${response.status} — ${response.data}');
       }
     } catch (e) {
       debugPrint('❌ sendChatNotification ката: $e');
@@ -402,60 +449,42 @@ class NotificationService {
   }
 
   // ─────────────────────────────────────────────────────────────
-  // BROADCAST
+  // BROADCAST — Supabase Edge Function аркылуу
   // ─────────────────────────────────────────────────────────────
   Future<int> sendBroadcastNotification({
     required String title,
     required String body,
   }) async {
     try {
-      final rows = await supabase.from('push_tokens').select('token');
-      final tokens = (rows as List)
-          .map((r) => r['token'] as String?)
+      // Бардык уникалдуу колдонуучуларды алабыз
+      final rows = await supabase
+          .from('push_tokens')
+          .select('user_id')
+          .order('updated_at', ascending: false);
+
+      final userIds = (rows as List)
+          .map((r) => r['user_id'] as String?)
           .whereType<String>()
-          .where((t) => t.isNotEmpty)
+          .where((id) => id.isNotEmpty)
           .toSet()
           .toList();
 
-      if (tokens.isEmpty) return 0;
-
-      final accessToken = await _getAccessToken();
-      if (accessToken == null) return 0;
-
-      const projectId = 'dd-online-web';
-      const url =
-          'https://fcm.googleapis.com/v1/projects/$projectId/messages:send';
+      if (userIds.isEmpty) return 0;
 
       int successCount = 0;
-      for (final token in tokens) {
+      for (final uid in userIds) {
         try {
-          final response = await http.post(
-            Uri.parse(url),
-            headers: {
-              'Authorization': 'Bearer $accessToken',
-              'Content-Type':  'application/json',
+          final response = await supabase.functions.invoke(
+            'send-push',
+            body: {
+              'receiver_uid': uid,
+              'title': title,
+              'body': body,
+              'chat_id': '',
             },
-            body: jsonEncode({
-              'message': {
-                'token': token,
-                'notification': {'title': title, 'body': body},
-                'webpush': {
-                  'notification': {
-                    'title': title,
-                    'body':  body,
-                    'icon':  '/icons/Icon-192.png',
-                  },
-                },
-                'data': {'type': 'admin_broadcast', 'title': title, 'body': body},
-              },
-            }),
           );
-          if (response.statusCode == 200) {
+          if (response.status == 200) {
             successCount++;
-          } else if (response.statusCode == 404 ||
-              response.body.contains('UNREGISTERED') ||
-              response.body.contains('INVALID_ARGUMENT')) {
-            await supabase.from('push_tokens').delete().eq('token', token);
           }
         } catch (_) {}
       }
@@ -470,6 +499,14 @@ class NotificationService {
   // TEST NOTIFICATION
   // ─────────────────────────────────────────────────────────────
   Future<void> showTestNotification() async {
+    if (Platform.isAndroid) {
+      await _showAndroidLocalNotification(
+        'DD Online 🛍️',
+        'Уведомления иштеп жатат!',
+        '',
+      );
+      return;
+    }
     final context = navigatorKey.currentContext;
     if (context == null) return;
     InAppNotificationBanner.show(
@@ -485,31 +522,31 @@ class NotificationService {
   // FCM TOKEN
   // ─────────────────────────────────────────────────────────────
   Future<void> saveMyToken() async {
-  try {
-    final user = supabase.auth.currentUser;
-    if (user == null) return;
+    try {
+      final user = supabase.auth.currentUser;
+      if (user == null) return;
 
-    final token = await _messaging.getToken();
+      final token = await _messaging.getToken();
 
-    if (token == null) return;
+      if (token == null) return;
 
-    debugPrint('💾 FCM Token сакталууда...');
+      debugPrint('💾 FCM Token сакталууда...');
 
-    await supabase.from('push_tokens').upsert(
-      {
-        'user_id':    user.id,
-        'token':      token,
-        'platform':   'mobile',
-        'updated_at': DateTime.now().toIso8601String(),
-      },
-      onConflict: 'user_id',
-    );
+      await supabase.from('push_tokens').upsert(
+        {
+          'user_id': user.id,
+          'token': token,
+          'platform': 'android',
+          'updated_at': DateTime.now().toIso8601String(),
+        },
+        onConflict: 'user_id,platform',
+      );
 
-    debugPrint('✅ FCM Token сакталды: ${token.substring(0, 20)}...');
-  } catch (e) {
-    debugPrint('❌ saveMyToken ката: $e');
+      debugPrint('✅ FCM Token сакталды: ${token.substring(0, 20)}...');
+    } catch (e) {
+      debugPrint('❌ saveMyToken ката: $e');
+    }
   }
-}
 
   Future<void> clearMyToken() async {
     try {
@@ -518,25 +555,6 @@ class NotificationService {
       await supabase.from('push_tokens').delete().eq('user_id', user.id);
     } catch (e) {
       debugPrint('❌ clearMyToken ката: $e');
-    }
-  }
-
-  // ─────────────────────────────────────────────────────────────
-  // ACCESS TOKEN
-  // ─────────────────────────────────────────────────────────────
-  Future<String?> _getAccessToken() async {
-    try {
-      final jsonString = await rootBundle.loadString('service_account.json');
-      final json       = jsonDecode(jsonString);
-      final creds      = ServiceAccountCredentials.fromJson(json);
-      final scopes     = ['https://www.googleapis.com/auth/firebase.messaging'];
-      final client     = await clientViaServiceAccount(creds, scopes);
-      final token      = client.credentials.accessToken.data;
-      client.close();
-      return token;
-    } catch (e) {
-      debugPrint('❌ _getAccessToken ката: $e');
-      return null;
     }
   }
 }
@@ -549,7 +567,7 @@ class _ChatScreenProxy extends StatelessWidget {
   final String sellerName;
   final String productName;
   final String productImage;
-  final bool   isSeller;
+  final bool isSeller;
   final String buyerId;
   final String sellerId;
   final String otherAvatarUrl;
@@ -568,13 +586,13 @@ class _ChatScreenProxy extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChatScreen(
-      chatId:         chatId,
-      sellerName:     sellerName,
-      productName:    productName,
-      productImage:   productImage,
-      isSeller:       isSeller,
-      buyerId:        buyerId,
-      sellerId:       sellerId,
+      chatId: chatId,
+      sellerName: sellerName,
+      productName: productName,
+      productImage: productImage,
+      isSeller: isSeller,
+      buyerId: buyerId,
+      sellerId: sellerId,
       otherAvatarUrl: otherAvatarUrl,
     );
   }

@@ -1,41 +1,40 @@
 import 'dart:async';
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../config/theme/dd_design.dart';
 import '../../../core/app_localizations.dart';
+import '../../../core/seller_session_service.dart';
+import '../../../core/supabase_client.dart';
 import '../../../core/utils/favorites_manager.dart';
 import '../../../data/models/product_model.dart';
 import '../../admin/screens/admin_login_screen.dart';
+import '../../chat/models/chat_model.dart';
 import '../../chat/screens/chat_list_screen.dart';
-import '../../seller/screens/seller_entrance_screen.dart';
-import '../../seller/screens/seller_dashboard_screen.dart';
-import '../../../core/seller_session_service.dart';
-import '../../notifications/screens/notifications_screen.dart';
-import '../utils/product_repository.dart';
-import '../widgets/category_list.dart';
-import '../widgets/filter_bottom_sheet.dart';
-import '../widgets/search_bar_widget.dart';
+import '../../chat/services/chat_service.dart';
 import '../../home/widgets/app_end_drawer.dart';
 import '../../map/screens/map_screen.dart';
-import '../../settings/screens/settings_screen.dart';
-import '../../chat/services/chat_service.dart';
-import '../../chat/models/chat_model.dart';
-import '../../../core/supabase_client.dart';
+import '../../notifications/screens/notifications_screen.dart';
 import '../../product_detail/screens/product_detail_screen.dart';
-import '../screens/favorites_screen.dart';
-
-import '../widgets/product_card.dart';
-import 'dart:ui';
+import '../../seller/screens/seller_dashboard_screen.dart';
+import '../../seller/screens/seller_entrance_screen.dart';
+import '../../settings/screens/settings_screen.dart';
 import '../constants/home_colors.dart';
-import '../widgets/home_bottom_nav.dart';
+import '../screens/favorites_screen.dart';
+import '../utils/product_repository.dart';
+import '../widgets/category_list.dart';
+import '../widgets/equal_height_row.dart';
+import '../widgets/filter_bottom_sheet.dart';
+import '../widgets/home_background.dart';
 // ignore: duplicate_import
 import '../widgets/home_bottom_nav.dart';
-import '../widgets/equal_height_row.dart';
-import '../widgets/home_background.dart';
-import '../../../core/update_checker.dart' show UpdateChecker;
+import '../widgets/product_card.dart';
+import '../widgets/search_bar_widget.dart';
 
 // ══════════════════════════════════════════════════════
 // TAB индекстери
@@ -78,6 +77,8 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLocating = false;
   bool _isSearchMode = false;
   Timer? _debounce;
+  final TextEditingController _searchController = TextEditingController();
+  List<ProductModel> _searchResults = [];
 
   ProductFilterMode _filterMode = ProductFilterMode.all;
 
@@ -117,7 +118,10 @@ class _HomeScreenState extends State<HomeScreen> {
     int c = 0;
     if (_filter.priceRange.start > 0 || _filter.priceRange.end < 100000) c++;
     if (_filter.selectedSizes.isNotEmpty) c++;
+    if (_filter.selectedColors.isNotEmpty) c++;
     if (_filter.sortBy != 'default') c++;
+    if (_filter.pricingType != 'all') c++;
+    if (_filter.onlyPromotion) c++;
     return c;
   }
 
@@ -134,14 +138,7 @@ class _HomeScreenState extends State<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final bottom = MediaQuery.of(context).padding.bottom;
       setState(() => _navBottomPadding = bottom > 0 ? bottom : 12);
-      _checkAppUpdate();
     });
-  }
-
-// ── Жаңы метод ──
-  Future<void> _checkAppUpdate() async {
-    final langCode = AppLocalizations.of(context).locale.languageCode;
-    await UpdateChecker.check(context, langCode);
   }
 
   // ══════════════════════════════════════════════════════
@@ -188,8 +185,10 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final userId = supabase.auth.currentUser?.id;
       if (userId == null) return;
-      final all = await supabase.from('admin_notifications').select('id')
-       .isFilter('seller_id', null);
+      final all = await supabase
+          .from('admin_notifications')
+          .select('id')
+          .isFilter('seller_id', null);
       if ((all as List).isEmpty) return;
       final allIds = all.map((r) => r['id'] as String).toSet();
       final reads = await supabase
@@ -210,6 +209,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _chatSub?.cancel();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -370,6 +370,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadNearbyProducts() async {
+    if (_searchQuery.isNotEmpty) {
+      _searchController.clear();
+      _searchQuery = '';
+      _debounce?.cancel();
+    }
     setState(() => _isLocating = true);
     final position = await ProductRepository.instance.getCurrentPosition();
     if (position == null) {
@@ -428,7 +433,6 @@ class _HomeScreenState extends State<HomeScreen> {
         _isSearchMode = true;
         _isNearbyMode = false;
         _hasMore = false;
-        _filterMode = ProductFilterMode.all;
       });
       try {
         final results = await ProductRepository.instance.searchProducts(
@@ -437,10 +441,12 @@ class _HomeScreenState extends State<HomeScreen> {
               _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
         );
         if (!mounted) return;
+        _searchResults = results;
         setState(() {
-          displayedProducts = results;
+          displayedProducts = List.from(results);
           _isLoading = false;
         });
+        _applyFilters();
       } catch (e) {
         debugPrint('❌ searchProducts: $e');
         if (!mounted) return;
@@ -456,17 +462,64 @@ class _HomeScreenState extends State<HomeScreen> {
     _searchQuery = '';
     _debounce?.cancel();
     setState(() => _isSearchMode = false);
-    _loadProducts();
+    switch (_filterMode) {
+      case ProductFilterMode.newest:
+        _loadNewest();
+        break;
+      case ProductFilterMode.popular:
+        _loadPopular();
+        break;
+      case ProductFilterMode.all:
+        _loadProducts();
+        break;
+    }
   }
 
   void _applyFilters() {
-    if (_isSearchMode) return;
-    List<ProductModel> result = List.from(allProducts);
+    List<ProductModel> source;
+    if (_isSearchMode) {
+      source = List.from(_searchResults);
+    } else {
+      source = List.from(allProducts);
+    }
+    List<ProductModel> result = source;
+
+    // Баа фильтри
     result = result
         .where((p) =>
             p.price >= _filter.priceRange.start &&
             p.price <= _filter.priceRange.end)
         .toList();
+
+    // Размер фильтри — товардын sizes тизмесинде дал келсе
+    if (_filter.selectedSizes.isNotEmpty) {
+      result = result.where((p) {
+        if (p.sizes.isEmpty) return false;
+        return _filter.selectedSizes.any((s) =>
+            p.sizes.any((ps) => ps.trim().toLowerCase() == s.trim().toLowerCase()));
+      }).toList();
+    }
+
+    // Түс фильтри — товардын colors тизмесинде дал келсе
+    if (_filter.selectedColors.isNotEmpty) {
+      result = result.where((p) {
+        if (p.colors.isEmpty) return false;
+        return _filter.selectedColors.any((c) =>
+            p.colors.any((pc) => pc.trim().toLowerCase() == c.trim().toLowerCase()));
+      }).toList();
+    }
+
+    // Дүң/чекене фильтри
+    if (_filter.pricingType != 'all') {
+      result = result.where((p) => p.pricingType == _filter.pricingType).toList();
+    }
+
+    // Акция фильтри
+    if (_filter.onlyPromotion) {
+      result = result.where((p) => p.hasPromotion).toList();
+    }
+
+    // Сорттоо
     switch (_filter.sortBy) {
       case 'price_asc':
         result.sort((a, b) => a.price.compareTo(b.price));
@@ -476,6 +529,13 @@ class _HomeScreenState extends State<HomeScreen> {
         break;
       case 'rating':
         result.sort((a, b) => (b.rating ?? 0).compareTo(a.rating ?? 0));
+        break;
+      case 'popular':
+        result.sort((a, b) => b.viewsCount.compareTo(a.viewsCount));
+        break;
+      case 'newest':
+        result.sort((a, b) => (b.createdAt ?? DateTime(0))
+            .compareTo(a.createdAt ?? DateTime(0)));
         break;
       default:
         if (_isNearbyMode)
@@ -501,6 +561,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // ignore: unused_element
   Widget _buildDownloadBanner(bool isDark) {
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 8, 12, 24),
@@ -514,9 +575,8 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isDark
-              ? DD.accent.withOpacity(0.3)
-              : DD.accent.withOpacity(0.15),
+          color:
+              isDark ? DD.accent.withOpacity(0.3) : DD.accent.withOpacity(0.15),
           width: 1,
         ),
         boxShadow: [
@@ -574,7 +634,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 Expanded(
                   child: _StoreButton(
                     onTap: () => _openStore(_appStoreUrl),
-                    icon: const Icon(Icons.apple, color: Colors.white, size: 28),
+                    icon:
+                        const Icon(Icons.apple, color: Colors.white, size: 28),
                     label: 'App Store',
                     sublabel: 'жүктөп ал',
                     isDark: isDark,
@@ -594,16 +655,57 @@ class _HomeScreenState extends State<HomeScreen> {
       _filter = FilterOptions(
           priceRange: const RangeValues(0, 100000),
           selectedSizes: [],
-          sortBy: 'default');
+          selectedColors: [],
+          sortBy: 'default',
+          pricingType: 'all',
+          onlyPromotion: false);
     });
     _applyFilters();
   }
 
-  void _openFilter() {
-    FilterBottomSheet.show(context, initialOptions: _filter, onApply: (opts) {
-      _filter = opts;
-      _applyFilters();
+  /// Товарлардан уникалуу размерлер алат
+  List<String> get _availableSizes {
+    final allSizes = <String>{};
+    for (final p in allProducts) {
+      for (final s in p.sizes) {
+        if (s.trim().isNotEmpty) allSizes.add(s.trim());
+      }
+    }
+    final list = allSizes.toList();
+    // Сандарды (36,37...) алдыга, андан соң тамгаларды (S,M,L...)
+    list.sort((a, b) {
+      final aNum = double.tryParse(a);
+      final bNum = double.tryParse(b);
+      if (aNum != null && bNum != null) return aNum.compareTo(bNum);
+      if (aNum != null) return -1;
+      if (bNum != null) return 1;
+      return a.compareTo(b);
     });
+    return list;
+  }
+
+  /// Товарлардан уникалуу түстөр алат
+  List<String> get _availableColors {
+    final allColors = <String>{};
+    for (final p in allProducts) {
+      for (final c in p.colors) {
+        if (c.trim().isNotEmpty) allColors.add(c.trim());
+      }
+    }
+    return allColors.toList()..sort();
+  }
+
+  void _openFilter() {
+    FilterBottomSheet.show(
+      context,
+      initialOptions: _filter,
+      availableSizes: _availableSizes,
+      availableColors: _availableColors,
+      onApply: (opts) {
+        _filter = opts;
+        _applyFilters();
+      },
+    );
   }
 
   void _onTitleTap() {
@@ -724,60 +826,67 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   // ── Баскычтар сабы ──
                   // ── Баскычтар сабы — маалымат болгондо гана ──
-if (_isSearchMode || _isNearbyMode || 
-    (_filterMode != ProductFilterMode.all && !_isLoading) || 
-    _filterCount > 0)
-  SliverToBoxAdapter(
-    child: Padding(
-      padding: const EdgeInsets.fromLTRB(14, 15, 14, 10),
-      child: Row(
-        children: [
-          if (_isSearchMode && !_isLoading)
-            Flexible(
-              child: Text(
-                '${displayedProducts.length} ${loc.get('results')}',
-                style: AppTextStyles.bodyMedium.copyWith(
-                    color: isDark ? Colors.white70 : Colors.black54),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          if (_isNearbyMode && !_isLoading)
-            Flexible(
-              child: Text(
-                '📍 ${displayedProducts.length} ${loc.get('nearby_count')}',
-                style: AppTextStyles.bodyMedium.copyWith(
-                    color: isDark ? Colors.white70 : Colors.black54),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          if (_filterMode != ProductFilterMode.all &&
-              !_isSearchMode &&
-              !_isNearbyMode &&
-              !_isLoading)
-            Flexible(
-              child: Text(
-                '${_filterModeLabel(loc)} · ${displayedProducts.length} шт',
-                style: AppTextStyles.bodyMedium.copyWith(
-                    color: isDark ? Colors.white70 : Colors.black54),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-              ),
-            ),
-          const Spacer(),
-          if (_filterCount > 0) ...[
-            const SizedBox(width: 8),
-            _IosLabelBtn(
-              onTap: _resetFilters,
-              icon: Icons.close,
-              label: loc.get('filter_reset'),
-              color: AppColors.error,
-              isDark: isDark,
-            ),
-          ],
-        ],
-      ),
-    ),
-  ),
+                  if (_isSearchMode ||
+                      _isNearbyMode ||
+                      (_filterMode != ProductFilterMode.all && !_isLoading) ||
+                      _filterCount > 0)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(14, 15, 14, 10),
+                        child: Row(
+                          children: [
+                            if (_isSearchMode && !_isLoading)
+                              Flexible(
+                                child: Text(
+                                  '${displayedProducts.length} ${loc.get('results')}',
+                                  style: AppTextStyles.bodyMedium.copyWith(
+                                      color: isDark
+                                          ? Colors.white70
+                                          : Colors.black54),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            if (_isNearbyMode && !_isLoading)
+                              Flexible(
+                                child: Text(
+                                  '📍 ${displayedProducts.length} ${loc.get('nearby_count')}',
+                                  style: AppTextStyles.bodyMedium.copyWith(
+                                      color: isDark
+                                          ? Colors.white70
+                                          : Colors.black54),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            if (_filterMode != ProductFilterMode.all &&
+                                !_isSearchMode &&
+                                !_isNearbyMode &&
+                                !_isLoading)
+                              Flexible(
+                                child: Text(
+                                  '${_filterModeLabel(loc)} · ${displayedProducts.length} шт',
+                                  style: AppTextStyles.bodyMedium.copyWith(
+                                      color: isDark
+                                          ? Colors.white70
+                                          : Colors.black54),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                              ),
+                            const Spacer(),
+                            if (_filterCount > 0) ...[
+                              const SizedBox(width: 8),
+                              _IosLabelBtn(
+                                onTap: _resetFilters,
+                                icon: Icons.close,
+                                label: loc.get('filter_reset'),
+                                color: AppColors.error,
+                                isDark: isDark,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
 
                   // ── Товарлар ──
                   if (_isLoading)
@@ -823,9 +932,6 @@ if (_isSearchMode || _isNearbyMode ||
                       ),
                     )
                   else ...[
-                    SliverToBoxAdapter(
-                      child: _buildDownloadBanner(isDark),
-                    ),
                     SliverPadding(
                       padding: const EdgeInsets.fromLTRB(10, 15, 10, 12),
                       // SliverGrid childAspectRatio колдонбойбуз — ал бардык
@@ -841,19 +947,24 @@ if (_isSearchMode || _isNearbyMode ||
                                 spacing: 9,
                                 children: [
                                   for (var col = 0; col < 2; col++)
-                                    rowIndex * 2 + col < displayedProducts.length
+                                    rowIndex * 2 + col <
+                                            displayedProducts.length
                                         ? RepaintBoundary(
-                                            key: ValueKey(
-                                                displayedProducts[rowIndex * 2 + col].id),
+                                            key: ValueKey(displayedProducts[
+                                                    rowIndex * 2 + col]
+                                                .id),
                                             child: ProductCard(
                                               product: displayedProducts[
                                                   rowIndex * 2 + col],
                                               onTap: () => Navigator.push(
                                                 context,
                                                 MaterialPageRoute(
-                                                  builder: (_) => ProductDetailScreen(
-                                                      product: displayedProducts[
-                                                          rowIndex * 2 + col]),
+                                                  builder: (_) =>
+                                                      ProductDetailScreen(
+                                                          product:
+                                                              displayedProducts[
+                                                                  rowIndex * 2 +
+                                                                      col]),
                                                 ),
                                               ).then((_) => setState(() {})),
                                             ),
@@ -882,231 +993,244 @@ if (_isSearchMode || _isNearbyMode ||
             right: 0,
             child: NotificationListener<SizeChangedLayoutNotification>(
               onNotification: (_) {
-                WidgetsBinding.instance
-                    .addPostFrameCallback((_) => mounted ? _measureHeader() : null);
+                WidgetsBinding.instance.addPostFrameCallback(
+                    (_) => mounted ? _measureHeader() : null);
                 return true;
               },
               child: SizeChangedLayoutNotifier(
                 key: _headerKey,
                 child: ClipRRect(
-              borderRadius:
-                  const BorderRadius.vertical(bottom: Radius.circular(24)),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-                child: Container(
-                  color: appBarColor.withOpacity(0.75),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // ── DD Online блогу — анимация менен жашынат/чыгат ──
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 250),
-                        curve: Curves.easeInOut,
-                        height: _titleVisible ? _titleBarHeight : 0,
-                        clipBehavior: Clip.hardEdge,
-                        decoration: const BoxDecoration(),
-                        child: SizedBox(
-                          height: _titleBarHeight,
-                          child: Padding(
-                            padding: const EdgeInsets.only(top: 20),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                // Дүкөн баскычы
-                                GestureDetector(
-                                  onTap: () async {
-                                    final uid = await SellerSessionService.instance.getSavedUid();
-                                    if (!context.mounted) return;
-                                    if (uid != null && uid.isNotEmpty) {
-                                      await Navigator.push(context, MaterialPageRoute(
-                                        builder: (_) => SellerDashboardScreen(uid: uid),
-                                      ));
-                                    } else {
-                                      await Navigator.push(context, MaterialPageRoute(
-                                        builder: (_) => const SellerEntranceScreen(),
-                                      ));
-                                    }
-                                    if (mounted) setState(() {});
-                                  },
-                                  child: Container(
-                                    margin:
-                                        const EdgeInsets.fromLTRB(8, 6, 4, 6),
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 17, vertical: 11),
-                                    decoration: BoxDecoration(
-                                      color: DD.accent,
-                                      borderRadius:
-                                          BorderRadius.circular(DD.rPill),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: DD.accent.withOpacity(
-                                              isDark ? 0.35 : 0.30),
-                                          blurRadius: 12,
-                                          offset: const Offset(0, 4),
-                                          spreadRadius: -2,
+                  borderRadius:
+                      const BorderRadius.vertical(bottom: Radius.circular(24)),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                    child: Container(
+                      color: appBarColor.withOpacity(0.75),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // ── DD Online блогу — анимация менен жашынат/чыгат ──
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 250),
+                            curve: Curves.easeInOut,
+                            height: _titleVisible ? _titleBarHeight : 0,
+                            clipBehavior: Clip.hardEdge,
+                            decoration: const BoxDecoration(),
+                            child: SizedBox(
+                              height: _titleBarHeight,
+                              child: Padding(
+                                padding: const EdgeInsets.only(top: 20),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    // Дүкөн баскычы
+                                    GestureDetector(
+                                      onTap: () async {
+                                        final uid = await SellerSessionService
+                                            .instance
+                                            .getSavedUid();
+                                        if (!context.mounted) return;
+                                        if (uid != null && uid.isNotEmpty) {
+                                          await Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (_) =>
+                                                    SellerDashboardScreen(
+                                                        uid: uid),
+                                              ));
+                                        } else {
+                                          await Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (_) =>
+                                                    const SellerEntranceScreen(),
+                                              ));
+                                        }
+                                        if (mounted) setState(() {});
+                                      },
+                                      child: Container(
+                                        margin: const EdgeInsets.fromLTRB(
+                                            8, 6, 4, 6),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 17, vertical: 11),
+                                        decoration: BoxDecoration(
+                                          color: DD.accent,
+                                          borderRadius:
+                                              BorderRadius.circular(DD.rPill),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: DD.accent.withOpacity(
+                                                  isDark ? 0.35 : 0.30),
+                                              blurRadius: 12,
+                                              offset: const Offset(0, 4),
+                                              spreadRadius: -2,
+                                            ),
+                                          ],
                                         ),
-                                      ],
-                                    ),
-                                    child: Text(loc.get('shop'),
-                                        style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: 15)),
-                                  ),
-                                ),
-                                // DD Online логотипи
-                                Expanded(
-                                  child: GestureDetector(
-                                    onTap: _onTitleTap,
-                                    child: Center(
-                                      child: ShaderMask(
-                                        shaderCallback: (bounds) =>
-                                            const LinearGradient(
-                                          colors: [DD.accent2, DD.accent],
-                                          begin: Alignment.centerLeft,
-                                          end: Alignment.centerRight,
-                                        ).createShader(bounds),
-                                        child: const Text('DD Online',
-                                            style: TextStyle(
-                                                fontSize: 26,
-                                                fontWeight: FontWeight.w800,
+                                        child: Text(loc.get('shop'),
+                                            style: const TextStyle(
                                                 color: Colors.white,
-                                                letterSpacing: -0.8)),
+                                                fontWeight: FontWeight.w700,
+                                                fontSize: 15)),
                                       ),
                                     ),
-                                  ),
-                                ),
-                                // Коңгуроо
-                                GestureDetector(
-                                  onTap: () => Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                              builder: (_) =>
-                                                  const NotificationsScreen()))
-                                      .then((_) => _checkUnread()),
-                                  child: Padding(
-                                    padding: const EdgeInsets.only(right: 12),
-                                    child: Stack(
-                                      clipBehavior: Clip.none,
-                                      children: [
-                                        Icon(Icons.notifications_outlined,
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .onSurface
-                                                .withOpacity(0.8),
-                                            size: 26),
-                                        if (_hasUnread)
-                                          Positioned(
-                                            top: 0,
-                                            right: 0,
-                                            child: Container(
-                                              width: 8,
-                                              height: 8,
-                                              decoration: const BoxDecoration(
-                                                  color: AppColors.error,
-                                                  shape: BoxShape.circle),
-                                            ),
+                                    // DD Online логотипи
+                                    Expanded(
+                                      child: GestureDetector(
+                                        onTap: _onTitleTap,
+                                        child: Center(
+                                          child: ShaderMask(
+                                            shaderCallback: (bounds) =>
+                                                const LinearGradient(
+                                              colors: [DD.accent2, DD.accent],
+                                              begin: Alignment.centerLeft,
+                                              end: Alignment.centerRight,
+                                            ).createShader(bounds),
+                                            child: const Text('DD Online',
+                                                style: TextStyle(
+                                                    fontSize: 26,
+                                                    fontWeight: FontWeight.w800,
+                                                    color: Colors.white,
+                                                    letterSpacing: -0.8)),
                                           ),
-                                      ],
+                                        ),
+                                      ),
                                     ),
+                                    // Коңгуроо
+                                    GestureDetector(
+                                      onTap: () => Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                  builder: (_) =>
+                                                      const NotificationsScreen()))
+                                          .then((_) => _checkUnread()),
+                                      child: Padding(
+                                        padding:
+                                            const EdgeInsets.only(right: 12),
+                                        child: Stack(
+                                          clipBehavior: Clip.none,
+                                          children: [
+                                            Icon(Icons.notifications_outlined,
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .onSurface
+                                                    .withOpacity(0.8),
+                                                size: 26),
+                                            if (_hasUnread)
+                                              Positioned(
+                                                top: 0,
+                                                right: 0,
+                                                child: Container(
+                                                  width: 8,
+                                                  height: 8,
+                                                  decoration:
+                                                      const BoxDecoration(
+                                                          color:
+                                                              AppColors.error,
+                                                          shape:
+                                                              BoxShape.circle),
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          // ── Search + баскычтар (дайыма туруктуу) ──
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                    child: SearchBarWidget(
+                                        controller: _searchController,
+                                        onChanged: _onSearchChanged,
+                                        onClear: _onSearchClear)),
+                                const SizedBox(width: 8),
+                                _glassButton(
+                                  active: _isNearbyMode,
+                                  onTap: _isLocating
+                                      ? () {}
+                                      : (_isNearbyMode
+                                          ? () => _loadProducts(refresh: true)
+                                          : _loadNearbyProducts),
+                                  child: _isLocating
+                                      ? const SizedBox(
+                                          width: 22,
+                                          height: 22,
+                                          child: CircularProgressIndicator(
+                                              strokeWidth: 2, color: DD.accent))
+                                      : Icon(Icons.near_me_rounded,
+                                          color: _isNearbyMode
+                                              ? Colors.white
+                                              : filterIconColor,
+                                          size: 22),
+                                ),
+                                const SizedBox(width: 8),
+                                _glassButton(
+                                  active: _filterCount > 0,
+                                  onTap: _openFilter,
+                                  child: Stack(
+                                    clipBehavior: Clip.none,
+                                    children: [
+                                      Icon(Icons.tune_rounded,
+                                          color: _filterCount > 0
+                                              ? Colors.white
+                                              : filterIconColor,
+                                          size: 22),
+                                      if (_filterCount > 0)
+                                        Positioned(
+                                          top: -6,
+                                          right: -6,
+                                          child: Container(
+                                            width: 15,
+                                            height: 15,
+                                            decoration: const BoxDecoration(
+                                                color: AppColors.error,
+                                                shape: BoxShape.circle),
+                                            child: Center(
+                                                child: Text('$_filterCount',
+                                                    style: const TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 9,
+                                                        fontWeight:
+                                                            FontWeight.bold))),
+                                          ),
+                                        ),
+                                    ],
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                        ),
-                      ),
+                          Divider(height: 1, color: dividerColor),
+                          const SizedBox(height: 6),
 
-                      // ── Search + баскычтар (дайыма туруктуу) ──
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
-                        child: Row(
-                          children: [
-                            Expanded(
-                                child: SearchBarWidget(
-                                    onChanged: _onSearchChanged,
-                                    onClear: _onSearchClear)),
-                            const SizedBox(width: 8),
-                            _glassButton(
-                              active: _isNearbyMode,
-                              onTap: _isLocating
-                                  ? () {}
-                                  : (_isNearbyMode
-                                      ? () => _loadProducts(refresh: true)
-                                      : _loadNearbyProducts),
-                              child: _isLocating
-                                  ? const SizedBox(
-                                      width: 22,
-                                      height: 22,
-                                      child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: DD.accent))
-                                  : Icon(Icons.near_me_rounded,
-                                      color: _isNearbyMode
-                                          ? Colors.white
-                                          : filterIconColor,
-                                      size: 22),
-                            ),
-                            const SizedBox(width: 8),
-                            _glassButton(
-                              active: _filterCount > 0,
-                              onTap: _openFilter,
-                              child: Stack(
-                                clipBehavior: Clip.none,
-                                children: [
-                                  Icon(Icons.tune_rounded,
-                                      color: _filterCount > 0
-                                          ? Colors.white
-                                          : filterIconColor,
-                                      size: 22),
-                                  if (_filterCount > 0)
-                                    Positioned(
-                                      top: -6,
-                                      right: -6,
-                                      child: Container(
-                                        width: 15,
-                                        height: 15,
-                                        decoration: const BoxDecoration(
-                                            color: AppColors.error,
-                                            shape: BoxShape.circle),
-                                        child: Center(
-                                            child: Text('$_filterCount',
-                                                style: const TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: 9,
-                                                    fontWeight:
-                                                        FontWeight.bold))),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
+                          // ── CategoryList (дайыма туруктуу) ──
+                          CategoryList(
+                            onCategorySelected: (id) {
+                              setState(() => _selectedCategoryId = id);
+                              if (_isSearchMode && _searchQuery.isNotEmpty) {
+                                _onSearchChanged(_searchQuery);
+                              } else if (_isNearbyMode) {
+                                _loadNearbyProducts();
+                              } else {
+                                _onFilterModeChanged(_filterMode);
+                              }
+                            },
+                            onFilterModeChanged: _onFilterModeChanged,
+                          ),
+                          const SizedBox(height: 6),
+                        ],
                       ),
-                      Divider(height: 1, color: dividerColor),
-                      const SizedBox(height: 6),
-
-                      // ── CategoryList (дайыма туруктуу) ──
-                      CategoryList(
-                        onCategorySelected: (id) {
-                          setState(() => _selectedCategoryId = id);
-                          if (_isSearchMode && _searchQuery.isNotEmpty) {
-                            _onSearchChanged(_searchQuery);
-                          } else if (_isNearbyMode) {
-                            _loadNearbyProducts();
-                          } else {
-                            _onFilterModeChanged(_filterMode);
-                          }
-                        },
-                        onFilterModeChanged: _onFilterModeChanged,
-                      ),
-                      const SizedBox(height: 6),
-                    ],
-                  ),
-                ), // ← Container
-              ), // ← BackdropFilter
-            ),
+                    ), // ← Container
+                  ), // ← BackdropFilter
+                ),
               ), // ← SizeChangedLayoutNotifier
             ), // ← NotificationListener
           ), // ← ClipRect
@@ -1556,9 +1680,7 @@ class _StoreButtonState extends State<_StoreButton> {
             borderRadius: BorderRadius.circular(14),
             boxShadow: [
               BoxShadow(
-                color: (widget.isApple
-                        ? Colors.black
-                        : const Color(0xFF1A73E8))
+                color: (widget.isApple ? Colors.black : const Color(0xFF1A73E8))
                     .withOpacity(0.35),
                 blurRadius: 12,
                 offset: const Offset(0, 4),

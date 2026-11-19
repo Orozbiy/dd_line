@@ -9,7 +9,6 @@ import '../../../config/theme/app_text_styles.dart';
 import '../../../core/app_localizations.dart';
 import '../../../core/auth_service.dart';
 import '../../home/screens/home_screen.dart';
-import '../../seller/screens/seller_entrance_screen.dart';
 import '../../seller/screens/seller_login_screen.dart';
 import '../../../core/supabase_client.dart';
 import '../../../services/notification_service.dart';
@@ -272,43 +271,6 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     );
   }
 
-  Widget _buildSellerButton(AppLocalizations loc) {
-    return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const SellerEntranceScreen()),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.25),
-                width: 1.5,
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.storefront_rounded,
-                    color: AppColors.primary, size: 20),
-                const SizedBox(width: 10),
-                Text(loc.get('seller_login'),
-                    style: AppTextStyles.headingSmall
-                        .copyWith(color: Colors.white70)),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 
   Widget _buildGoogleButton(AppLocalizations loc) {
     // Windows — сатуучу логин

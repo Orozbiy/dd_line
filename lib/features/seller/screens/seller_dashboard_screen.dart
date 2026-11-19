@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../core/app_localizations.dart';
+import '../../../core/seller_session_service.dart';
 import '../models/seller_model.dart';
 import '../services/seller_service.dart';
 
@@ -98,6 +99,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
+              await SellerSessionService.instance.clearSession();
               await supabase.auth.signOut();
               if (!mounted) return;
               Navigator.pushAndRemoveUntil(context,

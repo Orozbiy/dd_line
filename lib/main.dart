@@ -194,21 +194,6 @@ class _SplashRouterState extends State<SplashRouter> {
     _determineScreen();
   }
 
-  void _handleWebUrl() {
-    try {
-      final uri      = Uri.base;
-      final segments = uri.pathSegments;
-      if (segments.length >= 2 && segments[0] == 'product') {
-        NotificationService.pendingProductId = segments[1];
-      }
-      final chatId = uri.queryParameters['chat'];
-      if (chatId != null && chatId.isNotEmpty) {
-        NotificationService.pendingChatId = chatId;
-      }
-    } catch (e) {
-      debugPrint('⚠️ Web URL parse ката: $e');
-    }
-  }
 
   Future<void> _determineScreen() async {
     String langCode = 'ky';

@@ -9,7 +9,7 @@ class AppLocalizations {
   }
 
   static const _ky = {
-    'settings': 'Жөндөөлөр',
+    'settings': 'Жөндөө',
     'language': 'Тил',
     'notifications': 'Билдирмелер',
     'dark_mode': 'Күңүрт режим',
@@ -136,8 +136,7 @@ class AppLocalizations {
     'login': 'Кирүү',
     'register': 'Катталуу',
     'shop_title': 'Дүкөнүңүздү башкарыңыз!',
-    'shop_desc':
-        'DD Online аркылуу товарларыңызды\n дүйнөгө сатыңыз',
+    'shop_desc': 'DD Online аркылуу товарларыңызды\n дүйнөгө сатыңыз',
     'add_product': 'Товар кошуу',
     'my_products': 'Менин товарларым',
     'no_size': 'Размерсиз',
@@ -224,7 +223,8 @@ class AppLocalizations {
     'prod_detail_wholesale_price_label': 'Дүң баасы',
     'prod_detail_negotiation_title': 'Келишим боюнча',
     'prod_detail_negotiation_sub': 'Баасы сатуучу менен макулдашылат',
-    'prod_detail_wholesale_contact': 'Дүң шарттары үчүн сатуучу менен байланышыңыз',
+    'prod_detail_wholesale_contact':
+        'Дүң шарттары үчүн сатуучу менен байланышыңыз',
     'prod_price_negotiation': 'Келишим түрүндө',
     'prod_err_retail_price': 'Чекене баасын жазыңыз!',
     'prod_field_price': '💰 Баасы (сом) *',
@@ -854,7 +854,7 @@ class AppLocalizations {
     'call_request_dialog_body':
         'Сатуучуга чалуу өтүнүчү жиберилет.\nАл кабыл алганда телефон чалынат.',
     'call_request_dialog_send': 'Жиберүү',
-    'call_request_tooltip': 'Чалуу суроо',
+    'call_request_tooltip': 'Сунуш беруу',
     'call_request_error': 'Ката чыкты, кайра аракет кылыңыз',
     'call_request_notify_text': '📞 Сизге чалуу өтүнүчү жиберди',
     // Edit message dialog
@@ -918,6 +918,12 @@ class AppLocalizations {
     'chat_background': 'Чат фону',
     'cache_clear': 'Кэшти тазалоо',
     'profile_view_edit': 'Түзөтүү',
+    // Chat message actions
+    'msg_action_reply': 'Жооп берүү',
+    'msg_action_copy': 'Көчүрүү',
+    'msg_action_delete': 'Жок кылуу',
+    'msg_action_select': 'Тандоо',
+    'msg_action_edit': 'Түзөтүү',
   };
 
   static const _ru = {
@@ -1832,6 +1838,12 @@ class AppLocalizations {
     'cat_18_4': 'Корм/Питание',
     'cat_18_5': 'Клетки/Вольеры',
     'cat_18_6': 'Ветеринария',
+    // Chat message actions
+    'msg_action_reply': 'Ответить',
+    'msg_action_copy': 'Копировать',
+    'msg_action_delete': 'Удалить',
+    'msg_action_select': 'Выделить',
+    'msg_action_edit': 'Редактировать',
   };
 
   String get(String key) {

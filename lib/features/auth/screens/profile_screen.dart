@@ -566,7 +566,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final divColor  = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFEEEEEE);
 
     final subtitleText = _isSeller
-        ? 'Сатуучу'
+        ? 'Сатуучу / Продавец'
         : (_email.isNotEmpty ? _email : '—');
 
     return Scaffold(
@@ -757,9 +757,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             _isSeller
                                 ? Icons.store_outlined
                                 : Icons.email_outlined,
-                            _isSeller ? 'Аккаунт' : 'Email',
+                            _isSeller ? 'Аккаунт / Аккаунт' : 'Email',
                             _isSeller
-                                ? 'Сатуучу аккаунту'
+                                ? 'Сатуучу аккаунту / Аккаунт продавца'
                                 : (_email.isNotEmpty ? _email : '—'),
                             textColor: textColor,
                             subColor: subColor,

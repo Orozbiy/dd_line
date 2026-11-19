@@ -4,6 +4,7 @@ import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../core/app_localizations.dart';
 import '../../../core/seller_auth_service.dart';
+import '../../../core/seller_session_service.dart';
 import '../../../core/supabase_client.dart';
 import '../../../services/notification_service.dart';
 
@@ -82,6 +83,7 @@ class _SellerLoginScreenState extends State<SellerLoginScreen> {
         if (mounted) setState(() => _checkingSession = false);
       } else {
         unawaited(NotificationService().saveMyToken());
+        await SellerSessionService.instance.saveSession(seller.uid);
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (_) => SellerDashboardScreen(uid: seller.uid)),
@@ -147,6 +149,7 @@ class _SellerLoginScreenState extends State<SellerLoginScreen> {
         _showSnack(loc.get('login_blocked'));
       } else {
         unawaited(NotificationService().saveMyToken());
+        await SellerSessionService.instance.saveSession(seller.uid);
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (_) => SellerDashboardScreen(uid: seller.uid)),
