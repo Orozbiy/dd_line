@@ -421,13 +421,12 @@ Future<void> _markRead() async {
       }
 
       // Ошол чаттардагы окулбаган, мен жөнөтпөгөн билдирүүлөрдү гана сана
-      final res = await supabase
+      await supabase
           .from('messages')
           .select('id')
           .inFilter('chat_id', chatIds)
           .eq('is_read', false)
           .neq('sender_id', myId);
-      final count = (res as List).length;
       const channel = MethodChannel('dd_online/badge');
       // Badge толугу менен өчүрүлдү — сан койбойбуз
       await channel.invokeMethod('clearBadge');

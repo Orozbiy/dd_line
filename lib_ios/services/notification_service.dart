@@ -1,13 +1,9 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:googleapis_auth/auth_io.dart';
-import 'package:http/http.dart' as http;
 import '../core/services/in_app_notification_banner.dart';
 import '../core/supabase_client.dart';
 import '../data/models/product_model.dart';
@@ -294,7 +290,7 @@ class NotificationService {
 
       String productName  = '';
       String productImage = '';
-      final productData = results[0] as Map<String, dynamic>?;
+      final productData = results[0];
       if (productData != null) {
         productName = productData['title'] as String? ?? '';
         final images = productData['images'] as List?;
@@ -302,7 +298,7 @@ class NotificationService {
       }
 
       String otherAvatarUrl = '';
-      final profileData = results[1] as Map<String, dynamic>?;
+      final profileData = results[1];
       final rawAvatar = profileData?['avatar_url'] as String? ?? '';
       otherAvatarUrl = rawAvatar.startsWith('http') ? rawAvatar : '';
 
@@ -408,15 +404,13 @@ class NotificationService {
   }) async {
     debugPrint('📤 sendChatNotification → receiverUid=$receiverUid');
     try {
-      // Серверде (Edge Function) жөнөтүлөт — service account ачкычы
-      // тиркемеде сакталбайт, ошондуктан push чындап иштейт.
       final res = await supabase.functions.invoke(
         'send-push',
         body: {
-          'receiverUid': receiverUid,
-          'title':       senderName,
-          'body':        messageText,
-          'chatId':      chatId,
+          'receiver_uid': receiverUid,
+          'title':        senderName,
+          'body':         messageText,
+          'chat_id':      chatId,
         },
       );
       debugPrint('✅ send-push: ${res.status} ${res.data}');
@@ -426,79 +420,7 @@ class NotificationService {
   }
 
   // ─────────────────────────────────────────────────────────────
-  // ЖАРДАМЧЫ: бир токенге FCM жөнөт
-  // ─────────────────────────────────────────────────────────────
-  Future<void> _sendOneFcm({
-    required String fcmToken,
-    required String accessToken,
-    required String title,
-    required String body,
-    required String chatId,
-  }) async {
-    const projectId = 'dd-online-web';
-    const url = 'https://fcm.googleapis.com/v1/projects/$projectId/messages:send';
-
-    try {
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {
-          'Authorization': 'Bearer $accessToken',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'message': {
-            'token': fcmToken,
-            'notification': {'title': title, 'body': body},
-            'android': {
-              'priority': 'high',
-              'notification': {
-                'channel_id':             'chat_messages',
-                'sound':                  'default',
-                'default_vibrate_timings': true,
-                'notification_priority':  'PRIORITY_MAX',
-                'visibility':             'PUBLIC',
-                'click_action':           'FLUTTER_NOTIFICATION_CLICK',
-              },
-            },
-            'apns': {
-              'payload': {
-                'aps': {
-                  'sound':             'default',
-                  'content-available':  1,
-                },
-              },
-              'headers': {'apns-priority': '10'},
-            },
-            'data': {
-              'chatId':       chatId,
-              'type':         'chat_message',
-              'senderName':   title,
-              'title':        title,
-              'body':         body,
-              'click_action': 'FLUTTER_NOTIFICATION_CLICK',
-            },
-          },
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        debugPrint('✅ FCM жиберилди → chatId=$chatId');
-      } else {
-        debugPrint('❌ FCM ката ${response.statusCode}: ${response.body}');
-        if (response.statusCode == 404 ||
-            response.body.contains('UNREGISTERED') ||
-            response.body.contains('registration-token-not-registered')) {
-          debugPrint('🗑️ Эскирген токен өчүрүлүүдө...');
-          await supabase.from('push_tokens').delete().eq('token', fcmToken);
-        }
-      }
-    } catch (e) {
-      debugPrint('❌ _sendOneFcm ката: $e');
-    }
-  }
-
-  // ─────────────────────────────────────────────────────────────
-  // BROADCAST — Adminден баардыгына
+  // BROADCAST — Supabase Edge Function аркылуу
   // ─────────────────────────────────────────────────────────────
   Future<int> sendBroadcastNotification({
     required String title,
@@ -506,82 +428,44 @@ class NotificationService {
   }) async {
     debugPrint('📢 sendBroadcastNotification башталды');
     try {
-      final rows = await supabase.from('push_tokens').select('token');
+      final rows = await supabase
+          .from('push_tokens')
+          .select('user_id')
+          .order('updated_at', ascending: false);
 
-      final tokens = (rows as List)
-          .map((r) => r['token'] as String?)
+      final userIds = (rows as List)
+          .map((r) => r['user_id'] as String?)
           .whereType<String>()
-          .where((t) => t.isNotEmpty)
+          .where((id) => id.isNotEmpty)
           .toSet()
           .toList();
 
-      if (tokens.isEmpty) {
-        debugPrint('⚠️ Токендер жок');
+      if (userIds.isEmpty) {
+        debugPrint('⚠️ Колдонуучулар жок');
         return 0;
       }
 
-      debugPrint('📢 Жалпы токен саны: ${tokens.length}');
-
-      final accessToken = await _getAccessToken();
-      if (accessToken == null) return 0;
-
-      const projectId = 'dd-online-web';
-      const url = 'https://fcm.googleapis.com/v1/projects/$projectId/messages:send';
+      debugPrint('📢 Жалпы колдонуучу саны: ${userIds.length}');
 
       int successCount = 0;
-
-      for (final token in tokens) {
+      for (final uid in userIds) {
         try {
-          final response = await http.post(
-            Uri.parse(url),
-            headers: {
-              'Authorization': 'Bearer $accessToken',
-              'Content-Type': 'application/json',
+          final res = await supabase.functions.invoke(
+            'send-push',
+            body: {
+              'receiver_uid': uid,
+              'title':        title,
+              'body':         body,
+              'chat_id':      '',
             },
-            body: jsonEncode({
-              'message': {
-                'token': token,
-                'notification': {'title': title, 'body': body},
-                'android': {
-                  'priority': 'high',
-                  'notification': {
-                    'channel_id':             'chat_messages',
-                    'sound':                  'default',
-                    'notification_priority':  'PRIORITY_MAX',
-                    'default_vibrate_timings': true,
-                  },
-                },
-                'apns': {
-                  'payload': {
-                    'aps': {'sound': 'default'},
-                  },
-                  'headers': {'apns-priority': '10'},
-                },
-                'data': {
-                  'type':  'admin_broadcast',
-                  'title': title,
-                  'body':  body,
-                },
-              },
-            }),
           );
-
-          if (response.statusCode == 200) {
-            successCount++;
-          } else {
-            if (response.statusCode == 404 ||
-                response.body.contains('UNREGISTERED') ||
-                response.body.contains('INVALID_ARGUMENT')) {
-              await supabase.from('push_tokens').delete().eq('token', token);
-              debugPrint('🗑️ Эски токен өчүрүлдү');
-            }
-          }
+          if (res.status == 200) successCount++;
         } catch (e) {
-          debugPrint('❌ Broadcast token ката: $e');
+          debugPrint('❌ Broadcast uid=$uid ката: $e');
         }
       }
 
-      debugPrint('✅ Broadcast: $successCount/${tokens.length}');
+      debugPrint('✅ Broadcast: $successCount/${userIds.length}');
       return successCount;
     } catch (e) {
       debugPrint('❌ sendBroadcastNotification ката: $e');
@@ -618,29 +502,30 @@ class NotificationService {
   Future<void> testSendPush() async {
     debugPrint('🧪 testSendPush башталды...');
 
-    final rows = await supabase.from('push_tokens').select('token').limit(1);
-    if ((rows as List).isEmpty) {
-      debugPrint('❌ Токен жок!');
+    final user = supabase.auth.currentUser;
+    if (user == null) {
+      debugPrint('❌ Колдонуучу кирген жок!');
       return;
     }
 
-    final token = rows[0]['token'] as String;
-    debugPrint('🎯 Тест токен: ${token.substring(0, 30)}...');
-
-    final accessToken = await _getAccessToken();
-    if (accessToken == null) {
-      debugPrint('❌ ACCESS TOKEN АЛЫНБАДЫ!');
-      return;
+    try {
+      final res = await supabase.functions.invoke(
+        'send-push',
+        body: {
+          'receiver_uid': user.id,
+          'title':        'Тест пуш 🔔',
+          'body':         'Пуш иштеп жатат!',
+          'chat_id':      'test',
+        },
+      );
+      if (res.status == 200) {
+        debugPrint('✅ Тест пуш жиберилди!');
+      } else {
+        debugPrint('❌ Тест пуш ката: ${res.status} ${res.data}');
+      }
+    } catch (e) {
+      debugPrint('❌ testSendPush ката: $e');
     }
-    debugPrint('✅ Access Token алынды!');
-
-    await _sendOneFcm(
-      fcmToken:    token,
-      accessToken: accessToken,
-      title:       'Тест пуш 🔔',
-      body:        'Пуш иштеп жатат!',
-      chatId:      'test',
-    );
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -729,22 +614,4 @@ class NotificationService {
     }
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // ACCESS TOKEN
-  // ─────────────────────────────────────────────────────────────
-  Future<String?> _getAccessToken() async {
-    try {
-      final jsonString = await rootBundle.loadString('assets/service_account.json');
-      final json = jsonDecode(jsonString);
-      final accountCredentials = ServiceAccountCredentials.fromJson(json);
-      final scopes = ['https://www.googleapis.com/auth/firebase.messaging'];
-      final client = await clientViaServiceAccount(accountCredentials, scopes);
-      final token  = client.credentials.accessToken.data;
-      client.close();
-      return token;
-    } catch (e) {
-      debugPrint('❌ _getAccessToken ката: $e');
-      return null;
-    }
-  }
-}
+}

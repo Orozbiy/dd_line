@@ -90,7 +90,7 @@ class UpdateChecker {
       context:            context,
       barrierDismissible: !isMandatory,
       barrierColor:       Colors.black.withOpacity(0.30),
-      builder: (_) => PopScope(
+      builder: (dialogCtx) => PopScope(
         canPop: !isMandatory,
         onPopInvokedWithResult: (didPop, __) {
           if (didPop) _isShowing = false;
@@ -176,7 +176,7 @@ class UpdateChecker {
                               label: laterBtn,
                               onTap: () {
                                 _isShowing = false;
-                                Navigator.pop(_);
+                                Navigator.pop(dialogCtx);
                               },
                               isAccent: false,
                             ),
@@ -194,9 +194,13 @@ class UpdateChecker {
                                   mode: LaunchMode.externalApplication,
                                 );
                               }
-                              // Колдонуучу дүкөнгө кирип кайтып келгенде
-                              // флагды өчүрүп, кийинки текшерүүгө жол берүү
-                              _isShowing = false;
+                              // Милдеттүү эмес жаңыртуу — диалогду жап
+                              if (!isMandatory) {
+                                _isShowing = false;
+                                if (context.mounted) Navigator.of(context).pop();
+                            }
+                              // Милдеттүү жаңыртуу — диалог ачык калат,
+                              // колдонуучу жаңыртмайынча колдоно албайт
                             },
                             isAccent: true,
                           ),

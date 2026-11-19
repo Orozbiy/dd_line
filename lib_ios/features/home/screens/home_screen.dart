@@ -36,7 +36,6 @@ import '../widgets/home_bottom_nav.dart';
 // ignore: duplicate_import
 import '../widgets/equal_height_row.dart';
 import '../widgets/home_background.dart';
-import '../../../core/update_checker.dart';
 import '../../../core/dd_image_cache.dart';
 
 // ══════════════════════════════════════════════════════
@@ -167,7 +166,6 @@ class _HomeScreenState extends State<HomeScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final bottom = MediaQuery.of(context).padding.bottom;
       setState(() => _navBottomPadding = bottom > 0 ? bottom : 12);
-      _checkAppUpdate();
     });
   }
 
@@ -188,10 +186,6 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
-  Future<void> _checkAppUpdate() async {
-    final langCode = AppLocalizations.of(context).locale.languageCode;
-    await UpdateChecker.check(context, langCode);
-  }
 
   // ══════════════════════════════════════════════════════
   // LALAFO SCROLL ЛОГИКАСЫ

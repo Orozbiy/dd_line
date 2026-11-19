@@ -61,7 +61,7 @@ Future<void> main() async {
     try {
       await SupabaseInit.init();
       debugPrint('✅ Supabase OK');
-    } catch (e, st) {
+    } catch (e) {
       debugPrint('❌ Supabase ката: \$e\n\$st');
       _showErrorApp('Supabase init failed:\n${e}');
       return;
@@ -72,7 +72,7 @@ Future<void> main() async {
     try {
       await _initFirebase();
       debugPrint('✅ Firebase OK');
-    } catch (e, st) {
+    } catch (e) {
       debugPrint('❌ Firebase ката: \$e\n\$st');
       _showErrorApp('Firebase init failed:\n${e}');
       return;
@@ -108,7 +108,7 @@ Future<void> main() async {
         ChatBackgroundProvider.instance.load(),
       ]);
       debugPrint('✅ Баары даяр');
-    } catch (e, st) {
+    } catch (e) {
       debugPrint('❌ Startup ката: \$e\n\$st');
       // Бул каталар критикалык эмес — колдонмо ачылсын
     }
